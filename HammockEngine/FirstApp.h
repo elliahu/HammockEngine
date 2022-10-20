@@ -4,6 +4,7 @@
 #include "HmckPipeline.h"
 #include "HmckDevice.h"
 #include "HmckSwapChain.h"
+#include "HmckModel.h"
 
 #include <memory>
 #include <vector>
@@ -27,6 +28,7 @@ namespace Hmck
 		void run();
 
 	private:
+		void loadModels();
 		void createPipelineLayout();
 		void createPipeline();
 		void createCommandBuffer();
@@ -38,6 +40,7 @@ namespace Hmck
 		std::unique_ptr<HmckPipeline> hmckPipeline;
 		VkPipelineLayout pipelineLayout;
 		std::vector<VkCommandBuffer> commandBuffers;
+		std::unique_ptr<HmckModel> hmckModel;
 	};
 
 }

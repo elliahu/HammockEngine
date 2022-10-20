@@ -2,6 +2,7 @@
 
 Hmck::FirstApp::FirstApp()
 {
+	loadModels();
 	createPipelineLayout();
 	createPipeline();
 	createCommandBuffer();
@@ -21,6 +22,17 @@ void Hmck::FirstApp::run()
 	}
 
 	vkDeviceWaitIdle(hmckDevice.device());
+}
+
+void Hmck::FirstApp::loadModels()
+{
+	std::vector<HmckModel::Vertex> vertices{
+		{{0.0f, -0.5f}},
+		{{0.5f, 0.5f}},
+		{{-0.5f, 0.5f}}
+	};
+
+	hmckModel = std::make_unique<HmckModel>(hmckDevice, vertices);
 }
 
 void Hmck::FirstApp::createPipelineLayout()
@@ -99,8 +111,9 @@ void Hmck::FirstApp::createCommandBuffer()
 
 		vkCmdBeginRenderPass(commandBuffers[i], &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
 
-		hmckPipeline->bind(commandBuffers[i]);
-		vkCmdDraw(commandBuffers[i], 3, 1, 0, 0);
+		hmckPipeline->bind(commandBuffers[i]);	
+		hmckModel->bind(commandBuffers[i]);
+		hmckModel->draw(commandBuffers[i]);
 
 		vkCmdEndRenderPass(commandBuffers[i]);
 

@@ -21,6 +21,7 @@
   <ItemGroup>
     <ClCompile Include="FirstApp.cpp" />
     <ClCompile Include="HmckDevice.cpp" />
+    <ClCompile Include="HmckModel.cpp" />
     <ClCompile Include="HmckPipeline.cpp" />
     <ClCompile Include="HmckSwapChain.cpp" />
     <ClCompile Include="HmckWindow.cpp" />
@@ -29,6 +30,7 @@
   <ItemGroup>
     <ClInclude Include="FirstApp.h" />
     <ClInclude Include="HmckDevice.h" />
+    <ClInclude Include="HmckModel.h" />
     <ClInclude Include="HmckPipeline.h" />
     <ClInclude Include="HmckSwapChain.h" />
     <ClInclude Include="HmckWindow.h" />
