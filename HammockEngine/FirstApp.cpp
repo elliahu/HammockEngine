@@ -27,9 +27,10 @@ void Hmck::FirstApp::run()
 void Hmck::FirstApp::loadModels()
 {
 	std::vector<HmckModel::Vertex> vertices{
-		{{0.0f, -0.5f}},
-		{{0.5f, 0.5f}},
-		{{-0.5f, 0.5f}}
+		//position			//color
+		{{0.0f, -0.5f},		{1.0f , 0.0f, 0.0f}},
+		{{0.5f, 0.5f},		{0.0f , 1.0f, 0.0f}},
+		{{-0.5f, 0.5f},		{1.0f , 0.0f, 1.0f}}
 	};
 
 	hmckModel = std::make_unique<HmckModel>(hmckDevice, vertices);
@@ -103,7 +104,7 @@ void Hmck::FirstApp::createCommandBuffer()
 		renderPassInfo.renderArea.extent = hmckSwapChain.getSwapChainExtent();
 
 		std::array<VkClearValue, 2> clearValues{};
-		clearValues[0].color = { 0.1f, 0.1f, 0.1f, 1.0f };
+		clearValues[0].color = { 0.1f, 0.1f, 0.1f, 1.0f }; // clear color
 		clearValues[1].depthStencil = { 1.0f, 0 };
 
 		renderPassInfo.clearValueCount = static_cast<uint32_t>(clearValues.size());
