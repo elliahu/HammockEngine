@@ -1,1 +1,1 @@
-![Hammock Engnine Logo](http://url/to/img.png)
+![Hammock Engnine Logo](https://raw.githubusercontent.com/elliahu/HammockEngine/master/Img/hammock-engine-logo.png)

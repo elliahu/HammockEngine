@@ -1,1 +1,0 @@
-![Hammock Engnine Logo](https://github.com/elliahu/HammockEngine/blob/master/Img/hammock-engine-logo.png)
