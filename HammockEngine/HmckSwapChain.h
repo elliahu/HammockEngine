@@ -6,6 +6,7 @@
 // std lib headers
 #include <string>
 #include <vector>
+#include <memory>
 
 #include "HmckDevice.h"
 
@@ -16,6 +17,7 @@ namespace Hmck {
         static constexpr int MAX_FRAMES_IN_FLIGHT = 2;
 
         HmckSwapChain(HmckDevice& deviceRef, VkExtent2D windowExtent);
+        HmckSwapChain(HmckDevice& deviceRef, VkExtent2D windowExtent, std::shared_ptr<HmckSwapChain> previous);
         ~HmckSwapChain();
 
         HmckSwapChain(const HmckSwapChain&) = delete;
@@ -39,6 +41,7 @@ namespace Hmck {
         VkResult submitCommandBuffers(const VkCommandBuffer* buffers, uint32_t* imageIndex);
 
     private:
+        void init();
         void createSwapChain();
         void createImageViews();
         void createDepthResources();
@@ -65,10 +68,12 @@ namespace Hmck {
         std::vector<VkImage> swapChainImages;
         std::vector<VkImageView> swapChainImageViews;
 
+
         HmckDevice& device;
         VkExtent2D windowExtent;
 
         VkSwapchainKHR swapChain;
+        std::shared_ptr<HmckSwapChain> oldSwapChain;
 
         std::vector<VkSemaphore> imageAvailableSemaphores;
         std::vector<VkSemaphore> renderFinishedSemaphores;

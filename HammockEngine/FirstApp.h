@@ -32,6 +32,7 @@ namespace Hmck
 		void createPipelineLayout();
 		void createPipeline();
 		void createCommandBuffer();
+		void freeCommandBuffers();
 		void drawFrame();
 		void recreateSwapChain();
 		void recordCommandBuffer(int imageIndex);

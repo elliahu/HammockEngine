@@ -54,6 +54,9 @@ void Hmck::FirstApp::createPipelineLayout()
 
 void Hmck::FirstApp::createPipeline()
 {
+	assert(hmckSwapChain != nullptr && "Cannot create pipeline before swap chain");
+	assert(pipelineLayout != nullptr && "Cannot create pipeline before pipeline layout");
+
 	HmckPipelineConfigInfo pipelineConfig{};
 	HmckPipeline::defaultHmckPipelineConfigInfo(pipelineConfig);
 	pipelineConfig.renderPass = hmckSwapChain->getRenderPass();
@@ -134,6 +137,13 @@ void Hmck::FirstApp::recordCommandBuffer(int imageIndex)
 	}
 }
 
+void Hmck::FirstApp::freeCommandBuffers()
+{
+	vkFreeCommandBuffers(
+		hmckDevice.device(), hmckDevice.getCommandPool(), static_cast<uint32_t>(commandBuffers.size()), commandBuffers.data());
+	commandBuffers.clear();
+}
+
 void Hmck::FirstApp::drawFrame()
 {
 	uint32_t imageIndex;
@@ -173,8 +183,22 @@ void Hmck::FirstApp::recreateSwapChain()
 		extent = hmckWindow.getExtent();
 		glfwWaitEvents();
 	}
-
 	vkDeviceWaitIdle(hmckDevice.device());
-	hmckSwapChain = std::make_unique<HmckSwapChain>(hmckDevice, extent);
+
+	if (hmckSwapChain == nullptr)
+	{
+		hmckSwapChain = std::make_unique<HmckSwapChain>(hmckDevice, extent);
+	}
+	else {
+		hmckSwapChain = std::make_unique<HmckSwapChain>(hmckDevice, extent, std::move(hmckSwapChain));
+		if (hmckSwapChain->imageCount() != commandBuffers.size())
+		{
+			freeCommandBuffers();
+			createCommandBuffer();
+		}
+	}
+	
+
+	// if render pass compatible do nothing else
 	createPipeline();
 }
