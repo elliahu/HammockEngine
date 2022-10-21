@@ -42,7 +42,7 @@ namespace Hmck
 		~HmckPipeline();
 
 		HmckPipeline(const HmckPipeline&) = delete;
-		void operator =(const HmckPipeline&) = delete;
+		HmckPipeline& operator =(const HmckPipeline&) = delete;
 
 		static void defaultHmckPipelineConfigInfo(HmckPipelineConfigInfo& configInfo, uint32_t width, uint32_t height);
 

@@ -19,7 +19,7 @@ namespace Hmck {
         ~HmckSwapChain();
 
         HmckSwapChain(const HmckSwapChain&) = delete;
-        void operator=(const HmckSwapChain&) = delete;
+        HmckSwapChain& operator=(const HmckSwapChain&) = delete;
 
         VkFramebuffer getFrameBuffer(int index) { return swapChainFramebuffers[index]; }
         VkRenderPass getRenderPass() { return renderPass; }

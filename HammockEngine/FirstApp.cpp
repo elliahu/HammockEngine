@@ -4,7 +4,7 @@ Hmck::FirstApp::FirstApp()
 {
 	loadModels();
 	createPipelineLayout();
-	createPipeline();
+	recreateSwapChain();
 	createCommandBuffer();
 }
 
@@ -57,10 +57,10 @@ void Hmck::FirstApp::createPipeline()
 	HmckPipelineConfigInfo pipelineConfig{};
 	HmckPipeline::defaultHmckPipelineConfigInfo(
 		pipelineConfig,
-		hmckSwapChain.width(),
-		hmckSwapChain.height());
+		hmckSwapChain->width(),
+		hmckSwapChain->height());
 
-	pipelineConfig.renderPass = hmckSwapChain.getRenderPass();
+	pipelineConfig.renderPass = hmckSwapChain->getRenderPass();
 	pipelineConfig.pipelineLayout = pipelineLayout;
 	hmckPipeline = std::make_unique<HmckPipeline>(
 		hmckDevice,
@@ -72,7 +72,7 @@ void Hmck::FirstApp::createPipeline()
 
 void Hmck::FirstApp::createCommandBuffer()
 {
-	commandBuffers.resize(hmckSwapChain.imageCount());
+	commandBuffers.resize(hmckSwapChain->imageCount());
 
 	VkCommandBufferAllocateInfo allocInfo{};
 	allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
@@ -85,60 +85,89 @@ void Hmck::FirstApp::createCommandBuffer()
 		throw std::runtime_error("failed to allocate command buffer");
 	}
 
-	for (int i = 0; i < commandBuffers.size(); i++)
+	
+}
+
+void Hmck::FirstApp::recordCommandBuffer(int imageIndex)
+{
+	VkCommandBufferBeginInfo beginInfo{};
+	beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+
+	if (vkBeginCommandBuffer(commandBuffers[imageIndex], &beginInfo) != VK_SUCCESS)
 	{
-		VkCommandBufferBeginInfo beginInfo{};
-		beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+		throw std::runtime_error("failed to begin recording commadn buffer");
+	}
 
-		if (vkBeginCommandBuffer(commandBuffers[i], &beginInfo) != VK_SUCCESS)
-		{
-			throw std::runtime_error("failed to begin recording commadn buffer");
-		}
+	VkRenderPassBeginInfo renderPassInfo{};
+	renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
+	renderPassInfo.renderPass = hmckSwapChain->getRenderPass();
+	renderPassInfo.framebuffer = hmckSwapChain->getFrameBuffer(imageIndex);
 
-		VkRenderPassBeginInfo renderPassInfo{};
-		renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
-		renderPassInfo.renderPass = hmckSwapChain.getRenderPass();
-		renderPassInfo.framebuffer = hmckSwapChain.getFrameBuffer(i);
+	renderPassInfo.renderArea.offset = { 0, 0 };
+	renderPassInfo.renderArea.extent = hmckSwapChain->getSwapChainExtent();
 
-		renderPassInfo.renderArea.offset = { 0, 0 };
-		renderPassInfo.renderArea.extent = hmckSwapChain.getSwapChainExtent();
+	std::array<VkClearValue, 2> clearValues{};
+	clearValues[0].color = { 0.1f, 0.1f, 0.1f, 1.0f }; // clear color
+	clearValues[1].depthStencil = { 1.0f, 0 };
 
-		std::array<VkClearValue, 2> clearValues{};
-		clearValues[0].color = { 0.1f, 0.1f, 0.1f, 1.0f }; // clear color
-		clearValues[1].depthStencil = { 1.0f, 0 };
+	renderPassInfo.clearValueCount = static_cast<uint32_t>(clearValues.size());
+	renderPassInfo.pClearValues = clearValues.data();
 
-		renderPassInfo.clearValueCount = static_cast<uint32_t>(clearValues.size());
-		renderPassInfo.pClearValues = clearValues.data();
+	vkCmdBeginRenderPass(commandBuffers[imageIndex], &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
 
-		vkCmdBeginRenderPass(commandBuffers[i], &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
+	hmckPipeline->bind(commandBuffers[imageIndex]);
+	hmckModel->bind(commandBuffers[imageIndex]);
+	hmckModel->draw(commandBuffers[imageIndex]);
 
-		hmckPipeline->bind(commandBuffers[i]);	
-		hmckModel->bind(commandBuffers[i]);
-		hmckModel->draw(commandBuffers[i]);
+	vkCmdEndRenderPass(commandBuffers[imageIndex]);
 
-		vkCmdEndRenderPass(commandBuffers[i]);
-
-		if (vkEndCommandBuffer(commandBuffers[i]) != VK_SUCCESS)
-		{
-			throw std::runtime_error("failed to record command buffer");
-		}
+	if (vkEndCommandBuffer(commandBuffers[imageIndex]) != VK_SUCCESS)
+	{
+		throw std::runtime_error("failed to record command buffer");
 	}
 }
 
 void Hmck::FirstApp::drawFrame()
 {
 	uint32_t imageIndex;
-	auto result = hmckSwapChain.acquireNextImage(&imageIndex);
+	auto result = hmckSwapChain->acquireNextImage(&imageIndex);
+
+	if (result == VK_ERROR_OUT_OF_DATE_KHR)
+	{
+		recreateSwapChain();
+		return;
+	}
 
 	if (result != VK_SUCCESS && result != VK_SUBOPTIMAL_KHR)
 	{
 		throw std::runtime_error("failed to aquire swap chain image!");
 	}
 
-	result = hmckSwapChain.submitCommandBuffers(&commandBuffers[imageIndex], &imageIndex);
+	recordCommandBuffer(imageIndex);
+	result = hmckSwapChain->submitCommandBuffers(&commandBuffers[imageIndex], &imageIndex);
+	if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR || hmckWindow.wasWindowResized())
+	{
+		hmckWindow.resetWindowResizedFlag();
+		recreateSwapChain();
+		return;
+	}
 
 	if (result != VK_SUCCESS)
 	{
 		throw std::runtime_error("failed to present swap chain image");
 	}
+}
+
+void Hmck::FirstApp::recreateSwapChain()
+{
+	auto extent = hmckWindow.getExtent();
+	while (extent.width == 0 || extent.height == 0)
+	{
+		extent = hmckWindow.getExtent();
+		glfwWaitEvents();
+	}
+
+	vkDeviceWaitIdle(hmckDevice.device());
+	hmckSwapChain = std::make_unique<HmckSwapChain>(hmckDevice, extent);
+	createPipeline();
 }

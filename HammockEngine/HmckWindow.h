@@ -11,11 +11,13 @@ namespace Hmck
 	{
 	private:
 		GLFWwindow* window;
-		const int width;
-		const int height;
+		int width;
+		int height;
+		bool framebufferResized = false;
 		std::string windowName;
 
 		void initWindow();
+		static void framebufferResizeCallback(GLFWwindow* window, int width, int height);
 
 	public:
 		HmckWindow(int windowWidth, int windowHeight, std::string _windowName);
@@ -28,6 +30,8 @@ namespace Hmck
 		bool shouldClose();
 		VkExtent2D getExtent() { return { static_cast<uint32_t>(width), static_cast<uint32_t>(height) }; }
 		void createWindowSurface(VkInstance instance, VkSurfaceKHR* surface);
+		bool wasWindowResized(){ return framebufferResized; }
+		void resetWindowResizedFlag() { framebufferResized = false; }
 	};
 } 
 

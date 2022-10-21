@@ -36,7 +36,7 @@ namespace Hmck {
 
 		// Not copyable or movable
 		HmckDevice(const HmckDevice&) = delete;
-		void operator=(const HmckDevice&) = delete;
+		HmckDevice& operator=(const HmckDevice&) = delete;
 		HmckDevice(HmckDevice&&) = delete;
 		HmckDevice& operator=(HmckDevice&&) = delete;
 

@@ -33,10 +33,12 @@ namespace Hmck
 		void createPipeline();
 		void createCommandBuffer();
 		void drawFrame();
+		void recreateSwapChain();
+		void recordCommandBuffer(int imageIndex);
 
 		HmckWindow hmckWindow{ WINDOW_WIDTH, WINDOW_HEIGHT, "First Vulkan App" };
 		HmckDevice hmckDevice{ hmckWindow };
-		HmckSwapChain hmckSwapChain{ hmckDevice, hmckWindow.getExtent() };
+		std::unique_ptr<HmckSwapChain> hmckSwapChain;
 		std::unique_ptr<HmckPipeline> hmckPipeline;
 		VkPipelineLayout pipelineLayout;
 		std::vector<VkCommandBuffer> commandBuffers;
