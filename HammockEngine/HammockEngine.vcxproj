@@ -30,6 +30,7 @@
   <ItemGroup>
     <ClInclude Include="FirstApp.h" />
     <ClInclude Include="HmckDevice.h" />
+    <ClInclude Include="HmckGameObject.h" />
     <ClInclude Include="HmckModel.h" />
     <ClInclude Include="HmckPipeline.h" />
     <ClInclude Include="HmckSwapChain.h" />

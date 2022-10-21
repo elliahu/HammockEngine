@@ -4,11 +4,12 @@
 #include "HmckPipeline.h"
 #include "HmckDevice.h"
 #include "HmckSwapChain.h"
-#include "HmckModel.h"
+#include "HmckGameObject.h"
 
 #define GLM_FORCE_RADIANS
 #define GLM_FORCE_DEPTH_ZERO_TO_ONE
 #include <glm/glm.hpp>
+#include <glm/gtc/constants.hpp>
 
 #include <memory>
 #include <vector>
@@ -16,13 +17,12 @@
 
 namespace Hmck
 {
-	/// <summary>
 	/// scalar float: N = 4 Bytes
 	/// vec2: 2N = 8 Bytes
 	/// vec3 (or vec4): 4N = 16 Bytes
 	/// taken from 15.6.4 Offset and Stride Assignment
-	/// </summary>
 	struct HmckSimplePushConstantData {
+		glm::mat2 transform{1.f};
 		glm::vec2 offset;
 		alignas(16) glm::vec3 color;
 	};
@@ -43,7 +43,7 @@ namespace Hmck
 		void run();
 
 	private:
-		void loadModels();
+		void loadGameObjects();
 		void createPipelineLayout();
 		void createPipeline();
 		void createCommandBuffer();
@@ -51,6 +51,7 @@ namespace Hmck
 		void drawFrame();
 		void recreateSwapChain();
 		void recordCommandBuffer(int imageIndex);
+		void renderGameObjects(VkCommandBuffer commandBuffer);
 
 		HmckWindow hmckWindow{ WINDOW_WIDTH, WINDOW_HEIGHT, "First Vulkan App" };
 		HmckDevice hmckDevice{ hmckWindow };
@@ -58,7 +59,7 @@ namespace Hmck
 		std::unique_ptr<HmckPipeline> hmckPipeline;
 		VkPipelineLayout pipelineLayout;
 		std::vector<VkCommandBuffer> commandBuffers;
-		std::unique_ptr<HmckModel> hmckModel;
+		std::vector<HmckGameObject> gameObjects;
 	};
 
 }
