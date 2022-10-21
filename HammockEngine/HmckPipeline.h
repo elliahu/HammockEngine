@@ -16,8 +16,6 @@ namespace Hmck
 		HmckPipelineConfigInfo(const HmckPipelineConfigInfo&) = delete;
 		HmckPipelineConfigInfo& operator=(const HmckPipelineConfigInfo&) = delete;
 
-		VkViewport viewport;
-		VkRect2D scissor;
 		VkPipelineViewportStateCreateInfo viewportInfo;
 		VkPipelineInputAssemblyStateCreateInfo inputAssemblyInfo;
 		VkPipelineRasterizationStateCreateInfo rasterizationInfo;
@@ -25,6 +23,8 @@ namespace Hmck
 		VkPipelineColorBlendAttachmentState colorBlendAttachment;
 		VkPipelineColorBlendStateCreateInfo colorBlendInfo;
 		VkPipelineDepthStencilStateCreateInfo depthStencilInfo;
+		std::vector<VkDynamicState> dynamicStateEnables;
+		VkPipelineDynamicStateCreateInfo dynamicStateInfo;
 		VkPipelineLayout pipelineLayout = nullptr;
 		VkRenderPass renderPass = nullptr;
 		uint32_t subpass = 0;
@@ -44,7 +44,8 @@ namespace Hmck
 		HmckPipeline(const HmckPipeline&) = delete;
 		HmckPipeline& operator =(const HmckPipeline&) = delete;
 
-		static void defaultHmckPipelineConfigInfo(HmckPipelineConfigInfo& configInfo, uint32_t width, uint32_t height);
+		static void defaultHmckPipelineConfigInfo(
+			HmckPipelineConfigInfo& configInfo);
 
 		void bind(VkCommandBuffer commandBuffer);
 

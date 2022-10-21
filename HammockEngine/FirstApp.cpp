@@ -55,11 +55,7 @@ void Hmck::FirstApp::createPipelineLayout()
 void Hmck::FirstApp::createPipeline()
 {
 	HmckPipelineConfigInfo pipelineConfig{};
-	HmckPipeline::defaultHmckPipelineConfigInfo(
-		pipelineConfig,
-		hmckSwapChain->width(),
-		hmckSwapChain->height());
-
+	HmckPipeline::defaultHmckPipelineConfigInfo(pipelineConfig);
 	pipelineConfig.renderPass = hmckSwapChain->getRenderPass();
 	pipelineConfig.pipelineLayout = pipelineLayout;
 	hmckPipeline = std::make_unique<HmckPipeline>(
@@ -114,6 +110,17 @@ void Hmck::FirstApp::recordCommandBuffer(int imageIndex)
 	renderPassInfo.pClearValues = clearValues.data();
 
 	vkCmdBeginRenderPass(commandBuffers[imageIndex], &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
+
+	VkViewport viewport{};
+	viewport.x = 0.0f;
+	viewport.y = 0.0f;
+	viewport.width = static_cast<float>(hmckSwapChain->getSwapChainExtent().width);
+	viewport.height = static_cast<float>(hmckSwapChain->getSwapChainExtent().height);
+	viewport.minDepth = 0.0f;
+	viewport.maxDepth = 1.0f;
+	VkRect2D scissor{ {0,0}, hmckSwapChain->getSwapChainExtent() };
+	vkCmdSetViewport(commandBuffers[imageIndex], 0, 1, &viewport);
+	vkCmdSetScissor(commandBuffers[imageIndex], 0, 1, &scissor);
 
 	hmckPipeline->bind(commandBuffers[imageIndex]);
 	hmckModel->bind(commandBuffers[imageIndex]);
