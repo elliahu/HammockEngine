@@ -51,9 +51,14 @@ void Hmck::HmckSimpleRenderSystem::createPipeline(VkRenderPass renderPass)
 }
 
 
-void Hmck::HmckSimpleRenderSystem::renderGameObjects(VkCommandBuffer commandBuffer, std::vector<HmckGameObject>& gameObjects, const HmckCamera& camera)
+void Hmck::HmckSimpleRenderSystem::renderGameObjects(
+	VkCommandBuffer commandBuffer, 
+	std::vector<HmckGameObject>& gameObjects, 
+	const HmckCamera& camera)
 {
 	hmckPipeline->bind(commandBuffer);
+
+	auto projectionView = camera.getProjection() * camera.getView();
 
 	for (auto& obj : gameObjects)
 	{
@@ -63,7 +68,7 @@ void Hmck::HmckSimpleRenderSystem::renderGameObjects(VkCommandBuffer commandBuff
 
 		HmckSimplePushConstantData push{};
 		push.color = obj.color;
-		push.transform = camera.getProjection() * obj.transform.mat4();
+		push.transform = projectionView * obj.transform.mat4();
 
 		vkCmdPushConstants(
 			commandBuffer,
