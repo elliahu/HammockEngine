@@ -5,6 +5,7 @@
 #include "HmckGameObject.h"
 #include "HmckRenderer.h"
 #include "HmckSimpleRenderSystem.h"
+#include "HmckModel.h"
 
 
 #define GLM_FORCE_RADIANS

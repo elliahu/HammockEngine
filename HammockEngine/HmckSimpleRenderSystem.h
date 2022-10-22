@@ -20,8 +20,7 @@ namespace Hmck
 	/// vec3 (or vec4): 4N = 16 Bytes
 	/// taken from 15.6.4 Offset and Stride Assignment
 	struct HmckSimplePushConstantData {
-		glm::mat2 transform{ 1.f };
-		glm::vec2 offset;
+		glm::mat4 transform{ 1.f };
 		alignas(16) glm::vec3 color;
 	};
 

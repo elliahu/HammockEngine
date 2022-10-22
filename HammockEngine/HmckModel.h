@@ -16,8 +16,10 @@ namespace Hmck
 	{
 	public:
 
+		// when making changes to Vertex struct,
+		// dont forget to update Vertex::getAttributeDescriptions() to match
 		struct Vertex {
-			glm::vec2 position;
+			glm::vec3 position;
 			glm::vec3 color;
 
 			static std::vector<VkVertexInputBindingDescription> getBindingDescriptions();
