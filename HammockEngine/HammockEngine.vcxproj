@@ -20,6 +20,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="FirstApp.cpp" />
+    <ClCompile Include="HmckBuffer.cpp" />
     <ClCompile Include="HmckCamera.cpp" />
     <ClCompile Include="HmckDevice.cpp" />
     <ClCompile Include="HmckGameObject.cpp" />
@@ -34,8 +35,10 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="FirstApp.h" />
+    <ClInclude Include="HmckBuffer.h" />
     <ClInclude Include="HmckCamera.h" />
     <ClInclude Include="HmckDevice.h" />
+    <ClInclude Include="HmckFrameInfo.h" />
     <ClInclude Include="HmckGameObject.h" />
     <ClInclude Include="HmckModel.h" />
     <ClInclude Include="HmckPipeline.h" />

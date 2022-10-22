@@ -4,6 +4,7 @@
 #include "HmckDevice.h"
 #include "HmckGameObject.h"
 #include "HmckCamera.h"
+#include "HmckFrameInfo.h"
 
 #define GLM_FORCE_RADIANS
 #define GLM_FORCE_DEPTH_ZERO_TO_ONE
@@ -36,7 +37,7 @@ namespace Hmck
 		HmckSimpleRenderSystem(const HmckSimpleRenderSystem&) = delete;
 		HmckSimpleRenderSystem& operator=(const HmckSimpleRenderSystem&) = delete;
 
-		void renderGameObjects(VkCommandBuffer commandBuffer, std::vector<HmckGameObject>& gameObjects, const HmckCamera& camera);
+		void renderGameObjects(HmckFrameInfo& frameInfo, std::vector<HmckGameObject>& gameObjects);
 
 	private:
 		void createPipelineLayout();

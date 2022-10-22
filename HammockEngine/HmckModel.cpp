@@ -23,17 +23,7 @@ Hmck::HmckModel::HmckModel(HmckDevice& device, const HmckModel::Builder& builder
 	createIndexBuffers(builder.indices);
 }
 
-Hmck::HmckModel::~HmckModel()
-{
-	vkDestroyBuffer(hmckDevice.device(), vertexBuffer, nullptr);
-	vkFreeMemory(hmckDevice.device(), vertexBufferMemory, nullptr);
-
-	if (hasIndexBuffer)
-	{
-		vkDestroyBuffer(hmckDevice.device(), indexBuffer, nullptr);
-		vkFreeMemory(hmckDevice.device(), indexBufferMemory, nullptr);
-	}
-}
+Hmck::HmckModel::~HmckModel(){}
 
 
 std::unique_ptr<Hmck::HmckModel> Hmck::HmckModel::createModelFromFile(HmckDevice& device, const std::string& filepath)
@@ -58,52 +48,45 @@ void Hmck::HmckModel::draw(VkCommandBuffer commandBuffer)
 
 void Hmck::HmckModel::bind(VkCommandBuffer commandBuffer)
 {
-	VkBuffer buffers[] = { vertexBuffer };
+	VkBuffer buffers[] = { vertexBuffer->getBuffer()};
 	VkDeviceSize offsets[] = { 0 };
 	vkCmdBindVertexBuffers(commandBuffer, 0, 1, buffers, offsets);
 
 	if (hasIndexBuffer)
 	{
-		vkCmdBindIndexBuffer(commandBuffer, indexBuffer, 0, VK_INDEX_TYPE_UINT32);
+		vkCmdBindIndexBuffer(commandBuffer, indexBuffer->getBuffer() , 0, VK_INDEX_TYPE_UINT32);
 	}
 }
 
 void Hmck::HmckModel::createVertexBuffers(const std::vector<Vertex>& vertices)
 {
 	// copy data to staging memory on device, then copy from staging to v/i memory
-
 	vertexCount = static_cast<uint32_t>(vertices.size());
 	assert(vertexCount >= 3 && "Vertex count must be at least 3");
 	VkDeviceSize bufferSize = sizeof(vertices[0]) * vertexCount;
+	uint32_t vertexSize = sizeof(vertices[0]);
 
-	VkBuffer stagingBufer;
-	VkDeviceMemory stagingBufferMemory;
-
-	hmckDevice.createBuffer(
-		bufferSize,
+	HmckBuffer stagingBuffer{
+		hmckDevice,
+		vertexSize,
+		vertexCount,
 		VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
 		VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
-		stagingBufer,
-		stagingBufferMemory
-	);
+	};
 
-	void* data;
-	vkMapMemory(hmckDevice.device(), stagingBufferMemory, 0, bufferSize, 0, &data);
-	memcpy(data, vertices.data(), static_cast<size_t>(bufferSize));
-	vkUnmapMemory(hmckDevice.device(), stagingBufferMemory);
 
-	hmckDevice.createBuffer(
-		bufferSize,
+	stagingBuffer.map();
+	stagingBuffer.writeToBuffer((void*)vertices.data());
+
+	vertexBuffer = std::make_unique<HmckBuffer>(
+		hmckDevice,
+		vertexSize,
+		vertexCount,
 		VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT,
-		VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
-		vertexBuffer,
-		vertexBufferMemory
+		VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT
 	);
 
-	hmckDevice.copyBuffer(stagingBufer, vertexBuffer, bufferSize);
-
-	vkDestroyBuffer(hmckDevice.device(), stagingBufer, nullptr);
-	vkFreeMemory(hmckDevice.device(), stagingBufferMemory, nullptr);
+	hmckDevice.copyBuffer(stagingBuffer.getBuffer(), vertexBuffer->getBuffer(), bufferSize);
 }
 
 void Hmck::HmckModel::createIndexBuffers(const std::vector<uint32_t>& indices)
@@ -118,35 +101,29 @@ void Hmck::HmckModel::createIndexBuffers(const std::vector<uint32_t>& indices)
 	}
 
 	VkDeviceSize bufferSize = sizeof(indices[0]) * indexCount;
+	uint32_t indexSize = sizeof(indices[0]);
 
-	VkBuffer stagingBufer;
-	VkDeviceMemory stagingBufferMemory;
-
-	hmckDevice.createBuffer(
-		bufferSize,
+	HmckBuffer stagingBuffer{
+		hmckDevice,
+		indexSize,
+		indexCount,
 		VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
-		VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
-		stagingBufer,
-		stagingBufferMemory
-	);
+		VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT
+	};
+	
+	stagingBuffer.map();
+	stagingBuffer.writeToBuffer((void*)indices.data());
 
-	void* data;
-	vkMapMemory(hmckDevice.device(), stagingBufferMemory, 0, bufferSize, 0, &data);
-	memcpy(data, indices.data(), static_cast<size_t>(bufferSize));
-	vkUnmapMemory(hmckDevice.device(), stagingBufferMemory);
-
-	hmckDevice.createBuffer(
-		bufferSize,
+	indexBuffer = std::make_unique<HmckBuffer>(
+		hmckDevice,
+		indexSize,
+		indexCount,
 		VK_BUFFER_USAGE_INDEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT,
-		VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
-		indexBuffer,
-		indexBufferMemory
+		VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT
 	);
 
-	hmckDevice.copyBuffer(stagingBufer, indexBuffer, bufferSize);
-
-	vkDestroyBuffer(hmckDevice.device(), stagingBufer, nullptr);
-	vkFreeMemory(hmckDevice.device(), stagingBufferMemory, nullptr);
+	
+	hmckDevice.copyBuffer(stagingBuffer.getBuffer(), indexBuffer->getBuffer(), bufferSize);
 }
 
 std::vector<VkVertexInputBindingDescription> Hmck::HmckModel::Vertex::getBindingDescriptions()

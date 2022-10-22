@@ -9,6 +9,20 @@ Hmck::FirstApp::~FirstApp(){}
 
 void Hmck::FirstApp::run()
 {
+    std::vector<std::unique_ptr<HmckBuffer>> uboBuffers{ HmckSwapChain::MAX_FRAMES_IN_FLIGHT };
+
+    for (int i = 0; i < uboBuffers.size(); i++)
+    {
+        uboBuffers[i] = std::make_unique<HmckBuffer>(
+            hmckDevice,
+            sizeof(HmckGlobalUbo),
+            1,
+            VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
+            VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT
+        );
+        uboBuffers[i]->map();
+    }
+
 	HmckSimpleRenderSystem simpleRenderSystem{ hmckDevice,hmckRenderer.getSwapChainRenderPass() };
     HmckCamera camera{};
     camera.setViewTarget(glm::vec3(-1.f, -2.f, 2.f), glm::vec3(0.f, 0.f, 2.5f));
@@ -35,10 +49,23 @@ void Hmck::FirstApp::run()
 
 		if (auto commandBuffer = hmckRenderer.beginFrame())
 		{
+            int frameIndex = hmckRenderer.getFrameIndex();
+            HmckFrameInfo frameInfo{
+                frameIndex,
+                frameTime,
+                commandBuffer,
+                camera
+            };
+
+            // update
+            HmckGlobalUbo ubo{};
+            ubo.projectionView = camera.getProjection() * camera.getView();
+            uboBuffers[frameIndex]->writeToBuffer(&ubo);
+            //uboBuffers[frameIndex]->flush();
+
+            // render
 			hmckRenderer.beginSwapChainRenderPass(commandBuffer);
-
-			simpleRenderSystem.renderGameObjects(commandBuffer,gameObjects, camera);
-
+			simpleRenderSystem.renderGameObjects(frameInfo,gameObjects);
 			hmckRenderer.endSwapChainRenderPass(commandBuffer);
 			hmckRenderer.endFrame();
 		}

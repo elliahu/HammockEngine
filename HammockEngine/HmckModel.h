@@ -1,6 +1,7 @@
 #pragma once
 #include "HmckDevice.h"
 #include "HmckUtils.h"
+#include "HmckBuffer.h"
 
 #define GLM_FORCE_RADIANS
 #define GLM_FORCE_DEPTH_ZERO_TO_ONE
@@ -70,14 +71,12 @@ namespace Hmck
 
 		HmckDevice& hmckDevice;
 
-		VkBuffer vertexBuffer;
-		VkDeviceMemory vertexBufferMemory;
+		std::unique_ptr<HmckBuffer> vertexBuffer;
 		uint32_t vertexCount;
 
 		bool hasIndexBuffer = false;
-		
-		VkBuffer indexBuffer;
-		VkDeviceMemory indexBufferMemory;
+
+		std::unique_ptr<HmckBuffer> indexBuffer;
 		uint32_t indexCount;
 	
 	};

@@ -8,6 +8,7 @@
 #include "HmckModel.h"
 #include "HmckCamera.h"
 #include "KeyboardMovementController.h"
+#include "HmckBuffer.h"
 
 
 #define GLM_FORCE_RADIANS
@@ -22,6 +23,12 @@
 
 namespace Hmck
 {
+	struct HmckGlobalUbo {
+		glm::mat4 projectionView{ 1.f };
+		glm::vec3 lightDirection = glm::normalize(glm::vec3{ 1.f, -3.f, -1.f });
+	};
+
+
 	class FirstApp
 	{
 	public:

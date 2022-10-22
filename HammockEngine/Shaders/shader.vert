@@ -22,14 +22,6 @@ const float AMBIENT = 0.07;
 void main() 
 {
     gl_Position = push.transform * vec4(position, 1.0);
-
-    // temporary
-    // only works correctly if scale is uniform
-    //vec3 normalWorldSpace = normalize(mat3(push.modelMatrix) * normal);
-
-    // computationaly heavy to calculate normal matrix on GPU
-    //mat3 normalMatrix = transpose(inverse(mat3(push.modelMatrix)));
-    //vec3 normalWorldSpace = normalize(normalMatrix * normal);
     
     vec3 normalWorldSpace = normalize(mat3(push.normalMatrix) * normal);
 
