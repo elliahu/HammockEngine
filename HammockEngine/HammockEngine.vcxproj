@@ -28,6 +28,7 @@
     <ClCompile Include="HmckSimpleRenderSystem.cpp" />
     <ClCompile Include="HmckSwapChain.cpp" />
     <ClCompile Include="HmckWindow.cpp" />
+    <ClCompile Include="KeyboardMovementController.cpp" />
     <ClCompile Include="main.cpp" />
   </ItemGroup>
   <ItemGroup>
@@ -41,6 +42,7 @@
     <ClInclude Include="HmckSimpleRenderSystem.h" />
     <ClInclude Include="HmckSwapChain.h" />
     <ClInclude Include="HmckWindow.h" />
+    <ClInclude Include="KeyboardMovementController.h" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <VCProjectVersion>16.0</VCProjectVersion>

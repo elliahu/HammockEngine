@@ -32,6 +32,7 @@ namespace Hmck
 		void createWindowSurface(VkInstance instance, VkSurfaceKHR* surface);
 		bool wasWindowResized(){ return framebufferResized; }
 		void resetWindowResizedFlag() { framebufferResized = false; }
+		GLFWwindow* getGLFWwindow() const { return window; }
 	};
 } 
 

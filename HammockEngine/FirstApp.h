@@ -7,6 +7,7 @@
 #include "HmckSimpleRenderSystem.h"
 #include "HmckModel.h"
 #include "HmckCamera.h"
+#include "KeyboardMovementController.h"
 
 
 #define GLM_FORCE_RADIANS
@@ -17,6 +18,7 @@
 #include <memory>
 #include <vector>
 #include <stdexcept>
+#include <chrono>
 
 namespace Hmck
 {

@@ -5,23 +5,32 @@ Hmck::FirstApp::FirstApp()
 	loadGameObjects();
 }
 
-Hmck::FirstApp::~FirstApp()
-{
-}
+Hmck::FirstApp::~FirstApp(){}
 
 void Hmck::FirstApp::run()
 {
 	HmckSimpleRenderSystem simpleRenderSystem{ hmckDevice,hmckRenderer.getSwapChainRenderPass() };
     HmckCamera camera{};
-    //camera.setViewDirection(glm::vec3(0.f), glm::vec3(.5f, 0.f, 1.f));
     camera.setViewTarget(glm::vec3(-1.f, -2.f, 2.f), glm::vec3(0.f, 0.f, 2.5f));
+
+    auto viewerObject = HmckGameObject::createGameObject();
+    KeyboardMovementController cameraController{};
+
+    auto currentTime = std::chrono::high_resolution_clock::now();
 
 	while (!hmckWindow.shouldClose())
 	{
 		glfwPollEvents();
 
+        // gameloop timing
+        auto newTime = std::chrono::high_resolution_clock::now();
+        float frameTime = std::chrono::duration<float, std::chrono::seconds::period>(newTime - currentTime).count();
+        currentTime = newTime;
+
+        cameraController.moveInPlaneXZ(hmckWindow.getGLFWwindow(), frameTime, viewerObject);
+        camera.setViewYXZ(viewerObject.transform.translation, viewerObject.transform.rotation);
+
         float aspect = hmckRenderer.getAspectRatio();
-        //camera.setOrthographicProjection(-aspect, aspect, -1, 1, -1, 1);
         camera.setPerspectiveProjection(glm::radians(50.f), aspect, 0.1f, 1000.f);
 
 		if (auto commandBuffer = hmckRenderer.beginFrame())
