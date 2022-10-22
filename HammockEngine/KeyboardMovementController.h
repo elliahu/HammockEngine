@@ -15,8 +15,8 @@ namespace Hmck
             int moveRight = GLFW_KEY_D;
             int moveForward = GLFW_KEY_W;
             int moveBackward = GLFW_KEY_S;
-            int moveUp = GLFW_KEY_E;
-            int moveDown = GLFW_KEY_Q;
+            int moveUp = GLFW_KEY_SPACE;
+            int moveDown = GLFW_KEY_LEFT_SHIFT;
             int lookLeft = GLFW_KEY_LEFT;
             int lookRight = GLFW_KEY_RIGHT;
             int lookUp = GLFW_KEY_UP;
