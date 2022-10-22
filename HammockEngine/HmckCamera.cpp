@@ -1,6 +1,6 @@
 #include "HmckCamera.h"
 
-void Hmck::HmckCamera::setOrthographicProjection(float left, float right, float top, float bottom, float far, float near)
+void Hmck::HmckCamera::setOrthographicProjection(float left, float right, float top, float bottom, float near, float far)
 {
 	projectionMatrix = glm::mat4{ 1.0f };
 	projectionMatrix[0][0] = 2.f / (right - left);
@@ -11,7 +11,7 @@ void Hmck::HmckCamera::setOrthographicProjection(float left, float right, float 
 	projectionMatrix[3][2] = -near / (far - near);
 }
 
-void Hmck::HmckCamera::setPerspectiveProjection(float fovy, float aspect, float far, float near)
+void Hmck::HmckCamera::setPerspectiveProjection(float fovy, float aspect, float near, float far)
 {
 	assert(glm::abs(aspect - std::numeric_limits<float>::epsilon()) > 0.0f);
 	const float tanHalfFovy = tan(fovy / 2.f);

@@ -60,7 +60,7 @@ namespace Hmck
 		
 		HmckDevice& hmckDevice; // potentionaly memmory unsafe
 		VkPipeline graphicsPipeline;
-		VkShaderModule vertSahderModule;
+		VkShaderModule vertShaderModule;
 		VkShaderModule fragShaderModule;
 	};
 }
