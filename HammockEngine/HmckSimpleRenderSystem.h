@@ -22,10 +22,8 @@ namespace Hmck
 	/// taken from 15.6.4 Offset and Stride Assignment
 	struct HmckSimplePushConstantData {
 		glm::mat4 transform{ 1.f };
-		alignas(16) glm::vec3 color;
+		glm::mat4 normalMatrix{ 1.f };
 	};
-
-
 
 	class HmckSimpleRenderSystem
 	{

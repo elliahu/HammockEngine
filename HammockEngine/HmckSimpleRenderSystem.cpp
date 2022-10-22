@@ -63,8 +63,9 @@ void Hmck::HmckSimpleRenderSystem::renderGameObjects(
 	for (auto& obj : gameObjects)
 	{
 		HmckSimplePushConstantData push{};
-		push.color = obj.color;
-		push.transform = projectionView * obj.transform.mat4();
+		auto modelMatrix = obj.transform.mat4();
+		push.transform = projectionView * modelMatrix;
+		push.normalMatrix = obj.transform.normalMatrix();
 
 		vkCmdPushConstants(
 			commandBuffer,

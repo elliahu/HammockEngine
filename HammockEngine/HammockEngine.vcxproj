@@ -22,6 +22,7 @@
     <ClCompile Include="FirstApp.cpp" />
     <ClCompile Include="HmckCamera.cpp" />
     <ClCompile Include="HmckDevice.cpp" />
+    <ClCompile Include="HmckGameObject.cpp" />
     <ClCompile Include="HmckModel.cpp" />
     <ClCompile Include="HmckPipeline.cpp" />
     <ClCompile Include="HmckRenderer.cpp" />
