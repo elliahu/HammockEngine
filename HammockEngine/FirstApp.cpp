@@ -12,17 +12,21 @@ Hmck::FirstApp::~FirstApp()
 void Hmck::FirstApp::run()
 {
 	HmckSimpleRenderSystem simpleRenderSystem{ hmckDevice,hmckRenderer.getSwapChainRenderPass() };
+    HmckCamera camera{};
 
 	while (!hmckWindow.shouldClose())
 	{
 		glfwPollEvents();
-		
+
+        float aspect = hmckRenderer.getAspectRatio();
+        //camera.setOrthographicProjection(-aspect, aspect, -1, 1, -1, 1);
+        camera.setPerspectiveProjection(glm::radians(50.f), aspect, 0.1f, 10.f);
 
 		if (auto commandBuffer = hmckRenderer.beginFrame())
 		{
 			hmckRenderer.beginSwapChainRenderPass(commandBuffer);
 
-			simpleRenderSystem.renderGameObjects(commandBuffer,gameObjects);
+			simpleRenderSystem.renderGameObjects(commandBuffer,gameObjects, camera);
 
 			hmckRenderer.endSwapChainRenderPass(commandBuffer);
 			hmckRenderer.endFrame();
@@ -36,7 +40,7 @@ void Hmck::FirstApp::run()
 // temporary helper function, creates a 1x1x1 cube centered at offset
 std::unique_ptr<Hmck::HmckModel> createCubeModel(Hmck::HmckDevice& device, glm::vec3 offset) {
     std::vector<Hmck::HmckModel::Vertex> vertices{
-
+        
         // left face (white)
         {{-.5f, -.5f, -.5f}, {.9f, .9f, .9f}},
         {{-.5f, .5f, .5f}, {.9f, .9f, .9f}},
@@ -44,7 +48,7 @@ std::unique_ptr<Hmck::HmckModel> createCubeModel(Hmck::HmckDevice& device, glm::
         {{-.5f, -.5f, -.5f}, {.9f, .9f, .9f}},
         {{-.5f, .5f, -.5f}, {.9f, .9f, .9f}},
         {{-.5f, .5f, .5f}, {.9f, .9f, .9f}},
-
+        
         // right face (yellow)
         {{.5f, -.5f, -.5f}, {.8f, .8f, .1f}},
         {{.5f, .5f, .5f}, {.8f, .8f, .1f}},
@@ -68,7 +72,7 @@ std::unique_ptr<Hmck::HmckModel> createCubeModel(Hmck::HmckDevice& device, glm::
         {{-.5f, .5f, -.5f}, {.8f, .1f, .1f}},
         {{.5f, .5f, -.5f}, {.8f, .1f, .1f}},
         {{.5f, .5f, .5f}, {.8f, .1f, .1f}},
-
+        
         // nose face (blue)
         {{-.5f, -.5f, 0.5f}, {.1f, .1f, .8f}},
         {{.5f, .5f, 0.5f}, {.1f, .1f, .8f}},
@@ -98,7 +102,7 @@ void Hmck::FirstApp::loadGameObjects()
 
     auto cube = HmckGameObject::createGameObject();
     cube.model = hmckModel;
-    cube.transform.translation = { .0f, 0.f, .5f };
+    cube.transform.translation = { .0f, 0.f, 2.5f };
     cube.transform.scale = { .5f,.5f,.5f };
     gameObjects.push_back(std::move(cube));
 }
