@@ -23,6 +23,8 @@
     <ClCompile Include="HmckDevice.cpp" />
     <ClCompile Include="HmckModel.cpp" />
     <ClCompile Include="HmckPipeline.cpp" />
+    <ClCompile Include="HmckRenderer.cpp" />
+    <ClCompile Include="HmckSimpleRenderSystem.cpp" />
     <ClCompile Include="HmckSwapChain.cpp" />
     <ClCompile Include="HmckWindow.cpp" />
     <ClCompile Include="main.cpp" />
@@ -33,6 +35,8 @@
     <ClInclude Include="HmckGameObject.h" />
     <ClInclude Include="HmckModel.h" />
     <ClInclude Include="HmckPipeline.h" />
+    <ClInclude Include="HmckRenderer.h" />
+    <ClInclude Include="HmckSimpleRenderSystem.h" />
     <ClInclude Include="HmckSwapChain.h" />
     <ClInclude Include="HmckWindow.h" />
   </ItemGroup>
