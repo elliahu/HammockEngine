@@ -45,6 +45,7 @@ void Hmck::FirstApp::run()
     camera.setViewTarget(glm::vec3(-1.f, -2.f, 2.f), glm::vec3(0.f, 0.f, 2.5f));
 
     auto viewerObject = HmckGameObject::createGameObject();
+    viewerObject.transform.translation.z = -2.5f;
     KeyboardMovementController cameraController{};
 
     auto currentTime = std::chrono::high_resolution_clock::now();
@@ -95,11 +96,20 @@ void Hmck::FirstApp::run()
 
 void Hmck::FirstApp::loadGameObjects()
 {
-    std::shared_ptr<HmckModel> hmckModel = HmckModel::createModelFromFile(hmckDevice, "Models/smooth_vase.obj");
 
-    auto gameObj = HmckGameObject::createGameObject();
-    gameObj.model = hmckModel;
-    gameObj.transform.translation = { .0f, 0.5f, 2.5f };
-    gameObj.transform.scale = glm::vec3(3.f);
-    gameObjects.push_back(std::move(gameObj));
+    // vase
+    std::shared_ptr<HmckModel> vaseModel = HmckModel::createModelFromFile(hmckDevice, "Models/smooth_vase.obj");
+    auto vase = HmckGameObject::createGameObject();
+    vase.model = vaseModel;
+    vase.transform.translation = { .0f, 0.5f, 0.f };
+    vase.transform.scale = glm::vec3(3.f);
+    gameObjects.push_back(std::move(vase));
+
+    // floor
+    std::shared_ptr<HmckModel> quadModel = HmckModel::createModelFromFile(hmckDevice, "Models/quad.obj");
+    auto floor = HmckGameObject::createGameObject();
+    floor.model = quadModel;
+    floor.transform.translation = { .0f, 0.5f, 0.f };
+    floor.transform.scale = glm::vec3(3.f, 1.f, 3.f);
+    gameObjects.push_back(std::move(floor));
 }

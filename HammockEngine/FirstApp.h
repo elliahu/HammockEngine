@@ -26,8 +26,11 @@ namespace Hmck
 {
 	struct HmckGlobalUbo 
 	{
-		alignas(16) glm::mat4 projectionView{ 1.f };
-		alignas(16) glm::vec3 lightDirection = glm::normalize(glm::vec3{ 1.f, -3.f, -1.f });
+		glm::mat4 projectionView{ 1.f };
+		//glm::vec3 lightDirection = glm::normalize(glm::vec3{ 1.f, -3.f, -1.f });
+		glm::vec4 ambientLightColor = { 1.f, 1.f, 1.f, 0.07f }; // w is intensity
+		glm::vec3 lightPosition{ -1.f };
+		alignas(16) glm::vec4 lightColor{ 1.f }; // w is intensity
 	};
 
 
