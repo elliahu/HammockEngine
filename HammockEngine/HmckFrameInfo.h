@@ -12,5 +12,6 @@ namespace Hmck
 		float frameTime;
 		VkCommandBuffer commandBuffer;
 		HmckCamera& camera;
+		VkDescriptorSet globalDescriptorSet;
 	};
 }

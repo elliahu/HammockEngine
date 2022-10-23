@@ -22,7 +22,7 @@ namespace Hmck
 	/// vec3 (or vec4): 4N = 16 Bytes
 	/// taken from 15.6.4 Offset and Stride Assignment
 	struct HmckSimplePushConstantData {
-		glm::mat4 transform{ 1.f };
+		glm::mat4 modelMatrix{ 1.f };
 		glm::mat4 normalMatrix{ 1.f };
 	};
 
@@ -30,7 +30,7 @@ namespace Hmck
 	{
 	public:
 
-		HmckSimpleRenderSystem(HmckDevice& device, VkRenderPass renderPass);
+		HmckSimpleRenderSystem(HmckDevice& device, VkRenderPass renderPass, VkDescriptorSetLayout globalSetLayout);
 		~HmckSimpleRenderSystem();
 
 		// delete copy constructor and copy destructor
@@ -40,7 +40,7 @@ namespace Hmck
 		void renderGameObjects(HmckFrameInfo& frameInfo, std::vector<HmckGameObject>& gameObjects);
 
 	private:
-		void createPipelineLayout();
+		void createPipelineLayout(VkDescriptorSetLayout globalSetLayout);
 		void createPipeline(VkRenderPass renderPass);
 		
 

@@ -57,6 +57,9 @@
     <ClCompile Include="HmckBuffer.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="HmckDescriptors.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="HmckWindow.h">
@@ -99,6 +102,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="HmckFrameInfo.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="HmckDescriptors.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

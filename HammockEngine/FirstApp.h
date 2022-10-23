@@ -9,6 +9,7 @@
 #include "HmckCamera.h"
 #include "KeyboardMovementController.h"
 #include "HmckBuffer.h"
+#include "HmckDescriptors.h"
 
 
 #define GLM_FORCE_RADIANS
@@ -23,9 +24,10 @@
 
 namespace Hmck
 {
-	struct HmckGlobalUbo {
-		glm::mat4 projectionView{ 1.f };
-		glm::vec3 lightDirection = glm::normalize(glm::vec3{ 1.f, -3.f, -1.f });
+	struct HmckGlobalUbo 
+	{
+		alignas(16) glm::mat4 projectionView{ 1.f };
+		alignas(16) glm::vec3 lightDirection = glm::normalize(glm::vec3{ 1.f, -3.f, -1.f });
 	};
 
 
@@ -51,6 +53,7 @@ namespace Hmck
 		HmckDevice hmckDevice{ hmckWindow };
 		HmckRenderer hmckRenderer{ hmckWindow, hmckDevice };
 
+		std::unique_ptr<HmckDescriptorPool> globalPool{};
 		std::vector<HmckGameObject> gameObjects;
 	};
 

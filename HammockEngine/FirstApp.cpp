@@ -2,6 +2,10 @@
 
 Hmck::FirstApp::FirstApp()
 {
+    globalPool = HmckDescriptorPool::Builder(hmckDevice)
+        .setMaxSets(HmckSwapChain::MAX_FRAMES_IN_FLIGHT)
+        .addPoolSize(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, HmckSwapChain::MAX_FRAMES_IN_FLIGHT)
+        .build();
 	loadGameObjects();
 }
 
@@ -23,7 +27,20 @@ void Hmck::FirstApp::run()
         uboBuffers[i]->map();
     }
 
-	HmckSimpleRenderSystem simpleRenderSystem{ hmckDevice,hmckRenderer.getSwapChainRenderPass() };
+    auto globalSetLayout = HmckDescriptorSetLayout::Builder(hmckDevice)
+        .addBinding(0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_VERTEX_BIT)
+        .build();
+
+    std::vector<VkDescriptorSet> globalDescriptorSets(HmckSwapChain::MAX_FRAMES_IN_FLIGHT);
+    for (int i = 0; i < globalDescriptorSets.size(); i++)
+    {
+        auto bufferInfo = uboBuffers[i]->descriptorInfo();
+        HmckDescriptorWriter(*globalSetLayout, *globalPool)
+            .writeBuffer(0, &bufferInfo)
+            .build(globalDescriptorSets[i]);
+    }
+
+	HmckSimpleRenderSystem simpleRenderSystem{ hmckDevice,hmckRenderer.getSwapChainRenderPass(), globalSetLayout->getDescriptorSetLayout()};
     HmckCamera camera{};
     camera.setViewTarget(glm::vec3(-1.f, -2.f, 2.f), glm::vec3(0.f, 0.f, 2.5f));
 
@@ -54,14 +71,15 @@ void Hmck::FirstApp::run()
                 frameIndex,
                 frameTime,
                 commandBuffer,
-                camera
+                camera,
+                globalDescriptorSets[frameIndex]
             };
 
             // update
             HmckGlobalUbo ubo{};
             ubo.projectionView = camera.getProjection() * camera.getView();
             uboBuffers[frameIndex]->writeToBuffer(&ubo);
-            //uboBuffers[frameIndex]->flush();
+            //uboBuffers[frameIndex]->flush(); // no need to flush -> VK_MEMORY_PROPERTY_HOST_COHERENT_BIT is set
 
             // render
 			hmckRenderer.beginSwapChainRenderPass(commandBuffer);

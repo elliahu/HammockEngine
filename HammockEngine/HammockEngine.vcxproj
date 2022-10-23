@@ -22,6 +22,7 @@
     <ClCompile Include="FirstApp.cpp" />
     <ClCompile Include="HmckBuffer.cpp" />
     <ClCompile Include="HmckCamera.cpp" />
+    <ClCompile Include="HmckDescriptors.cpp" />
     <ClCompile Include="HmckDevice.cpp" />
     <ClCompile Include="HmckGameObject.cpp" />
     <ClCompile Include="HmckModel.cpp" />
@@ -37,6 +38,7 @@
     <ClInclude Include="FirstApp.h" />
     <ClInclude Include="HmckBuffer.h" />
     <ClInclude Include="HmckCamera.h" />
+    <ClInclude Include="HmckDescriptors.h" />
     <ClInclude Include="HmckDevice.h" />
     <ClInclude Include="HmckFrameInfo.h" />
     <ClInclude Include="HmckGameObject.h" />
