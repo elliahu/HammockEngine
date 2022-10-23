@@ -145,13 +145,13 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>C:\Users\matej\Documents\Visual Studio 2022\Libraries\glm;C:\VulkanSDK\1.3.224.1\Include;C:\Users\matej\Documents\Visual Studio 2022\Libraries\glfw-3.3.8.bin.WIN64\include;C:\Users\matej\Documents\Visual Studio 2022\Libraries\tiny_object_loader;C:\Users\matej\Documents\Projects\Personal\HammockEngine\HammockEngine\Systems;C:\Users\matej\Documents\Projects\Personal\HammockEngine\HammockEngine;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>C:\Users\matej\Documents\Projects\Personal\HammockEngine\External\glm;C:\VulkanSDK\1.3.224.1\Include;C:\Users\matej\Documents\Projects\Personal\HammockEngine\External\glfw-3.3.8.bin.WIN64\include;C:\Users\matej\Documents\Projects\Personal\HammockEngine\External\tiny_object_loader;C:\Users\matej\Documents\Projects\Personal\HammockEngine\HammockEngine;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <LanguageStandard>stdcpp17</LanguageStandard>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalLibraryDirectories>C:\Users\matej\Documents\Visual Studio 2022\Libraries\glfw-3.3.8.bin.WIN64\lib-vc2022;C:\VulkanSDK\1.3.224.1\Lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>C:\Users\matej\Documents\Projects\Personal\HammockEngine\External\glfw-3.3.8.bin.WIN64\lib-vc2022;C:\VulkanSDK\1.3.224.1\Lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <AdditionalDependencies>vulkan-1.lib;glfw3.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
@@ -163,7 +163,7 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>C:\Users\matej\Documents\Visual Studio 2022\Libraries\glm;C:\VulkanSDK\1.3.224.1\Include;C:\Users\matej\Documents\Visual Studio 2022\Libraries\glfw-3.3.8.bin.WIN64\include;C:\Users\matej\Documents\Visual Studio 2022\Libraries\tiny_object_loader;C:\Users\matej\Documents\Projects\Personal\HammockEngine\HammockEngine\Systems;C:\Users\matej\Documents\Projects\Personal\HammockEngine\HammockEngine;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>C:\Users\matej\Documents\Projects\Personal\HammockEngine\External\glm;C:\VulkanSDK\1.3.224.1\Include;C:\Users\matej\Documents\Projects\Personal\HammockEngine\External\glfw-3.3.8.bin.WIN64\include;C:\Users\matej\Documents\Projects\Personal\HammockEngine\External\tiny_object_loader;C:\Users\matej\Documents\Projects\Personal\HammockEngine\HammockEngine;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <LanguageStandard>stdcpp17</LanguageStandard>
     </ClCompile>
     <Link>
@@ -171,7 +171,7 @@
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalLibraryDirectories>C:\Users\matej\Documents\Visual Studio 2022\Libraries\glfw-3.3.8.bin.WIN64\lib-vc2022;C:\VulkanSDK\1.3.224.1\Lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>C:\Users\matej\Documents\Projects\Personal\HammockEngine\External\glfw-3.3.8.bin.WIN64\lib-vc2022;C:\VulkanSDK\1.3.224.1\Lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <AdditionalDependencies>vulkan-1.lib;glfw3.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
