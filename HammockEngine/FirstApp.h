@@ -11,7 +11,6 @@
 #include "HmckBuffer.h"
 #include "HmckDescriptors.h"
 
-
 #define GLM_FORCE_RADIANS
 #define GLM_FORCE_DEPTH_ZERO_TO_ONE
 #include <glm/glm.hpp>
@@ -30,7 +29,7 @@ namespace Hmck
 		//glm::vec3 lightDirection = glm::normalize(glm::vec3{ 1.f, -3.f, -1.f });
 		glm::vec4 ambientLightColor = { 1.f, 1.f, 1.f, 0.07f }; // w is intensity
 		glm::vec3 lightPosition{ -1.f };
-		alignas(16) glm::vec4 lightColor{ 1.f }; // w is intensity
+		alignas(16) glm::vec4 lightColor { 1.0 }; // w is intensity
 	};
 
 
@@ -57,7 +56,7 @@ namespace Hmck
 		HmckRenderer hmckRenderer{ hmckWindow, hmckDevice };
 
 		std::unique_ptr<HmckDescriptorPool> globalPool{};
-		std::vector<HmckGameObject> gameObjects;
+		HmckGameObject::Map gameObjects;
 	};
 
 }

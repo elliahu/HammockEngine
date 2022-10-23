@@ -28,7 +28,7 @@ void Hmck::FirstApp::run()
     }
 
     auto globalSetLayout = HmckDescriptorSetLayout::Builder(hmckDevice)
-        .addBinding(0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_VERTEX_BIT)
+        .addBinding(0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_ALL_GRAPHICS)
         .build();
 
     std::vector<VkDescriptorSet> globalDescriptorSets(HmckSwapChain::MAX_FRAMES_IN_FLIGHT);
@@ -73,7 +73,8 @@ void Hmck::FirstApp::run()
                 frameTime,
                 commandBuffer,
                 camera,
-                globalDescriptorSets[frameIndex]
+                globalDescriptorSets[frameIndex],
+                gameObjects
             };
 
             // update
@@ -84,7 +85,7 @@ void Hmck::FirstApp::run()
 
             // render
 			hmckRenderer.beginSwapChainRenderPass(commandBuffer);
-			simpleRenderSystem.renderGameObjects(frameInfo,gameObjects);
+			simpleRenderSystem.renderGameObjects(frameInfo);
 			hmckRenderer.endSwapChainRenderPass(commandBuffer);
 			hmckRenderer.endFrame();
 		}
@@ -103,7 +104,7 @@ void Hmck::FirstApp::loadGameObjects()
     vase.model = vaseModel;
     vase.transform.translation = { .0f, 0.5f, 0.f };
     vase.transform.scale = glm::vec3(3.f);
-    gameObjects.push_back(std::move(vase));
+    gameObjects.emplace(vase.getId(), std::move(vase));
 
     // floor
     std::shared_ptr<HmckModel> quadModel = HmckModel::createModelFromFile(hmckDevice, "Models/quad.obj");
@@ -111,5 +112,5 @@ void Hmck::FirstApp::loadGameObjects()
     floor.model = quadModel;
     floor.transform.translation = { .0f, 0.5f, 0.f };
     floor.transform.scale = glm::vec3(3.f, 1.f, 3.f);
-    gameObjects.push_back(std::move(floor));
+    gameObjects.emplace(floor.getId(), std::move(floor));
 }

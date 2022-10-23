@@ -37,7 +37,7 @@ namespace Hmck
 		HmckSimpleRenderSystem(const HmckSimpleRenderSystem&) = delete;
 		HmckSimpleRenderSystem& operator=(const HmckSimpleRenderSystem&) = delete;
 
-		void renderGameObjects(HmckFrameInfo& frameInfo, std::vector<HmckGameObject>& gameObjects);
+		void renderGameObjects(HmckFrameInfo& frameInfo);
 
 	private:
 		void createPipelineLayout(VkDescriptorSetLayout globalSetLayout);

@@ -1,6 +1,7 @@
 #pragma once
 
 #include "HmckCamera.h"
+#include "HmckGameObject.h"
 
 #include <vulkan/vulkan.h>
 
@@ -13,5 +14,6 @@ namespace Hmck
 		VkCommandBuffer commandBuffer;
 		HmckCamera& camera;
 		VkDescriptorSet globalDescriptorSet;
+		HmckGameObject::Map& gameObjects;
 	};
 }

@@ -52,8 +52,7 @@ void Hmck::HmckSimpleRenderSystem::createPipeline(VkRenderPass renderPass)
 }
 
 
-void Hmck::HmckSimpleRenderSystem::renderGameObjects(
-	HmckFrameInfo& frameInfo, std::vector<HmckGameObject>& gameObjects)
+void Hmck::HmckSimpleRenderSystem::renderGameObjects(HmckFrameInfo& frameInfo)
 {
 	hmckPipeline->bind(frameInfo.commandBuffer);
 
@@ -67,8 +66,9 @@ void Hmck::HmckSimpleRenderSystem::renderGameObjects(
 		nullptr
 	);
 
-	for (auto& obj : gameObjects)
+	for (auto& kv : frameInfo.gameObjects)
 	{
+		auto& obj = kv.second;
 		HmckSimplePushConstantData push{};
 		push.modelMatrix = obj.transform.mat4();
 		push.normalMatrix = obj.transform.normalMatrix();
