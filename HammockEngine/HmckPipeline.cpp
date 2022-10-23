@@ -87,6 +87,9 @@ void Hmck::HmckPipeline::defaultHmckPipelineConfigInfo(HmckPipelineConfigInfo& c
     configInfo.dynamicStateInfo.dynamicStateCount =
         static_cast<uint32_t>(configInfo.dynamicStateEnables.size());
     configInfo.dynamicStateInfo.flags = 0;
+
+    configInfo.bindingDescriptions = HmckModel::Vertex::getBindingDescriptions();
+    configInfo.attributeDescriptions = HmckModel::Vertex::getAttributeDescriptions();
 }
 
 void Hmck::HmckPipeline::bind(VkCommandBuffer commandBuffer)
@@ -147,8 +150,8 @@ void Hmck::HmckPipeline::createGraphicsPipeline(
     shaderStages[1].pNext = nullptr;
     shaderStages[1].pSpecializationInfo = nullptr;
 
-    auto bindingDescriptions = HmckModel::Vertex::getBindingDescriptions();
-    auto attributeDescriptions = HmckModel::Vertex::getAttributeDescriptions();
+    auto& bindingDescriptions = configInfo.bindingDescriptions;
+    auto& attributeDescriptions = configInfo.attributeDescriptions;
     VkPipelineVertexInputStateCreateInfo vertexInputInfo{};
     vertexInputInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
     vertexInputInfo.vertexAttributeDescriptionCount =

@@ -42,7 +42,7 @@
     <ClCompile Include="HmckRenderer.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="HmckSimpleRenderSystem.cpp">
+    <ClCompile Include="Systems\HmckSimpleRenderSystem.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="HmckCamera.cpp">
@@ -58,6 +58,9 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="HmckDescriptors.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Systems\HmckPointLightSystem.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
@@ -86,7 +89,7 @@
     <ClInclude Include="HmckRenderer.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="HmckSimpleRenderSystem.h">
+    <ClInclude Include="Systems\HmckSimpleRenderSystem.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="HmckCamera.h">
@@ -107,5 +110,14 @@
     <ClInclude Include="HmckDescriptors.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="Systems\HmckPointLightSystem.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Shaders\point_light.vert" />
+    <None Include="Shaders\point_light.frag" />
+    <None Include="Shaders\shader.frag" />
+    <None Include="Shaders\shader.vert" />
   </ItemGroup>
 </Project>

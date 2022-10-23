@@ -40,7 +40,18 @@ void Hmck::FirstApp::run()
             .build(globalDescriptorSets[i]);
     }
 
-	HmckSimpleRenderSystem simpleRenderSystem{ hmckDevice,hmckRenderer.getSwapChainRenderPass(), globalSetLayout->getDescriptorSetLayout()};
+    // systems
+	HmckSimpleRenderSystem simpleRenderSystem{ 
+        hmckDevice,
+        hmckRenderer.getSwapChainRenderPass(), 
+        globalSetLayout->getDescriptorSetLayout()
+    };
+    HmckPointLightSystem pointLightSystem{
+        hmckDevice,
+        hmckRenderer.getSwapChainRenderPass(),
+        globalSetLayout->getDescriptorSetLayout()
+    };
+
     HmckCamera camera{};
     camera.setViewTarget(glm::vec3(-1.f, -2.f, 2.f), glm::vec3(0.f, 0.f, 2.5f));
 
@@ -79,13 +90,15 @@ void Hmck::FirstApp::run()
 
             // update
             HmckGlobalUbo ubo{};
-            ubo.projectionView = camera.getProjection() * camera.getView();
+            ubo.projection = camera.getProjection();
+            ubo.view = camera.getView();
             uboBuffers[frameIndex]->writeToBuffer(&ubo);
             //uboBuffers[frameIndex]->flush(); // no need to flush -> VK_MEMORY_PROPERTY_HOST_COHERENT_BIT is set
 
             // render
 			hmckRenderer.beginSwapChainRenderPass(commandBuffer);
 			simpleRenderSystem.renderGameObjects(frameInfo);
+            pointLightSystem.render(frameInfo);
 			hmckRenderer.endSwapChainRenderPass(commandBuffer);
 			hmckRenderer.endFrame();
 		}

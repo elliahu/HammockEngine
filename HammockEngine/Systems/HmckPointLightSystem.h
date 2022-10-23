@@ -17,32 +17,23 @@
 
 namespace Hmck
 {
-	/// scalar float: N = 4 Bytes
-	/// vec2: 2N = 8 Bytes
-	/// vec3 (or vec4): 4N = 16 Bytes
-	/// taken from 15.6.4 Offset and Stride Assignment
-	struct HmckSimplePushConstantData {
-		glm::mat4 modelMatrix{ 1.f };
-		glm::mat4 normalMatrix{ 1.f };
-	};
-
-	class HmckSimpleRenderSystem
+	class HmckPointLightSystem
 	{
 	public:
 
-		HmckSimpleRenderSystem(HmckDevice& device, VkRenderPass renderPass, VkDescriptorSetLayout globalSetLayout);
-		~HmckSimpleRenderSystem();
+		HmckPointLightSystem(HmckDevice& device, VkRenderPass renderPass, VkDescriptorSetLayout globalSetLayout);
+		~HmckPointLightSystem();
 
 		// delete copy constructor and copy destructor
-		HmckSimpleRenderSystem(const HmckSimpleRenderSystem&) = delete;
-		HmckSimpleRenderSystem& operator=(const HmckSimpleRenderSystem&) = delete;
+		HmckPointLightSystem(const HmckPointLightSystem&) = delete;
+		HmckPointLightSystem& operator=(const HmckPointLightSystem&) = delete;
 
-		void renderGameObjects(HmckFrameInfo& frameInfo);
+		void render(HmckFrameInfo& frameInfo);
 
 	private:
 		void createPipelineLayout(VkDescriptorSetLayout globalSetLayout);
 		void createPipeline(VkRenderPass renderPass);
-		
+
 
 		HmckDevice& hmckDevice;
 

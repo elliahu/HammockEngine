@@ -7,7 +7,6 @@
 int main()
 {
 	Hmck::FirstApp app{};
-
 	try
 	{
 		app.run();

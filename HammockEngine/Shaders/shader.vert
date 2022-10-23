@@ -14,7 +14,8 @@ layout (location = 2) out vec3 fragNormalWorld;
 // descriptor set
 layout (set = 0, binding = 0) uniform GlobalUbo
 {
-    mat4 projectionViewMatrix;
+    mat4 projection;
+    mat4 view;
     vec4 ambientLightColor; // w is intensity
     vec3 lightPosition;
     vec4 lightColor; // w is intensity
@@ -32,7 +33,7 @@ void main()
 {
     vec4 positionWorld = push.modelMatrix * vec4(position, 1.0);
 
-    gl_Position = ubo.projectionViewMatrix *  positionWorld;
+    gl_Position = ubo.projection * ubo.view *  positionWorld;
     
     fragNormalWorld = normalize(mat3(push.normalMatrix) * normal);
     fragPosWorld = positionWorld.xyz;

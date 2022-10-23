@@ -16,6 +16,8 @@ namespace Hmck
 		HmckPipelineConfigInfo(const HmckPipelineConfigInfo&) = delete;
 		HmckPipelineConfigInfo& operator=(const HmckPipelineConfigInfo&) = delete;
 
+		std::vector<VkVertexInputBindingDescription> bindingDescriptions{};
+		std::vector<VkVertexInputAttributeDescription> attributeDescriptions{};
 		VkPipelineViewportStateCreateInfo viewportInfo;
 		VkPipelineInputAssemblyStateCreateInfo inputAssemblyInfo;
 		VkPipelineRasterizationStateCreateInfo rasterizationInfo;
