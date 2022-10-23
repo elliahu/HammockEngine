@@ -27,6 +27,12 @@ namespace Hmck
 		glm::mat3 normalMatrix();
 	};
 
+	struct HmckPointLightComponent
+	{
+		float lightIntensity = 1.0f;
+
+	};
+
 	class HmckGameObject
 	{
 	public:
@@ -39,6 +45,11 @@ namespace Hmck
 			return HmckGameObject(currentId++);
 		}
 
+		static HmckGameObject createPointLight(
+			float intensity = 10.f, 
+			float radius = 0.1f, 
+			glm::vec3 color = glm::vec3(1));
+
 		HmckGameObject(const HmckGameObject&) = delete;
 		HmckGameObject& operator =(const HmckGameObject&) = delete;
 		HmckGameObject(HmckGameObject&&) = default;
@@ -48,7 +59,9 @@ namespace Hmck
 
 		std::shared_ptr<HmckModel> model{};
 		glm::vec3 color{};
-		HmckTransformComponent transform{};
+		HmckTransformComponent transform{}; // every game object has this
+
+		std::unique_ptr<HmckPointLightComponent> pointLight = nullptr;
 
 	private:
 		HmckGameObject(id_t objId) : id{ objId } {}

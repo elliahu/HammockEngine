@@ -60,3 +60,13 @@ glm::mat3 Hmck::HmckTransformComponent::normalMatrix()
 			inverseScale.z * (c1 * c2),
 		} };
 }
+
+Hmck::HmckGameObject Hmck::HmckGameObject::createPointLight(float intensity,float radius,glm::vec3 color)
+{
+	HmckGameObject gameObj = HmckGameObject::createGameObject();
+	gameObj.color = color;
+	gameObj.transform.scale.x = radius;
+	gameObj.pointLight = std::make_unique<HmckPointLightComponent>();
+	gameObj.pointLight->lightIntensity = intensity;
+	return gameObj;
+}

@@ -4,8 +4,8 @@
 #include "HmckDevice.h"
 #include "HmckGameObject.h"
 #include "HmckRenderer.h"
-#include "Systems/HmckSimpleRenderSystem.h"
 #include "Systems/HmckPointLightSystem.h"
+#include "Systems/HmckSimpleRenderSystem.h"
 #include "HmckModel.h"
 #include "HmckCamera.h"
 #include "KeyboardMovementController.h"
@@ -24,17 +24,6 @@
 
 namespace Hmck
 {
-	struct HmckGlobalUbo 
-	{
-		glm::mat4 projection{ 1.f };
-		glm::mat4 view{ 1.f };
-		//glm::vec3 lightDirection = glm::normalize(glm::vec3{ 1.f, -3.f, -1.f });
-		glm::vec4 ambientLightColor = { 1.f, 1.f, 1.f, 0.07f }; // w is intensity
-		glm::vec3 lightPosition{ -1.f };
-		alignas(16) glm::vec4 lightColor { 1.0 }; // w is intensity
-	};
-
-
 	class FirstApp
 	{
 	public:

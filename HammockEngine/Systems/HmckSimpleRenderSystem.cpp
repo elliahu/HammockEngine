@@ -69,6 +69,7 @@ void Hmck::HmckSimpleRenderSystem::renderGameObjects(HmckFrameInfo& frameInfo)
 	for (auto& kv : frameInfo.gameObjects)
 	{
 		auto& obj = kv.second;
+		if (obj.model == nullptr) continue;
 		HmckSimplePushConstantData push{};
 		push.modelMatrix = obj.transform.mat4();
 		push.normalMatrix = obj.transform.normalMatrix();

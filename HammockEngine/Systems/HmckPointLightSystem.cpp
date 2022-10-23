@@ -15,10 +15,10 @@ Hmck::HmckPointLightSystem::~HmckPointLightSystem()
 
 void Hmck::HmckPointLightSystem::createPipelineLayout(VkDescriptorSetLayout globalSetLayout)
 {
-	// VkPushConstantRange pushConstantRange{};
-	// pushConstantRange.stageFlags = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT;
-	// pushConstantRange.offset = 0;
-	// pushConstantRange.size = sizeof(HmckSimplePushConstantData);
+	VkPushConstantRange pushConstantRange{};
+	pushConstantRange.stageFlags = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT;
+	pushConstantRange.offset = 0;
+	pushConstantRange.size = sizeof(HmckPointLightPushConstant);
 
 	std::vector<VkDescriptorSetLayout> descriptorSetLayouts{ globalSetLayout };
 
@@ -26,8 +26,8 @@ void Hmck::HmckPointLightSystem::createPipelineLayout(VkDescriptorSetLayout glob
 	pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
 	pipelineLayoutInfo.setLayoutCount = static_cast<uint32_t>(descriptorSetLayouts.size());
 	pipelineLayoutInfo.pSetLayouts = descriptorSetLayouts.data();
-	pipelineLayoutInfo.pushConstantRangeCount = 0;
-	pipelineLayoutInfo.pPushConstantRanges = nullptr;
+	pipelineLayoutInfo.pushConstantRangeCount = 1;
+	pipelineLayoutInfo.pPushConstantRanges = &pushConstantRange;
 
 	if (vkCreatePipelineLayout(hmckDevice.device(), &pipelineLayoutInfo, nullptr, &pipelineLayout) != VK_SUCCESS)
 	{
@@ -68,5 +68,54 @@ void Hmck::HmckPointLightSystem::render(HmckFrameInfo& frameInfo)
 		nullptr
 	);
 
-	vkCmdDraw(frameInfo.commandBuffer, 6, 1, 0, 0);
+	for (auto& kv : frameInfo.gameObjects)
+	{
+		auto& obj = kv.second;
+		if (obj.pointLight == nullptr) continue;
+
+		HmckPointLightPushConstant push{};
+		push.position = glm::vec4(obj.transform.translation, 1.f);
+		push.color = glm::vec4(obj.color, obj.pointLight->lightIntensity);
+		push.radius = obj.transform.scale.x;
+
+		vkCmdPushConstants(
+			frameInfo.commandBuffer,
+			pipelineLayout,
+			VK_SHADER_STAGE_VERTEX_BIT |  VK_SHADER_STAGE_FRAGMENT_BIT,
+			0,
+			sizeof(HmckPointLightPushConstant),
+			&push
+		);
+		vkCmdDraw(frameInfo.commandBuffer, 6, 1, 0, 0);
+	}
+
+	
+}
+
+
+void Hmck::HmckPointLightSystem::update(HmckFrameInfo& frameInfo, HmckGlobalUbo& ubo)
+{
+	auto rotateLight = glm::rotate(
+		glm::mat4(1.f),
+		frameInfo.frameTime,
+		{ 0.f, -1.f, 0.f }
+	);
+
+	int lightIndex = 0;
+	for (auto& kv : frameInfo.gameObjects)
+	{
+		auto& obj = kv.second;
+		if (obj.pointLight == nullptr) continue;
+
+		assert(lightIndex < MAX_LIGHTS && "Point light limit exeeded");
+
+		// update lights
+		obj.transform.translation = glm::vec3(rotateLight * glm::vec4(obj.transform.translation, 1.f));
+
+		ubo.pointLights[lightIndex].position = glm::vec4(obj.transform.translation, 1.f);
+		ubo.pointLights[lightIndex].color = glm::vec4(obj.color, obj.pointLight->lightIntensity);
+
+		lightIndex += 1;
+	}
+	ubo.numLights = lightIndex;
 }

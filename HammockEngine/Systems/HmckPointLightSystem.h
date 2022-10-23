@@ -17,6 +17,14 @@
 
 namespace Hmck
 {
+	struct HmckPointLightPushConstant
+	{
+		glm::vec4 position{};
+		glm::vec4 color{};
+		float radius;
+	};
+
+
 	class HmckPointLightSystem
 	{
 	public:
@@ -28,6 +36,7 @@ namespace Hmck
 		HmckPointLightSystem(const HmckPointLightSystem&) = delete;
 		HmckPointLightSystem& operator=(const HmckPointLightSystem&) = delete;
 
+		void update(HmckFrameInfo& frameInfo, HmckGlobalUbo& ubo);
 		void render(HmckFrameInfo& frameInfo);
 
 	private:
