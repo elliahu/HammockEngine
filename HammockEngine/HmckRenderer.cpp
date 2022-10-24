@@ -1,7 +1,5 @@
 #include "HmckRenderer.h"
 
-#include "FirstApp.h"
-
 Hmck::HmckRenderer::HmckRenderer(HmckWindow& window, HmckDevice& device) : hmckWindow{window}, hmckDevice{device}
 {
 	recreateSwapChain();

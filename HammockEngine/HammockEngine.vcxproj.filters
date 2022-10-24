@@ -24,7 +24,7 @@
     <ClCompile Include="main.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="FirstApp.cpp">
+    <ClCompile Include="Apps\FirstApp.cpp">
       <Filter>Test Apps</Filter>
     </ClCompile>
     <ClCompile Include="HmckPipeline.cpp">
@@ -68,7 +68,7 @@
     <ClInclude Include="HmckWindow.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="FirstApp.h">
+    <ClInclude Include="Apps\FirstApp.h">
       <Filter>Test Apps</Filter>
     </ClInclude>
     <ClInclude Include="HmckPipeline.h">
@@ -113,11 +113,5 @@
     <ClInclude Include="Systems\HmckPointLightSystem.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="Shaders\point_light.vert" />
-    <None Include="Shaders\point_light.frag" />
-    <None Include="Shaders\shader.frag" />
-    <None Include="Shaders\shader.vert" />
   </ItemGroup>
 </Project>

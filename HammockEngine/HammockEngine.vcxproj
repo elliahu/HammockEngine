@@ -19,7 +19,7 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="FirstApp.cpp" />
+    <ClCompile Include="Apps\FirstApp.cpp" />
     <ClCompile Include="HmckBuffer.cpp" />
     <ClCompile Include="HmckCamera.cpp" />
     <ClCompile Include="HmckDescriptors.cpp" />
@@ -36,7 +36,7 @@
     <ClCompile Include="main.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="FirstApp.h" />
+    <ClInclude Include="Apps\FirstApp.h" />
     <ClInclude Include="HmckBuffer.h" />
     <ClInclude Include="HmckCamera.h" />
     <ClInclude Include="HmckDescriptors.h" />
@@ -52,12 +52,6 @@
     <ClInclude Include="HmckUtils.h" />
     <ClInclude Include="HmckWindow.h" />
     <ClInclude Include="KeyboardMovementController.h" />
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="Shaders\point_light.frag" />
-    <None Include="Shaders\point_light.vert" />
-    <None Include="Shaders\shader.frag" />
-    <None Include="Shaders\shader.vert" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <VCProjectVersion>16.0</VCProjectVersion>
