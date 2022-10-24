@@ -119,6 +119,7 @@ void Hmck::FirstApp::loadGameObjects()
     vase.model = vaseModel;
     vase.transform.translation = { .0f, 0.5f, 0.f };
     vase.transform.scale = glm::vec3(3.f);
+    vase.color = glm::vec3(1, 0, 0);
     gameObjects.emplace(vase.getId(), std::move(vase));
 
     // floor
