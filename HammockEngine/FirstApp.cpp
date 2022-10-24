@@ -52,19 +52,17 @@ void Hmck::FirstApp::run()
         globalSetLayout->getDescriptorSetLayout()
     };
 
+    // camera and movement
     HmckCamera camera{};
     camera.setViewTarget(glm::vec3(-1.f, -2.f, 2.f), glm::vec3(0.f, 0.f, 2.5f));
-
     auto viewerObject = HmckGameObject::createGameObject();
     viewerObject.transform.translation.z = -2.5f;
     KeyboardMovementController cameraController{};
 
     auto currentTime = std::chrono::high_resolution_clock::now();
-
 	while (!hmckWindow.shouldClose())
 	{
 		glfwPollEvents();
-
         // gameloop timing
         auto newTime = std::chrono::high_resolution_clock::now();
         float frameTime = std::chrono::duration<float, std::chrono::seconds::period>(newTime - currentTime).count();
@@ -92,14 +90,17 @@ void Hmck::FirstApp::run()
             HmckGlobalUbo ubo{};
             ubo.projection = camera.getProjection();
             ubo.view = camera.getView();
+            ubo.inverseView = camera.getInverseView();
             pointLightSystem.update(frameInfo, ubo);
             uboBuffers[frameIndex]->writeToBuffer(&ubo);
             //uboBuffers[frameIndex]->flush(); // no need to flush -> VK_MEMORY_PROPERTY_HOST_COHERENT_BIT is set
 
             // render
 			hmckRenderer.beginSwapChainRenderPass(commandBuffer);
+            // start rendering
 			simpleRenderSystem.renderGameObjects(frameInfo);
             pointLightSystem.render(frameInfo);
+            // end rendering
 			hmckRenderer.endSwapChainRenderPass(commandBuffer);
 			hmckRenderer.endFrame();
 		}
@@ -139,7 +140,7 @@ void Hmck::FirstApp::loadGameObjects()
 
     for (int i = 0; i < lightColors.size(); i++)
     {
-        auto pointLight = HmckGameObject::createPointLight(0.2f);
+        auto pointLight = HmckGameObject::createPointLight(0.35f);
         pointLight.color = lightColors[i];
         auto rotateLight = glm::rotate(
             glm::mat4(1.f), 

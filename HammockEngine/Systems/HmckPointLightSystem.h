@@ -14,6 +14,7 @@
 #include <memory>
 #include <vector>
 #include <stdexcept>
+#include <map>
 
 namespace Hmck
 {

@@ -41,14 +41,15 @@ void Hmck::HmckPointLightSystem::createPipeline(VkRenderPass renderPass)
 
 	HmckPipelineConfigInfo pipelineConfig{};
 	HmckPipeline::defaultHmckPipelineConfigInfo(pipelineConfig);
+	HmckPipeline::enableAlphaBlending(pipelineConfig);
 	pipelineConfig.attributeDescriptions.clear();
 	pipelineConfig.bindingDescriptions.clear();
 	pipelineConfig.renderPass = renderPass;
 	pipelineConfig.pipelineLayout = pipelineLayout;
 	hmckPipeline = std::make_unique<HmckPipeline>(
 		hmckDevice,
-		"Shaders/point_light.vert.spv",
-		"Shaders/point_light.frag.spv",
+		"Shaders/Compiled/point_light.vert.spv",
+		"Shaders/Compiled/point_light.frag.spv",
 		pipelineConfig
 		);
 }
@@ -56,6 +57,19 @@ void Hmck::HmckPointLightSystem::createPipeline(VkRenderPass renderPass)
 
 void Hmck::HmckPointLightSystem::render(HmckFrameInfo& frameInfo)
 {
+	// sort the lights
+	std::map<float, HmckGameObject::id_t> sorted;
+	for (auto& kv : frameInfo.gameObjects)
+	{
+		auto& obj = kv.second;
+		if (obj.pointLight == nullptr) continue;
+
+		// calculate distance
+		auto offset = frameInfo.camera.getPosition() - obj.transform.translation;
+		float disSqared = glm::dot(offset, offset);
+		sorted[disSqared] = obj.getId();
+	}
+
 	hmckPipeline->bind(frameInfo.commandBuffer);
 
 	vkCmdBindDescriptorSets(
@@ -68,10 +82,11 @@ void Hmck::HmckPointLightSystem::render(HmckFrameInfo& frameInfo)
 		nullptr
 	);
 
-	for (auto& kv : frameInfo.gameObjects)
+
+	// iterate over sorted map in reverse order
+	for (auto it = sorted.rbegin(); it != sorted.rend(); ++it)
 	{
-		auto& obj = kv.second;
-		if (obj.pointLight == nullptr) continue;
+		auto& obj = frameInfo.gameObjects.at(it->second);
 
 		HmckPointLightPushConstant push{};
 		push.position = glm::vec4(obj.transform.translation, 1.f);
