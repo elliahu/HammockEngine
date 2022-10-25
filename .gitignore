@@ -13,6 +13,8 @@
 # Ignore External libraries
 External/*
 
+# Ignore compiled shaders
+*.spv
 
 # User-specific files (MonoDevelop/Xamarin Studio)
 *.userprefs

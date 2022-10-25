@@ -22,7 +22,7 @@ void Hmck::FirstApp::run()
             sizeof(HmckGlobalUbo),
             1,
             VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
-            VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT
+            VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT 
         );
         uboBuffers[i]->map();
     }
@@ -62,7 +62,7 @@ void Hmck::FirstApp::run()
     auto currentTime = std::chrono::high_resolution_clock::now();
 	while (!hmckWindow.shouldClose())
 	{
-		glfwPollEvents();
+        hmckWindow.pollEvents();
         // gameloop timing
         auto newTime = std::chrono::high_resolution_clock::now();
         float frameTime = std::chrono::duration<float, std::chrono::seconds::period>(newTime - currentTime).count();
@@ -93,7 +93,6 @@ void Hmck::FirstApp::run()
             ubo.inverseView = camera.getInverseView();
             pointLightSystem.update(frameInfo, ubo);
             uboBuffers[frameIndex]->writeToBuffer(&ubo);
-            //uboBuffers[frameIndex]->flush(); // no need to flush -> VK_MEMORY_PROPERTY_HOST_COHERENT_BIT is set
 
             // render
 			hmckRenderer.beginSwapChainRenderPass(commandBuffer);
