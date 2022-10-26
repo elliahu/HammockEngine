@@ -177,13 +177,13 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>$(SolutionDir)External\glm;C:\VulkanSDK\1.3.231.0\Include;$(SolutionDir)External\glfw-3.3.8.bin.WIN64\include;$(SolutionDir)External\tiny_object_loader;$(ProjectDir);$(ProjectDir)Engine\Systems;$(ProjectDir)Engine;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)External\glm;$(VULKAN_SDK)\Include;$(SolutionDir)External\glfw-3.3.8.bin.WIN64\include;$(SolutionDir)External\tiny_object_loader;$(ProjectDir);$(ProjectDir)Engine\Systems;$(ProjectDir)Engine;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <LanguageStandard>stdcpp17</LanguageStandard>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalLibraryDirectories>$(SolutionDir)External\glfw-3.3.8.bin.WIN64\lib-vc2022;C:\VulkanSDK\1.3.231.0\Lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>$(SolutionDir)External\glfw-3.3.8.bin.WIN64\lib-vc2022;$(VULKAN_SDK)\Lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <AdditionalDependencies>vulkan-1.lib;glfw3.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
     <PostBuildEvent>
