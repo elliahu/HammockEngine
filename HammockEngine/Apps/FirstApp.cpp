@@ -111,9 +111,8 @@ void Hmck::FirstApp::run()
 
 void Hmck::FirstApp::loadGameObjects()
 {
-
     // vase
-    std::shared_ptr<HmckModel> vaseModel = HmckModel::createModelFromFile(hmckDevice, "Models/smooth_vase.obj");
+    std::shared_ptr<HmckModel> vaseModel = HmckModel::createModelFromFile(hmckDevice, std::string(MODELS_DIR) + "smooth_vase.obj");
     auto vase = HmckGameObject::createGameObject();
     vase.model = vaseModel;
     vase.transform.translation = { .0f, 0.5f, 0.f };
@@ -122,7 +121,7 @@ void Hmck::FirstApp::loadGameObjects()
     gameObjects.emplace(vase.getId(), std::move(vase));
 
     // floor
-    std::shared_ptr<HmckModel> quadModel = HmckModel::createModelFromFile(hmckDevice, "Models/quad.obj");
+    std::shared_ptr<HmckModel> quadModel = HmckModel::createModelFromFile(hmckDevice, std::string(MODELS_DIR) + "quad.obj");
     auto floor = HmckGameObject::createGameObject();
     floor.model = quadModel;
     floor.transform.translation = { .0f, 0.5f, 0.f };

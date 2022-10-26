@@ -15,6 +15,10 @@
 #include <vector>
 #include <stdexcept>
 
+#ifndef SHADERS_DIR
+	#define SHADERS_DIR "../../HammockEngine/Engine/Shaders/"
+#endif
+
 namespace Hmck
 {
 	/// scalar float: N = 4 Bytes

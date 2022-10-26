@@ -22,6 +22,11 @@
 #include <stdexcept>
 #include <chrono>
 
+#ifndef MODELS_DIR
+#define MODELS_DIR "../../HammockEngine/Models/"
+#endif // !MODELS_DIR
+
+
 namespace Hmck
 {
 	class FirstApp

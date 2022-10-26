@@ -11,8 +11,6 @@ Hmck::HmckPointLightSystem::~HmckPointLightSystem()
 	vkDestroyPipelineLayout(hmckDevice.device(), pipelineLayout, nullptr);
 }
 
-
-
 void Hmck::HmckPointLightSystem::createPipelineLayout(VkDescriptorSetLayout globalSetLayout)
 {
 	VkPushConstantRange pushConstantRange{};
@@ -48,12 +46,11 @@ void Hmck::HmckPointLightSystem::createPipeline(VkRenderPass renderPass)
 	pipelineConfig.pipelineLayout = pipelineLayout;
 	hmckPipeline = std::make_unique<HmckPipeline>(
 		hmckDevice,
-		"Shaders/Compiled/point_light.vert.spv",
-		"Shaders/Compiled/point_light.frag.spv",
+		std::string(SHADERS_DIR) + "Compiled/point_light.vert.spv",
+		std::string(SHADERS_DIR) + "Compiled/point_light.frag.spv",
 		pipelineConfig
-		);
+	);
 }
-
 
 void Hmck::HmckPointLightSystem::render(HmckFrameInfo& frameInfo)
 {

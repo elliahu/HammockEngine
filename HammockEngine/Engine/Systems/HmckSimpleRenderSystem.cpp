@@ -45,10 +45,10 @@ void Hmck::HmckSimpleRenderSystem::createPipeline(VkRenderPass renderPass)
 	pipelineConfig.pipelineLayout = pipelineLayout;
 	hmckPipeline = std::make_unique<HmckPipeline>(
 		hmckDevice,
-		"Shaders/Compiled/shader.vert.spv",
-		"Shaders/Compiled/shader.frag.spv",
+		std::string(SHADERS_DIR) + "Compiled/shader.vert.spv",
+		std::string(SHADERS_DIR) + "Compiled/shader.frag.spv",
 		pipelineConfig
-		);
+	);
 }
 
 

@@ -28,38 +28,38 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Apps\FirstApp.cpp" />
-    <ClCompile Include="HmckBuffer.cpp" />
-    <ClCompile Include="HmckCamera.cpp" />
-    <ClCompile Include="HmckDescriptors.cpp" />
-    <ClCompile Include="HmckDevice.cpp" />
-    <ClCompile Include="HmckGameObject.cpp" />
-    <ClCompile Include="HmckModel.cpp" />
-    <ClCompile Include="HmckPipeline.cpp" />
-    <ClCompile Include="HmckRenderer.cpp" />
-    <ClCompile Include="Systems\HmckPointLightSystem.cpp" />
-    <ClCompile Include="Systems\HmckSimpleRenderSystem.cpp" />
-    <ClCompile Include="HmckSwapChain.cpp" />
-    <ClCompile Include="HmckWindow.cpp" />
-    <ClCompile Include="KeyboardMovementController.cpp" />
+    <ClCompile Include="Engine\HmckBuffer.cpp" />
+    <ClCompile Include="Engine\HmckCamera.cpp" />
+    <ClCompile Include="Engine\HmckDescriptors.cpp" />
+    <ClCompile Include="Engine\HmckDevice.cpp" />
+    <ClCompile Include="Engine\HmckGameObject.cpp" />
+    <ClCompile Include="Engine\HmckModel.cpp" />
+    <ClCompile Include="Engine\HmckPipeline.cpp" />
+    <ClCompile Include="Engine\HmckRenderer.cpp" />
+    <ClCompile Include="Engine\Systems\HmckPointLightSystem.cpp" />
+    <ClCompile Include="Engine\Systems\HmckSimpleRenderSystem.cpp" />
+    <ClCompile Include="Engine\HmckSwapChain.cpp" />
+    <ClCompile Include="Engine\HmckWindow.cpp" />
+    <ClCompile Include="Engine\KeyboardMovementController.cpp" />
     <ClCompile Include="main.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Apps\FirstApp.h" />
-    <ClInclude Include="HmckBuffer.h" />
-    <ClInclude Include="HmckCamera.h" />
-    <ClInclude Include="HmckDescriptors.h" />
-    <ClInclude Include="HmckDevice.h" />
-    <ClInclude Include="HmckFrameInfo.h" />
-    <ClInclude Include="HmckGameObject.h" />
-    <ClInclude Include="HmckModel.h" />
-    <ClInclude Include="HmckPipeline.h" />
-    <ClInclude Include="HmckRenderer.h" />
-    <ClInclude Include="Systems\HmckPointLightSystem.h" />
-    <ClInclude Include="Systems\HmckSimpleRenderSystem.h" />
-    <ClInclude Include="HmckSwapChain.h" />
-    <ClInclude Include="HmckUtils.h" />
-    <ClInclude Include="HmckWindow.h" />
-    <ClInclude Include="KeyboardMovementController.h" />
+    <ClInclude Include="Engine\HmckBuffer.h" />
+    <ClInclude Include="Engine\HmckCamera.h" />
+    <ClInclude Include="Engine\HmckDescriptors.h" />
+    <ClInclude Include="Engine\HmckDevice.h" />
+    <ClInclude Include="Engine\HmckFrameInfo.h" />
+    <ClInclude Include="Engine\HmckGameObject.h" />
+    <ClInclude Include="Engine\HmckModel.h" />
+    <ClInclude Include="Engine\HmckPipeline.h" />
+    <ClInclude Include="Engine\HmckRenderer.h" />
+    <ClInclude Include="Engine\Systems\HmckPointLightSystem.h" />
+    <ClInclude Include="Engine\Systems\HmckSimpleRenderSystem.h" />
+    <ClInclude Include="Engine\HmckSwapChain.h" />
+    <ClInclude Include="Engine\HmckUtils.h" />
+    <ClInclude Include="Engine\HmckWindow.h" />
+    <ClInclude Include="Engine\KeyboardMovementController.h" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <VCProjectVersion>16.0</VCProjectVersion>
@@ -177,7 +177,7 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>C:\Users\matej\Documents\Projects\Personal\HammockEngine\External\glm;C:\VulkanSDK\1.3.224.1\Include;C:\Users\matej\Documents\Projects\Personal\HammockEngine\External\glfw-3.3.8.bin.WIN64\include;C:\Users\matej\Documents\Projects\Personal\HammockEngine\External\tiny_object_loader;C:\Users\matej\Documents\Projects\Personal\HammockEngine\HammockEngine;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>C:\Users\matej\Documents\Projects\Personal\HammockEngine\External\glm;C:\VulkanSDK\1.3.224.1\Include;C:\Users\matej\Documents\Projects\Personal\HammockEngine\External\glfw-3.3.8.bin.WIN64\include;C:\Users\matej\Documents\Projects\Personal\HammockEngine\External\tiny_object_loader;C:\Users\matej\Documents\Projects\Personal\HammockEngine\HammockEngine;C:\Users\matej\Documents\Projects\Personal\HammockEngine\HammockEngine\Engine\Systems;C:\Users\matej\Documents\Projects\Personal\HammockEngine\HammockEngine\Engine;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <LanguageStandard>stdcpp17</LanguageStandard>
     </ClCompile>
     <Link>
@@ -201,7 +201,7 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>C:\Users\matej\Documents\Projects\Personal\HammockEngine\External\glm;C:\VulkanSDK\1.3.224.1\Include;C:\Users\matej\Documents\Projects\Personal\HammockEngine\External\glfw-3.3.8.bin.WIN64\include;C:\Users\matej\Documents\Projects\Personal\HammockEngine\External\tiny_object_loader;C:\Users\matej\Documents\Projects\Personal\HammockEngine\HammockEngine;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>C:\Users\matej\Documents\Projects\Personal\HammockEngine\External\glm;C:\VulkanSDK\1.3.224.1\Include;C:\Users\matej\Documents\Projects\Personal\HammockEngine\External\glfw-3.3.8.bin.WIN64\include;C:\Users\matej\Documents\Projects\Personal\HammockEngine\External\tiny_object_loader;C:\Users\matej\Documents\Projects\Personal\HammockEngine\HammockEngine;C:\Users\matej\Documents\Projects\Personal\HammockEngine\HammockEngine\Engine\Systems;C:\Users\matej\Documents\Projects\Personal\HammockEngine\HammockEngine\Engine;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <LanguageStandard>stdcpp17</LanguageStandard>
     </ClCompile>
     <Link>
@@ -227,7 +227,7 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>C:\Users\matej\Documents\Projects\Personal\HammockEngine\External\glm;C:\VulkanSDK\1.3.224.1\Include;C:\Users\matej\Documents\Projects\Personal\HammockEngine\External\glfw-3.3.8.bin.WIN64\include;C:\Users\matej\Documents\Projects\Personal\HammockEngine\External\tiny_object_loader;C:\Users\matej\Documents\Projects\Personal\HammockEngine\HammockEngine;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>C:\Users\matej\Documents\Projects\Personal\HammockEngine\External\glm;C:\VulkanSDK\1.3.224.1\Include;C:\Users\matej\Documents\Projects\Personal\HammockEngine\External\glfw-3.3.8.bin.WIN64\include;C:\Users\matej\Documents\Projects\Personal\HammockEngine\External\tiny_object_loader;C:\Users\matej\Documents\Projects\Personal\HammockEngine\HammockEngine;C:\Users\matej\Documents\Projects\Personal\HammockEngine\HammockEngine\Engine\Systems;C:\Users\matej\Documents\Projects\Personal\HammockEngine\HammockEngine\Engine;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <LanguageStandard>stdcpp17</LanguageStandard>
     </ClCompile>
     <Link>

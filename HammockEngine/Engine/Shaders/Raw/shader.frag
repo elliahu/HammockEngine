@@ -33,6 +33,7 @@ layout (push_constant) uniform Push
     mat4 normalMatrix; // using mat4 bcs alignment requirements
 } push;
 
+
 void main()
 {
     // pre-calculations shared with all lights
@@ -44,10 +45,11 @@ void main()
     vec3 viewDirection = normalize(cameraPosWorld - fragPosWorld);
 
     // directional light
-    vec3 sunDeirection = normalize(ubo.directionalLightDirection.xyz);
-    float sunDiff = max(dot(surfaceNormal, sunDeirection), 0.0);
-    vec3 sunDiffuse = sunDiff * (ubo.directionalLightColor.xyz * ubo.directionalLightDirection.w);
+    vec3 sunDirection = normalize(ubo.directionalLightDirection.xyz);
+    float sunDiff = max(dot(surfaceNormal, sunDirection), 0.0);
+    vec3 sunDiffuse = sunDiff * (ubo.directionalLightColor.xyz * ubo.directionalLightDirection.w);  
 
+    // point lights
     for(int i = 0; i < ubo.numLights; i++)
     {
         // per-light calculations
@@ -69,5 +71,9 @@ void main()
         specularLight += intensity * blinnTerm;
     }
 
-	outColor = vec4(((diffuseLight * fragColor) + (specularLight * fragColor) + sunDiffuse), 1.0);
+	outColor = vec4((
+        (diffuseLight * fragColor) + 
+        (specularLight * fragColor) +
+        (sunDiffuse * fragColor) 
+    ), 1.0);
 }

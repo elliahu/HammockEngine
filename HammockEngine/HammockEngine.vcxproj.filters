@@ -18,7 +18,7 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="HmckWindow.cpp">
+    <ClCompile Include="Engine\HmckWindow.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="main.cpp">
@@ -27,90 +27,90 @@
     <ClCompile Include="Apps\FirstApp.cpp">
       <Filter>Test Apps</Filter>
     </ClCompile>
-    <ClCompile Include="HmckPipeline.cpp">
+    <ClCompile Include="Engine\HmckPipeline.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="HmckDevice.cpp">
+    <ClCompile Include="Engine\HmckDevice.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="HmckSwapChain.cpp">
+    <ClCompile Include="Engine\HmckSwapChain.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="HmckModel.cpp">
+    <ClCompile Include="Engine\HmckModel.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="HmckRenderer.cpp">
+    <ClCompile Include="Engine\HmckRenderer.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="Systems\HmckSimpleRenderSystem.cpp">
+    <ClCompile Include="Engine\Systems\HmckSimpleRenderSystem.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="HmckCamera.cpp">
+    <ClCompile Include="Engine\HmckCamera.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="KeyboardMovementController.cpp">
+    <ClCompile Include="Engine\KeyboardMovementController.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="HmckGameObject.cpp">
+    <ClCompile Include="Engine\HmckGameObject.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="HmckBuffer.cpp">
+    <ClCompile Include="Engine\HmckBuffer.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="HmckDescriptors.cpp">
+    <ClCompile Include="Engine\HmckDescriptors.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="Systems\HmckPointLightSystem.cpp">
+    <ClCompile Include="Engine\Systems\HmckPointLightSystem.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="HmckWindow.h">
+    <ClInclude Include="Engine\HmckWindow.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="Apps\FirstApp.h">
       <Filter>Test Apps</Filter>
     </ClInclude>
-    <ClInclude Include="HmckPipeline.h">
+    <ClInclude Include="Engine\HmckPipeline.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="HmckDevice.h">
+    <ClInclude Include="Engine\HmckDevice.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="HmckSwapChain.h">
+    <ClInclude Include="Engine\HmckSwapChain.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="HmckModel.h">
+    <ClInclude Include="Engine\HmckModel.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="HmckGameObject.h">
+    <ClInclude Include="Engine\HmckGameObject.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="HmckRenderer.h">
+    <ClInclude Include="Engine\HmckRenderer.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="Systems\HmckSimpleRenderSystem.h">
+    <ClInclude Include="Engine\Systems\HmckSimpleRenderSystem.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="HmckCamera.h">
+    <ClInclude Include="Engine\HmckCamera.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="KeyboardMovementController.h">
+    <ClInclude Include="Engine\KeyboardMovementController.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="HmckUtils.h">
+    <ClInclude Include="Engine\HmckUtils.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="HmckBuffer.h">
+    <ClInclude Include="Engine\HmckBuffer.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="HmckFrameInfo.h">
+    <ClInclude Include="Engine\HmckFrameInfo.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="HmckDescriptors.h">
+    <ClInclude Include="Engine\HmckDescriptors.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="Systems\HmckPointLightSystem.h">
+    <ClInclude Include="Engine\Systems\HmckPointLightSystem.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

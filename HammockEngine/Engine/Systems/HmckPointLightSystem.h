@@ -16,6 +16,10 @@
 #include <stdexcept>
 #include <map>
 
+#ifndef SHADERS_DIR
+	#define SHADERS_DIR "../../HammockEngine/Engine/Shaders/"
+#endif
+
 namespace Hmck
 {
 	struct HmckPointLightPushConstant
