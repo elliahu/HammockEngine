@@ -3,6 +3,7 @@
 #include <stdexcept>
 
 #include "Apps/FirstApp.h"
+#include "Utils/HmckLogger.h"
 
 int main()
 {
