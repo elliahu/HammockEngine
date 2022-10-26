@@ -20,6 +20,7 @@ External/*
 HammockEngine/HammockEngine.vcxproj
 HammockEngine/HammockEngine.vcxproj.filters
 HammockEngine/HammockEngine.vcxproj.user
+HammockEngine.sln
 
 # Ignore compiled shaders
 *.spv
