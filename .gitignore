@@ -14,9 +14,9 @@
 External/*
 
 # Ignore VS files
-#*.sln
-#*.vcxproj
-#*.vcxproj.filters
+*.sln
+*.vcxproj
+*.vcxproj.filters
 
 # Ignore compiled shaders
 *.spv
