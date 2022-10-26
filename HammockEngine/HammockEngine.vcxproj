@@ -189,10 +189,13 @@
     <PostBuildEvent>
       <Command>
       </Command>
+      <Message>
+      </Message>
     </PostBuildEvent>
     <PreBuildEvent>
-      <Command>
-      </Command>
+      <Command>echo "BUILDING SHADERS"
+call Engine\Shaders\compile.bat</Command>
+      <Message>Compile shaders</Message>
     </PreBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Testing|x64'">
@@ -213,10 +216,13 @@
     <PostBuildEvent>
       <Command>
       </Command>
+      <Message>
+      </Message>
     </PostBuildEvent>
     <PreBuildEvent>
-      <Command>
-      </Command>
+      <Command>echo "BUILDING SHADERS"
+call Engine\Shaders\compile.bat</Command>
+      <Message>Compile shaders</Message>
     </PreBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
@@ -241,10 +247,13 @@
     <PostBuildEvent>
       <Command>
       </Command>
+      <Message>
+      </Message>
     </PostBuildEvent>
     <PreBuildEvent>
-      <Command>
-      </Command>
+      <Command>echo "BUILDING SHADERS"
+call Engine\Shaders\compile.bat</Command>
+      <Message>Compile shaders</Message>
     </PreBuildEvent>
   </ItemDefinitionGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
