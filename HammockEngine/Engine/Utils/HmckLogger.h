@@ -20,7 +20,7 @@ namespace Hmck
 		HmckLogger();
 		~HmckLogger();
 
-		static const HmckLogLevel hmckMinLogLevel = HMCK_LOG_LEVEL_DEBUG;
+		static HmckLogLevel hmckMinLogLevel;
 
 		static void log(HmckLogLevel level, std::string message);
 		static void debug(std::string message);

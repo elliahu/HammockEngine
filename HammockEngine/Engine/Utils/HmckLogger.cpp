@@ -5,9 +5,12 @@ Hmck::HmckLogger::HmckLogger(){}
 
 Hmck::HmckLogger::~HmckLogger(){}
 
+Hmck::HmckLogLevel Hmck::HmckLogger::hmckMinLogLevel = Hmck::HMCK_LOG_LEVEL_DEBUG;
+
 void Hmck::HmckLogger::log(HmckLogLevel level, std::string message)
 {
-    std::cout << createLogMessage(level, message) << std::endl;
+    if(level >= hmckMinLogLevel)
+        std::cout << createLogMessage(level, message) << std::endl;
 }
 
 void Hmck::HmckLogger::debug(std::string message)

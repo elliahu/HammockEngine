@@ -8,7 +8,6 @@
 
 int main()
 {
-	Hmck::HmckLogger::debug("Testing message");
 	Hmck::FirstApp app{};
 	try
 	{
