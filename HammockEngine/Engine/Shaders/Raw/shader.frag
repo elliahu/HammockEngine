@@ -82,7 +82,7 @@ void main()
     }
 
     // spot light
-    vec3 lightDir = spotLightPosition - fragPosWorld;
+    vec3 lightDir =   spotLightPosition - fragPosWorld;
     float theta     = dot(lightDir, normalize(-spotLightDirection));
     float epsilon   = spotLightInCut - spotLightOutCut;
     float intensity = clamp((theta - spotLightOutCut) / epsilon, 0.0, 1.0);  
