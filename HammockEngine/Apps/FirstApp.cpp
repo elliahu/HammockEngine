@@ -51,11 +51,7 @@ void Hmck::FirstApp::run()
         hmckRenderer.getSwapChainRenderPass(),
         globalSetLayout->getDescriptorSetLayout()
     };
-    HmckCollisionDetectionSystem collisionDetectionSystem{
-        hmckDevice,
-        hmckRenderer.getSwapChainRenderPass(),
-        globalSetLayout->getDescriptorSetLayout()
-    };
+    HmckCollisionDetectionSystem collisionDetectionSystem{};
 
     // camera and movement
     HmckCamera camera{};
