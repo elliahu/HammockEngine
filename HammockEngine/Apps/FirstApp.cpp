@@ -105,6 +105,7 @@ void Hmck::FirstApp::run()
 			simpleRenderSystem.renderGameObjects(frameInfo);
             pointLightSystem.render(frameInfo);
             
+            // check if vases colide
             if (collisionDetectionSystem.intersect(gameObjects.at(0), gameObjects.at(1)))
             {
                 HmckLogger::debug("Vases intersect");

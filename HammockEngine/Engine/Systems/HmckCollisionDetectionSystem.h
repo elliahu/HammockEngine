@@ -32,7 +32,7 @@ namespace Hmck
 		HmckCollisionDetectionSystem(const HmckCollisionDetectionSystem&) = delete;
 		HmckCollisionDetectionSystem& operator=(const HmckCollisionDetectionSystem&) = delete;
 
-		//void renderBoundingBoxes(HmckFrameInfo& frameInfo);
+		void renderBoundingBoxes(HmckFrameInfo& frameInfo);
 		
 		bool intersect(HmckGameObject& obj1, HmckGameObject& obj2);
 

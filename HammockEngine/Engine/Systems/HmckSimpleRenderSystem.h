@@ -21,7 +21,7 @@
 
 
 /*
- *	A system is a process which acts on all entities with the desired components.
+ *	A system is a process which acts on all GameObjects with the desired components.
  */
 
 namespace Hmck
