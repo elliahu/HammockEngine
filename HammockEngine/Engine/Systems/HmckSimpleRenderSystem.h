@@ -19,12 +19,17 @@
 	#define SHADERS_DIR "../../HammockEngine/Engine/Shaders/"
 #endif
 
+
+/*
+ *	A system is a process which acts on all entities with the desired components.
+ */
+
 namespace Hmck
 {
-	/// scalar float: N = 4 Bytes
-	/// vec2: 2N = 8 Bytes
-	/// vec3 (or vec4): 4N = 16 Bytes
-	/// taken from 15.6.4 Offset and Stride Assignment
+	// scalar float: N = 4 Bytes
+	// vec2: 2N = 8 Bytes
+	// vec3 (or vec4): 4N = 16 Bytes
+	// taken from 15.6.4 Offset and Stride Assignment
 	struct HmckSimplePushConstantData {
 		glm::mat4 modelMatrix{ 1.f };
 		glm::mat4 normalMatrix{ 1.f };

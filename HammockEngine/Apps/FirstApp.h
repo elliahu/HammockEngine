@@ -11,6 +11,8 @@
 #include "KeyboardMovementController.h"
 #include "HmckBuffer.h"
 #include "HmckDescriptors.h"
+#include "HmckCollisionDetectionSystem.h"
+#include "Utils/HmckLogger.h"
 
 #define GLM_FORCE_RADIANS
 #define GLM_FORCE_DEPTH_ZERO_TO_ONE

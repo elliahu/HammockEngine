@@ -49,6 +49,7 @@ namespace Hmck
 		static void defaultHmckPipelineConfigInfo(
 			HmckPipelineConfigInfo& configInfo);
 		static void enableAlphaBlending(HmckPipelineConfigInfo& configInfo);
+		static void enablePolygonModeLine(HmckPipelineConfigInfo& configInfo);
 
 		void bind(VkCommandBuffer commandBuffer);
 

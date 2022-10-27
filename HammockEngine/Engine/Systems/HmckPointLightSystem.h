@@ -20,6 +20,10 @@
 	#define SHADERS_DIR "../../HammockEngine/Engine/Shaders/"
 #endif
 
+/*
+ *	A system is a process which acts on all entities with the desired components.
+ */
+
 namespace Hmck
 {
 	struct HmckPointLightPushConstant

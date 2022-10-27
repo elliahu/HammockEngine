@@ -51,6 +51,11 @@ void Hmck::FirstApp::run()
         hmckRenderer.getSwapChainRenderPass(),
         globalSetLayout->getDescriptorSetLayout()
     };
+    HmckCollisionDetectionSystem collisionDetectionSystem{
+        hmckDevice,
+        hmckRenderer.getSwapChainRenderPass(),
+        globalSetLayout->getDescriptorSetLayout()
+    };
 
     // camera and movement
     HmckCamera camera{};
@@ -99,6 +104,12 @@ void Hmck::FirstApp::run()
             // start rendering
 			simpleRenderSystem.renderGameObjects(frameInfo);
             pointLightSystem.render(frameInfo);
+            
+            if (collisionDetectionSystem.intersect(gameObjects.at(0), gameObjects.at(1)))
+            {
+                HmckLogger::debug("Vases intersect");
+            }
+
             // end rendering
 			hmckRenderer.endSwapChainRenderPass(commandBuffer);
 			hmckRenderer.endFrame();
@@ -116,9 +127,17 @@ void Hmck::FirstApp::loadGameObjects()
     auto vase = HmckGameObject::createGameObject();
     vase.model = vaseModel;
     vase.transform.translation = { .0f, 0.5f, 0.f };
+    vase.fitBoundingBox({ -0.5f, 0.4f }, { -0.5f, 0.5f }, { -0.5f, 0.5f });
     vase.transform.scale = glm::vec3(3.f);
-    vase.color = glm::vec3(1, 0, 0);
     gameObjects.emplace(vase.getId(), std::move(vase));
+
+    // vase 2
+    auto smallVase = HmckGameObject::createGameObject();
+    smallVase.model = vaseModel;
+    smallVase.transform.translation = { 1.0f, 0.5f, 0.f };
+    smallVase.transform.scale = glm::vec3(1.f);
+    smallVase.fitBoundingBox({ -0.5f, 0.5f }, { -0.5f, 0.5f }, { -0.5f, 0.5f });
+    gameObjects.emplace(smallVase.getId(), std::move(smallVase));
 
     // floor
     std::shared_ptr<HmckModel> quadModel = HmckModel::createModelFromFile(hmckDevice, std::string(MODELS_DIR) + "quad.obj");
