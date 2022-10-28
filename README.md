@@ -17,7 +17,7 @@ The following libraries are used:
 - [x] 3D transformations
 - [x] Basic lighting (Blinn-Phong illumination model)
 - [x] Collision detection using AABB (Axis-aligned Bounding Boxes)
-- [ ] Basic UI system
+- [x] Basic UI system
 - [ ] Shadows
 - [ ] Textures
 - [ ] Materials and PBR
