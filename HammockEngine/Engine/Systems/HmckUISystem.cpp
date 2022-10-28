@@ -21,11 +21,6 @@ void Hmck::HmckUISystem::renderUI()
 	
 	// 2. Show a simple window that we create ourselves. We use a Begin/End pair to create a named window.
 	{
-		static float f = 0.0f;
-		static int counter = 0;
-		bool show_demo_window, show_another_window;
-		ImVec4 clear_color = ImVec4(0.45f, 0.55f, 0.60f, 1.00f);
-
 		ImGui::Begin(hmckWindow.getWindowName().c_str());
 		ImGui::Text("Application average %.3f ms/frame (%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
 		ImGui::End();
