@@ -19,8 +19,9 @@ void Hmck::HmckUISystem::renderUI()
 	ImGui_ImplGlfw_NewFrame();
 	ImGui::NewFrame();
 	
-	// 2. Show a simple window that we create ourselves. We use a Begin/End pair to create a named window.
 	{
+		//ImGui::SetNextWindowPos({ 10,10 });
+		//ImGui::SetNextWindowSize({ 150,50 });
 		ImGui::Begin(hmckWindow.getWindowName().c_str());
 		ImGui::Text("Application average %.3f ms/frame (%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
 		ImGui::End();

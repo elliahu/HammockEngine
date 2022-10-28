@@ -63,7 +63,7 @@ void Hmck::FirstApp::run()
     camera.setViewTarget(glm::vec3(-1.f, -2.f, 2.f), glm::vec3(0.f, 0.f, 2.5f));
     auto viewerObject = HmckGameObject::createGameObject();
     viewerObject.transform.translation.z = -2.5f;
-    KeyboardMovementController cameraController{};
+    KeyboardMovementController cameraController{ hmckWindow.getGLFWwindow() };
 
     auto currentTime = std::chrono::high_resolution_clock::now();
 	while (!hmckWindow.shouldClose())
@@ -105,9 +105,10 @@ void Hmck::FirstApp::run()
 
 
             // start rendering
-            userInterfaceSystem.renderUI();
+            
 			simpleRenderSystem.renderGameObjects(frameInfo);
             pointLightSystem.render(frameInfo);
+            userInterfaceSystem.renderUI();
             
             
             // check if vases colide
