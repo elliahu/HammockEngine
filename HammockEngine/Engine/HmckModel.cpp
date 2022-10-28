@@ -29,9 +29,12 @@ Hmck::HmckModel::~HmckModel(){}
 std::unique_ptr<Hmck::HmckModel> Hmck::HmckModel::createModelFromFile(HmckDevice& device, const std::string& filepath)
 {
 	Builder builder{};
-	builder.loadModel(filepath);
+	ModelInfo mInfo = builder.loadModel(filepath);
 
-	return std::make_unique<HmckModel>(device, builder);
+	std::unique_ptr<HmckModel> model = std::make_unique<HmckModel>(device, builder);
+	model->modelInfo = mInfo;
+
+	return model;
 }
 
 void Hmck::HmckModel::draw(VkCommandBuffer commandBuffer)
@@ -146,7 +149,7 @@ std::vector<VkVertexInputAttributeDescription> Hmck::HmckModel::Vertex::getAttri
 	};
 }
 
-void Hmck::HmckModel::Builder::loadModel(const std::string& filepath)
+Hmck::HmckModel::ModelInfo Hmck::HmckModel::Builder::loadModel(const std::string& filepath)
 {
 	tinyobj::attrib_t attrib;
 	std::vector<tinyobj::shape_t> shapes;
@@ -160,6 +163,8 @@ void Hmck::HmckModel::Builder::loadModel(const std::string& filepath)
 
 	vertices.clear();
 	indices.clear();
+
+	ModelInfo mInfo{};
 
 	std::unordered_map<Vertex, uint32_t> uniqueVertices{};
 
@@ -205,9 +210,42 @@ void Hmck::HmckModel::Builder::loadModel(const std::string& filepath)
 			{
 				uniqueVertices[vertex] = static_cast<uint32_t>(vertices.size());
 				vertices.push_back(vertex);
+
+				// fill Info struct
+				if (vertex.position.x <= mInfo.x.min)
+				{
+					mInfo.x.min = vertex.position.x;
+				}
+
+				if (vertex.position.x >= mInfo.x.max)
+				{
+					mInfo.x.max = vertex.position.x;
+				}
+
+				if (vertex.position.y <= mInfo.y.min)
+				{
+					mInfo.y.min = vertex.position.y;
+				}
+
+				if (vertex.position.y >= mInfo.y.max)
+				{
+					mInfo.y.max = vertex.position.y;
+				}
+
+				if (vertex.position.z <= mInfo.z.min)
+				{
+					mInfo.z.min = vertex.position.z;
+				}
+
+				if (vertex.position.z >= mInfo.z.max)
+				{
+					mInfo.z.max = vertex.position.z;
+				}
 			}
 
 			indices.push_back(uniqueVertices[vertex]);
 		}
 	}
+
+	return mInfo;
 }

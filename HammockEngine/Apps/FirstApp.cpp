@@ -69,7 +69,7 @@ void Hmck::FirstApp::run()
         float frameTime = std::chrono::duration<float, std::chrono::seconds::period>(newTime - currentTime).count();
         currentTime = newTime;
 
-        cameraController.moveInPlaneXZ(hmckWindow.getGLFWwindow(), frameTime, viewerObject);
+        cameraController.moveInPlaneXZ(hmckWindow.getGLFWwindow(), frameTime, gameObjects.at(1));
         camera.setViewYXZ(viewerObject.transform.translation, viewerObject.transform.rotation);
 
         float aspect = hmckRenderer.getAspectRatio();
@@ -124,8 +124,8 @@ void Hmck::FirstApp::loadGameObjects()
     auto vase = HmckGameObject::createGameObject();
     vase.model = vaseModel;
     vase.transform.translation = { .0f, 0.5f, 0.f };
-    vase.fitBoundingBox({ -0.5f, 0.4f }, { -0.5f, 0.5f }, { -0.5f, 0.5f });
     vase.transform.scale = glm::vec3(3.f);
+    vase.fitBoundingBox(vaseModel->modelInfo);
     gameObjects.emplace(vase.getId(), std::move(vase));
 
     // vase 2
@@ -133,7 +133,7 @@ void Hmck::FirstApp::loadGameObjects()
     smallVase.model = vaseModel;
     smallVase.transform.translation = { 1.0f, 0.5f, 0.f };
     smallVase.transform.scale = glm::vec3(1.f);
-    smallVase.fitBoundingBox({ -0.5f, 0.5f }, { -0.5f, 0.5f }, { -0.5f, 0.5f });
+    smallVase.fitBoundingBox(vaseModel->modelInfo);
     gameObjects.emplace(smallVase.getId(), std::move(smallVase));
 
     // floor

@@ -89,10 +89,12 @@ void main()
 
     vec3 spotDiffuse = intensity * spotLightColor;
 
+ 
+    // gl_FrontFacing can be used to apply lighting only on front facing surface
 	outColor = vec4((
-        (diffuseLight * fragColor) + 
-        (specularLight * fragColor) +
-        (sunDiffuse * fragColor) +
-        (spotDiffuse * fragColor)
-    ), 1.0);
+            (diffuseLight * fragColor) + 
+            (specularLight * fragColor) +
+            (sunDiffuse * fragColor) +
+            (spotDiffuse * fragColor)
+     ), 1.0);    
 }

@@ -73,9 +73,18 @@ Hmck::HmckGameObject Hmck::HmckGameObject::createPointLight(float intensity,floa
 
 void Hmck::HmckGameObject::fitBoundingBox(HmckBoundingBoxComponent::HmckBoundingBoxAxis x, HmckBoundingBoxComponent::HmckBoundingBoxAxis y, HmckBoundingBoxComponent::HmckBoundingBoxAxis z)
 {
-	this->boundingBox = std::make_unique<HmckBoundingBoxComponent>();
+	if (boundingBox == nullptr)
+		this->boundingBox = std::make_unique<HmckBoundingBoxComponent>();
 	this->boundingBox->x = x;
 	this->boundingBox->y = y;
 	this->boundingBox->z = z;
+}
+
+void Hmck::HmckGameObject::fitBoundingBox(HmckModel::ModelInfo& modelInfo)
+{
+	fitBoundingBox(
+		{ modelInfo.x.min * transform.scale.x, modelInfo.x.max * transform.scale.x },
+		{ modelInfo.y.min * transform.scale.y, modelInfo.y.max * transform.scale.y },
+		{ modelInfo.z.min * transform.scale.z, modelInfo.z.max * transform.scale.z });
 }
 

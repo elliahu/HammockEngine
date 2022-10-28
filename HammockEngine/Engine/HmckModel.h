@@ -22,6 +22,19 @@ namespace Hmck
 	{
 	public:
 
+		struct ModelInfo
+		{
+			struct AxisRange
+			{
+				float min;
+				float max;
+			};
+
+			AxisRange x{};
+			AxisRange y{};
+			AxisRange z{};
+		};
+
 		// when making changes to Vertex struct,
 		// dont forget to update Vertex::getAttributeDescriptions() to match
 		struct Vertex 
@@ -49,8 +62,9 @@ namespace Hmck
 			std::vector<Vertex> vertices{};
 			std::vector<uint32_t> indices{};
 
-			void loadModel(const std::string& filepath);
+			ModelInfo loadModel(const std::string& filepath);
 		};
+
 
 		HmckModel(HmckDevice& device, const HmckModel::Builder& builder);
 		~HmckModel();
@@ -64,6 +78,7 @@ namespace Hmck
 		void bind(VkCommandBuffer commandBuffer);
 		void draw(VkCommandBuffer commandBuffer);
 
+		ModelInfo modelInfo;
 
 	private:
 		void createVertexBuffers(const std::vector<Vertex>& vertices);
@@ -78,7 +93,6 @@ namespace Hmck
 
 		std::unique_ptr<HmckBuffer> indexBuffer;
 		uint32_t indexCount;
-	
 	};
 }
 

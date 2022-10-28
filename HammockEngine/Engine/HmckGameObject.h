@@ -14,12 +14,10 @@ namespace Hmck
 	// https://austinmorlan.com/posts/entity_component_system/
 
 	/*
-		In this case:
-		GameObject: represents a general-purpose object
-		Component: A component labels an GameObject as possessing a particular aspect, and holds the data needed to model that aspect
+		GameObject: represents a general-purpose in-game object
+		Component: A component labels GameObject as possessing a particular aspect, and holds the data needed to model that aspect
 		System: A system is a process which acts on all GameObjects with the desired components. Systems are defined in the Systems folder
 	*/
-
 
 	/*
 		TransformComponent
@@ -93,6 +91,7 @@ namespace Hmck
 			HmckBoundingBoxComponent::HmckBoundingBoxAxis x,
 			HmckBoundingBoxComponent::HmckBoundingBoxAxis y,
 			HmckBoundingBoxComponent::HmckBoundingBoxAxis z);
+		void fitBoundingBox(HmckModel::ModelInfo& modelInfo);
 
 		HmckGameObject(const HmckGameObject&) = delete;
 		HmckGameObject& operator =(const HmckGameObject&) = delete;

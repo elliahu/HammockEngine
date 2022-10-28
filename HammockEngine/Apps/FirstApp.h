@@ -8,7 +8,7 @@
 #include "Systems/HmckSimpleRenderSystem.h"
 #include "HmckModel.h"
 #include "HmckCamera.h"
-#include "KeyboardMovementController.h"
+#include "Controllers/KeyboardMovementController.h"
 #include "HmckBuffer.h"
 #include "HmckDescriptors.h"
 #include "HmckCollisionDetectionSystem.h"
