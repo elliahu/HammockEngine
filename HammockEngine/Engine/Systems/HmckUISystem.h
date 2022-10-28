@@ -4,6 +4,7 @@
 #include "imgui.h"
 #include "backends/imgui_impl_glfw.h"
 #include "backends/imgui_impl_vulkan.h"
+#include "HmckGameObject.h"
 
 #include <exception>
 #include <deque>
@@ -17,9 +18,10 @@ namespace Hmck
 		HmckUISystem(HmckDevice& device, VkRenderPass renderPass, HmckWindow& window);
 		~HmckUISystem();
 
-		void renderUI();
+		void beginUserInterface();
+		void endUserInterface(VkCommandBuffer commandBuffer);
 
-		void endRenderUI(VkCommandBuffer commandBuffer);
+		void showDebugStats(HmckGameObject& viewerObject);
 
 	private:
 		void init();

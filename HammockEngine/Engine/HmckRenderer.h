@@ -48,7 +48,6 @@ namespace Hmck
 		void endFrame();
 		void beginSwapChainRenderPass(VkCommandBuffer commandBuffer);
 		void endSwapChainRenderPass(VkCommandBuffer commandBuffer);
-		void endSwapChainRenderPass(VkCommandBuffer commandBuffer, HmckUISystem& userInterfaceSystem);
 
 
 	private:

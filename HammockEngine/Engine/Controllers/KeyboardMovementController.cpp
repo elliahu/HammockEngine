@@ -5,8 +5,6 @@ bool Hmck::KeyboardMovementController::mouseMotionEnded = false;
 
 void Hmck::KeyboardMovementController::moveInPlaneXZ(GLFWwindow* window, float dt, HmckGameObject& gameObject)
 {
-	
-
 	glm::vec3 rotate{ 0 };
 	if (glfwGetKey(window, keys.lookRight) == GLFW_PRESS) rotate.y += 1.f;
 	if (glfwGetKey(window, keys.lookLeft) == GLFW_PRESS) rotate.y -= 1.f;
@@ -76,14 +74,20 @@ void Hmck::KeyboardMovementController::moveInPlaneXZ(GLFWwindow* window, float d
 
 void Hmck::KeyboardMovementController::mouseButtonCallback(GLFWwindow* window, int button, int action, int mods)
 {
+	ImGuiIO& io = ImGui::GetIO();
 	if (button == GLFW_MOUSE_BUTTON_RIGHT && action == GLFW_PRESS)
 	{
 		mouseMotionStarted = true;
 	}
 
-
 	if (button == GLFW_MOUSE_BUTTON_RIGHT && action == GLFW_RELEASE)
 	{
 		mouseMotionEnded = true;
 	}
+
+	// forward mouse event to ImGUI
+	if (action == GLFW_PRESS)
+		io.AddMouseButtonEvent(button, true);
+	if (action == GLFW_RELEASE)
+		io.AddMouseButtonEvent(button, false);
 }

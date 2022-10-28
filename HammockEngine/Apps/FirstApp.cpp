@@ -108,8 +108,11 @@ void Hmck::FirstApp::run()
             
 			simpleRenderSystem.renderGameObjects(frameInfo);
             pointLightSystem.render(frameInfo);
-            userInterfaceSystem.renderUI();
-            
+
+            // UI
+            userInterfaceSystem.beginUserInterface();
+            userInterfaceSystem.showDebugStats(viewerObject);
+            userInterfaceSystem.endUserInterface(commandBuffer);
             
             // check if vases colide
             if (collisionDetectionSystem.intersect(gameObjects.at(0), gameObjects.at(1)))
@@ -118,7 +121,7 @@ void Hmck::FirstApp::run()
             }
 
             // end rendering
-			hmckRenderer.endSwapChainRenderPass(commandBuffer, userInterfaceSystem);
+			hmckRenderer.endSwapChainRenderPass(commandBuffer);
 			hmckRenderer.endFrame();
 		}
 

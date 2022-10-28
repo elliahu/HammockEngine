@@ -13,26 +13,34 @@ Hmck::HmckUISystem::~HmckUISystem()
 	ImGui::DestroyContext();
 }
 
-void Hmck::HmckUISystem::renderUI()
+void Hmck::HmckUISystem::beginUserInterface()
 {
 	ImGui_ImplVulkan_NewFrame();
 	ImGui_ImplGlfw_NewFrame();
 	ImGui::NewFrame();
-	
-	{
-		//ImGui::SetNextWindowPos({ 10,10 });
-		//ImGui::SetNextWindowSize({ 150,50 });
-		ImGui::Begin(hmckWindow.getWindowName().c_str());
-		ImGui::Text("Application average %.3f ms/frame (%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
-		ImGui::End();
-	}
-
-	ImGui::Render();
+	//ImGui::SetNextWindowPos({ 10,10 });
+	//ImGui::SetNextWindowSize({ 150,50 });
 }
 
-void Hmck::HmckUISystem::endRenderUI(VkCommandBuffer commandBuffer)
+void Hmck::HmckUISystem::endUserInterface(VkCommandBuffer commandBuffer)
 {
+	ImGui::Render();
 	ImGui_ImplVulkan_RenderDrawData(ImGui::GetDrawData(), commandBuffer);
+}
+
+void Hmck::HmckUISystem::showDebugStats(HmckGameObject& viewerObject)
+{
+	ImGui::Begin(hmckWindow.getWindowName().c_str());
+	ImGui::Text("Camera world POSITION: %.2f %.2f %.2f", 
+		viewerObject.transform.translation.x,
+		viewerObject.transform.translation.y,
+		viewerObject.transform.translation.z);
+	ImGui::Text("Camera world ROTATION: %.2f %.2f %.2f", 
+		viewerObject.transform.rotation.x,
+		viewerObject.transform.rotation.y,
+		viewerObject.transform.rotation.z);
+	ImGui::Text("Application average %.3f ms/frame (%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
+	ImGui::End();
 }
 
 
@@ -98,7 +106,7 @@ void Hmck::HmckUISystem::init()
 	ImGui_ImplVulkan_DestroyFontUploadObjects();
 
 	//add then destroy the imgui created structures
-	// TODO
+	// done in the destructor
 }
 
 VkCommandBuffer Hmck::HmckUISystem::beginSingleTimeCommands()

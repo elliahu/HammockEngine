@@ -166,13 +166,3 @@ void Hmck::HmckRenderer::endSwapChainRenderPass(VkCommandBuffer commandBuffer)
 
 	vkCmdEndRenderPass(commandBuffer);
 }
-
-void Hmck::HmckRenderer::endSwapChainRenderPass(VkCommandBuffer commandBuffer, HmckUISystem& userInterfaceSystem)
-{
-	assert(isFrameInProgress() && "Cannot call beginSwapChainRenderPass if frame is not in progress");
-	assert(commandBuffer == getCurrentCommandBuffer() && "Cannot begin render pass on command buffer from a different frame");
-
-	userInterfaceSystem.endRenderUI(commandBuffer);
-
-	vkCmdEndRenderPass(commandBuffer);
-}
