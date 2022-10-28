@@ -17,7 +17,7 @@ void Hmck::KeyboardMovementController::moveInPlaneXZ(GLFWwindow* window, float d
 	{
 		mouseInMotion = true;
 		mouseMotionStarted = false;
-		glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_HIDDEN);
+		glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
 		double x, y;
 		glfwGetCursorPos(window, &x, &y);
 		mouseMotionStartX = x;
