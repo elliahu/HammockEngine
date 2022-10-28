@@ -27,6 +27,7 @@ namespace Hmck
 		HmckWindow(const HmckWindow&) = delete;
 		HmckWindow& operator=(const HmckWindow&) = delete;
 
+		std::string getWindowName() { return windowName; }
 		bool shouldClose();
 		VkExtent2D getExtent() { return { static_cast<uint32_t>(width), static_cast<uint32_t>(height) }; }
 		void createWindowSurface(VkInstance instance, VkSurfaceKHR* surface);

@@ -3,6 +3,7 @@
 #include "HmckWindow.h"
 #include "HmckDevice.h"
 #include "HmckSwapChain.h"
+#include "Systems/HmckUISystem.h"
 
 #define GLM_FORCE_RADIANS
 #define GLM_FORCE_DEPTH_ZERO_TO_ONE
@@ -47,6 +48,7 @@ namespace Hmck
 		void endFrame();
 		void beginSwapChainRenderPass(VkCommandBuffer commandBuffer);
 		void endSwapChainRenderPass(VkCommandBuffer commandBuffer);
+		void endSwapChainRenderPass(VkCommandBuffer commandBuffer, HmckUISystem& userInterfaceSystem);
 
 
 	private:

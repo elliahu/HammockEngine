@@ -52,6 +52,11 @@ void Hmck::FirstApp::run()
         globalSetLayout->getDescriptorSetLayout()
     };
     HmckCollisionDetectionSystem collisionDetectionSystem{};
+    HmckUISystem userInterfaceSystem{
+        hmckDevice,
+        hmckRenderer.getSwapChainRenderPass(),
+        hmckWindow
+    };
 
     // camera and movement
     HmckCamera camera{};
@@ -69,7 +74,7 @@ void Hmck::FirstApp::run()
         float frameTime = std::chrono::duration<float, std::chrono::seconds::period>(newTime - currentTime).count();
         currentTime = newTime;
 
-        cameraController.moveInPlaneXZ(hmckWindow.getGLFWwindow(), frameTime, gameObjects.at(1));
+        cameraController.moveInPlaneXZ(hmckWindow.getGLFWwindow(), frameTime, viewerObject);
         camera.setViewYXZ(viewerObject.transform.translation, viewerObject.transform.rotation);
 
         float aspect = hmckRenderer.getAspectRatio();
@@ -97,9 +102,13 @@ void Hmck::FirstApp::run()
 
             // render
 			hmckRenderer.beginSwapChainRenderPass(commandBuffer);
+
+
             // start rendering
+            userInterfaceSystem.renderUI();
 			simpleRenderSystem.renderGameObjects(frameInfo);
             pointLightSystem.render(frameInfo);
+            
             
             // check if vases colide
             if (collisionDetectionSystem.intersect(gameObjects.at(0), gameObjects.at(1)))
@@ -108,7 +117,7 @@ void Hmck::FirstApp::run()
             }
 
             // end rendering
-			hmckRenderer.endSwapChainRenderPass(commandBuffer);
+			hmckRenderer.endSwapChainRenderPass(commandBuffer, userInterfaceSystem);
 			hmckRenderer.endFrame();
 		}
 
@@ -164,7 +173,6 @@ void Hmck::FirstApp::loadGameObjects()
         );
         pointLight.transform.translation = glm::vec3(rotateLight * glm::vec4(-1.f, -1.f, -1.f, 1.f));
         gameObjects.emplace(pointLight.getId(), std::move(pointLight));
-
     }
     
 }
