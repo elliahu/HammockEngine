@@ -3,6 +3,7 @@
 Hmck::HmckUISystem::HmckUISystem(HmckDevice& device, VkRenderPass renderPass, HmckWindow& window) : hmckDevice{ device }, hmckWindow{ window }, renderPass{renderPass}
 {
 	init();
+	setupStyle();
 }
 
 Hmck::HmckUISystem::~HmckUISystem()
@@ -18,10 +19,9 @@ void Hmck::HmckUISystem::beginUserInterface()
 	ImGui_ImplVulkan_NewFrame();
 	ImGui_ImplGlfw_NewFrame();
 	ImGui::NewFrame();
-	//ImGui::SetNextWindowPos({ 10,10 });
-	//ImGui::SetNextWindowSize({ 150,50 });
 
-	ImGui::ShowDemoWindow();
+	if(showDemoWindow)
+		ImGui::ShowDemoWindow();
 }
 
 void Hmck::HmckUISystem::endUserInterface(VkCommandBuffer commandBuffer)
@@ -32,6 +32,7 @@ void Hmck::HmckUISystem::endUserInterface(VkCommandBuffer commandBuffer)
 
 void Hmck::HmckUISystem::showDebugStats(HmckGameObject& camera)
 {
+	HmckLogger::debug("Test message");
 	ImGuiIO& io = ImGui::GetIO();
 	ImGuiWindowFlags window_flags = ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_NoFocusOnAppearing | ImGuiWindowFlags_NoNav;
 	ImGui::SetNextWindowPos({10,10});
@@ -81,6 +82,11 @@ void Hmck::HmckUISystem::showGameObjectsInspector(HmckGameObject::Map& gameObjec
 		ImGui::Separator();
 	}
 	endWindow();
+}
+
+void Hmck::HmckUISystem::showLog()
+{
+	// TODO
 }
 
 void Hmck::HmckUISystem::forward(int button, bool state)
@@ -153,6 +159,59 @@ void Hmck::HmckUISystem::init()
 
 	//add then destroy the imgui created structures
 	// done in the destructor
+}
+
+void Hmck::HmckUISystem::setupStyle()
+{
+	ImGuiStyle& style = ImGui::GetStyle();
+
+	// Setup ImGUI style
+
+	// Rounding
+	style.Alpha = .9f;
+	float globalRounding = 9.0f;
+	style.FrameRounding = globalRounding;
+	style.WindowRounding = globalRounding;
+	style.ChildRounding = globalRounding;
+	style.PopupRounding = globalRounding;
+	style.ScrollbarRounding = globalRounding;
+	style.GrabRounding = globalRounding;
+	style.LogSliderDeadzone = globalRounding;
+	style.TabRounding = globalRounding;
+
+	// padding
+	style.WindowPadding = { 10.0f, 10.0f };
+	style.FramePadding = { 3.0f, 5.0f };
+	style.ItemSpacing = { 6.0f, 6.0f };
+	style.ItemInnerSpacing = { 6.0f, 6.0f };
+	style.ScrollbarSize = 8.0f;
+	style.GrabMinSize = 10.0f;
+
+	// align
+	style.WindowTitleAlign = { .5f, .5f };
+
+	// colors
+	style.Colors[ImGuiCol_TitleBg] = ImVec4(15 / 255.0f, 15 / 255.0f, 15 / 255.0f, 146 / 240.0f); 
+	style.Colors[ImGuiCol_FrameBg] = ImVec4(60 / 255.0f, 60 / 255.0f, 60 / 255.0f, 170 / 255.0f);
+	style.Colors[ImGuiCol_FrameBgHovered] = ImVec4(60 / 255.0f, 60 / 255.0f, 60 / 255.0f, 255 / 255.0f);
+	style.Colors[ImGuiCol_FrameBgActive] = ImVec4(60 / 255.0f, 60 / 255.0f, 60 / 255.0f, 255 / 255.0f);
+	style.Colors[ImGuiCol_MenuBarBg] = ImVec4(33 / 255.0f, 33 / 255.0f, 33 / 255.0f, 50 / 255.0f);
+	style.Colors[ImGuiCol_CheckMark] = ImVec4(200 / 255.0f, 200 / 255.0f, 200 / 255.0f, 255 / 255.0f);
+	style.Colors[ImGuiCol_SliderGrab] = ImVec4(200 / 255.0f, 200 / 255.0f, 200 / 255.0f, 255 / 255.0f);
+	style.Colors[ImGuiCol_SliderGrabActive] = ImVec4(255 / 255.0f, 255 / 255.0f, 255 / 255.0f, 255 / 255.0f);
+	style.Colors[ImGuiCol_Header] = ImVec4(60 / 255.0f, 60 / 255.0f, 60 / 255.0f, 79 / 255.0f);
+	style.Colors[ImGuiCol_HeaderHovered] = ImVec4(60 / 255.0f, 60 / 255.0f, 60 / 255.0f, 170 / 255.0f);
+	style.Colors[ImGuiCol_HeaderActive] = ImVec4(60 / 255.0f, 60 / 255.0f, 60 / 255.0f, 170 / 255.0f);
+	style.Colors[ImGuiCol_Separator] = ImVec4(60 / 255.0f, 60 / 255.0f, 60 / 255.0f, 170 / 255.0f);
+	style.Colors[ImGuiCol_ResizeGrip] = ImVec4(60 / 255.0f, 60 / 255.0f, 60 / 255.0f, 79 / 255.0f);
+	style.Colors[ImGuiCol_ResizeGripHovered] = ImVec4(60 / 255.0f, 60 / 255.0f, 60 / 255.0f, 170 / 255.0f);
+	style.Colors[ImGuiCol_ResizeGripActive] = ImVec4(60 / 255.0f, 60 / 255.0f, 60 / 255.0f, 170 / 255.0f);
+	style.Colors[ImGuiCol_Tab] = ImVec4(60 / 255.0f, 60 / 255.0f, 60 / 255.0f, 79 / 255.0f);
+	style.Colors[ImGuiCol_TabHovered] = ImVec4(60 / 255.0f, 60 / 255.0f, 60 / 255.0f, 170 / 255.0f);
+	style.Colors[ImGuiCol_TabActive] = ImVec4(60 / 255.0f, 60 / 255.0f, 60 / 255.0f, 170 / 255.0f);
+	style.Colors[ImGuiCol_Button] = ImVec4(80 / 255.0f, 80 / 255.0f, 80 / 255.0f, 170 / 255.0f);
+	style.Colors[ImGuiCol_ButtonHovered] = ImVec4(100 / 255.0f, 100 / 255.0f, 100 / 255.0f, 170 / 255.0f);
+	style.Colors[ImGuiCol_ButtonActive] = ImVec4(255 / 255.0f, 255 / 255.0f, 255 / 255.0f, 170 / 255.0f);
 }
 
 VkCommandBuffer Hmck::HmckUISystem::beginSingleTimeCommands()

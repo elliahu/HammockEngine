@@ -1,6 +1,7 @@
 #pragma once
 #include "HmckPipeline.h"
 #include "HmckDevice.h"
+#include "Utils/HmckLogger.h"
 #include "imgui.h"
 #include "backends/imgui_impl_glfw.h"
 #include "backends/imgui_impl_vulkan.h"
@@ -25,12 +26,14 @@ namespace Hmck
 		void showDebugStats(HmckGameObject& camera);
 		void showGameObjectComponents(HmckGameObject& gameObject, bool * close = (bool*)0);
 		void showGameObjectsInspector(HmckGameObject::Map& gameObjects);
+		void showLog();
 
 		// forwarding events to ImGUI
 		static void forward(int button, bool state);
 
 	private:
 		void init();
+		void setupStyle();
 
 		VkCommandBuffer beginSingleTimeCommands();
 		void endSingleTimeCommands(VkCommandBuffer commandBuffer);
@@ -39,6 +42,7 @@ namespace Hmck
 		void endWindow();
 		void gameObjectComponets(HmckGameObject& gameObject);
 
+		bool showDemoWindow = false;
 
 		HmckDevice& hmckDevice;
 		HmckWindow& hmckWindow;
