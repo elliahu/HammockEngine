@@ -20,6 +20,8 @@ void Hmck::HmckUISystem::beginUserInterface()
 	ImGui::NewFrame();
 	//ImGui::SetNextWindowPos({ 10,10 });
 	//ImGui::SetNextWindowSize({ 150,50 });
+
+	//ImGui::ShowDemoWindow();
 }
 
 void Hmck::HmckUISystem::endUserInterface(VkCommandBuffer commandBuffer)
@@ -28,22 +30,97 @@ void Hmck::HmckUISystem::endUserInterface(VkCommandBuffer commandBuffer)
 	ImGui_ImplVulkan_RenderDrawData(ImGui::GetDrawData(), commandBuffer);
 }
 
-void Hmck::HmckUISystem::showDebugStats(HmckGameObject& viewerObject)
+void Hmck::HmckUISystem::showDebugStats(HmckGameObject& camera)
 {
-	// get curent cursor position
-	double mX, mY;
-	glfwGetCursorPos(hmckWindow.getGLFWwindow(), &mX, &mY);
-
-	ImGui::Begin(hmckWindow.getWindowName().c_str());
-	ImGui::Text("Camera world POSITION: [ %.2f %.2f %.2f ]", 
-		viewerObject.transform.translation.x,
-		viewerObject.transform.translation.y,
-		viewerObject.transform.translation.z);
-	ImGui::Text("Camera world ROTATION: [ %.2f %.2f %.2f ]", 
-		viewerObject.transform.rotation.x,
-		viewerObject.transform.rotation.y,
-		viewerObject.transform.rotation.z);
+	ImGuiIO& io = ImGui::GetIO();
+	ImGuiWindowFlags window_flags = ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_NoFocusOnAppearing | ImGuiWindowFlags_NoNav;
+	ImGui::SetNextWindowPos({10,10});
+	ImGui::SetNextWindowBgAlpha(0.35f);
+	ImGui::Begin(hmckWindow.getWindowName().c_str(),(bool*)0, window_flags);
+	ImGui::Text("Camera world position: ( %.2f, %.2f, %.2f )", 
+		camera.transform.translation.x,
+		camera.transform.translation.y,
+		camera.transform.translation.z);
+	ImGui::Text("Camera world rotaion: ( %.2f, %.2f, %.2f )", 
+		camera.transform.rotation.x,
+		camera.transform.rotation.y,
+		camera.transform.rotation.z);
+	if (ImGui::IsMousePosValid())
+		ImGui::Text("Mouse Position: (%.1f,%.1f)", io.MousePos.x, io.MousePos.y);
+	else
+		ImGui::Text("Mouse Position: <invalid or hidden>");
+	ImGui::Text("Window resolution: (%d x %d)", hmckWindow.getExtent().width, hmckWindow.getExtent().height);
 	ImGui::Text("Application average %.3f ms/frame (%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
+	ImGui::End();
+}
+
+void Hmck::HmckUISystem::showGameObjectStats(HmckGameObject& gameObject)
+{
+	std::string windowTitle = "GameObject id_t " + std::to_string(gameObject.getId());
+	ImGui::Begin(windowTitle.c_str());
+	ImGui::Text("Game Object components are listed here");
+	if (ImGui::CollapsingHeader("Transform", ImGuiTreeNodeFlags_DefaultOpen)) // Tranform
+	{
+		if (ImGui::TreeNode("Translation"))
+		{
+			ImGui::DragFloat("x", &gameObject.transform.translation.x, 0.01);
+			ImGui::DragFloat("y", &gameObject.transform.translation.y, 0.01);
+			ImGui::DragFloat("z", &gameObject.transform.translation.z, 0.01);
+			ImGui::TreePop();
+			ImGui::Separator();
+		}
+		if (ImGui::TreeNode("Rotation"))
+		{
+			ImGui::DragFloat("x", &gameObject.transform.rotation.x, 0.01);
+			ImGui::DragFloat("y", &gameObject.transform.rotation.y, 0.01);
+			ImGui::DragFloat("z", &gameObject.transform.rotation.z, 0.01);
+			ImGui::Separator();
+			ImGui::TreePop();
+		}
+		if (ImGui::TreeNode("Scale"))
+		{
+			ImGui::DragFloat("x", &gameObject.transform.scale.x, 0.01);
+			ImGui::DragFloat("y", &gameObject.transform.scale.y, 0.01);
+			ImGui::DragFloat("z", &gameObject.transform.scale.z, 0.01);
+			ImGui::TreePop();
+			ImGui::Separator();
+		}
+	}
+	if (ImGui::CollapsingHeader("Color")) // Color
+	{
+		float * color_hsv[3] = {
+			&gameObject.color.x,
+			&gameObject.color.y,
+			&gameObject.color.z,
+		};
+		ImGui::ColorEdit3("Color", (float*)&color_hsv, ImGuiColorEditFlags_Float | ImGuiColorEditFlags_DisplayRGB);
+	}
+	if (gameObject.model != nullptr) // Model
+	{
+		if (ImGui::CollapsingHeader("Model"))
+		{
+			ImGui::Text("Has model");
+		}
+	}
+	if (gameObject.boundingBox != nullptr) // Bounding box
+	{
+		if (ImGui::CollapsingHeader("Bounding box"))
+		{
+			ImGui::DragFloat("x min", &gameObject.boundingBox->x.min, 0.01);
+			ImGui::DragFloat("x max", &gameObject.boundingBox->x.max, 0.01);
+			ImGui::DragFloat("y min", &gameObject.boundingBox->y.min, 0.01);
+			ImGui::DragFloat("y max", &gameObject.boundingBox->y.max, 0.01);
+			ImGui::DragFloat("z min", &gameObject.boundingBox->z.min, 0.01);
+			ImGui::DragFloat("z max", &gameObject.boundingBox->z.max, 0.01);
+		}
+	}
+	if (gameObject.pointLight != nullptr) // Point light
+	{
+		if (ImGui::CollapsingHeader("Point light"))
+		{
+			ImGui::DragFloat("Intensity", &gameObject.pointLight->lightIntensity, 0.01, 0.0, 1.0);
+		}
+	}
 	ImGui::End();
 }
 

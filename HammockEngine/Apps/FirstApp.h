@@ -50,7 +50,7 @@ namespace Hmck
 	private:
 		void loadGameObjects();
 
-		HmckWindow hmckWindow{ WINDOW_WIDTH, WINDOW_HEIGHT, "First Vulkan App" };
+		HmckWindow hmckWindow{ WINDOW_WIDTH, WINDOW_HEIGHT, "Hammock Engine" };
 		HmckDevice hmckDevice{ hmckWindow };
 		HmckRenderer hmckRenderer{ hmckWindow, hmckDevice };
 

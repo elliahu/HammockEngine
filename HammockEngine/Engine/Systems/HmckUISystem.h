@@ -21,7 +21,8 @@ namespace Hmck
 		// Ui rendering
 		void beginUserInterface();
 		void endUserInterface(VkCommandBuffer commandBuffer);
-		void showDebugStats(HmckGameObject& viewerObject);
+		void showDebugStats(HmckGameObject& camera);
+		void showGameObjectStats(HmckGameObject& gameObject);
 
 		// forwarding events to ImGUI
 		static void forward(int button, bool state);
