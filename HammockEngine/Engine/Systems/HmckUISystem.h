@@ -18,10 +18,13 @@ namespace Hmck
 		HmckUISystem(HmckDevice& device, VkRenderPass renderPass, HmckWindow& window);
 		~HmckUISystem();
 
+		// Ui rendering
 		void beginUserInterface();
 		void endUserInterface(VkCommandBuffer commandBuffer);
-
 		void showDebugStats(HmckGameObject& viewerObject);
+
+		// forwarding events to ImGUI
+		static void forward(int button, bool state);
 
 	private:
 		void init();

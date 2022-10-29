@@ -1,6 +1,6 @@
 #pragma once
 
-#include "HmckWindow.h"
+#include "Platforms/HmckWindow.h"
 #include "HmckDevice.h"
 #include "HmckSwapChain.h"
 #include "Systems/HmckUISystem.h"

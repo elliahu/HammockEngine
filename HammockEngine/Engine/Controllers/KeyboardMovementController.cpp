@@ -74,7 +74,7 @@ void Hmck::KeyboardMovementController::moveInPlaneXZ(GLFWwindow* window, float d
 
 void Hmck::KeyboardMovementController::mouseButtonCallback(GLFWwindow* window, int button, int action, int mods)
 {
-	ImGuiIO& io = ImGui::GetIO();
+	// capture right click 
 	if (button == GLFW_MOUSE_BUTTON_RIGHT && action == GLFW_PRESS)
 	{
 		mouseMotionStarted = true;
@@ -85,9 +85,6 @@ void Hmck::KeyboardMovementController::mouseButtonCallback(GLFWwindow* window, i
 		mouseMotionEnded = true;
 	}
 
-	// forward mouse event to ImGUI
-	if (action == GLFW_PRESS)
-		io.AddMouseButtonEvent(button, true);
-	if (action == GLFW_RELEASE)
-		io.AddMouseButtonEvent(button, false);
+	// froward the rest
+	HmckUISystem::forward(button, action);
 }

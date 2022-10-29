@@ -1,12 +1,9 @@
 #pragma once
 
 #include "HmckGameObject.h"
-#include "HmckWindow.h"
+#include "Platforms/HmckWindow.h"
 #include "Utils/HmckLogger.h"
-
-#include "imgui.h"
-#include "backends/imgui_impl_glfw.h"
-#include "backends/imgui_impl_vulkan.h"
+#include "Systems/HmckUISystem.h"
 
 #include <limits>
 

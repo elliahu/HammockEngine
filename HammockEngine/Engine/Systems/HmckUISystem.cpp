@@ -30,17 +30,27 @@ void Hmck::HmckUISystem::endUserInterface(VkCommandBuffer commandBuffer)
 
 void Hmck::HmckUISystem::showDebugStats(HmckGameObject& viewerObject)
 {
+	// get curent cursor position
+	double mX, mY;
+	glfwGetCursorPos(hmckWindow.getGLFWwindow(), &mX, &mY);
+
 	ImGui::Begin(hmckWindow.getWindowName().c_str());
-	ImGui::Text("Camera world POSITION: %.2f %.2f %.2f", 
+	ImGui::Text("Camera world POSITION: [ %.2f %.2f %.2f ]", 
 		viewerObject.transform.translation.x,
 		viewerObject.transform.translation.y,
 		viewerObject.transform.translation.z);
-	ImGui::Text("Camera world ROTATION: %.2f %.2f %.2f", 
+	ImGui::Text("Camera world ROTATION: [ %.2f %.2f %.2f ]", 
 		viewerObject.transform.rotation.x,
 		viewerObject.transform.rotation.y,
 		viewerObject.transform.rotation.z);
 	ImGui::Text("Application average %.3f ms/frame (%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
 	ImGui::End();
+}
+
+void Hmck::HmckUISystem::forward(int button, bool state)
+{
+	ImGuiIO& io = ImGui::GetIO();
+	io.AddMouseButtonEvent(button, state);
 }
 
 
