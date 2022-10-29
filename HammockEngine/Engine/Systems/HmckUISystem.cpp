@@ -32,7 +32,6 @@ void Hmck::HmckUISystem::endUserInterface(VkCommandBuffer commandBuffer)
 
 void Hmck::HmckUISystem::showDebugStats(HmckGameObject& camera)
 {
-	HmckLogger::debug("Test message");
 	ImGuiIO& io = ImGui::GetIO();
 	ImGuiWindowFlags window_flags = ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_NoFocusOnAppearing | ImGuiWindowFlags_NoNav;
 	ImGui::SetNextWindowPos({10,10});
