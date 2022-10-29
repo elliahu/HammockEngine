@@ -21,7 +21,7 @@ void Hmck::HmckUISystem::beginUserInterface()
 	//ImGui::SetNextWindowPos({ 10,10 });
 	//ImGui::SetNextWindowSize({ 150,50 });
 
-	//ImGui::ShowDemoWindow();
+	ImGui::ShowDemoWindow();
 }
 
 void Hmck::HmckUISystem::endUserInterface(VkCommandBuffer commandBuffer)
@@ -54,74 +54,33 @@ void Hmck::HmckUISystem::showDebugStats(HmckGameObject& camera)
 	ImGui::End();
 }
 
-void Hmck::HmckUISystem::showGameObjectStats(HmckGameObject& gameObject)
+void Hmck::HmckUISystem::showGameObjectComponents(HmckGameObject& gameObject, bool* close)
 {
 	std::string windowTitle = "GameObject id_t " + std::to_string(gameObject.getId());
-	ImGui::Begin(windowTitle.c_str());
-	ImGui::Text("Game Object components are listed here");
-	if (ImGui::CollapsingHeader("Transform", ImGuiTreeNodeFlags_DefaultOpen)) // Tranform
+	beginWindow(windowTitle.c_str(), close, ImGuiWindowFlags_AlwaysAutoResize);
+	ImGui::Text("Components attached to GameObject");
+	gameObjectComponets(gameObject);
+	endWindow();
+}
+
+void Hmck::HmckUISystem::showGameObjectsInspector(HmckGameObject::Map& gameObjects)
+{
+	beginWindow("GameObjects Inspector", (bool*)false, ImGuiWindowFlags_AlwaysAutoResize);
+	ImGui::Text("Inspect all GameObjects in the scene");
+
+	for (auto& kv : gameObjects)
 	{
-		if (ImGui::TreeNode("Translation"))
+		HmckGameObject& gameObject = kv.second;
+
+		std::string name = "GameObject id_t " + std::to_string(gameObject.getId());
+		if (ImGui::TreeNode(name.c_str()))
 		{
-			ImGui::DragFloat("x", &gameObject.transform.translation.x, 0.01);
-			ImGui::DragFloat("y", &gameObject.transform.translation.y, 0.01);
-			ImGui::DragFloat("z", &gameObject.transform.translation.z, 0.01);
+			gameObjectComponets(gameObject);
 			ImGui::TreePop();
-			ImGui::Separator();
 		}
-		if (ImGui::TreeNode("Rotation"))
-		{
-			ImGui::DragFloat("x", &gameObject.transform.rotation.x, 0.01);
-			ImGui::DragFloat("y", &gameObject.transform.rotation.y, 0.01);
-			ImGui::DragFloat("z", &gameObject.transform.rotation.z, 0.01);
-			ImGui::Separator();
-			ImGui::TreePop();
-		}
-		if (ImGui::TreeNode("Scale"))
-		{
-			ImGui::DragFloat("x", &gameObject.transform.scale.x, 0.01);
-			ImGui::DragFloat("y", &gameObject.transform.scale.y, 0.01);
-			ImGui::DragFloat("z", &gameObject.transform.scale.z, 0.01);
-			ImGui::TreePop();
-			ImGui::Separator();
-		}
+		ImGui::Separator();
 	}
-	if (ImGui::CollapsingHeader("Color")) // Color
-	{
-		float * color_hsv[3] = {
-			&gameObject.color.x,
-			&gameObject.color.y,
-			&gameObject.color.z,
-		};
-		ImGui::ColorEdit3("Color", (float*)&color_hsv, ImGuiColorEditFlags_Float | ImGuiColorEditFlags_DisplayRGB);
-	}
-	if (gameObject.model != nullptr) // Model
-	{
-		if (ImGui::CollapsingHeader("Model"))
-		{
-			ImGui::Text("Has model");
-		}
-	}
-	if (gameObject.boundingBox != nullptr) // Bounding box
-	{
-		if (ImGui::CollapsingHeader("Bounding box"))
-		{
-			ImGui::DragFloat("x min", &gameObject.boundingBox->x.min, 0.01);
-			ImGui::DragFloat("x max", &gameObject.boundingBox->x.max, 0.01);
-			ImGui::DragFloat("y min", &gameObject.boundingBox->y.min, 0.01);
-			ImGui::DragFloat("y max", &gameObject.boundingBox->y.max, 0.01);
-			ImGui::DragFloat("z min", &gameObject.boundingBox->z.min, 0.01);
-			ImGui::DragFloat("z max", &gameObject.boundingBox->z.max, 0.01);
-		}
-	}
-	if (gameObject.pointLight != nullptr) // Point light
-	{
-		if (ImGui::CollapsingHeader("Point light"))
-		{
-			ImGui::DragFloat("Intensity", &gameObject.pointLight->lightIntensity, 0.01, 0.0, 1.0);
-		}
-	}
-	ImGui::End();
+	endWindow();
 }
 
 void Hmck::HmckUISystem::forward(int button, bool state)
@@ -230,4 +189,80 @@ void Hmck::HmckUISystem::endSingleTimeCommands(VkCommandBuffer commandBuffer)
 
 	vkFreeCommandBuffers(hmckDevice.device(), hmckDevice.getCommandPool(), 1, &commandBuffer);
 }
+
+void Hmck::HmckUISystem::beginWindow(const char* title, bool* open, ImGuiWindowFlags flags)
+{
+	ImGui::Begin(title, open, flags);
+}
+
+void Hmck::HmckUISystem::endWindow()
+{
+	ImGui::End();
+}
+
+void Hmck::HmckUISystem::gameObjectComponets(HmckGameObject& gameObject)
+{
+	if (ImGui::CollapsingHeader("Transform", ImGuiTreeNodeFlags_DefaultOpen)) // Tranform
+	{
+		if (ImGui::TreeNode("Translation"))
+		{
+			ImGui::DragFloat("x", &gameObject.transform.translation.x, 0.01);
+			ImGui::DragFloat("y", &gameObject.transform.translation.y, 0.01);
+			ImGui::DragFloat("z", &gameObject.transform.translation.z, 0.01);
+			ImGui::TreePop();
+		}
+		//ImGui::Separator();
+		if (ImGui::TreeNode("Rotation"))
+		{
+			ImGui::DragFloat("x", &gameObject.transform.rotation.x, 0.01);
+			ImGui::DragFloat("y", &gameObject.transform.rotation.y, 0.01);
+			ImGui::DragFloat("z", &gameObject.transform.rotation.z, 0.01);
+			ImGui::TreePop();
+		}
+		//ImGui::Separator();
+		if (ImGui::TreeNode("Scale"))
+		{
+			ImGui::DragFloat("x", &gameObject.transform.scale.x, 0.01);
+			ImGui::DragFloat("y", &gameObject.transform.scale.y, 0.01);
+			ImGui::DragFloat("z", &gameObject.transform.scale.z, 0.01);
+			ImGui::TreePop();
+		}
+	}
+	if (ImGui::CollapsingHeader("Color")) // Color
+	{
+		float* color_hsv[3] = {
+			&gameObject.color.x,
+			&gameObject.color.y,
+			&gameObject.color.z,
+		};
+		ImGui::ColorEdit3("Color", color_hsv[0], ImGuiColorEditFlags_Float | ImGuiColorEditFlags_DisplayRGB);
+	}
+	if (gameObject.model != nullptr) // Model
+	{
+		if (ImGui::CollapsingHeader("Model"))
+		{
+			ImGui::Text("Has model");
+		}
+	}
+	if (gameObject.boundingBox != nullptr) // Bounding box
+	{
+		if (ImGui::CollapsingHeader("Bounding box"))
+		{
+			ImGui::DragFloat("x min", &gameObject.boundingBox->x.min, 0.01);
+			ImGui::DragFloat("x max", &gameObject.boundingBox->x.max, 0.01);
+			ImGui::DragFloat("y min", &gameObject.boundingBox->y.min, 0.01);
+			ImGui::DragFloat("y max", &gameObject.boundingBox->y.max, 0.01);
+			ImGui::DragFloat("z min", &gameObject.boundingBox->z.min, 0.01);
+			ImGui::DragFloat("z max", &gameObject.boundingBox->z.max, 0.01);
+		}
+	}
+	if (gameObject.pointLight != nullptr) // Point light
+	{
+		if (ImGui::CollapsingHeader("Point light"))
+		{
+			ImGui::DragFloat("Intensity", &gameObject.pointLight->lightIntensity, 0.01, 0.0, 1.0);
+		}
+	}
+}
+
 

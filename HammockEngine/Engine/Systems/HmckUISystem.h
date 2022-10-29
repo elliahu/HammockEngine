@@ -8,6 +8,7 @@
 
 #include <exception>
 #include <deque>
+#include <map>
 
 namespace Hmck
 {
@@ -22,7 +23,8 @@ namespace Hmck
 		void beginUserInterface();
 		void endUserInterface(VkCommandBuffer commandBuffer);
 		void showDebugStats(HmckGameObject& camera);
-		void showGameObjectStats(HmckGameObject& gameObject);
+		void showGameObjectComponents(HmckGameObject& gameObject, bool * close = (bool*)0);
+		void showGameObjectsInspector(HmckGameObject::Map& gameObjects);
 
 		// forwarding events to ImGUI
 		static void forward(int button, bool state);
@@ -32,6 +34,11 @@ namespace Hmck
 
 		VkCommandBuffer beginSingleTimeCommands();
 		void endSingleTimeCommands(VkCommandBuffer commandBuffer);
+
+		void beginWindow(const char* title,bool * open = (bool*) 0, ImGuiWindowFlags flags = 0);
+		void endWindow();
+		void gameObjectComponets(HmckGameObject& gameObject);
+
 
 		HmckDevice& hmckDevice;
 		HmckWindow& hmckWindow;
