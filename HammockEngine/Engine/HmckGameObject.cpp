@@ -77,7 +77,7 @@ Hmck::HmckGameObject Hmck::HmckGameObject::createDirectionalLight(float yaw, flo
 	gameObj.directionalLight = std::make_unique<HmckDirectionalLightComponent>();
 	gameObj.directionalLight->lightIntensity = directionalLightColor.w;
 	gameObj.color = glm::vec3(directionalLightColor);
-	gameObj.transform.rotation = {
+	gameObj.transform.rotation = { // TODO fix math here
 		glm::cos(yaw) * glm::cos(pitch),
 		glm::sin(yaw) * glm::cos(pitch),
 		glm::sin(pitch)

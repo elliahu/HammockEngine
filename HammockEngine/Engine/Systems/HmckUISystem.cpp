@@ -56,8 +56,7 @@ void Hmck::HmckUISystem::showDebugStats(HmckGameObject& camera)
 
 void Hmck::HmckUISystem::showGameObjectComponents(HmckGameObject& gameObject, bool* close)
 {
-	std::string windowTitle = "GameObject id_t " + std::to_string(gameObject.getId());
-	beginWindow(windowTitle.c_str(), close, ImGuiWindowFlags_AlwaysAutoResize);
+	beginWindow(gameObject.getName().c_str(), close, ImGuiWindowFlags_AlwaysAutoResize);
 	ImGui::Text("Components attached to GameObject");
 	gameObjectComponets(gameObject);
 	endWindow();
@@ -72,8 +71,7 @@ void Hmck::HmckUISystem::showGameObjectsInspector(HmckGameObject::Map& gameObjec
 	{
 		HmckGameObject& gameObject = kv.second;
 
-		std::string name = "GameObject id_t " + std::to_string(gameObject.getId());
-		if (ImGui::TreeNode(name.c_str()))
+		if (ImGui::TreeNode(gameObject.getName().c_str()))
 		{
 			gameObjectComponets(gameObject);
 			ImGui::TreePop();

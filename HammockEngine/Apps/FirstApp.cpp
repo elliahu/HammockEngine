@@ -137,6 +137,7 @@ void Hmck::FirstApp::loadGameObjects()
     // vase
     std::shared_ptr<HmckModel> vaseModel = HmckModel::createModelFromFile(hmckDevice, std::string(MODELS_DIR) + "smooth_vase.obj");
     auto vase = HmckGameObject::createGameObject();
+    vase.setName("Vase");
     vase.model = vaseModel;
     vase.transform.translation = { .0f, 0.5f, 0.f };
     vase.transform.scale = glm::vec3(3.f);
@@ -145,6 +146,7 @@ void Hmck::FirstApp::loadGameObjects()
 
     // vase 2
     auto smallVase = HmckGameObject::createGameObject();
+    smallVase.setName("Small vase");
     smallVase.model = vaseModel;
     smallVase.transform.translation = { 1.0f, 0.5f, 0.f };
     smallVase.transform.scale = glm::vec3(1.f);
@@ -154,6 +156,7 @@ void Hmck::FirstApp::loadGameObjects()
     // floor
     std::shared_ptr<HmckModel> quadModel = HmckModel::createModelFromFile(hmckDevice, std::string(MODELS_DIR) + "quad.obj");
     auto floor = HmckGameObject::createGameObject();
+    floor.setName("Floor");
     floor.model = quadModel;
     floor.transform.translation = { .0f, 0.5f, 0.f };
     floor.transform.scale = glm::vec3(3.f, 1.f, 3.f);
@@ -171,6 +174,7 @@ void Hmck::FirstApp::loadGameObjects()
     for (int i = 0; i < lightColors.size(); i++)
     {
         auto pointLight = HmckGameObject::createPointLight(0.35f);
+        pointLight.setName("Point light");
         pointLight.color = lightColors[i];
         auto rotateLight = glm::rotate(
             glm::mat4(1.f), 
@@ -183,6 +187,7 @@ void Hmck::FirstApp::loadGameObjects()
     
     // Directional light
     auto directionalLight = HmckGameObject::createDirectionalLight();
+    directionalLight.setName("Directional light");
     gameObjects.emplace(directionalLight.getId(), std::move(directionalLight));
 
 }
