@@ -34,16 +34,16 @@ namespace Hmck
 	};
 
 
-	class HmckPointLightSystem
+	class HmckLightSystem
 	{
 	public:
 
-		HmckPointLightSystem(HmckDevice& device, VkRenderPass renderPass, VkDescriptorSetLayout globalSetLayout);
-		~HmckPointLightSystem();
+		HmckLightSystem(HmckDevice& device, VkRenderPass renderPass, VkDescriptorSetLayout globalSetLayout);
+		~HmckLightSystem();
 
 		// delete copy constructor and copy destructor
-		HmckPointLightSystem(const HmckPointLightSystem&) = delete;
-		HmckPointLightSystem& operator=(const HmckPointLightSystem&) = delete;
+		HmckLightSystem(const HmckLightSystem&) = delete;
+		HmckLightSystem& operator=(const HmckLightSystem&) = delete;
 
 		void update(HmckFrameInfo& frameInfo, HmckGlobalUbo& ubo);
 		void render(HmckFrameInfo& frameInfo);
@@ -52,9 +52,7 @@ namespace Hmck
 		void createPipelineLayout(VkDescriptorSetLayout globalSetLayout);
 		void createPipeline(VkRenderPass renderPass);
 
-
 		HmckDevice& hmckDevice;
-
 		std::unique_ptr<HmckPipeline> hmckPipeline;
 		VkPipelineLayout pipelineLayout;
 	};

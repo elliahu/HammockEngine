@@ -1,17 +1,17 @@
-#include "HmckPointLightSystem.h"
+#include "HmckLightSystem.h"
 
-Hmck::HmckPointLightSystem::HmckPointLightSystem(HmckDevice& device, VkRenderPass renderPass, VkDescriptorSetLayout globalSetLayout) : hmckDevice{ device }
+Hmck::HmckLightSystem::HmckLightSystem(HmckDevice& device, VkRenderPass renderPass, VkDescriptorSetLayout globalSetLayout) : hmckDevice{ device }
 {
 	createPipelineLayout(globalSetLayout);
 	createPipeline(renderPass);
 }
 
-Hmck::HmckPointLightSystem::~HmckPointLightSystem()
+Hmck::HmckLightSystem::~HmckLightSystem()
 {
 	vkDestroyPipelineLayout(hmckDevice.device(), pipelineLayout, nullptr);
 }
 
-void Hmck::HmckPointLightSystem::createPipelineLayout(VkDescriptorSetLayout globalSetLayout)
+void Hmck::HmckLightSystem::createPipelineLayout(VkDescriptorSetLayout globalSetLayout)
 {
 	VkPushConstantRange pushConstantRange{};
 	pushConstantRange.stageFlags = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT;
@@ -33,7 +33,7 @@ void Hmck::HmckPointLightSystem::createPipelineLayout(VkDescriptorSetLayout glob
 	}
 }
 
-void Hmck::HmckPointLightSystem::createPipeline(VkRenderPass renderPass)
+void Hmck::HmckLightSystem::createPipeline(VkRenderPass renderPass)
 {
 	assert(pipelineLayout != nullptr && "Cannot create pipeline before pipeline layout");
 
@@ -52,7 +52,7 @@ void Hmck::HmckPointLightSystem::createPipeline(VkRenderPass renderPass)
 	);
 }
 
-void Hmck::HmckPointLightSystem::render(HmckFrameInfo& frameInfo)
+void Hmck::HmckLightSystem::render(HmckFrameInfo& frameInfo)
 {
 	// sort the lights
 	std::map<float, HmckGameObject::id_t> sorted;
@@ -105,7 +105,7 @@ void Hmck::HmckPointLightSystem::render(HmckFrameInfo& frameInfo)
 }
 
 
-void Hmck::HmckPointLightSystem::update(HmckFrameInfo& frameInfo, HmckGlobalUbo& ubo)
+void Hmck::HmckLightSystem::update(HmckFrameInfo& frameInfo, HmckGlobalUbo& ubo)
 {
 	auto rotateLight = glm::rotate(
 		glm::mat4(1.f),
@@ -113,21 +113,36 @@ void Hmck::HmckPointLightSystem::update(HmckFrameInfo& frameInfo, HmckGlobalUbo&
 		{ 0.f, -1.f, 0.f }
 	);
 
+	int dirLightIdx = 0;
 	int lightIndex = 0;
 	for (auto& kv : frameInfo.gameObjects)
 	{
 		auto& obj = kv.second;
-		if (obj.pointLight == nullptr) continue;
+		
+		if (obj.pointLight != nullptr)
+		{
+			assert(lightIndex < MAX_LIGHTS && "Point light limit exeeded");
 
-		assert(lightIndex < MAX_LIGHTS && "Point light limit exeeded");
+			// update lights
+			obj.transform.translation = glm::vec3(rotateLight * glm::vec4(obj.transform.translation, 1.f));
 
-		// update lights
-		obj.transform.translation = glm::vec3(rotateLight * glm::vec4(obj.transform.translation, 1.f));
+			ubo.pointLights[lightIndex].position = glm::vec4(obj.transform.translation, 1.f);
+			ubo.pointLights[lightIndex].color = glm::vec4(obj.color, obj.pointLight->lightIntensity);
 
-		ubo.pointLights[lightIndex].position = glm::vec4(obj.transform.translation, 1.f);
-		ubo.pointLights[lightIndex].color = glm::vec4(obj.color, obj.pointLight->lightIntensity);
+			lightIndex += 1;
+		}
 
-		lightIndex += 1;
+		if (obj.directionalLight != nullptr)
+		{
+			// directional light
+
+			assert(dirLightIdx < 1 && "Directional light limit exeeded. There can only be one directional light");
+
+			ubo.directionalLight.color = glm::vec4(obj.color, obj.directionalLight->lightIntensity);
+			ubo.directionalLight.direction = glm::vec4(obj.transform.rotation, 1.f);
+
+			dirLightIdx += 1;
+		}
 	}
 	ubo.numLights = lightIndex;
 }

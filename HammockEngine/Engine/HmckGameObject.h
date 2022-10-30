@@ -45,6 +45,16 @@ namespace Hmck
 	{
 		float lightIntensity = 1.0f;
 	};
+
+	/*
+		DirectionalLightComponent
+		If this component is set, model should NOT be set
+		Set this component to make a dorectional light from the GameObject
+	*/
+	struct HmckDirectionalLightComponent
+	{
+		float lightIntensity = 1.0f;
+	};
 	
 
 	/*
@@ -87,6 +97,10 @@ namespace Hmck
 			float radius = 0.1f, 
 			glm::vec3 color = glm::vec3(1));
 
+		static HmckGameObject createDirectionalLight(
+			float yaw = 0.0f, float pitch = 0.7f,
+			glm::vec4 directionalLightColor = glm::vec4( 1.0f, 0.0f, 0.0, 0.1 ));
+
 		void fitBoundingBox(
 			HmckBoundingBoxComponent::HmckBoundingBoxAxis x,
 			HmckBoundingBoxComponent::HmckBoundingBoxAxis y,
@@ -110,6 +124,8 @@ namespace Hmck
 		std::unique_ptr<HmckPointLightComponent> pointLight = nullptr;
 
 		std::unique_ptr<HmckBoundingBoxComponent> boundingBox = nullptr;
+
+		std::unique_ptr<HmckDirectionalLightComponent> directionalLight = nullptr;
 
 	private:
 		HmckGameObject(id_t objId) : id{ objId } {}

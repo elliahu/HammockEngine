@@ -17,14 +17,19 @@ struct PointLight
     vec4 color;
 };
 
+struct DirectionalLight
+{
+    vec4 direction;
+    vec4 color;
+};
+
 layout (set = 0, binding = 0) uniform GlobalUbo
 {
     mat4 projection;
     mat4 view;
     mat4 inverseView;
     vec4 ambientLightColor; // w is intensity
-    vec4 directionalLightDirection; // w is intenisty
-    vec4 directionalLightColor; // w ignored
+    DirectionalLight directionalLight;
     PointLight pointLights[10];
     int numLights;
 } ubo;

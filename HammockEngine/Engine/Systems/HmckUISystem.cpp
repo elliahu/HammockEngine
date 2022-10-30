@@ -321,6 +321,13 @@ void Hmck::HmckUISystem::gameObjectComponets(HmckGameObject& gameObject)
 			ImGui::DragFloat("Intensity", &gameObject.pointLight->lightIntensity, 0.01, 0.0, 1.0);
 		}
 	}
+	if (gameObject.directionalLight != nullptr) // directional light
+	{
+		if (ImGui::CollapsingHeader("Directional light"))
+		{
+			ImGui::DragFloat("Intensity", &gameObject.directionalLight->lightIntensity, 0.01, 0.0, 1.0);
+		}
+	}
 }
 
 

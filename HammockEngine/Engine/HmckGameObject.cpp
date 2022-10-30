@@ -71,6 +71,20 @@ Hmck::HmckGameObject Hmck::HmckGameObject::createPointLight(float intensity,floa
 	return gameObj;
 }
 
+Hmck::HmckGameObject Hmck::HmckGameObject::createDirectionalLight(float yaw, float pitch, glm::vec4 directionalLightColor)
+{
+	HmckGameObject gameObj = HmckGameObject::createGameObject();
+	gameObj.directionalLight = std::make_unique<HmckDirectionalLightComponent>();
+	gameObj.directionalLight->lightIntensity = directionalLightColor.w;
+	gameObj.color = glm::vec3(directionalLightColor);
+	gameObj.transform.rotation = {
+		glm::cos(yaw) * glm::cos(pitch),
+		glm::sin(yaw) * glm::cos(pitch),
+		glm::sin(pitch)
+	};
+	return gameObj;
+}
+
 void Hmck::HmckGameObject::fitBoundingBox(HmckBoundingBoxComponent::HmckBoundingBoxAxis x, HmckBoundingBoxComponent::HmckBoundingBoxAxis y, HmckBoundingBoxComponent::HmckBoundingBoxAxis z)
 {
 	if (boundingBox == nullptr)

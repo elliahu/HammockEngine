@@ -4,8 +4,9 @@
 #include "HmckDevice.h"
 #include "HmckGameObject.h"
 #include "HmckRenderer.h"
-#include "Systems/HmckPointLightSystem.h"
+#include "Systems/HmckLightSystem.h"
 #include "Systems/HmckSimpleRenderSystem.h"
+#include "Systems/HmckUISystem.h"
 #include "HmckModel.h"
 #include "HmckCamera.h"
 #include "Controllers/KeyboardMovementController.h"
@@ -13,7 +14,6 @@
 #include "HmckDescriptors.h"
 #include "HmckCollisionDetectionSystem.h"
 #include "Utils/HmckLogger.h"
-#include "Systems/HmckUISystem.h"
 
 #define GLM_FORCE_RADIANS
 #define GLM_FORCE_DEPTH_ZERO_TO_ONE

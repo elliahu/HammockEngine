@@ -46,7 +46,7 @@ void Hmck::FirstApp::run()
         hmckRenderer.getSwapChainRenderPass(), 
         globalSetLayout->getDescriptorSetLayout()
     };
-    HmckPointLightSystem pointLightSystem{
+    HmckLightSystem lightSystem{
         hmckDevice,
         hmckRenderer.getSwapChainRenderPass(),
         globalSetLayout->getDescriptorSetLayout()
@@ -97,7 +97,7 @@ void Hmck::FirstApp::run()
             ubo.projection = camera.getProjection();
             ubo.view = camera.getView();
             ubo.inverseView = camera.getInverseView();
-            pointLightSystem.update(frameInfo, ubo);
+            lightSystem.update(frameInfo, ubo);
             uboBuffers[frameIndex]->writeToBuffer(&ubo);
 
             // render
@@ -107,7 +107,7 @@ void Hmck::FirstApp::run()
             // start rendering
             
 			simpleRenderSystem.renderGameObjects(frameInfo);
-            pointLightSystem.render(frameInfo);
+            lightSystem.render(frameInfo);
 
             // UI
             userInterfaceSystem.beginUserInterface();
@@ -159,15 +159,15 @@ void Hmck::FirstApp::loadGameObjects()
     floor.transform.scale = glm::vec3(3.f, 1.f, 3.f);
     gameObjects.emplace(floor.getId(), std::move(floor));
 
+    // Point light
     std::vector<glm::vec3> lightColors{
      {1.f, .1f, .1f},
      {.1f, .1f, 1.f},
      {.1f, 1.f, .1f},
      {1.f, 1.f, .1f},
      {.1f, 1.f, 1.f},
-     {1.f, 1.f, 1.f}  //
+     {1.f, 1.f, 1.f}  
     };
-
     for (int i = 0; i < lightColors.size(); i++)
     {
         auto pointLight = HmckGameObject::createPointLight(0.35f);
@@ -181,4 +181,8 @@ void Hmck::FirstApp::loadGameObjects()
         gameObjects.emplace(pointLight.getId(), std::move(pointLight));
     }
     
+    // Directional light
+    auto directionalLight = HmckGameObject::createDirectionalLight();
+    gameObjects.emplace(directionalLight.getId(), std::move(directionalLight));
+
 }

@@ -14,14 +14,19 @@ struct PointLight
     vec4 color;
 };
 
+struct DirectionalLight
+{
+    vec4 direction;
+    vec4 color;
+};
+
 layout (set = 0, binding = 0) uniform GlobalUbo
 {
     mat4 projection;
     mat4 view;
     mat4 inverseView;
     vec4 ambientLightColor; // w is intensity
-    vec4 directionalLightDirection; // w is intenisty
-    vec4 directionalLightColor; // w ignored
+    DirectionalLight directionalLight;
     PointLight pointLights[10];
     int numLights;
 } ubo;
@@ -54,9 +59,9 @@ void main()
     vec3 viewDirection = normalize(cameraPosWorld - fragPosWorld);
 
     // directional light
-    vec3 sunDirection = normalize(ubo.directionalLightDirection.xyz);
+    vec3 sunDirection = normalize(ubo.directionalLight.direction.xyz);
     float sunDiff = max(dot(surfaceNormal, sunDirection), 0.0);
-    vec3 sunDiffuse = sunDiff * (ubo.directionalLightColor.xyz * ubo.directionalLightDirection.w);  
+    vec3 sunDiffuse = sunDiff * (ubo.directionalLight.color.xyz * ubo.directionalLight.color.w);  
 
 
     // point lights
