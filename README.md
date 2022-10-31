@@ -5,7 +5,7 @@ Custom 3D game engine running on Vulkan. Work in progress.
 
 ## Engine dependencies 📚
 The following libraries are used:
-- [GLM](https://github.com/g-truc/glm) - Linear algebra (matrix and vector operations)
+- [GLM](https://github.com/g-truc/glm) - Linear algebra (matrix and vector operations), porting to [HandmadeMath](https://github.com/HandmadeMath/Handmade-Math)
 - [GLFW](https://www.glfw.org/) - Window creation and input handling (Thinking about abstracting this myself ...)
 - [TinyObjectLoader](https://github.com/tinyobjloader/tinyobjloader) - Excelent single header library for object loading
 - [ImGUI](https://github.com/ocornut/imgui) - Graphical User Interface library
