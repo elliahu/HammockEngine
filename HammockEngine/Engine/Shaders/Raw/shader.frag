@@ -87,19 +87,12 @@ void main()
     }
 
     // spot light
-    vec3 lightDir =   spotLightPosition - fragPosWorld;
-    float theta     = dot(lightDir, normalize(-spotLightDirection));
-    float epsilon   = spotLightInCut - spotLightOutCut;
-    float intensity = clamp((theta - spotLightOutCut) / epsilon, 0.0, 1.0);  
-
-    vec3 spotDiffuse = intensity * spotLightColor;
 
  
     // gl_FrontFacing can be used to apply lighting only on front facing surface
 	outColor = vec4((
             (diffuseLight * fragColor) + 
             (specularLight * fragColor) +
-            (sunDiffuse * fragColor) +
-            (spotDiffuse * fragColor)
+            (sunDiffuse * fragColor) 
      ), 1.0);    
 }

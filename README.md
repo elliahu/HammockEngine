@@ -21,8 +21,10 @@ The following libraries are used:
 - [x] Basic lighting (Blinn-Phong illumination model)
 - [x] Collision detection using AABB (Axis-aligned Bounding Boxes)
 - [x] Basic UI system
+- [ ] Asset system and audio support
 - [ ] Shadows
 - [ ] Textures
 - [ ] Materials and PBR
+- [ ] Reflections and Cubemaps
 - [ ] Physics and collisons
-- [ ] Asset system and audio support
+

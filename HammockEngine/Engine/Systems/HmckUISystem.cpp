@@ -64,8 +64,11 @@ void Hmck::HmckUISystem::showGameObjectComponents(HmckGameObject& gameObject, bo
 
 void Hmck::HmckUISystem::showGameObjectsInspector(HmckGameObject::Map& gameObjects)
 {
+	const ImGuiWindowFlags window_flags = ImGuiWindowFlags_AlwaysAutoResize;
+	ImGui::SetNextWindowPos({ 10, 130}, ImGuiCond_Once, {0,0});
+	ImGui::SetNextWindowSizeConstraints({ 300, 200 }, ImVec2(static_cast<float>(hmckWindow.getExtent().width), static_cast<float>(hmckWindow.getExtent().height)));
 	beginWindow("GameObjects Inspector", (bool*)false, ImGuiWindowFlags_AlwaysAutoResize);
-	ImGui::Text("Inspect all GameObjects in the scene");
+	ImGui::Text("Inspect all GameObjects in the scene", window_flags);
 
 	for (auto& kv : gameObjects)
 	{
@@ -116,13 +119,13 @@ void Hmck::HmckUISystem::init()
 	pool_info.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
 	pool_info.flags = VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT;
 	pool_info.maxSets = 1000;
-	pool_info.poolSizeCount = std::size(pool_sizes);
+	pool_info.poolSizeCount = static_cast<uint32_t>(std::size(pool_sizes));
 	pool_info.pPoolSizes = pool_sizes;
 
 	
 	if (vkCreateDescriptorPool(hmckDevice.device(), &pool_info, nullptr, &imguiPool) != VK_SUCCESS)
 	{
-		std::runtime_error("Failed to create descriptor pool for UI");
+		throw std::runtime_error("Failed to create descriptor pool for UI");
 	}
 
 	// 2: initialize imgui library
@@ -262,25 +265,25 @@ void Hmck::HmckUISystem::gameObjectComponets(HmckGameObject& gameObject)
 	{
 		if (ImGui::TreeNode("Translation"))
 		{
-			ImGui::DragFloat("x", &gameObject.transform.translation.x, 0.01);
-			ImGui::DragFloat("y", &gameObject.transform.translation.y, 0.01);
-			ImGui::DragFloat("z", &gameObject.transform.translation.z, 0.01);
+			ImGui::DragFloat("x", &gameObject.transform.translation.x, 0.01f);
+			ImGui::DragFloat("y", &gameObject.transform.translation.y, 0.01f);
+			ImGui::DragFloat("z", &gameObject.transform.translation.z, 0.01f);
 			ImGui::TreePop();
 		}
 		//ImGui::Separator();
 		if (ImGui::TreeNode("Rotation"))
 		{
-			ImGui::DragFloat("x", &gameObject.transform.rotation.x, 0.01);
-			ImGui::DragFloat("y", &gameObject.transform.rotation.y, 0.01);
-			ImGui::DragFloat("z", &gameObject.transform.rotation.z, 0.01);
+			ImGui::DragFloat("x", &gameObject.transform.rotation.x, 0.01f);
+			ImGui::DragFloat("y", &gameObject.transform.rotation.y, 0.01f);
+			ImGui::DragFloat("z", &gameObject.transform.rotation.z, 0.01f);
 			ImGui::TreePop();
 		}
 		//ImGui::Separator();
 		if (ImGui::TreeNode("Scale"))
 		{
-			ImGui::DragFloat("x", &gameObject.transform.scale.x, 0.01);
-			ImGui::DragFloat("y", &gameObject.transform.scale.y, 0.01);
-			ImGui::DragFloat("z", &gameObject.transform.scale.z, 0.01);
+			ImGui::DragFloat("x", &gameObject.transform.scale.x, 0.01f);
+			ImGui::DragFloat("y", &gameObject.transform.scale.y, 0.01f);
+			ImGui::DragFloat("z", &gameObject.transform.scale.z, 0.01f);
 			ImGui::TreePop();
 		}
 	}
@@ -304,26 +307,26 @@ void Hmck::HmckUISystem::gameObjectComponets(HmckGameObject& gameObject)
 	{
 		if (ImGui::CollapsingHeader("Bounding box"))
 		{
-			ImGui::DragFloat("x min", &gameObject.boundingBox->x.min, 0.01);
-			ImGui::DragFloat("x max", &gameObject.boundingBox->x.max, 0.01);
-			ImGui::DragFloat("y min", &gameObject.boundingBox->y.min, 0.01);
-			ImGui::DragFloat("y max", &gameObject.boundingBox->y.max, 0.01);
-			ImGui::DragFloat("z min", &gameObject.boundingBox->z.min, 0.01);
-			ImGui::DragFloat("z max", &gameObject.boundingBox->z.max, 0.01);
+			ImGui::DragFloat("x min", &gameObject.boundingBox->x.min, 0.01f);
+			ImGui::DragFloat("x max", &gameObject.boundingBox->x.max, 0.01f);
+			ImGui::DragFloat("y min", &gameObject.boundingBox->y.min, 0.01f);
+			ImGui::DragFloat("y max", &gameObject.boundingBox->y.max, 0.01f);
+			ImGui::DragFloat("z min", &gameObject.boundingBox->z.min, 0.01f);
+			ImGui::DragFloat("z max", &gameObject.boundingBox->z.max, 0.01f);
 		}
 	}
 	if (gameObject.pointLight != nullptr) // Point light
 	{
 		if (ImGui::CollapsingHeader("Point light"))
 		{
-			ImGui::DragFloat("Intensity", &gameObject.pointLight->lightIntensity, 0.01, 0.0, 1.0);
+			ImGui::DragFloat("Intensity", &gameObject.pointLight->lightIntensity, 0.01f, 0.0f, 1.0f);
 		}
 	}
 	if (gameObject.directionalLight != nullptr) // directional light
 	{
 		if (ImGui::CollapsingHeader("Directional light"))
 		{
-			ImGui::DragFloat("Intensity", &gameObject.directionalLight->lightIntensity, 0.01, 0.0, 1.0);
+			ImGui::DragFloat("Intensity", &gameObject.directionalLight->lightIntensity, 0.01f, 0.0f, 1.0f);
 		}
 	}
 }
