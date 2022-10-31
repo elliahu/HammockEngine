@@ -173,7 +173,7 @@ void Hmck::FirstApp::loadGameObjects()
     };
     for (int i = 0; i < lightColors.size(); i++)
     {
-        auto pointLight = HmckGameObject::createPointLight(0.35f);
+        auto pointLight = HmckGameObject::createPointLight(0.45f);
         pointLight.setName("Point light");
         pointLight.color = lightColors[i];
         auto rotateLight = glm::rotate(

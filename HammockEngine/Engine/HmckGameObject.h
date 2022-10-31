@@ -60,6 +60,7 @@ namespace Hmck
 	/*
 		BoundingBoxComponent
 		Axis-Aligned Bounding Box is used for collision detection
+		TODO make sure to resize when scale changes
 	*/
 	struct HmckBoundingBoxComponent
 	{
