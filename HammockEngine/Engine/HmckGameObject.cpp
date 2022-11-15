@@ -102,3 +102,21 @@ void Hmck::HmckGameObject::fitBoundingBox(HmckModel::ModelInfo& modelInfo)
 		{ modelInfo.z.min * transform.scale.z, modelInfo.z.max * transform.scale.z });
 }
 
+void Hmck::HmckGameObject::loadImage(std::string& filename, bool flip)
+{
+	int imgWidth = 0, imgHeight = 0, imgChannels = 0;
+
+	stbi_uc* pixels = stbi_load(filename.c_str(), &imgWidth, &imgHeight, &imgChannels, STBI_rgb_alpha);
+
+	if (!pixels) 
+	{
+		throw std::runtime_error("Could not load image from disk");
+	}
+
+	VkDeviceSize imageSize = imgWidth * imgHeight * 4;
+
+	// TODO create staging buffer and copy imaga data to the staging buffer
+	// TODO create VkImage
+	// TODO copy data from staging buffer to VkImage
+}
+

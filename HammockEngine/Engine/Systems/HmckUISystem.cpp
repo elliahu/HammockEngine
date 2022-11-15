@@ -66,7 +66,7 @@ void Hmck::HmckUISystem::showGameObjectsInspector(HmckGameObject::Map& gameObjec
 {
 	const ImGuiWindowFlags window_flags = ImGuiWindowFlags_AlwaysAutoResize;
 	ImGui::SetNextWindowPos({ 10, 130}, ImGuiCond_Once, {0,0});
-	ImGui::SetNextWindowSizeConstraints({ 300, 200 }, ImVec2(static_cast<float>(hmckWindow.getExtent().width), static_cast<float>(hmckWindow.getExtent().height)));
+	ImGui::SetNextWindowSizeConstraints({ 300, 200 }, ImVec2(static_cast<float>(hmckWindow.getExtent().width), 500));
 	beginWindow("GameObjects Inspector", (bool*)false, ImGuiWindowFlags_AlwaysAutoResize);
 	ImGui::Text("Inspect all GameObjects in the scene", window_flags);
 

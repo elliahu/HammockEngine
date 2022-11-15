@@ -7,6 +7,9 @@
 #include <memory>
 #include <unordered_map>
 
+#define STB_IMAGE_IMPLEMENTATION
+#include <stb/stb_image.h>
+
 namespace Hmck
 {
 	// good reading:
@@ -15,8 +18,8 @@ namespace Hmck
 
 	/*
 		GameObject: represents a general-purpose in-game object
-		Component: A component labels GameObject as possessing a particular aspect, and holds the data needed to model that aspect
-		System: A system is a process which acts on all GameObjects with the desired components. Systems are defined in the Systems folder
+		Component: labels GameObject as possessing a particular aspect, and holds the data needed to model that aspect
+		System: A system is a process which acts on all GameObjects with the desired components.
 	*/
 
 	/*
@@ -75,6 +78,19 @@ namespace Hmck
 		HmckBoundingBoxAxis z;
 	};
 
+	/*
+	*	MaterialComponent
+	*	Material Component is used for PBR
+	*/
+	struct HmckMaterialComponent
+	{
+		struct Color 
+		{
+			// There is a path limit of 260 characters on Windows
+			std::string path{};
+		};
+	};
+
 
 	/*
 		GameObject
@@ -130,8 +146,12 @@ namespace Hmck
 
 		std::unique_ptr<HmckDirectionalLightComponent> directionalLight = nullptr;
 
+		std::unique_ptr<HmckMaterialComponent> material = nullptr;
+
 	private:
 		HmckGameObject(id_t objId) : id{ objId } {}
+
+		void loadImage(std::string& path, bool flip = false);
 
 		id_t id;
 		std::string name = "GameObject";

@@ -113,7 +113,6 @@ void Hmck::FirstApp::run()
             userInterfaceSystem.beginUserInterface();
             userInterfaceSystem.showDebugStats(viewerObject);
             userInterfaceSystem.showGameObjectsInspector(gameObjects);
-            userInterfaceSystem.showGameObjectComponents(gameObjects.at(0));
             userInterfaceSystem.endUserInterface(commandBuffer);
             
             // check if vases colide
