@@ -18,7 +18,6 @@ namespace Hmck
 		VkDeviceMemory imageMemory;
 		VkImage image;
 		VkImageView imageView;
-		VkSampler imageSampler;
 
 		void loadImage(
 			std::string& filepath, 
@@ -27,30 +26,23 @@ namespace Hmck
 		);
 
 		void createImageView(HmckDevice& hmckDevice, VkFormat format);
-
-		void createImageSampler(HmckDevice& hmckDevice);
-
-		void destroy(HmckDevice& hmckDevice);
+		void destroyImage(HmckDevice& hmckDevice);
 	};
 
 	struct HmckTexture
 	{
 		// format: VK_FORMAT_R8G8B8A8_SRGB
 		HmckImage image{};
+		static VkSampler sampler;
+
+		void createSampler(HmckDevice& hmckDevice);
+		void destroySampler(HmckDevice& hmckDevice);
 	};
 
 	class HmckMaterial
 	{
 	public:
 		HmckMaterial(HmckDevice& device);
-		// TODO properly dispose used resources
-		// For each image
-		// 1. Destroy imageView
-		// 2. Destroy image
-		// 3. Destroy imageMemory
-		// 4. Destroy imageSampler
-		// Currently throw validation erros when closing the app
-		~HmckMaterial() {};
 
 		// delete copy constructor and copy destructor
 		HmckMaterial(const HmckMaterial&) = delete;

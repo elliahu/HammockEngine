@@ -18,13 +18,21 @@ void Hmck::HmckMaterial::createMaterial(HmckCreateMaterialInfo& materialInfo)
 	texture = std::make_unique<HmckTexture>();
 	texture->image.loadImage(materialInfo.texture, hmckDevice);
 	texture->image.createImageView(hmckDevice, VK_FORMAT_R8G8B8A8_SRGB);
-	texture->image.createImageSampler(hmckDevice);
+	if(texture->sampler == VK_NULL_HANDLE)
+		texture->createSampler(hmckDevice);
 }
 
 void Hmck::HmckMaterial::destroy()
 {
 	// texture
-	texture->image.destroy(hmckDevice);
+	texture->image.destroyImage(hmckDevice);
+	texture->destroySampler(hmckDevice);
+}
+
+void Hmck::HmckTexture::destroySampler(HmckDevice& hmckDevice)
+{
+	vkDestroySampler(hmckDevice.device(), sampler, nullptr);
+	sampler = VK_NULL_HANDLE;
 }
 
 void Hmck::HmckImage::loadImage(
@@ -120,7 +128,9 @@ void Hmck::HmckImage::createImageView(HmckDevice& hmckDevice, VkFormat format)
 	}
 }
 
-void Hmck::HmckImage::createImageSampler(HmckDevice& hmckDevice)
+VkSampler Hmck::HmckTexture::sampler = VK_NULL_HANDLE;
+
+void Hmck::HmckTexture::createSampler(HmckDevice& hmckDevice)
 {
 	VkSamplerCreateInfo samplerInfo{};
 	samplerInfo.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
@@ -145,15 +155,14 @@ void Hmck::HmckImage::createImageSampler(HmckDevice& hmckDevice)
 	samplerInfo.minLod = 0.0f;
 	samplerInfo.maxLod = 0.0f;
 
-	if (vkCreateSampler(hmckDevice.device(), &samplerInfo, nullptr, &imageSampler) != VK_SUCCESS)
+	if (vkCreateSampler(hmckDevice.device(), &samplerInfo, nullptr, &sampler) != VK_SUCCESS)
 	{
 		throw std::runtime_error("Failed to create image sampler!");
 	}
 }
 
-void Hmck::HmckImage::destroy(HmckDevice& hmckDevice)
+void Hmck::HmckImage::destroyImage(HmckDevice& hmckDevice)
 {
-	vkDestroySampler(hmckDevice.device(), imageSampler, nullptr);
 	vkDestroyImageView(hmckDevice.device(), imageView, nullptr);
 	vkDestroyImage(hmckDevice.device(), image, nullptr);
 	vkFreeMemory(hmckDevice.device(), imageMemory, nullptr);

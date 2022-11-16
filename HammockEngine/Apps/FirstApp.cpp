@@ -5,7 +5,7 @@ Hmck::FirstApp::FirstApp()
     globalPool = HmckDescriptorPool::Builder(hmckDevice)
         .setMaxSets(HmckSwapChain::MAX_FRAMES_IN_FLIGHT)
         .addPoolSize(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, HmckSwapChain::MAX_FRAMES_IN_FLIGHT)
-        .addPoolSize(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, HmckSwapChain::MAX_FRAMES_IN_FLIGHT)
+        .addPoolSize(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, HmckSwapChain::MAX_FRAMES_IN_FLIGHT) // texture sampler
         .build();
 	loadGameObjects();
 }
@@ -51,8 +51,10 @@ void Hmck::FirstApp::run()
         VkDescriptorImageInfo imageInfo{};
         imageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
         imageInfo.imageView = gameObjects.at(0).material->texture->image.imageView;
-        imageInfo.sampler = gameObjects.at(0).material->texture->image.imageSampler;
+        imageInfo.sampler = gameObjects.at(0).material->texture->sampler;
 
+        // TODO make it so that more texture can be used
+        // currently only one can be used
 
         HmckDescriptorWriter(*globalSetLayout, *globalPool)
             .writeBuffer(0, &bufferInfo)
@@ -157,10 +159,13 @@ void Hmck::FirstApp::loadGameObjects()
     std::shared_ptr<HmckModel> vaseModel = HmckModel::createModelFromFile(hmckDevice, std::string(MODELS_DIR) + "smooth_vase.obj");
 
     // materials
-    HmckCreateMaterialInfo materialInfo{};
-    materialInfo.texture = std::string(MATERIALS_DIR) + "Bricks/PavingStones122_1K_Color.jpg";
+    HmckCreateMaterialInfo bricksMaterialInfo{};
+    bricksMaterialInfo.texture = std::string(MATERIALS_DIR) + "Bricks/PavingStones122_1K_Color.jpg";
+    std::shared_ptr<HmckMaterial> bricksMaterial = HmckMaterial::createMaterial(hmckDevice, bricksMaterialInfo);
 
-    std::shared_ptr<HmckMaterial> material = HmckMaterial::createMaterial(hmckDevice, materialInfo);
+    HmckCreateMaterialInfo stoneMaterialInfo{};
+    stoneMaterialInfo.texture = std::string(MATERIALS_DIR) + "PavingStone/PavingStones110_1K_Color.jpg";
+    std::shared_ptr<HmckMaterial> stoneMaterial = HmckMaterial::createMaterial(hmckDevice, stoneMaterialInfo);
 
     // vase
     auto vase = HmckGameObject::createGameObject();
@@ -169,7 +174,7 @@ void Hmck::FirstApp::loadGameObjects()
     vase.transform.translation = { .0f, 0.5f, 0.f };
     vase.transform.scale = glm::vec3(3.f);
     vase.fitBoundingBox(vaseModel->modelInfo);
-    vase.material = material;
+    vase.material = bricksMaterial;
     gameObjects.emplace(vase.getId(), std::move(vase));
 
     // vase 2
@@ -188,6 +193,7 @@ void Hmck::FirstApp::loadGameObjects()
     floor.model = quadModel;
     floor.transform.translation = { .0f, 0.5f, 0.f };
     floor.transform.scale = glm::vec3(3.f, 1.f, 3.f);
+    floor.material = stoneMaterial;
     gameObjects.emplace(floor.getId(), std::move(floor));
 
     // Point light
