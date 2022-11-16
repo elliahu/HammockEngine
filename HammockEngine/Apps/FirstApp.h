@@ -29,6 +29,11 @@
 #define MODELS_DIR "../../HammockEngine/Models/"
 #endif // !MODELS_DIR
 
+#ifndef MATERIALS_DIR
+#define MATERIALS_DIR "../../Resources/Materials/"
+#endif // !MATERIALS_DIR
+
+
 
 namespace Hmck
 {

@@ -8,6 +8,11 @@
 
 namespace Hmck
 {
+	struct HmckCreateMaterialInfo 
+	{
+		std::string texture{};
+	};
+
 	struct HmckImage
 	{
 		VkDeviceMemory imageMemory;
@@ -29,28 +34,32 @@ namespace Hmck
 	struct HmckTexture
 	{
 		// format: VK_FORMAT_R8G8B8A8_SRGB
-		HmckImage texture;
+		HmckImage image{};
 	};
 
 	class HmckMaterial
 	{
 	public:
-
 		HmckMaterial(HmckDevice& device);
 		// TODO properly dispose used resources
 		// For each image
 		// 1. Destroy imageView
 		// 2. Destroy image
 		// 3. Destroy imageMemory
+		// Currently throw validation erros when closing the app
 		~HmckMaterial() {};
 
 		// delete copy constructor and copy destructor
 		HmckMaterial(const HmckMaterial&) = delete;
 		HmckMaterial& operator=(const HmckMaterial&) = delete;
 
-		std::unique_ptr<HmckTexture> texture{};
+		static std::unique_ptr<HmckMaterial> createMaterial(HmckDevice& hmckDevice, HmckCreateMaterialInfo& materialInfo);
+
+		std::unique_ptr<HmckTexture> texture;
 
 	private:
+		void createMaterial(HmckCreateMaterialInfo& materialInfo);
+
 		HmckDevice& hmckDevice;
 	};
 }

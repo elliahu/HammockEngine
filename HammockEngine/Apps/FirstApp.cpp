@@ -37,11 +37,19 @@ void Hmck::FirstApp::run()
     for (int i = 0; i < globalDescriptorSets.size(); i++)
     {
         auto bufferInfo = uboBuffers[i]->descriptorInfo();
-        HmckDescriptorWriter(*globalSetLayout, *globalPool)
-            .writeBuffer(0, &bufferInfo)
-            .build(globalDescriptorSets[i]);
 
         // TODO somehow bind the actual image and sampler resources to the descriptors
+        // i mean better than like this
+        VkDescriptorImageInfo imageInfo{};
+        imageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+        imageInfo.imageView = gameObjects.at(0).material->texture->image.imageView;
+        imageInfo.sampler = gameObjects.at(0).material->texture->image.imageSampler;
+
+
+        HmckDescriptorWriter(*globalSetLayout, *globalPool)
+            .writeBuffer(0, &bufferInfo)
+            .writeImage(1, &imageInfo) // TODO this is very much ugly
+            .build(globalDescriptorSets[i]);
     }
 
     // systems
@@ -137,14 +145,23 @@ void Hmck::FirstApp::run()
 
 void Hmck::FirstApp::loadGameObjects()
 {
-    // vase
+    // models
     std::shared_ptr<HmckModel> vaseModel = HmckModel::createModelFromFile(hmckDevice, std::string(MODELS_DIR) + "smooth_vase.obj");
+
+    // materials
+    HmckCreateMaterialInfo materialInfo{};
+    materialInfo.texture = std::string(MATERIALS_DIR) + "Bricks/PavingStones122_1K_Color.jpg";
+
+    std::shared_ptr<HmckMaterial> material = HmckMaterial::createMaterial(hmckDevice, materialInfo);
+
+    // vase
     auto vase = HmckGameObject::createGameObject();
     vase.setName("Vase");
     vase.model = vaseModel;
     vase.transform.translation = { .0f, 0.5f, 0.f };
     vase.transform.scale = glm::vec3(3.f);
     vase.fitBoundingBox(vaseModel->modelInfo);
+    vase.material = material;
     gameObjects.emplace(vase.getId(), std::move(vase));
 
     // vase 2

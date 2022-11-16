@@ -5,6 +5,22 @@
 
 Hmck::HmckMaterial::HmckMaterial(HmckDevice& device): hmckDevice{device}{}
 
+std::unique_ptr<Hmck::HmckMaterial> Hmck::HmckMaterial::createMaterial(HmckDevice& hmckDevice, HmckCreateMaterialInfo& materialInfo)
+{
+	std::unique_ptr<HmckMaterial> material = std::make_unique<HmckMaterial>(hmckDevice);
+	material->createMaterial(materialInfo);
+	return material;
+}
+
+void Hmck::HmckMaterial::createMaterial(HmckCreateMaterialInfo& materialInfo)
+{
+	// texture
+	texture = std::make_unique<HmckTexture>();
+	texture->image.loadImage(materialInfo.texture, hmckDevice);
+	texture->image.createImageView(hmckDevice, VK_FORMAT_R8G8B8A8_SRGB);
+	texture->image.createImageSampler(hmckDevice);
+}
+
 void Hmck::HmckImage::loadImage(
 	std::string& filepath, 
 	HmckDevice& hmckDevice,  
@@ -20,7 +36,7 @@ void Hmck::HmckImage::loadImage(
 		throw std::runtime_error("Could not load image from disk");
 	}
 
-	VkDeviceSize imageSize = imgWidth * imgHeight * 4;
+	VkDeviceSize imageSize = static_cast<VkDeviceSize>(imgWidth) * imgHeight * 4;
 
 	// create staging buffer and copy image data to the staging buffer
 
@@ -55,7 +71,6 @@ void Hmck::HmckImage::loadImage(
 	imageInfo.usage = VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT;
 	imageInfo.samples = VK_SAMPLE_COUNT_1_BIT;
 	imageInfo.flags = 0; // Optional
-
 
 	hmckDevice.createImageWithInfo(imageInfo, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, image, imageMemory);
 

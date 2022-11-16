@@ -1,11 +1,13 @@
 #pragma once
 
 #include "HmckModel.h"
+#include "HmckMaterial.h"
 
 #include <glm/gtc/matrix_transform.hpp>
 
 #include <memory>
 #include <unordered_map>
+
 
 namespace Hmck
 {
@@ -76,20 +78,6 @@ namespace Hmck
 	};
 
 	/*
-	*	MaterialComponent
-	*	Material Component is used for PBR
-	*/
-	struct HmckMaterialComponent
-	{
-		struct Color 
-		{
-			// There is a path limit of 260 characters on Windows
-			std::string path{};
-		};
-	};
-
-
-	/*
 		GameObject
 		Class representing a single entity in the game world
 		Uses Entity Component System architecture (sort of)
@@ -114,6 +102,7 @@ namespace Hmck
 		static HmckGameObject createDirectionalLight(
 			float yaw = 5.5f, float pitch = 5.5f,
 			glm::vec4 directionalLightColor = glm::vec4( 1.0f, 1.0f, 1.0, 0.1 ));
+
 
 		void fitBoundingBox(
 			HmckBoundingBoxComponent::HmckBoundingBoxAxis x,
@@ -143,7 +132,7 @@ namespace Hmck
 
 		std::unique_ptr<HmckDirectionalLightComponent> directionalLight = nullptr;
 
-		std::unique_ptr<HmckMaterialComponent> material = nullptr;
+		std::shared_ptr<HmckMaterial> material = nullptr;
 
 	private:
 		HmckGameObject(id_t objId) : id{ objId } {}

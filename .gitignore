@@ -13,6 +13,9 @@
 # Ignore External libraries
 External/*
 
+# Ignore resources
+Resources/*
+
 # Ignore VS files
 *.sln
 *.vcxproj

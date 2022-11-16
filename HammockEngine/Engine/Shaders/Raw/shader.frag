@@ -4,9 +4,12 @@
 layout (location = 0) in vec3 fragColor;
 layout (location = 1) in vec3 fragPosWorld;
 layout (location = 2) in vec3 fragNormalWorld;
+layout (location = 3) in vec2 textCoords;
 
 // outputs
 layout (location = 0) out vec4 outColor;
+
+layout(binding = 1) uniform sampler2D texSampler;
 
 struct PointLight
 {
@@ -90,9 +93,11 @@ void main()
 
  
     // gl_FrontFacing can be used to apply lighting only on front facing surface
+    vec4 sampledColor = texture(texSampler, textCoords);
+
 	outColor = vec4((
-            (diffuseLight * fragColor) + 
-            (specularLight * fragColor) +
-            (sunDiffuse * fragColor) 
+            (diffuseLight * sampledColor.rgb) + 
+            (specularLight * fragColor.rgb) +
+            (sunDiffuse * fragColor.rgb) 
      ), 1.0);    
 }
