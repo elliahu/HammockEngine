@@ -46,6 +46,7 @@ namespace Hmck
 		// 1. Destroy imageView
 		// 2. Destroy image
 		// 3. Destroy imageMemory
+		// 4. Destroy imageSampler
 		// Currently throw validation erros when closing the app
 		~HmckMaterial() {};
 
