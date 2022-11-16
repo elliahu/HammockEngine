@@ -14,6 +14,8 @@ The following libraries are used:
 ![Point Light System](https://raw.githubusercontent.com/elliahu/HammockEngine/master/Img/point_light_system.png)
 #### UI system
 ![UI System](https://raw.githubusercontent.com/elliahu/HammockEngine/master/Img/ui_system.png)
+#### Textures and materials work in progress
+![Textures](https://raw.githubusercontent.com/elliahu/HammockEngine/master/Img/experimental_textures.png)
 
 # Roadmap 🚗
 - [x] Model loading
@@ -21,7 +23,7 @@ The following libraries are used:
 - [x] Basic lighting (Blinn-Phong illumination model)
 - [x] Collision detection using AABB (Axis-aligned Bounding Boxes)
 - [x] Basic UI system
-- [ ] Materials, Textures and PBR
+- [ ] (Work in progress) Materials, Textures and PBR
 - [ ] Asset system and audio support
 - [ ] Shadows
 - [ ] Reflections and Cubemaps
