@@ -7,9 +7,6 @@
 #include <memory>
 #include <unordered_map>
 
-#define STB_IMAGE_IMPLEMENTATION
-#include <stb/stb_image.h>
-
 namespace Hmck
 {
 	// good reading:
@@ -150,8 +147,6 @@ namespace Hmck
 
 	private:
 		HmckGameObject(id_t objId) : id{ objId } {}
-
-		void loadImage(std::string& path, bool flip = false);
 
 		id_t id;
 		std::string name = "GameObject";

@@ -5,6 +5,7 @@ Hmck::FirstApp::FirstApp()
     globalPool = HmckDescriptorPool::Builder(hmckDevice)
         .setMaxSets(HmckSwapChain::MAX_FRAMES_IN_FLIGHT)
         .addPoolSize(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, HmckSwapChain::MAX_FRAMES_IN_FLIGHT)
+        .addPoolSize(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, HmckSwapChain::MAX_FRAMES_IN_FLIGHT)
         .build();
 	loadGameObjects();
 }
@@ -29,6 +30,7 @@ void Hmck::FirstApp::run()
 
     auto globalSetLayout = HmckDescriptorSetLayout::Builder(hmckDevice)
         .addBinding(0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_ALL_GRAPHICS)
+        .addBinding(1, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT)
         .build();
 
     std::vector<VkDescriptorSet> globalDescriptorSets(HmckSwapChain::MAX_FRAMES_IN_FLIGHT);
@@ -38,6 +40,8 @@ void Hmck::FirstApp::run()
         HmckDescriptorWriter(*globalSetLayout, *globalPool)
             .writeBuffer(0, &bufferInfo)
             .build(globalDescriptorSets[i]);
+
+        // TODO somehow bind the actual image and sampler resources to the descriptors
     }
 
     // systems
