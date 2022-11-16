@@ -102,3 +102,4 @@ void Hmck::HmckGameObject::fitBoundingBox(HmckModel::ModelInfo& modelInfo)
 		{ modelInfo.z.min * transform.scale.z, modelInfo.z.max * transform.scale.z });
 }
 
+

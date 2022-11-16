@@ -9,7 +9,7 @@ The following libraries are used:
 - [GLFW](https://www.glfw.org/) - Window creation and input handling (Thinking about abstracting this myself ...)
 - [TinyObjectLoader](https://github.com/tinyobjloader/tinyobjloader) - Excelent single header library for object loading
 - [ImGUI](https://github.com/ocornut/imgui) - Graphical User Interface library
-- [stb](https://github.com/nothings/stb)- stb_image.h fro image loading
+- [stb](https://github.com/nothings/stb)- stb_image.h for image loading
 
 #### Point light system
 ![Point Light System](https://raw.githubusercontent.com/elliahu/HammockEngine/master/Img/point_light_system.png)

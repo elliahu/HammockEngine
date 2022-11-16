@@ -115,6 +115,7 @@ namespace Hmck
 		HmckGameObject(HmckGameObject&&) = default;
 		HmckGameObject& operator=(HmckGameObject&&) = default;
 
+
 		const id_t getId() { return id; }
 		const std::string getName() { return name + " #" + std::to_string(id); }
 		void setName(std::string name) { this->name = name; }

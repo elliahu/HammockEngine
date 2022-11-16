@@ -29,6 +29,8 @@ namespace Hmck
 		void createImageView(HmckDevice& hmckDevice, VkFormat format);
 
 		void createImageSampler(HmckDevice& hmckDevice);
+
+		void destroy(HmckDevice& hmckDevice);
 	};
 
 	struct HmckTexture
@@ -57,6 +59,8 @@ namespace Hmck
 		static std::unique_ptr<HmckMaterial> createMaterial(HmckDevice& hmckDevice, HmckCreateMaterialInfo& materialInfo);
 
 		std::unique_ptr<HmckTexture> texture;
+
+		void destroy();
 
 	private:
 		void createMaterial(HmckCreateMaterialInfo& materialInfo);

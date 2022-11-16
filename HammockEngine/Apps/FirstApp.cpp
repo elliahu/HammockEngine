@@ -10,7 +10,15 @@ Hmck::FirstApp::FirstApp()
 	loadGameObjects();
 }
 
-Hmck::FirstApp::~FirstApp(){}
+Hmck::FirstApp::~FirstApp()
+{
+    for (auto& kv : gameObjects)
+    {
+        if (kv.second.material == nullptr)
+            continue;
+        kv.second.material->destroy();
+    }
+}
 
 void Hmck::FirstApp::run()
 {

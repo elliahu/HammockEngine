@@ -21,6 +21,12 @@ void Hmck::HmckMaterial::createMaterial(HmckCreateMaterialInfo& materialInfo)
 	texture->image.createImageSampler(hmckDevice);
 }
 
+void Hmck::HmckMaterial::destroy()
+{
+	// texture
+	texture->image.destroy(hmckDevice);
+}
+
 void Hmck::HmckImage::loadImage(
 	std::string& filepath, 
 	HmckDevice& hmckDevice,  
@@ -143,4 +149,12 @@ void Hmck::HmckImage::createImageSampler(HmckDevice& hmckDevice)
 	{
 		throw std::runtime_error("Failed to create image sampler!");
 	}
+}
+
+void Hmck::HmckImage::destroy(HmckDevice& hmckDevice)
+{
+	vkDestroySampler(hmckDevice.device(), imageSampler, nullptr);
+	vkDestroyImageView(hmckDevice.device(), imageView, nullptr);
+	vkDestroyImage(hmckDevice.device(), image, nullptr);
+	vkFreeMemory(hmckDevice.device(), imageMemory, nullptr);
 }
