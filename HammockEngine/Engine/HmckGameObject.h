@@ -77,6 +77,17 @@ namespace Hmck
 		HmckBoundingBoxAxis z;
 	};
 
+
+	/*
+		MaterialComponent
+		Material component containes reference to material that will
+		be applied to the entity
+	*/
+	struct HmckMaterialComponent 
+	{
+		std::shared_ptr<HmckMaterial> hmckMaterial;
+	};
+
 	/*
 		GameObject
 		Class representing a single entity in the game world
@@ -110,6 +121,8 @@ namespace Hmck
 			HmckBoundingBoxComponent::HmckBoundingBoxAxis z);
 		void fitBoundingBox(HmckModel::ModelInfo& modelInfo);
 
+		void applyMaterial(std::shared_ptr<HmckMaterial>& material);
+
 		HmckGameObject(const HmckGameObject&) = delete;
 		HmckGameObject& operator =(const HmckGameObject&) = delete;
 		HmckGameObject(HmckGameObject&&) = default;
@@ -133,7 +146,7 @@ namespace Hmck
 
 		std::unique_ptr<HmckDirectionalLightComponent> directionalLight = nullptr;
 
-		std::shared_ptr<HmckMaterial> material = nullptr;
+		std::unique_ptr<HmckMaterialComponent> material = nullptr;
 
 	private:
 		HmckGameObject(id_t objId) : id{ objId } {}

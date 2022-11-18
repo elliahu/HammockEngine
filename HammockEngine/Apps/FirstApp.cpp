@@ -16,7 +16,7 @@ Hmck::FirstApp::~FirstApp()
     {
         if (kv.second.material == nullptr)
             continue;
-        kv.second.material->destroy();
+        kv.second.material->hmckMaterial->destroy();
     }
 }
 
@@ -50,8 +50,8 @@ void Hmck::FirstApp::run()
         // i mean better than like this
         VkDescriptorImageInfo imageInfo{};
         imageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-        imageInfo.imageView = gameObjects.at(0).material->texture->image.imageView;
-        imageInfo.sampler = gameObjects.at(0).material->texture->sampler;
+        imageInfo.imageView = gameObjects.at(0).material->hmckMaterial->texture->image.imageView;
+        imageInfo.sampler = gameObjects.at(0).material->hmckMaterial->texture->sampler;
 
         // TODO make it so that more texture can be used
         // currently only one can be used
@@ -174,7 +174,7 @@ void Hmck::FirstApp::loadGameObjects()
     vase.transform.translation = { .0f, 0.5f, 0.f };
     vase.transform.scale = glm::vec3(3.f);
     vase.fitBoundingBox(vaseModel->modelInfo);
-    vase.material = bricksMaterial;
+    vase.applyMaterial(bricksMaterial);
     gameObjects.emplace(vase.getId(), std::move(vase));
 
     // vase 2
@@ -193,7 +193,7 @@ void Hmck::FirstApp::loadGameObjects()
     floor.model = quadModel;
     floor.transform.translation = { .0f, 0.5f, 0.f };
     floor.transform.scale = glm::vec3(3.f, 1.f, 3.f);
-    floor.material = stoneMaterial;
+    floor.applyMaterial(stoneMaterial);
     gameObjects.emplace(floor.getId(), std::move(floor));
 
     // Point light
