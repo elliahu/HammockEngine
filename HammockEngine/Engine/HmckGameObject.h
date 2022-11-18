@@ -39,7 +39,7 @@ namespace Hmck
 
 	struct HmckModelComponent
 	{
-		std::shared_ptr<HmckModel> hmckModel;
+		std::shared_ptr<HmckModel> model;
 	};
 
 	/*
@@ -90,7 +90,7 @@ namespace Hmck
 	*/
 	struct HmckMaterialComponent 
 	{
-		std::shared_ptr<HmckMaterial> hmckMaterial;
+		std::shared_ptr<HmckMaterial> material;
 	};
 
 	/*
@@ -140,19 +140,19 @@ namespace Hmck
 		void setName(std::string name) { this->name = name; }
 
 		// Components
-		std::unique_ptr<HmckModelComponent> model = nullptr;
+		std::unique_ptr<HmckModelComponent> modelComponent = nullptr;
 
 		glm::vec3 color{};
 
-		HmckTransformComponent transform{}; // every game object has this
+		HmckTransformComponent transformComponent{}; // every game object has this
 
-		std::unique_ptr<HmckPointLightComponent> pointLight = nullptr;
+		std::unique_ptr<HmckPointLightComponent> pointLightComponent = nullptr;
 
-		std::unique_ptr<HmckBoundingBoxComponent> boundingBox = nullptr;
+		std::unique_ptr<HmckBoundingBoxComponent> boundingBoxComponent = nullptr;
 
-		std::unique_ptr<HmckDirectionalLightComponent> directionalLight = nullptr;
+		std::unique_ptr<HmckDirectionalLightComponent> directionalLightComponent = nullptr;
 
-		std::unique_ptr<HmckMaterialComponent> material = nullptr;
+		std::unique_ptr<HmckMaterialComponent> materialComponent = nullptr;
 
 	private:
 		HmckGameObject(id_t objId) : id{ objId } {}

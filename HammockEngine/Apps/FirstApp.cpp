@@ -14,9 +14,9 @@ Hmck::FirstApp::~FirstApp()
 {
     for (auto& kv : gameObjects)
     {
-        if (kv.second.material == nullptr)
+        if (kv.second.materialComponent == nullptr)
             continue;
-        kv.second.material->hmckMaterial->destroy();
+        kv.second.materialComponent->material->destroy();
     }
 }
 
@@ -50,8 +50,8 @@ void Hmck::FirstApp::run()
         // i mean better than like this
         VkDescriptorImageInfo imageInfo{};
         imageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-        imageInfo.imageView = gameObjects.at(0).material->hmckMaterial->texture->image.imageView;
-        imageInfo.sampler = gameObjects.at(0).material->hmckMaterial->texture->sampler;
+        imageInfo.imageView = gameObjects.at(0).materialComponent->material->texture->image.imageView;
+        imageInfo.sampler = gameObjects.at(0).materialComponent->material->texture->sampler;
 
         // TODO make it so that more texture can be used
         // currently only one can be used
@@ -84,7 +84,7 @@ void Hmck::FirstApp::run()
     HmckCamera camera{};
     camera.setViewTarget(glm::vec3(-1.f, -2.f, 2.f), glm::vec3(0.f, 0.f, 2.5f));
     auto viewerObject = HmckGameObject::createGameObject();
-    viewerObject.transform.translation.z = -2.5f;
+    viewerObject.transformComponent.translation.z = -2.5f;
     KeyboardMovementController cameraController{ hmckWindow.getGLFWwindow() };
 
     auto currentTime = std::chrono::high_resolution_clock::now();
@@ -97,7 +97,7 @@ void Hmck::FirstApp::run()
         currentTime = newTime;
 
         cameraController.moveInPlaneXZ(hmckWindow.getGLFWwindow(), frameTime, viewerObject);
-        camera.setViewYXZ(viewerObject.transform.translation, viewerObject.transform.rotation);
+        camera.setViewYXZ(viewerObject.transformComponent.translation, viewerObject.transformComponent.rotation);
 
         float aspect = hmckRenderer.getAspectRatio();
         camera.setPerspectiveProjection(glm::radians(50.f), aspect, 0.1f, 1000.f);
@@ -171,8 +171,8 @@ void Hmck::FirstApp::loadGameObjects()
     auto vase = HmckGameObject::createGameObject();
     vase.setName("Vase");
     vase.setModel(vaseModel);
-    vase.transform.translation = { .0f, 0.5f, 0.f };
-    vase.transform.scale = glm::vec3(3.f);
+    vase.transformComponent.translation = { .0f, 0.5f, 0.f };
+    vase.transformComponent.scale = glm::vec3(3.f);
     vase.fitBoundingBox(vaseModel->modelInfo);
     vase.setMaterial(bricksMaterial);
     gameObjects.emplace(vase.getId(), std::move(vase));
@@ -181,8 +181,8 @@ void Hmck::FirstApp::loadGameObjects()
     auto smallVase = HmckGameObject::createGameObject();
     smallVase.setName("Small vase");
     smallVase.setModel(vaseModel);
-    smallVase.transform.translation = { 1.0f, 0.5f, 0.f };
-    smallVase.transform.scale = glm::vec3(1.f);
+    smallVase.transformComponent.translation = { 1.0f, 0.5f, 0.f };
+    smallVase.transformComponent.scale = glm::vec3(1.f);
     smallVase.fitBoundingBox(vaseModel->modelInfo);
     gameObjects.emplace(smallVase.getId(), std::move(smallVase));
 
@@ -191,8 +191,8 @@ void Hmck::FirstApp::loadGameObjects()
     auto floor = HmckGameObject::createGameObject();
     floor.setName("Floor");
     floor.setModel(quadModel);
-    floor.transform.translation = { .0f, 0.5f, 0.f };
-    floor.transform.scale = glm::vec3(3.f, 1.f, 3.f);
+    floor.transformComponent.translation = { .0f, 0.5f, 0.f };
+    floor.transformComponent.scale = glm::vec3(3.f, 1.f, 3.f);
     floor.setMaterial(stoneMaterial);
     gameObjects.emplace(floor.getId(), std::move(floor));
 
@@ -215,7 +215,7 @@ void Hmck::FirstApp::loadGameObjects()
             (i * glm::two_pi<float>()) / lightColors.size(),
             { 0.f, -1.f, 0.f }
         );
-        pointLight.transform.translation = glm::vec3(rotateLight * glm::vec4(-1.f, -1.f, -1.f, 1.f));
+        pointLight.transformComponent.translation = glm::vec3(rotateLight * glm::vec4(-1.f, -1.f, -1.f, 1.f));
         gameObjects.emplace(pointLight.getId(), std::move(pointLight));
     }
     

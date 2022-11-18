@@ -38,13 +38,13 @@ void Hmck::HmckUISystem::showDebugStats(HmckGameObject& camera)
 	ImGui::SetNextWindowBgAlpha(0.35f);
 	ImGui::Begin(hmckWindow.getWindowName().c_str(),(bool*)0, window_flags);
 	ImGui::Text("Camera world position: ( %.2f, %.2f, %.2f )", 
-		camera.transform.translation.x,
-		camera.transform.translation.y,
-		camera.transform.translation.z);
+		camera.transformComponent.translation.x,
+		camera.transformComponent.translation.y,
+		camera.transformComponent.translation.z);
 	ImGui::Text("Camera world rotaion: ( %.2f, %.2f, %.2f )", 
-		camera.transform.rotation.x,
-		camera.transform.rotation.y,
-		camera.transform.rotation.z);
+		camera.transformComponent.rotation.x,
+		camera.transformComponent.rotation.y,
+		camera.transformComponent.rotation.z);
 	if (ImGui::IsMousePosValid())
 		ImGui::Text("Mouse Position: (%.1f,%.1f)", io.MousePos.x, io.MousePos.y);
 	else
@@ -265,25 +265,25 @@ void Hmck::HmckUISystem::gameObjectComponets(HmckGameObject& gameObject)
 	{
 		if (ImGui::TreeNode("Translation"))
 		{
-			ImGui::DragFloat("x", &gameObject.transform.translation.x, 0.01f);
-			ImGui::DragFloat("y", &gameObject.transform.translation.y, 0.01f);
-			ImGui::DragFloat("z", &gameObject.transform.translation.z, 0.01f);
+			ImGui::DragFloat("x", &gameObject.transformComponent.translation.x, 0.01f);
+			ImGui::DragFloat("y", &gameObject.transformComponent.translation.y, 0.01f);
+			ImGui::DragFloat("z", &gameObject.transformComponent.translation.z, 0.01f);
 			ImGui::TreePop();
 		}
 		//ImGui::Separator();
 		if (ImGui::TreeNode("Rotation"))
 		{
-			ImGui::DragFloat("x", &gameObject.transform.rotation.x, 0.01f);
-			ImGui::DragFloat("y", &gameObject.transform.rotation.y, 0.01f);
-			ImGui::DragFloat("z", &gameObject.transform.rotation.z, 0.01f);
+			ImGui::DragFloat("x", &gameObject.transformComponent.rotation.x, 0.01f);
+			ImGui::DragFloat("y", &gameObject.transformComponent.rotation.y, 0.01f);
+			ImGui::DragFloat("z", &gameObject.transformComponent.rotation.z, 0.01f);
 			ImGui::TreePop();
 		}
 		//ImGui::Separator();
 		if (ImGui::TreeNode("Scale"))
 		{
-			ImGui::DragFloat("x", &gameObject.transform.scale.x, 0.01f);
-			ImGui::DragFloat("y", &gameObject.transform.scale.y, 0.01f);
-			ImGui::DragFloat("z", &gameObject.transform.scale.z, 0.01f);
+			ImGui::DragFloat("x", &gameObject.transformComponent.scale.x, 0.01f);
+			ImGui::DragFloat("y", &gameObject.transformComponent.scale.y, 0.01f);
+			ImGui::DragFloat("z", &gameObject.transformComponent.scale.z, 0.01f);
 			ImGui::TreePop();
 		}
 	}
@@ -296,37 +296,37 @@ void Hmck::HmckUISystem::gameObjectComponets(HmckGameObject& gameObject)
 		};
 		ImGui::ColorEdit3("Color", color_hsv[0], ImGuiColorEditFlags_Float | ImGuiColorEditFlags_DisplayRGB);
 	}
-	if (gameObject.model != nullptr) // Model
+	if (gameObject.modelComponent != nullptr) // Model
 	{
 		if (ImGui::CollapsingHeader("Model"))
 		{
 			ImGui::Text("Has model");
 		}
 	}
-	if (gameObject.boundingBox != nullptr) // Bounding box
+	if (gameObject.boundingBoxComponent != nullptr) // Bounding box
 	{
 		if (ImGui::CollapsingHeader("Bounding box"))
 		{
-			ImGui::DragFloat("x min", &gameObject.boundingBox->x.min, 0.01f);
-			ImGui::DragFloat("x max", &gameObject.boundingBox->x.max, 0.01f);
-			ImGui::DragFloat("y min", &gameObject.boundingBox->y.min, 0.01f);
-			ImGui::DragFloat("y max", &gameObject.boundingBox->y.max, 0.01f);
-			ImGui::DragFloat("z min", &gameObject.boundingBox->z.min, 0.01f);
-			ImGui::DragFloat("z max", &gameObject.boundingBox->z.max, 0.01f);
+			ImGui::DragFloat("x min", &gameObject.boundingBoxComponent->x.min, 0.01f);
+			ImGui::DragFloat("x max", &gameObject.boundingBoxComponent->x.max, 0.01f);
+			ImGui::DragFloat("y min", &gameObject.boundingBoxComponent->y.min, 0.01f);
+			ImGui::DragFloat("y max", &gameObject.boundingBoxComponent->y.max, 0.01f);
+			ImGui::DragFloat("z min", &gameObject.boundingBoxComponent->z.min, 0.01f);
+			ImGui::DragFloat("z max", &gameObject.boundingBoxComponent->z.max, 0.01f);
 		}
 	}
-	if (gameObject.pointLight != nullptr) // Point light
+	if (gameObject.pointLightComponent != nullptr) // Point light
 	{
 		if (ImGui::CollapsingHeader("Point light"))
 		{
-			ImGui::DragFloat("Intensity", &gameObject.pointLight->lightIntensity, 0.01f, 0.0f, 1.0f);
+			ImGui::DragFloat("Intensity", &gameObject.pointLightComponent->lightIntensity, 0.01f, 0.0f, 1.0f);
 		}
 	}
-	if (gameObject.directionalLight != nullptr) // directional light
+	if (gameObject.directionalLightComponent != nullptr) // directional light
 	{
 		if (ImGui::CollapsingHeader("Directional light"))
 		{
-			ImGui::DragFloat("Intensity", &gameObject.directionalLight->lightIntensity, 0.01f, 0.0f, 1.0f);
+			ImGui::DragFloat("Intensity", &gameObject.directionalLightComponent->lightIntensity, 0.01f, 0.0f, 1.0f);
 		}
 	}
 }

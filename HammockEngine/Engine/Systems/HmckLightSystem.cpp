@@ -59,10 +59,10 @@ void Hmck::HmckLightSystem::render(HmckFrameInfo& frameInfo)
 	for (auto& kv : frameInfo.gameObjects)
 	{
 		auto& obj = kv.second;
-		if (obj.pointLight == nullptr) continue;
+		if (obj.pointLightComponent == nullptr) continue;
 
 		// calculate distance
-		auto offset = frameInfo.camera.getPosition() - obj.transform.translation;
+		auto offset = frameInfo.camera.getPosition() - obj.transformComponent.translation;
 		float disSqared = glm::dot(offset, offset);
 		sorted[disSqared] = obj.getId();
 	}
@@ -86,9 +86,9 @@ void Hmck::HmckLightSystem::render(HmckFrameInfo& frameInfo)
 		auto& obj = frameInfo.gameObjects.at(it->second);
 
 		HmckPointLightPushConstant push{};
-		push.position = glm::vec4(obj.transform.translation, 1.f);
-		push.color = glm::vec4(obj.color, obj.pointLight->lightIntensity);
-		push.radius = obj.transform.scale.x;
+		push.position = glm::vec4(obj.transformComponent.translation, 1.f);
+		push.color = glm::vec4(obj.color, obj.pointLightComponent->lightIntensity);
+		push.radius = obj.transformComponent.scale.x;
 
 		vkCmdPushConstants(
 			frameInfo.commandBuffer,
@@ -119,27 +119,27 @@ void Hmck::HmckLightSystem::update(HmckFrameInfo& frameInfo, HmckGlobalUbo& ubo)
 	{
 		auto& obj = kv.second;
 		
-		if (obj.pointLight != nullptr)
+		if (obj.pointLightComponent != nullptr)
 		{
 			assert(lightIndex < MAX_LIGHTS && "Point light limit exeeded");
 
 			// update lights
-			obj.transform.translation = glm::vec3(rotateLight * glm::vec4(obj.transform.translation, 1.f));
+			obj.transformComponent.translation = glm::vec3(rotateLight * glm::vec4(obj.transformComponent.translation, 1.f));
 
-			ubo.pointLights[lightIndex].position = glm::vec4(obj.transform.translation, 1.f);
-			ubo.pointLights[lightIndex].color = glm::vec4(obj.color, obj.pointLight->lightIntensity);
+			ubo.pointLights[lightIndex].position = glm::vec4(obj.transformComponent.translation, 1.f);
+			ubo.pointLights[lightIndex].color = glm::vec4(obj.color, obj.pointLightComponent->lightIntensity);
 
 			lightIndex += 1;
 		}
 
-		if (obj.directionalLight != nullptr)
+		if (obj.directionalLightComponent != nullptr)
 		{
 			// directional light
 
 			assert(dirLightIdx < 1 && "Directional light limit exeeded. There can only be one directional light");
 
-			ubo.directionalLight.color = glm::vec4(obj.color, obj.directionalLight->lightIntensity);
-			ubo.directionalLight.direction = glm::vec4(obj.transform.rotation, 1.f);
+			ubo.directionalLight.color = glm::vec4(obj.color, obj.directionalLightComponent->lightIntensity);
+			ubo.directionalLight.direction = glm::vec4(obj.transformComponent.rotation, 1.f);
 
 			dirLightIdx += 1;
 		}

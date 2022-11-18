@@ -65,19 +65,19 @@ Hmck::HmckGameObject Hmck::HmckGameObject::createPointLight(float intensity,floa
 {
 	HmckGameObject gameObj = HmckGameObject::createGameObject();
 	gameObj.color = color;
-	gameObj.transform.scale.x = radius;
-	gameObj.pointLight = std::make_unique<HmckPointLightComponent>();
-	gameObj.pointLight->lightIntensity = intensity;
+	gameObj.transformComponent.scale.x = radius;
+	gameObj.pointLightComponent = std::make_unique<HmckPointLightComponent>();
+	gameObj.pointLightComponent->lightIntensity = intensity;
 	return gameObj;
 }
 
 Hmck::HmckGameObject Hmck::HmckGameObject::createDirectionalLight(float yaw, float pitch, glm::vec4 directionalLightColor)
 {
 	HmckGameObject gameObj = HmckGameObject::createGameObject();
-	gameObj.directionalLight = std::make_unique<HmckDirectionalLightComponent>();
-	gameObj.directionalLight->lightIntensity = directionalLightColor.w;
+	gameObj.directionalLightComponent = std::make_unique<HmckDirectionalLightComponent>();
+	gameObj.directionalLightComponent->lightIntensity = directionalLightColor.w;
 	gameObj.color = glm::vec3(directionalLightColor);
-	gameObj.transform.rotation = { // TODO fix math here
+	gameObj.transformComponent.rotation = { // TODO fix math here
 		glm::cos(yaw) * glm::cos(pitch),
 		glm::sin(yaw) * glm::cos(pitch),
 		glm::sin(pitch)
@@ -87,31 +87,31 @@ Hmck::HmckGameObject Hmck::HmckGameObject::createDirectionalLight(float yaw, flo
 
 void Hmck::HmckGameObject::fitBoundingBox(HmckBoundingBoxComponent::HmckBoundingBoxAxis x, HmckBoundingBoxComponent::HmckBoundingBoxAxis y, HmckBoundingBoxComponent::HmckBoundingBoxAxis z)
 {
-	if (boundingBox == nullptr)
-		this->boundingBox = std::make_unique<HmckBoundingBoxComponent>();
-	this->boundingBox->x = x;
-	this->boundingBox->y = y;
-	this->boundingBox->z = z;
+	if (boundingBoxComponent == nullptr)
+		this->boundingBoxComponent = std::make_unique<HmckBoundingBoxComponent>();
+	this->boundingBoxComponent->x = x;
+	this->boundingBoxComponent->y = y;
+	this->boundingBoxComponent->z = z;
 }
 
 void Hmck::HmckGameObject::fitBoundingBox(HmckModel::ModelInfo& modelInfo)
 {
 	fitBoundingBox(
-		{ modelInfo.x.min * transform.scale.x, modelInfo.x.max * transform.scale.x },
-		{ modelInfo.y.min * transform.scale.y, modelInfo.y.max * transform.scale.y },
-		{ modelInfo.z.min * transform.scale.z, modelInfo.z.max * transform.scale.z });
+		{ modelInfo.x.min * transformComponent.scale.x, modelInfo.x.max * transformComponent.scale.x },
+		{ modelInfo.y.min * transformComponent.scale.y, modelInfo.y.max * transformComponent.scale.y },
+		{ modelInfo.z.min * transformComponent.scale.z, modelInfo.z.max * transformComponent.scale.z });
 }
 
 void Hmck::HmckGameObject::setMaterial(std::shared_ptr<HmckMaterial>& material)
 {
-	this->material = std::make_unique<HmckMaterialComponent>();
-	this->material->hmckMaterial = material;
+	this->materialComponent = std::make_unique<HmckMaterialComponent>();
+	this->materialComponent->material = material;
 }
 
 void Hmck::HmckGameObject::setModel(std::shared_ptr<HmckModel>& model)
 {
-	this->model = std::make_unique<HmckModelComponent>();
-	this->model->hmckModel = model;
+	this->modelComponent = std::make_unique<HmckModelComponent>();
+	this->modelComponent->model = model;
 }
 
 

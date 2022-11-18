@@ -69,10 +69,10 @@ void Hmck::HmckSimpleRenderSystem::renderGameObjects(HmckFrameInfo& frameInfo)
 	for (auto& kv : frameInfo.gameObjects)
 	{
 		auto& obj = kv.second;
-		if (obj.model == nullptr) continue;
+		if (obj.modelComponent == nullptr) continue;
 		HmckSimplePushConstantData push{};
-		push.modelMatrix = obj.transform.mat4();
-		push.normalMatrix = obj.transform.normalMatrix();
+		push.modelMatrix = obj.transformComponent.mat4();
+		push.normalMatrix = obj.transformComponent.normalMatrix();
 
 		vkCmdPushConstants(
 			frameInfo.commandBuffer,
@@ -83,7 +83,7 @@ void Hmck::HmckSimpleRenderSystem::renderGameObjects(HmckFrameInfo& frameInfo)
 			&push
 		);
 
-		obj.model->hmckModel->bind(frameInfo.commandBuffer);
-		obj.model->hmckModel->draw(frameInfo.commandBuffer);
+		obj.modelComponent->model->bind(frameInfo.commandBuffer);
+		obj.modelComponent->model->draw(frameInfo.commandBuffer);
 	}
 }
