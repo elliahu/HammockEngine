@@ -102,10 +102,16 @@ void Hmck::HmckGameObject::fitBoundingBox(HmckModel::ModelInfo& modelInfo)
 		{ modelInfo.z.min * transform.scale.z, modelInfo.z.max * transform.scale.z });
 }
 
-void Hmck::HmckGameObject::applyMaterial(std::shared_ptr<HmckMaterial>& material)
+void Hmck::HmckGameObject::setMaterial(std::shared_ptr<HmckMaterial>& material)
 {
 	this->material = std::make_unique<HmckMaterialComponent>();
 	this->material->hmckMaterial = material;
+}
+
+void Hmck::HmckGameObject::setModel(std::shared_ptr<HmckModel>& model)
+{
+	this->model = std::make_unique<HmckModelComponent>();
+	this->model->hmckModel = model;
 }
 
 

@@ -170,17 +170,17 @@ void Hmck::FirstApp::loadGameObjects()
     // vase
     auto vase = HmckGameObject::createGameObject();
     vase.setName("Vase");
-    vase.model = vaseModel;
+    vase.setModel(vaseModel);
     vase.transform.translation = { .0f, 0.5f, 0.f };
     vase.transform.scale = glm::vec3(3.f);
     vase.fitBoundingBox(vaseModel->modelInfo);
-    vase.applyMaterial(bricksMaterial);
+    vase.setMaterial(bricksMaterial);
     gameObjects.emplace(vase.getId(), std::move(vase));
 
     // vase 2
     auto smallVase = HmckGameObject::createGameObject();
     smallVase.setName("Small vase");
-    smallVase.model = vaseModel;
+    smallVase.setModel(vaseModel);
     smallVase.transform.translation = { 1.0f, 0.5f, 0.f };
     smallVase.transform.scale = glm::vec3(1.f);
     smallVase.fitBoundingBox(vaseModel->modelInfo);
@@ -190,10 +190,10 @@ void Hmck::FirstApp::loadGameObjects()
     std::shared_ptr<HmckModel> quadModel = HmckModel::createModelFromFile(hmckDevice, std::string(MODELS_DIR) + "quad.obj");
     auto floor = HmckGameObject::createGameObject();
     floor.setName("Floor");
-    floor.model = quadModel;
+    floor.setModel(quadModel);
     floor.transform.translation = { .0f, 0.5f, 0.f };
     floor.transform.scale = glm::vec3(3.f, 1.f, 3.f);
-    floor.applyMaterial(stoneMaterial);
+    floor.setMaterial(stoneMaterial);
     gameObjects.emplace(floor.getId(), std::move(floor));
 
     // Point light

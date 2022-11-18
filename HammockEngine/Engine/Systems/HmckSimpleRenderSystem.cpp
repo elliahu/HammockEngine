@@ -83,7 +83,7 @@ void Hmck::HmckSimpleRenderSystem::renderGameObjects(HmckFrameInfo& frameInfo)
 			&push
 		);
 
-		obj.model->bind(frameInfo.commandBuffer);
-		obj.model->draw(frameInfo.commandBuffer);
+		obj.model->hmckModel->bind(frameInfo.commandBuffer);
+		obj.model->hmckModel->draw(frameInfo.commandBuffer);
 	}
 }

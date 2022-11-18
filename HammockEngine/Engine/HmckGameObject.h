@@ -37,6 +37,11 @@ namespace Hmck
 		glm::mat3 normalMatrix();
 	};
 
+	struct HmckModelComponent
+	{
+		std::shared_ptr<HmckModel> hmckModel;
+	};
+
 	/*
 		PointLightComponent
 		If this component is set, model should NOT be set
@@ -121,7 +126,8 @@ namespace Hmck
 			HmckBoundingBoxComponent::HmckBoundingBoxAxis z);
 		void fitBoundingBox(HmckModel::ModelInfo& modelInfo);
 
-		void applyMaterial(std::shared_ptr<HmckMaterial>& material);
+		void setMaterial(std::shared_ptr<HmckMaterial>& material);
+		void setModel(std::shared_ptr<HmckModel>& model);
 
 		HmckGameObject(const HmckGameObject&) = delete;
 		HmckGameObject& operator =(const HmckGameObject&) = delete;
@@ -134,7 +140,7 @@ namespace Hmck
 		void setName(std::string name) { this->name = name; }
 
 		// Components
-		std::shared_ptr<HmckModel> model{};
+		std::unique_ptr<HmckModelComponent> model = nullptr;
 
 		glm::vec3 color{};
 
