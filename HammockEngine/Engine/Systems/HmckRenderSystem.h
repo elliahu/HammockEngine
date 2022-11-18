@@ -5,6 +5,8 @@
 #include "../HmckGameObject.h"
 #include "../HmckCamera.h"
 #include "../HmckFrameInfo.h"
+#include "../HmckDescriptors.h"
+#include "../HmckSwapChain.h"
 
 #define GLM_FORCE_RADIANS
 #define GLM_FORCE_DEPTH_ZERO_TO_ONE
@@ -20,9 +22,17 @@
 #endif
 
 
+
 /*
  *	A system is a process which acts on all GameObjects with the desired components.
  */
+
+/*
+	At this point app functions as a Master Render System
+	and this class function as subsystem
+
+	subject to change in near future
+*/
 
 namespace Hmck
 {
@@ -30,21 +40,21 @@ namespace Hmck
 	// vec2: 2N = 8 Bytes
 	// vec3 (or vec4): 4N = 16 Bytes
 	// taken from 15.6.4 Offset and Stride Assignment
-	struct HmckSimplePushConstantData {
+	struct HmckPushConstantData {
 		glm::mat4 modelMatrix{ 1.f };
 		glm::mat4 normalMatrix{ 1.f };
 	};
 
-	class HmckSimpleRenderSystem
+	class HmckRenderSystem
 	{
 	public:
 
-		HmckSimpleRenderSystem(HmckDevice& device, VkRenderPass renderPass, VkDescriptorSetLayout globalSetLayout);
-		~HmckSimpleRenderSystem();
+		HmckRenderSystem(HmckDevice& device, VkRenderPass renderPass, VkDescriptorSetLayout globalSetLayout);
+		~HmckRenderSystem();
 
 		// delete copy constructor and copy destructor
-		HmckSimpleRenderSystem(const HmckSimpleRenderSystem&) = delete;
-		HmckSimpleRenderSystem& operator=(const HmckSimpleRenderSystem&) = delete;
+		HmckRenderSystem(const HmckRenderSystem&) = delete;
+		HmckRenderSystem& operator=(const HmckRenderSystem&) = delete;
 
 		void renderGameObjects(HmckFrameInfo& frameInfo);
 
@@ -54,9 +64,11 @@ namespace Hmck
 		
 
 		HmckDevice& hmckDevice;
-
 		std::unique_ptr<HmckPipeline> hmckPipeline;
 		VkPipelineLayout pipelineLayout;
+
+		//std::unique_ptr<HmckDescriptorPool> descriptorPool{};
+		//std::unique_ptr<HmckDescriptorSetLayout> descriptSetLayout;
 	};
 
 }

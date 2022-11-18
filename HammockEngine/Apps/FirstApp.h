@@ -5,7 +5,7 @@
 #include "HmckGameObject.h"
 #include "HmckRenderer.h"
 #include "Systems/HmckLightSystem.h"
-#include "Systems/HmckSimpleRenderSystem.h"
+#include "Systems/HmckRenderSystem.h"
 #include "Systems/HmckUISystem.h"
 #include "HmckModel.h"
 #include "HmckCamera.h"

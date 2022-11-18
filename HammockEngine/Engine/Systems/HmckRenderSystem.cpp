@@ -1,25 +1,24 @@
-#include "HmckSimpleRenderSystem.h"
+#include "HmckRenderSystem.h"
 
-Hmck::HmckSimpleRenderSystem::HmckSimpleRenderSystem(HmckDevice& device, VkRenderPass renderPass, VkDescriptorSetLayout globalSetLayout) : hmckDevice{ device }
+Hmck::HmckRenderSystem::HmckRenderSystem(HmckDevice& device, VkRenderPass renderPass, VkDescriptorSetLayout globalSetLayout) : hmckDevice{ device }
 {
 	createPipelineLayout(globalSetLayout);
 	createPipeline(renderPass);
 }
 
-Hmck::HmckSimpleRenderSystem::~HmckSimpleRenderSystem()
+Hmck::HmckRenderSystem::~HmckRenderSystem()
 {
 	vkDestroyPipelineLayout(hmckDevice.device(), pipelineLayout, nullptr);
 }
 
-
-
-void Hmck::HmckSimpleRenderSystem::createPipelineLayout(VkDescriptorSetLayout globalSetLayout)
+void Hmck::HmckRenderSystem::createPipelineLayout(VkDescriptorSetLayout globalSetLayout)
 {
 	VkPushConstantRange pushConstantRange{};
 	pushConstantRange.stageFlags = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT;
 	pushConstantRange.offset = 0;
-	pushConstantRange.size = sizeof(HmckSimplePushConstantData);
+	pushConstantRange.size = sizeof(HmckPushConstantData);
 
+	// vector of descript set layouts
 	std::vector<VkDescriptorSetLayout> descriptorSetLayouts{ globalSetLayout };
 
 	VkPipelineLayoutCreateInfo pipelineLayoutInfo{};
@@ -35,7 +34,7 @@ void Hmck::HmckSimpleRenderSystem::createPipelineLayout(VkDescriptorSetLayout gl
 	}
 }
 
-void Hmck::HmckSimpleRenderSystem::createPipeline(VkRenderPass renderPass)
+void Hmck::HmckRenderSystem::createPipeline(VkRenderPass renderPass)
 {
 	assert(pipelineLayout != nullptr && "Cannot create pipeline before pipeline layout");
 
@@ -52,10 +51,11 @@ void Hmck::HmckSimpleRenderSystem::createPipeline(VkRenderPass renderPass)
 }
 
 
-void Hmck::HmckSimpleRenderSystem::renderGameObjects(HmckFrameInfo& frameInfo)
+void Hmck::HmckRenderSystem::renderGameObjects(HmckFrameInfo& frameInfo)
 {
 	hmckPipeline->bind(frameInfo.commandBuffer);
 
+	// bind global descript set
 	vkCmdBindDescriptorSets(
 		frameInfo.commandBuffer,
 		VK_PIPELINE_BIND_POINT_GRAPHICS,
@@ -70,16 +70,20 @@ void Hmck::HmckSimpleRenderSystem::renderGameObjects(HmckFrameInfo& frameInfo)
 	{
 		auto& obj = kv.second;
 		if (obj.modelComponent == nullptr) continue;
-		HmckSimplePushConstantData push{};
+
+		
+		
+		HmckPushConstantData push{};
 		push.modelMatrix = obj.transformComponent.mat4();
 		push.normalMatrix = obj.transformComponent.normalMatrix();
 
+		// push data using push constant
 		vkCmdPushConstants(
 			frameInfo.commandBuffer,
 			pipelineLayout,
 			VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT,
 			0,
-			sizeof(HmckSimplePushConstantData),
+			sizeof(HmckPushConstantData),
 			&push
 		);
 

@@ -63,7 +63,7 @@ void Hmck::FirstApp::run()
     }
 
     // systems
-	HmckSimpleRenderSystem simpleRenderSystem{ 
+	HmckRenderSystem renderSystem{ 
         hmckDevice,
         hmckRenderer.getSwapChainRenderPass(), 
         globalSetLayout->getDescriptorSetLayout()
@@ -128,7 +128,7 @@ void Hmck::FirstApp::run()
 
             // start rendering
             
-			simpleRenderSystem.renderGameObjects(frameInfo);
+			renderSystem.renderGameObjects(frameInfo);
             lightSystem.render(frameInfo);
 
             // UI
