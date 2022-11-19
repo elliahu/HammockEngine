@@ -37,11 +37,20 @@ namespace Hmck
 		glm::mat3 normalMatrix();
 	};
 
+	/*
+		DescriptorSetComponetn
+		This component is used to store the descriptor set of the enitiy
+	*/
 	struct HmckDescriptorSetComponent
 	{
 		VkDescriptorSet set{};
 	};
 
+	/*
+		ModelComponent 
+		Model component functions as a pointer to model
+		If entity has this component it will be rendered by the render system
+	*/
 	struct HmckModelComponent
 	{
 		std::shared_ptr<HmckModel> model;
