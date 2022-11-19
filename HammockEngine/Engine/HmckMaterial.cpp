@@ -3,7 +3,7 @@
 #define STB_IMAGE_IMPLEMENTATION
 #include <stb/stb_image.h>
 
-Hmck::HmckMaterial::HmckMaterial(HmckDevice& device): hmckDevice{device}{}
+Hmck::HmckMaterial::HmckMaterial(HmckDevice& device): hmckDevice{device} {}
 
 std::unique_ptr<Hmck::HmckMaterial> Hmck::HmckMaterial::createMaterial(HmckDevice& hmckDevice, HmckCreateMaterialInfo& materialInfo)
 {

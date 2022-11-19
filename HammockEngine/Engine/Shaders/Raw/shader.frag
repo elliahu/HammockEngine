@@ -9,7 +9,7 @@ layout (location = 3) in vec2 textCoords;
 // outputs
 layout (location = 0) out vec4 outColor;
 
-layout(binding = 1) uniform sampler2D texSampler;
+layout(set = 1, binding = 0) uniform sampler2D texSampler;
 
 struct PointLight
 {
@@ -97,7 +97,7 @@ void main()
 
 	outColor = vec4((
             (diffuseLight * sampledColor.rgb) + 
-            (specularLight * fragColor.rgb) +
-            (sunDiffuse * fragColor.rgb) 
+            (specularLight * sampledColor.rgb) +
+            (sunDiffuse * sampledColor.rgb) 
      ), 1.0);    
 }

@@ -37,6 +37,11 @@ namespace Hmck
 		glm::mat3 normalMatrix();
 	};
 
+	struct HmckDescriptorSetComponent
+	{
+		VkDescriptorSet set{};
+	};
+
 	struct HmckModelComponent
 	{
 		std::shared_ptr<HmckModel> model;
@@ -128,6 +133,9 @@ namespace Hmck
 
 		void setMaterial(std::shared_ptr<HmckMaterial>& material);
 		void setModel(std::shared_ptr<HmckModel>& model);
+		void bindDescriptorSet(
+			std::unique_ptr<HmckDescriptorPool>& pool, 
+			std::unique_ptr<HmckDescriptorSetLayout>& setLayout);
 
 		HmckGameObject(const HmckGameObject&) = delete;
 		HmckGameObject& operator =(const HmckGameObject&) = delete;
@@ -142,9 +150,11 @@ namespace Hmck
 		// Components
 		std::unique_ptr<HmckModelComponent> modelComponent = nullptr;
 
-		glm::vec3 color{};
+		glm::vec3 colorComponent{};
 
 		HmckTransformComponent transformComponent{}; // every game object has this
+
+		std::unique_ptr<HmckDescriptorSetComponent> descriptorSetComponent = nullptr;
 
 		std::unique_ptr<HmckPointLightComponent> pointLightComponent = nullptr;
 

@@ -1,8 +1,10 @@
 #include "HmckRenderSystem.h"
 
-Hmck::HmckRenderSystem::HmckRenderSystem(HmckDevice& device, VkRenderPass renderPass, VkDescriptorSetLayout globalSetLayout) : hmckDevice{ device }
+Hmck::HmckRenderSystem::HmckRenderSystem(
+	HmckDevice& device, VkRenderPass renderPass, 
+	std::vector<VkDescriptorSetLayout>& setLayouts) : hmckDevice{ device }
 {
-	createPipelineLayout(globalSetLayout);
+	createPipelineLayout(setLayouts);
 	createPipeline(renderPass);
 }
 
@@ -11,20 +13,19 @@ Hmck::HmckRenderSystem::~HmckRenderSystem()
 	vkDestroyPipelineLayout(hmckDevice.device(), pipelineLayout, nullptr);
 }
 
-void Hmck::HmckRenderSystem::createPipelineLayout(VkDescriptorSetLayout globalSetLayout)
+void Hmck::HmckRenderSystem::createPipelineLayout(std::vector<VkDescriptorSetLayout>& setLayouts)
 {
 	VkPushConstantRange pushConstantRange{};
 	pushConstantRange.stageFlags = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT;
 	pushConstantRange.offset = 0;
 	pushConstantRange.size = sizeof(HmckPushConstantData);
 
-	// vector of descript set layouts
-	std::vector<VkDescriptorSetLayout> descriptorSetLayouts{ globalSetLayout };
+	//std::vector<VkDescriptorSetLayout> descriptorSetLayouts{ globalDescriptorLayout};
 
 	VkPipelineLayoutCreateInfo pipelineLayoutInfo{};
 	pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
-	pipelineLayoutInfo.setLayoutCount = static_cast<uint32_t>(descriptorSetLayouts.size());
-	pipelineLayoutInfo.pSetLayouts = descriptorSetLayouts.data();
+	pipelineLayoutInfo.setLayoutCount = static_cast<uint32_t>(setLayouts.size());
+	pipelineLayoutInfo.pSetLayouts = setLayouts.data();
 	pipelineLayoutInfo.pushConstantRangeCount = 1;
 	pipelineLayoutInfo.pPushConstantRanges = &pushConstantRange;
 
@@ -50,12 +51,11 @@ void Hmck::HmckRenderSystem::createPipeline(VkRenderPass renderPass)
 	);
 }
 
-
 void Hmck::HmckRenderSystem::renderGameObjects(HmckFrameInfo& frameInfo)
 {
 	hmckPipeline->bind(frameInfo.commandBuffer);
 
-	// bind global descript set
+	// bind descriptor set
 	vkCmdBindDescriptorSets(
 		frameInfo.commandBuffer,
 		VK_PIPELINE_BIND_POINT_GRAPHICS,
@@ -71,8 +71,19 @@ void Hmck::HmckRenderSystem::renderGameObjects(HmckFrameInfo& frameInfo)
 		auto& obj = kv.second;
 		if (obj.modelComponent == nullptr) continue;
 
-		
-		
+		if (obj.materialComponent != nullptr)
+		{
+			vkCmdBindDescriptorSets(
+				frameInfo.commandBuffer,
+				VK_PIPELINE_BIND_POINT_GRAPHICS,
+				pipelineLayout,
+				1, 1,
+				&obj.descriptorSetComponent->set,
+				0,
+				nullptr
+			);
+		}
+
 		HmckPushConstantData push{};
 		push.modelMatrix = obj.transformComponent.mat4();
 		push.normalMatrix = obj.transformComponent.normalMatrix();

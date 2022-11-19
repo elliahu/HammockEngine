@@ -18,7 +18,9 @@ void Hmck::HmckLightSystem::createPipelineLayout(VkDescriptorSetLayout globalSet
 	pushConstantRange.offset = 0;
 	pushConstantRange.size = sizeof(HmckPointLightPushConstant);
 
-	std::vector<VkDescriptorSetLayout> descriptorSetLayouts{ globalSetLayout };
+	std::vector<VkDescriptorSetLayout> descriptorSetLayouts{ 
+		globalSetLayout 
+	};
 
 	VkPipelineLayoutCreateInfo pipelineLayoutInfo{};
 	pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
@@ -79,7 +81,6 @@ void Hmck::HmckLightSystem::render(HmckFrameInfo& frameInfo)
 		nullptr
 	);
 
-
 	// iterate over sorted map in reverse order
 	for (auto it = sorted.rbegin(); it != sorted.rend(); ++it)
 	{
@@ -87,7 +88,7 @@ void Hmck::HmckLightSystem::render(HmckFrameInfo& frameInfo)
 
 		HmckPointLightPushConstant push{};
 		push.position = glm::vec4(obj.transformComponent.translation, 1.f);
-		push.color = glm::vec4(obj.color, obj.pointLightComponent->lightIntensity);
+		push.color = glm::vec4(obj.colorComponent, obj.pointLightComponent->lightIntensity);
 		push.radius = obj.transformComponent.scale.x;
 
 		vkCmdPushConstants(
@@ -127,7 +128,7 @@ void Hmck::HmckLightSystem::update(HmckFrameInfo& frameInfo, HmckGlobalUbo& ubo)
 			obj.transformComponent.translation = glm::vec3(rotateLight * glm::vec4(obj.transformComponent.translation, 1.f));
 
 			ubo.pointLights[lightIndex].position = glm::vec4(obj.transformComponent.translation, 1.f);
-			ubo.pointLights[lightIndex].color = glm::vec4(obj.color, obj.pointLightComponent->lightIntensity);
+			ubo.pointLights[lightIndex].color = glm::vec4(obj.colorComponent, obj.pointLightComponent->lightIntensity);
 
 			lightIndex += 1;
 		}
@@ -138,7 +139,7 @@ void Hmck::HmckLightSystem::update(HmckFrameInfo& frameInfo, HmckGlobalUbo& ubo)
 
 			assert(dirLightIdx < 1 && "Directional light limit exeeded. There can only be one directional light");
 
-			ubo.directionalLight.color = glm::vec4(obj.color, obj.directionalLightComponent->lightIntensity);
+			ubo.directionalLight.color = glm::vec4(obj.colorComponent, obj.directionalLightComponent->lightIntensity);
 			ubo.directionalLight.direction = glm::vec4(obj.transformComponent.rotation, 1.f);
 
 			dirLightIdx += 1;

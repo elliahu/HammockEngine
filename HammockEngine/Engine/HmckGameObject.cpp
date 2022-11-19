@@ -64,7 +64,7 @@ glm::mat3 Hmck::HmckTransformComponent::normalMatrix()
 Hmck::HmckGameObject Hmck::HmckGameObject::createPointLight(float intensity,float radius,glm::vec3 color)
 {
 	HmckGameObject gameObj = HmckGameObject::createGameObject();
-	gameObj.color = color;
+	gameObj.colorComponent = color;
 	gameObj.transformComponent.scale.x = radius;
 	gameObj.pointLightComponent = std::make_unique<HmckPointLightComponent>();
 	gameObj.pointLightComponent->lightIntensity = intensity;
@@ -76,7 +76,7 @@ Hmck::HmckGameObject Hmck::HmckGameObject::createDirectionalLight(float yaw, flo
 	HmckGameObject gameObj = HmckGameObject::createGameObject();
 	gameObj.directionalLightComponent = std::make_unique<HmckDirectionalLightComponent>();
 	gameObj.directionalLightComponent->lightIntensity = directionalLightColor.w;
-	gameObj.color = glm::vec3(directionalLightColor);
+	gameObj.colorComponent = glm::vec3(directionalLightColor);
 	gameObj.transformComponent.rotation = { // TODO fix math here
 		glm::cos(yaw) * glm::cos(pitch),
 		glm::sin(yaw) * glm::cos(pitch),
@@ -112,6 +112,23 @@ void Hmck::HmckGameObject::setModel(std::shared_ptr<HmckModel>& model)
 {
 	this->modelComponent = std::make_unique<HmckModelComponent>();
 	this->modelComponent->model = model;
+}
+
+
+void Hmck::HmckGameObject::bindDescriptorSet(
+	std::unique_ptr<HmckDescriptorPool>& pool,
+	std::unique_ptr<HmckDescriptorSetLayout>& setLayout)
+{
+	descriptorSetComponent = std::make_unique<HmckDescriptorSetComponent>();
+
+	VkDescriptorImageInfo imageInfo{};
+	imageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+	imageInfo.imageView = materialComponent->material->texture->image.imageView;
+	imageInfo.sampler = materialComponent->material->texture->sampler;
+
+	HmckDescriptorWriter(*setLayout, *pool)
+		.writeImage(0, &imageInfo)
+		.build(descriptorSetComponent->set);
 }
 
 

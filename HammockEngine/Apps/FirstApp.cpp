@@ -2,12 +2,18 @@
 
 Hmck::FirstApp::FirstApp()
 {
+    // TODO change this so that material sets are allocated dynamicly or from different pool object
     globalPool = HmckDescriptorPool::Builder(hmckDevice)
-        .setMaxSets(HmckSwapChain::MAX_FRAMES_IN_FLIGHT)
+        .setMaxSets(100)
         .addPoolSize(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, HmckSwapChain::MAX_FRAMES_IN_FLIGHT)
-        .addPoolSize(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, HmckSwapChain::MAX_FRAMES_IN_FLIGHT) // texture sampler
+        .addPoolSize(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 100)
         .build();
+
 	loadGameObjects();
+
+    globalSetLayout = HmckDescriptorSetLayout::Builder(hmckDevice)
+        .addBinding(0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_ALL_GRAPHICS)
+        .build();
 }
 
 Hmck::FirstApp::~FirstApp()
@@ -36,37 +42,25 @@ void Hmck::FirstApp::run()
         uboBuffers[i]->map();
     }
 
-    auto globalSetLayout = HmckDescriptorSetLayout::Builder(hmckDevice)
-        .addBinding(0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_ALL_GRAPHICS)
-        .addBinding(1, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT)
-        .build();
-
     std::vector<VkDescriptorSet> globalDescriptorSets(HmckSwapChain::MAX_FRAMES_IN_FLIGHT);
     for (int i = 0; i < globalDescriptorSets.size(); i++)
     {
         auto bufferInfo = uboBuffers[i]->descriptorInfo();
-
-        // TODO somehow bind the actual image and sampler resources to the descriptors
-        // i mean better than like this
-        VkDescriptorImageInfo imageInfo{};
-        imageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-        imageInfo.imageView = gameObjects.at(0).materialComponent->material->texture->image.imageView;
-        imageInfo.sampler = gameObjects.at(0).materialComponent->material->texture->sampler;
-
-        // TODO make it so that more texture can be used
-        // currently only one can be used
-
         HmckDescriptorWriter(*globalSetLayout, *globalPool)
             .writeBuffer(0, &bufferInfo)
-            .writeImage(1, &imageInfo) // TODO this is very much ugly
             .build(globalDescriptorSets[i]);
     }
+
+    std::vector<VkDescriptorSetLayout> setLayouts{
+        globalSetLayout->getDescriptorSetLayout(),
+        materialLayout->getDescriptorSetLayout()
+    };
 
     // systems
 	HmckRenderSystem renderSystem{ 
         hmckDevice,
         hmckRenderer.getSwapChainRenderPass(), 
-        globalSetLayout->getDescriptorSetLayout()
+        setLayouts
     };
     HmckLightSystem lightSystem{
         hmckDevice,
@@ -167,6 +161,11 @@ void Hmck::FirstApp::loadGameObjects()
     stoneMaterialInfo.texture = std::string(MATERIALS_DIR) + "PavingStone/PavingStones110_1K_Color.jpg";
     std::shared_ptr<HmckMaterial> stoneMaterial = HmckMaterial::createMaterial(hmckDevice, stoneMaterialInfo);
 
+    // layouts
+    materialLayout = HmckDescriptorSetLayout::Builder(hmckDevice)
+        .addBinding(0, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT)
+        .build();
+
     // vase
     auto vase = HmckGameObject::createGameObject();
     vase.setName("Vase");
@@ -175,6 +174,7 @@ void Hmck::FirstApp::loadGameObjects()
     vase.transformComponent.scale = glm::vec3(3.f);
     vase.fitBoundingBox(vaseModel->modelInfo);
     vase.setMaterial(bricksMaterial);
+    vase.bindDescriptorSet(globalPool, materialLayout);
     gameObjects.emplace(vase.getId(), std::move(vase));
 
     // vase 2
@@ -194,6 +194,7 @@ void Hmck::FirstApp::loadGameObjects()
     floor.transformComponent.translation = { .0f, 0.5f, 0.f };
     floor.transformComponent.scale = glm::vec3(3.f, 1.f, 3.f);
     floor.setMaterial(stoneMaterial);
+    floor.bindDescriptorSet(globalPool, materialLayout);
     gameObjects.emplace(floor.getId(), std::move(floor));
 
     // Point light
@@ -209,7 +210,7 @@ void Hmck::FirstApp::loadGameObjects()
     {
         auto pointLight = HmckGameObject::createPointLight(0.45f);
         pointLight.setName("Point light");
-        pointLight.color = lightColors[i];
+        pointLight.colorComponent = lightColors[i];
         auto rotateLight = glm::rotate(
             glm::mat4(1.f), 
             (i * glm::two_pi<float>()) / lightColors.size(),

@@ -290,9 +290,9 @@ void Hmck::HmckUISystem::gameObjectComponets(HmckGameObject& gameObject)
 	if (ImGui::CollapsingHeader("Color")) // Color
 	{
 		float* color_hsv[3] = {
-			&gameObject.color.x,
-			&gameObject.color.y,
-			&gameObject.color.z,
+			&gameObject.colorComponent.x,
+			&gameObject.colorComponent.y,
+			&gameObject.colorComponent.z,
 		};
 		ImGui::ColorEdit3("Color", color_hsv[0], ImGuiColorEditFlags_Float | ImGuiColorEditFlags_DisplayRGB);
 	}

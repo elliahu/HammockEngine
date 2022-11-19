@@ -60,6 +60,8 @@ namespace Hmck
 		HmckRenderer hmckRenderer{ hmckWindow, hmckDevice };
 
 		std::unique_ptr<HmckDescriptorPool> globalPool{};
+		std::unique_ptr<HmckDescriptorSetLayout> globalSetLayout{};
+		std::unique_ptr<HmckDescriptorSetLayout> materialLayout{};
 		HmckGameObject::Map gameObjects;
 	};
 

@@ -49,7 +49,8 @@ namespace Hmck
 	{
 	public:
 
-		HmckRenderSystem(HmckDevice& device, VkRenderPass renderPass, VkDescriptorSetLayout globalSetLayout);
+		//HmckRenderSystem(HmckDevice& device, VkRenderPass renderPass, VkDescriptorSetLayout globalDescriptorLayout);
+		HmckRenderSystem(HmckDevice& device, VkRenderPass renderPass, std::vector<VkDescriptorSetLayout>& setLayouts);
 		~HmckRenderSystem();
 
 		// delete copy constructor and copy destructor
@@ -59,16 +60,16 @@ namespace Hmck
 		void renderGameObjects(HmckFrameInfo& frameInfo);
 
 	private:
-		void createPipelineLayout(VkDescriptorSetLayout globalSetLayout);
+		//void createPipelineLayout(VkDescriptorSetLayout globalDescriptorLayout);
+		void createPipelineLayout(std::vector<VkDescriptorSetLayout>& setLayouts);
 		void createPipeline(VkRenderPass renderPass);
 		
 
 		HmckDevice& hmckDevice;
 		std::unique_ptr<HmckPipeline> hmckPipeline;
 		VkPipelineLayout pipelineLayout;
-
-		//std::unique_ptr<HmckDescriptorPool> descriptorPool{};
-		//std::unique_ptr<HmckDescriptorSetLayout> descriptSetLayout;
+		
+		
 	};
 
 }
