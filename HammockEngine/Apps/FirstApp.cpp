@@ -154,22 +154,26 @@ void Hmck::FirstApp::loadGameObjects()
     HmckCreateMaterialInfo bricksMaterialInfo{
         std::string(MATERIALS_DIR) + "Bricks/PavingStones122_1K_Color.jpg",
         std::string(MATERIALS_DIR) + "Bricks/PavingStones122_1K_NormalDX.jpg",
-        std::string(MATERIALS_DIR) + "Bricks/PavingStones122_1K_Roughness.jpg"
+        std::string(MATERIALS_DIR) + "Bricks/PavingStones122_1K_Roughness.jpg",
+        std::string(MATERIALS_DIR) + "Bricks/PavingStones122_1K_AmbientOcclusion.jpg",
     };
     std::shared_ptr<HmckMaterial> bricksMaterial = HmckMaterial::createMaterial(hmckDevice, bricksMaterialInfo);
 
     HmckCreateMaterialInfo stoneMaterialInfo{
         std::string(MATERIALS_DIR) + "PavingStone/PavingStones110_1K_Color.jpg",
         std::string(MATERIALS_DIR) + "PavingStone/PavingStones110_1K_NormalDX.jpg",
-        std::string(MATERIALS_DIR) + "PavingStone/PavingStones110_1K_Roughness.jpg"
+        std::string(MATERIALS_DIR) + "PavingStone/PavingStones110_1K_Roughness.jpg",
+        std::string(MATERIALS_DIR) + "PavingStone/PavingStones110_1K_AmbientOcclusion.jpg",
     };
     std::shared_ptr<HmckMaterial> stoneMaterial = HmckMaterial::createMaterial(hmckDevice, stoneMaterialInfo);
 
     // layouts
+    // TODO think about using array of combined image samplers
     materialLayout = HmckDescriptorSetLayout::Builder(hmckDevice)
         .addBinding(0, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT)
         .addBinding(1, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT)
         .addBinding(2, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT)
+        .addBinding(3, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT)
         .build();
 
     // vase

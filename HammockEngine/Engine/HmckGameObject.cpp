@@ -136,10 +136,16 @@ void Hmck::HmckGameObject::bindDescriptorSet(
 	roughnessInfo.imageView = materialComponent->material->roughness->image.imageView;
 	roughnessInfo.sampler = materialComponent->material->roughness->sampler;
 
+	VkDescriptorImageInfo aoInfo{};
+	aoInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+	aoInfo.imageView = materialComponent->material->ambientOcclusion->image.imageView;
+	aoInfo.sampler = materialComponent->material->ambientOcclusion->sampler;
+
 	HmckDescriptorWriter(*setLayout, *pool)
 		.writeImage(0, &colorInfo)
 		.writeImage(1, &normalInfo)
 		.writeImage(2, &roughnessInfo)
+		.writeImage(3, &aoInfo)
 		.build(descriptorSetComponent->set);
 }
 

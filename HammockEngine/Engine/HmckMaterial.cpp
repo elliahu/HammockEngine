@@ -33,6 +33,12 @@ void Hmck::HmckMaterial::createMaterial(HmckCreateMaterialInfo& materialInfo)
 	roughness->image.loadImage(materialInfo.roughness, hmckDevice);
 	roughness->image.createImageView(hmckDevice, VK_FORMAT_R8G8B8A8_SRGB);
 	roughness->createSampler(hmckDevice);
+
+	// ambient occlusion
+	ambientOcclusion = std::make_unique<HmckTexture>();
+	ambientOcclusion->image.loadImage(materialInfo.ambientOcclusion, hmckDevice);
+	ambientOcclusion->image.createImageView(hmckDevice, VK_FORMAT_R8G8B8A8_SRGB);
+	ambientOcclusion->createSampler(hmckDevice);
 }
 
 void Hmck::HmckMaterial::destroy()
@@ -48,6 +54,10 @@ void Hmck::HmckMaterial::destroy()
 	// roughness
 	roughness->image.destroyImage(hmckDevice);
 	roughness->destroySampler(hmckDevice);
+
+	// ambient occlusion
+	ambientOcclusion->image.destroyImage(hmckDevice);
+	ambientOcclusion->destroySampler(hmckDevice);
 }
 
 void Hmck::HmckTexture::destroySampler(HmckDevice& hmckDevice)

@@ -14,6 +14,7 @@ namespace Hmck
 		std::string color{};
 		std::string normal{};
 		std::string roughness{};
+		std::string ambientOcclusion{};
 	};
 
 	struct HmckImage
@@ -65,6 +66,7 @@ namespace Hmck
 		std::unique_ptr<HmckTexture> color;
 		std::unique_ptr<HmckTexture> normal;
 		std::unique_ptr<HmckTexture> roughness;
+		std::unique_ptr<HmckTexture> ambientOcclusion;
 	private:
 		void createMaterial(HmckCreateMaterialInfo& materialInfo);
 

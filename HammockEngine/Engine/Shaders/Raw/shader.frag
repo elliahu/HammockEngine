@@ -13,6 +13,7 @@ layout (location = 0) out vec4 outColor;
 layout(set = 1, binding = 0) uniform sampler2D colSampler;
 layout(set = 1, binding = 1) uniform sampler2D normSampler;
 layout(set = 1, binding = 2) uniform sampler2D roughSampler;
+layout(set = 1, binding = 3) uniform sampler2D aoSampler;
 
 
 struct PointLight
@@ -122,7 +123,7 @@ void main()
     }
  
     // gl_FrontFacing can be used to apply lighting only on front facing surface
-    vec4 sampledColor = texture(colSampler, textCoords);
+    vec4 sampledColor = texture(colSampler, textCoords) * texture(aoSampler, textCoords).r;
 
 	outColor = vec4((
             (diffuseLight * sampledColor.rgb) + 
