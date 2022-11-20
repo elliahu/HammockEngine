@@ -12,6 +12,7 @@ namespace Hmck
 	struct HmckCreateMaterialInfo 
 	{
 		std::string color{};
+		std::string normal{};
 		std::string roughness{};
 	};
 
@@ -62,6 +63,7 @@ namespace Hmck
 		void destroy();
 
 		std::unique_ptr<HmckTexture> color;
+		std::unique_ptr<HmckTexture> normal;
 		std::unique_ptr<HmckTexture> roughness;
 	private:
 		void createMaterial(HmckCreateMaterialInfo& materialInfo);

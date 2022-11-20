@@ -22,6 +22,12 @@ void Hmck::HmckMaterial::createMaterial(HmckCreateMaterialInfo& materialInfo)
 	color->image.createImageView(hmckDevice, VK_FORMAT_R8G8B8A8_SRGB);
 	color->createSampler(hmckDevice);
 
+	// normal
+	normal = std::make_unique<HmckTexture>();
+	normal->image.loadImage(materialInfo.normal, hmckDevice);
+	normal->image.createImageView(hmckDevice, VK_FORMAT_R8G8B8A8_SRGB);
+	normal->createSampler(hmckDevice);
+
 	// roughness
 	roughness = std::make_unique<HmckTexture>();
 	roughness->image.loadImage(materialInfo.roughness, hmckDevice);
@@ -34,6 +40,10 @@ void Hmck::HmckMaterial::destroy()
 	// color
 	color->image.destroyImage(hmckDevice);
 	color->destroySampler(hmckDevice);
+
+	// color
+	normal->image.destroyImage(hmckDevice);
+	normal->destroySampler(hmckDevice);
 
 	// roughness
 	roughness->image.destroyImage(hmckDevice);
