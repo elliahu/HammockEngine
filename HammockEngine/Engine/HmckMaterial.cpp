@@ -14,19 +14,30 @@ std::unique_ptr<Hmck::HmckMaterial> Hmck::HmckMaterial::createMaterial(HmckDevic
 
 void Hmck::HmckMaterial::createMaterial(HmckCreateMaterialInfo& materialInfo)
 {
-	// texture
-	texture = std::make_unique<HmckTexture>();
-	texture->image.loadImage(materialInfo.texture, hmckDevice);
-	texture->image.createImageView(hmckDevice, VK_FORMAT_R8G8B8A8_SRGB);
-	if(texture->sampler == VK_NULL_HANDLE)
-		texture->createSampler(hmckDevice);
+	// TODO check if paths are provided
+	// TODO load default value if not
+	// color
+	color = std::make_unique<HmckTexture>();
+	color->image.loadImage(materialInfo.color, hmckDevice);
+	color->image.createImageView(hmckDevice, VK_FORMAT_R8G8B8A8_SRGB);
+	color->createSampler(hmckDevice);
+
+	// roughness
+	roughness = std::make_unique<HmckTexture>();
+	roughness->image.loadImage(materialInfo.roughness, hmckDevice);
+	roughness->image.createImageView(hmckDevice, VK_FORMAT_R8G8B8A8_SRGB);
+	roughness->createSampler(hmckDevice);
 }
 
 void Hmck::HmckMaterial::destroy()
 {
-	// texture
-	texture->image.destroyImage(hmckDevice);
-	texture->destroySampler(hmckDevice);
+	// color
+	color->image.destroyImage(hmckDevice);
+	color->destroySampler(hmckDevice);
+
+	// roughness
+	roughness->image.destroyImage(hmckDevice);
+	roughness->destroySampler(hmckDevice);
 }
 
 void Hmck::HmckTexture::destroySampler(HmckDevice& hmckDevice)
@@ -127,8 +138,6 @@ void Hmck::HmckImage::createImageView(HmckDevice& hmckDevice, VkFormat format)
 		throw std::runtime_error("Failed to create image view!");
 	}
 }
-
-VkSampler Hmck::HmckTexture::sampler = VK_NULL_HANDLE;
 
 void Hmck::HmckTexture::createSampler(HmckDevice& hmckDevice)
 {

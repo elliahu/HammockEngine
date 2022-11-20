@@ -395,10 +395,10 @@ namespace Hmck {
                 return availablePresentMode;
             }
 
-            /*if (availablePresentMode == VK_PRESENT_MODE_IMMEDIATE_KHR) {
+            if (availablePresentMode == VK_PRESENT_MODE_IMMEDIATE_KHR) {
                 std::cout << "Present mode: Immediate" << std::endl;
                 return availablePresentMode;
-            }*/
+            }
         }
 
         std::cout << "Present mode: V-Sync" << std::endl;

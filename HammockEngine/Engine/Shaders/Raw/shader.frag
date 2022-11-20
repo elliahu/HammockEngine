@@ -9,7 +9,9 @@ layout (location = 3) in vec2 textCoords;
 // outputs
 layout (location = 0) out vec4 outColor;
 
+// samplers
 layout(set = 1, binding = 0) uniform sampler2D texSampler;
+layout(set = 1, binding = 1) uniform sampler2D roughSampler;
 
 struct PointLight
 {
@@ -88,16 +90,13 @@ void main()
         blinnTerm = pow(blinnTerm, 512.0);  // higher power -> sharper light
         specularLight += intensity * blinnTerm;
     }
-
-    // spot light
-
  
     // gl_FrontFacing can be used to apply lighting only on front facing surface
     vec4 sampledColor = texture(texSampler, textCoords);
 
 	outColor = vec4((
             (diffuseLight * sampledColor.rgb) + 
-            (specularLight * sampledColor.rgb) +
+            (specularLight * texture(roughSampler, textCoords).r * sampledColor.rgb) +
             (sunDiffuse * sampledColor.rgb) 
      ), 1.0);    
 }

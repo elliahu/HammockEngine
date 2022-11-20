@@ -119,9 +119,7 @@ void Hmck::FirstApp::run()
             // render
 			hmckRenderer.beginSwapChainRenderPass(commandBuffer);
 
-
             // start rendering
-            
 			renderSystem.renderGameObjects(frameInfo);
             lightSystem.render(frameInfo);
 
@@ -153,17 +151,22 @@ void Hmck::FirstApp::loadGameObjects()
     std::shared_ptr<HmckModel> vaseModel = HmckModel::createModelFromFile(hmckDevice, std::string(MODELS_DIR) + "smooth_vase.obj");
 
     // materials
-    HmckCreateMaterialInfo bricksMaterialInfo{};
-    bricksMaterialInfo.texture = std::string(MATERIALS_DIR) + "Bricks/PavingStones122_1K_Color.jpg";
+    HmckCreateMaterialInfo bricksMaterialInfo{
+        std::string(MATERIALS_DIR) + "Bricks/PavingStones122_1K_Color.jpg",
+        std::string(MATERIALS_DIR) + "Bricks/PavingStones122_1K_Roughness.jpg"
+    };
     std::shared_ptr<HmckMaterial> bricksMaterial = HmckMaterial::createMaterial(hmckDevice, bricksMaterialInfo);
 
-    HmckCreateMaterialInfo stoneMaterialInfo{};
-    stoneMaterialInfo.texture = std::string(MATERIALS_DIR) + "PavingStone/PavingStones110_1K_Color.jpg";
+    HmckCreateMaterialInfo stoneMaterialInfo{
+        std::string(MATERIALS_DIR) + "PavingStone/PavingStones110_1K_Color.jpg",
+        std::string(MATERIALS_DIR) + "PavingStone/PavingStones110_1K_Roughness.jpg"
+    };
     std::shared_ptr<HmckMaterial> stoneMaterial = HmckMaterial::createMaterial(hmckDevice, stoneMaterialInfo);
 
     // layouts
     materialLayout = HmckDescriptorSetLayout::Builder(hmckDevice)
         .addBinding(0, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT)
+        .addBinding(1, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT)
         .build();
 
     // vase

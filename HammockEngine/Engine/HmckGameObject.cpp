@@ -121,13 +121,19 @@ void Hmck::HmckGameObject::bindDescriptorSet(
 {
 	descriptorSetComponent = std::make_unique<HmckDescriptorSetComponent>();
 
-	VkDescriptorImageInfo imageInfo{};
-	imageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-	imageInfo.imageView = materialComponent->material->texture->image.imageView;
-	imageInfo.sampler = materialComponent->material->texture->sampler;
+	VkDescriptorImageInfo colorInfo{};
+	colorInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+	colorInfo.imageView = materialComponent->material->color->image.imageView;
+	colorInfo.sampler = materialComponent->material->color->sampler;
+
+	VkDescriptorImageInfo roughnessInfo{};
+	roughnessInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+	roughnessInfo.imageView = materialComponent->material->roughness->image.imageView;
+	roughnessInfo.sampler = materialComponent->material->roughness->sampler;
 
 	HmckDescriptorWriter(*setLayout, *pool)
-		.writeImage(0, &imageInfo)
+		.writeImage(0, &colorInfo)
+		.writeImage(1, &roughnessInfo)
 		.build(descriptorSetComponent->set);
 }
 

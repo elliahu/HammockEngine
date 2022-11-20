@@ -11,7 +11,8 @@ namespace Hmck
 {
 	struct HmckCreateMaterialInfo 
 	{
-		std::string texture{};
+		std::string color{};
+		std::string roughness{};
 	};
 
 	struct HmckImage
@@ -42,7 +43,7 @@ namespace Hmck
 	{
 		// format: VK_FORMAT_R8G8B8A8_SRGB
 		HmckImage image{};
-		static VkSampler sampler;
+		VkSampler sampler;
 
 		void createSampler(HmckDevice& hmckDevice);
 		void destroySampler(HmckDevice& hmckDevice);
@@ -60,7 +61,8 @@ namespace Hmck
 		static std::unique_ptr<HmckMaterial> createMaterial(HmckDevice& hmckDevice, HmckCreateMaterialInfo& materialInfo);
 		void destroy();
 
-		std::unique_ptr<HmckTexture> texture;
+		std::unique_ptr<HmckTexture> color;
+		std::unique_ptr<HmckTexture> roughness;
 	private:
 		void createMaterial(HmckCreateMaterialInfo& materialInfo);
 
