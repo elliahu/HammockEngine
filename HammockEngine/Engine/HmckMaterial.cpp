@@ -39,6 +39,12 @@ void Hmck::HmckMaterial::createMaterial(HmckCreateMaterialInfo& materialInfo)
 	ambientOcclusion->image.loadImage(materialInfo.ambientOcclusion, hmckDevice);
 	ambientOcclusion->image.createImageView(hmckDevice, VK_FORMAT_R8G8B8A8_SRGB);
 	ambientOcclusion->createSampler(hmckDevice);
+
+	// displacement
+	displacement = std::make_unique<HmckTexture>();
+	displacement->image.loadImage(materialInfo.displacement, hmckDevice);
+	displacement->image.createImageView(hmckDevice, VK_FORMAT_R8G8B8A8_SRGB);
+	displacement->createSampler(hmckDevice);
 }
 
 void Hmck::HmckMaterial::destroy()
@@ -58,6 +64,10 @@ void Hmck::HmckMaterial::destroy()
 	// ambient occlusion
 	ambientOcclusion->image.destroyImage(hmckDevice);
 	ambientOcclusion->destroySampler(hmckDevice);
+
+	// displacement
+	displacement->image.destroyImage(hmckDevice);
+	displacement->destroySampler(hmckDevice);
 }
 
 void Hmck::HmckTexture::destroySampler(HmckDevice& hmckDevice)
@@ -69,6 +79,7 @@ void Hmck::HmckTexture::destroySampler(HmckDevice& hmckDevice)
 void Hmck::HmckImage::loadImage(
 	std::string& filepath, 
 	HmckDevice& hmckDevice,  
+	VkFormat format,
 	bool flip
 )
 {
@@ -109,7 +120,7 @@ void Hmck::HmckImage::loadImage(
 	imageInfo.extent.depth = 1;
 	imageInfo.mipLevels = 1;
 	imageInfo.arrayLayers = 1;
-	imageInfo.format = VK_FORMAT_R8G8B8A8_SRGB;
+	imageInfo.format = format;
 	imageInfo.tiling = VK_IMAGE_TILING_OPTIMAL;
 	imageInfo.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
 	imageInfo.usage = VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT;
@@ -122,7 +133,7 @@ void Hmck::HmckImage::loadImage(
 	// copy data from staging buffer to VkImage
 	hmckDevice.transitionImageLayout(
 		image,
-		VK_FORMAT_R8G8B8A8_SRGB,
+		format,
 		VK_IMAGE_LAYOUT_UNDEFINED,
 		VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL
 	);
@@ -134,7 +145,7 @@ void Hmck::HmckImage::loadImage(
 	);
 	hmckDevice.transitionImageLayout(
 		image,
-		VK_FORMAT_R8G8B8A8_SRGB,
+		format,
 		VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
 		VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL
 	);

@@ -26,10 +26,13 @@ Hmck::HmckModel::HmckModel(HmckDevice& device, const HmckModel::Builder& builder
 Hmck::HmckModel::~HmckModel(){}
 
 
-std::unique_ptr<Hmck::HmckModel> Hmck::HmckModel::createModelFromFile(HmckDevice& device, const std::string& filepath)
+std::unique_ptr<Hmck::HmckModel> Hmck::HmckModel::createModelFromFile(HmckDevice& device, const std::string& filepath, bool calculateTangents)
 {
 	Builder builder{};
 	ModelInfo mInfo = builder.loadModel(filepath);
+
+	if (calculateTangents)
+		builder.calculateTangent();
 
 	std::unique_ptr<HmckModel> model = std::make_unique<HmckModel>(device, builder);
 	model->modelInfo = mInfo;
@@ -146,6 +149,7 @@ std::vector<VkVertexInputAttributeDescription> Hmck::HmckModel::Vertex::getAttri
 		{1, 0, VK_FORMAT_R32G32B32_SFLOAT, offsetof(Vertex, color)},
 		{2, 0, VK_FORMAT_R32G32B32_SFLOAT, offsetof(Vertex, normal)},
 		{3, 0, VK_FORMAT_R32G32_SFLOAT, offsetof(Vertex, uv)},
+		{4, 0, VK_FORMAT_R32G32B32_SFLOAT, offsetof(Vertex, tangent)}
 	};
 }
 
@@ -248,4 +252,38 @@ Hmck::HmckModel::ModelInfo Hmck::HmckModel::Builder::loadModel(const std::string
 	}
 
 	return mInfo;
+}
+
+void Hmck::HmckModel::Builder::calculateTangent()
+{
+	for (uint32_t i = 0; i < static_cast<uint32_t>(indices.size()); i += 3)
+	{
+		uint32_t i0 = indices[i + 0];
+		uint32_t i1 = indices[i + 1];
+		uint32_t i2 = indices[i + 2];
+
+		glm::vec3 edge1 = vertices[i1].position - vertices[i0].position;
+		glm::vec3 edge2 = vertices[i2].position - vertices[i0].position;
+
+		float deltaU1 = vertices[i1].uv.x - vertices[i0].uv.x;
+		float deltaV1 = vertices[i1].uv.y - vertices[i0].uv.y;
+
+		float deltaU2 = vertices[i2].uv.x - vertices[i0].uv.x;
+		float deltaV2 = vertices[i2].uv.y - vertices[i0].uv.y;
+
+		float divident = (deltaU1 * deltaV2 - deltaU2 * deltaV1);
+		float fc = 1.0f / divident;
+
+		glm::vec3 tangent = glm::vec3(
+			(fc * (deltaV2 * edge1.x - deltaV1 * edge2.x)),
+			(fc * (deltaV2 * edge1.y - deltaV1 * edge2.y)),
+			(fc * (deltaV2 * edge1.z - deltaV1 * edge2.z))
+		);
+
+		tangent = glm::normalize(tangent);
+		
+		vertices[i0].tangent = tangent;
+		vertices[i1].tangent = tangent;
+		vertices[i2].tangent = tangent;
+	}
 }

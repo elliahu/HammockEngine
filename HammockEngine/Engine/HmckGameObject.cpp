@@ -141,11 +141,17 @@ void Hmck::HmckGameObject::bindDescriptorSet(
 	aoInfo.imageView = materialComponent->material->ambientOcclusion->image.imageView;
 	aoInfo.sampler = materialComponent->material->ambientOcclusion->sampler;
 
+	VkDescriptorImageInfo displacementInfo{};
+	displacementInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+	displacementInfo.imageView = materialComponent->material->displacement->image.imageView;
+	displacementInfo.sampler = materialComponent->material->displacement->sampler;
+
 	HmckDescriptorWriter(*setLayout, *pool)
 		.writeImage(0, &colorInfo)
 		.writeImage(1, &normalInfo)
 		.writeImage(2, &roughnessInfo)
 		.writeImage(3, &aoInfo)
+		.writeImage(4, &displacementInfo)
 		.build(descriptorSetComponent->set);
 }
 

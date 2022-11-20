@@ -43,6 +43,7 @@ namespace Hmck
 			glm::vec3 color{};
 			glm::vec3 normal{};
 			glm::vec2 uv{};
+			glm::vec3 tangent{};
 
 			static std::vector<VkVertexInputBindingDescription> getBindingDescriptions();
 			static std::vector<VkVertexInputAttributeDescription> getAttributeDescriptions();
@@ -63,13 +64,14 @@ namespace Hmck
 			std::vector<uint32_t> indices{};
 
 			ModelInfo loadModel(const std::string& filepath);
+			void calculateTangent();
 		};
 
 
 		HmckModel(HmckDevice& device, const HmckModel::Builder& builder);
 		~HmckModel();
 
-		static std::unique_ptr<HmckModel> createModelFromFile(HmckDevice& device, const std::string& filepath);
+		static std::unique_ptr<HmckModel> createModelFromFile(HmckDevice& device, const std::string& filepath, bool calculateTangents = true);
 
 		// delete copy constructor and copy destructor
 		HmckModel(const HmckModel&) = delete;

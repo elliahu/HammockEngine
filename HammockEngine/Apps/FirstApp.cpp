@@ -156,6 +156,7 @@ void Hmck::FirstApp::loadGameObjects()
         std::string(MATERIALS_DIR) + "Bricks/PavingStones122_1K_NormalDX.jpg",
         std::string(MATERIALS_DIR) + "Bricks/PavingStones122_1K_Roughness.jpg",
         std::string(MATERIALS_DIR) + "Bricks/PavingStones122_1K_AmbientOcclusion.jpg",
+        std::string(MATERIALS_DIR) + "Bricks/PavingStones122_1K_Displacement.jpg",
     };
     std::shared_ptr<HmckMaterial> bricksMaterial = HmckMaterial::createMaterial(hmckDevice, bricksMaterialInfo);
 
@@ -164,6 +165,7 @@ void Hmck::FirstApp::loadGameObjects()
         std::string(MATERIALS_DIR) + "PavingStone/PavingStones110_1K_NormalDX.jpg",
         std::string(MATERIALS_DIR) + "PavingStone/PavingStones110_1K_Roughness.jpg",
         std::string(MATERIALS_DIR) + "PavingStone/PavingStones110_1K_AmbientOcclusion.jpg",
+        std::string(MATERIALS_DIR) + "PavingStone/PavingStones110_1K_Displacement.jpg",
     };
     std::shared_ptr<HmckMaterial> stoneMaterial = HmckMaterial::createMaterial(hmckDevice, stoneMaterialInfo);
 
@@ -174,6 +176,7 @@ void Hmck::FirstApp::loadGameObjects()
         .addBinding(1, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT)
         .addBinding(2, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT)
         .addBinding(3, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT)
+        .addBinding(4, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT)
         .build();
 
     // vase

@@ -15,6 +15,7 @@ namespace Hmck
 		std::string normal{};
 		std::string roughness{};
 		std::string ambientOcclusion{};
+		std::string displacement{};
 	};
 
 	struct HmckImage
@@ -26,6 +27,7 @@ namespace Hmck
 		void loadImage(
 			std::string& filepath, 
 			HmckDevice& hmckDevice,
+			VkFormat format = VK_FORMAT_R8G8B8A8_SRGB,
 			bool flip = false
 		);
 
@@ -67,6 +69,7 @@ namespace Hmck
 		std::unique_ptr<HmckTexture> normal;
 		std::unique_ptr<HmckTexture> roughness;
 		std::unique_ptr<HmckTexture> ambientOcclusion;
+		std::unique_ptr<HmckTexture> displacement;
 	private:
 		void createMaterial(HmckCreateMaterialInfo& materialInfo);
 
