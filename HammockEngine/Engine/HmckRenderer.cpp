@@ -139,7 +139,7 @@ void Hmck::HmckRenderer::beginSwapChainRenderPass(VkCommandBuffer commandBuffer)
 	renderPassInfo.renderArea.extent = hmckSwapChain->getSwapChainExtent();
 
 	std::array<VkClearValue, 2> clearValues{};
-	clearValues[0].color = { 0.1f, 0.1f, 0.1f, 1.0f }; // clear color
+	clearValues[0].color = { 0.f,0.f,0.f,1.f }; // clear color
 	clearValues[1].depthStencil = { 1.0f, 0 };
 
 	renderPassInfo.clearValueCount = static_cast<uint32_t>(clearValues.size());

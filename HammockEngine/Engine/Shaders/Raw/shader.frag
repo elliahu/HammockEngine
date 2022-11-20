@@ -150,7 +150,14 @@ void main()
     // directional light
     vec3 sunDirection = normalize(TBN * ubo.directionalLight.direction.xyz);
     float sunDiff = max(dot(surfaceNormal, sunDirection), 0.0);
-    vec3 sunDiffuse = sunDiff * (ubo.directionalLight.color.xyz * ubo.directionalLight.color.w);  
+    vec3 sunDiffuse = sunDiff * (ubo.directionalLight.color.xyz * ubo.directionalLight.color.w); 
+    
+    //specular component of light
+    vec3 halfAngle = normalize(sunDirection + viewDirection);
+    float blinnTerm = dot(surfaceNormal, halfAngle);
+    blinnTerm = clamp(blinnTerm, 0, 1);
+    blinnTerm = pow(blinnTerm, 512.0);  // higher power -> sharper light
+    specularLight += (ubo.directionalLight.color.xyz * ubo.directionalLight.color.w) * blinnTerm;
 
 
     // point lights

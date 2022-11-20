@@ -26,7 +26,7 @@ namespace Hmck
 		glm::mat4 projection{ 1.f };
 		glm::mat4 view{ 1.f };
 		glm::mat4 inverseView{ 1.f };
-		glm::vec4 ambientLightColor = { 1.f, 1.f, 1.f, 0.07f }; // w is intensity
+		glm::vec4 ambientLightColor = { 1.f, 1.f, 1.f, 0.00f }; // w is intensity
 		HmckDirectionalLight directionalLight;
 		HmckPointLight pointLights[MAX_LIGHTS];
 		int numLights;
