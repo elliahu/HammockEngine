@@ -287,30 +287,5 @@ void Hmck::HmckModel::Builder::calculateTangent()
 		vertices[i0].tangent = tangent;
 		vertices[i1].tangent = tangent;
 		vertices[i2].tangent = tangent;
-
-		/*
-		glm::vec3 edge1 = vertices[i1].position - vertices[i0].position;
-		glm::vec3 edge2 = vertices[i2].position - vertices[i0].position;
-
-		float deltaU1 = vertices[i1].uv.x - vertices[i0].uv.x;
-		float deltaV1 = vertices[i1].uv.y - vertices[i0].uv.y;
-
-		float deltaU2 = vertices[i2].uv.x - vertices[i0].uv.x;
-		float deltaV2 = vertices[i2].uv.y - vertices[i0].uv.y;
-
-		float divident = (deltaU1 * deltaV2 - deltaU2 * deltaV1);
-		float fc = 1.0f / divident;
-
-		glm::vec3 tangent = glm::vec3(
-			(fc * (deltaV2 * edge1.x - deltaV1 * edge2.x)),
-			(fc * (deltaV2 * edge1.y - deltaV1 * edge2.y)),
-			(fc * (deltaV2 * edge1.z - deltaV1 * edge2.z))
-		);
-
-		tangent = glm::normalize(tangent);
-		
-		vertices[i0].tangent = tangent;
-		vertices[i1].tangent = tangent;
-		vertices[i2].tangent = tangent;*/
 	}
 }
