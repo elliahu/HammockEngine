@@ -74,8 +74,7 @@ namespace Hmck {
 			VkImage& image,
 			VkDeviceMemory& imageMemory);
 		void transitionImageLayout(
-			VkImage image,
-			VkFormat format, 
+			VkImage image, 
 			VkImageLayout layoutOld, 
 			VkImageLayout layoutNew
 		);

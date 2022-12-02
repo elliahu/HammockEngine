@@ -535,7 +535,9 @@ namespace Hmck {
         }
     }
 
-    void HmckDevice::transitionImageLayout(VkImage image, VkFormat format, VkImageLayout layoutOld, VkImageLayout layoutNew)
+    void HmckDevice::transitionImageLayout(VkImage image,
+        VkImageLayout layoutOld,
+        VkImageLayout layoutNew)
     {
         VkCommandBuffer commandBuffer = beginSingleTimeCommands();
 

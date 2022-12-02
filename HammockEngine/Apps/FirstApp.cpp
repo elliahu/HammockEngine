@@ -154,7 +154,7 @@ void Hmck::FirstApp::loadGameObjects()
 
     HmckCreateMaterialInfo metalMaterialInfo{};
     metalMaterialInfo.color = std::string(MATERIALS_DIR) + "Metal/Metal046B_1K_Color.jpg";
-    metalMaterialInfo.normal = std::string(MATERIALS_DIR) + "Metal/Metal046B_1K_NormalGL.jpg";
+    metalMaterialInfo.normal = std::string(MATERIALS_DIR) + "empty_blue.jpg";
     metalMaterialInfo.roughness = std::string(MATERIALS_DIR) + "Metal/Metal046B_1K_Roughness.jpg";
     metalMaterialInfo.metalness = std::string(MATERIALS_DIR) + "Metal/Metal046B_1K_Metalness.jpg";
     metalMaterialInfo.ambientOcclusion = std::string(MATERIALS_DIR) + "empty_white.jpg";

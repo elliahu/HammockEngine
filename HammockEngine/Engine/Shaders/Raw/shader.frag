@@ -111,7 +111,7 @@ void main()
     // calculating normal
     vec3 surfaceNormal = texture(normSampler, uv).xyz;
     surfaceNormal = normalize(surfaceNormal * 2.0 - 1.0); // this normal is in tangent space
-
+    //surfaceNormal = fragNormalWorld;
 
     // directional light
     vec3 sunDirection = normalize(TBN * ubo.directionalLight.direction.xyz);
