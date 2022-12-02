@@ -262,6 +262,33 @@ void Hmck::HmckModel::Builder::calculateTangent()
 		uint32_t i1 = indices[i + 1];
 		uint32_t i2 = indices[i + 2];
 
+		// Shortcuts for vertices
+		glm::vec3& v0 = vertices[i0].position;
+		glm::vec3& v1 = vertices[i1].position;
+		glm::vec3& v2 = vertices[i2].position;
+
+		// Shortcuts for UVs
+		glm::vec2& uv0 = vertices[i0].uv;
+		glm::vec2& uv1 = vertices[i1].uv;
+		glm::vec2& uv2 = vertices[i2].uv;
+
+		// Edges of the triangle : position delta
+		glm::vec3 deltaPos1 = v1 - v0;
+		glm::vec3 deltaPos2 = v2 - v0;
+
+		// UV delta
+		glm::vec2 deltaUV1 = uv1 - uv0;
+		glm::vec2 deltaUV2 = uv2 - uv0;
+
+		float r = 1.0f / (deltaUV1.x * deltaUV2.y - deltaUV1.y * deltaUV2.x);
+		glm::vec3 tangent = (deltaPos1 * deltaUV2.y - deltaPos2 * deltaUV1.y) * r;
+		glm::vec3 bitangent = (deltaPos2 * deltaUV1.x - deltaPos1 * deltaUV2.x) * r;
+
+		vertices[i0].tangent = tangent;
+		vertices[i1].tangent = tangent;
+		vertices[i2].tangent = tangent;
+
+		/*
 		glm::vec3 edge1 = vertices[i1].position - vertices[i0].position;
 		glm::vec3 edge2 = vertices[i2].position - vertices[i0].position;
 
@@ -284,6 +311,6 @@ void Hmck::HmckModel::Builder::calculateTangent()
 		
 		vertices[i0].tangent = tangent;
 		vertices[i1].tangent = tangent;
-		vertices[i2].tangent = tangent;
+		vertices[i2].tangent = tangent;*/
 	}
 }
