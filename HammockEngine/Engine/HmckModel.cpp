@@ -254,6 +254,120 @@ Hmck::HmckModel::ModelInfo Hmck::HmckModel::Builder::loadModel(const std::string
 	return mInfo;
 }
 
+Hmck::HmckModel::ModelInfo Hmck::HmckModel::Builder::loadModelAssimp(const std::string& filepath)
+{
+	Assimp::Importer imp;
+	unsigned int opts = aiProcess_Triangulate
+		| aiProcess_CalcTangentSpace;
+
+	const aiScene* scene = imp.ReadFile(filepath, opts);
+
+	ModelInfo mInfo{};
+
+	std::unordered_map<Vertex, uint32_t> uniqueVertices{};
+
+	if (scene)
+	{
+
+		for (unsigned int i = 0; i < scene->mNumMeshes; i++)   
+		{
+			aiMesh* mesh = scene->mMeshes[i];
+
+
+			for (unsigned int i = 0; i < mesh->mNumVertices; i++)
+			{
+				Vertex vertex{};
+
+				if (mesh->HasPositions())
+				{
+					vertex.position = {
+						mesh->mVertices[i].x,
+						mesh->mVertices[i].y,
+						mesh->mVertices[i].z
+					};
+
+					vertex.color = { 1,1,1 };
+
+				}
+
+				if (mesh->HasTextureCoords(0))
+				{
+
+					vertex.uv = {
+						mesh->mTextureCoords[0][i].x,
+						mesh->mTextureCoords[0][i].y
+					};
+				}
+
+				if (mesh->HasNormals())
+				{
+					vertex.normal = {
+						mesh->mNormals[i].x,
+						mesh->mNormals[i].y,
+						mesh->mNormals[i].z
+					};
+				}
+
+				if (mesh->HasTangentsAndBitangents())
+				{
+					vertex.tangent = {
+						mesh->mTangents[i].x,
+						mesh->mTangents[i].y,
+						mesh->mTangents[i].z
+					};
+				}
+
+				if (uniqueVertices.count(vertex) == 0)
+				{
+					uniqueVertices[vertex] = static_cast<uint32_t>(vertices.size());
+					vertices.push_back(vertex);
+
+					// fill Info struct
+					if (vertex.position.x <= mInfo.x.min)
+					{
+						mInfo.x.min = vertex.position.x;
+					}
+
+					if (vertex.position.x >= mInfo.x.max)
+					{
+						mInfo.x.max = vertex.position.x;
+					}
+
+					if (vertex.position.y <= mInfo.y.min)
+					{
+						mInfo.y.min = vertex.position.y;
+					}
+
+					if (vertex.position.y >= mInfo.y.max)
+					{
+						mInfo.y.max = vertex.position.y;
+					}
+
+					if (vertex.position.z <= mInfo.z.min)
+					{
+						mInfo.z.min = vertex.position.z;
+					}
+
+					if (vertex.position.z >= mInfo.z.max)
+					{
+						mInfo.z.max = vertex.position.z;
+					}
+				}
+
+				indices.push_back(uniqueVertices[vertex]);
+
+			}
+		}
+
+	}
+	else
+	{
+		std::runtime_error("Could not load model");
+	}
+
+	return mInfo;
+}
+
 void Hmck::HmckModel::Builder::calculateTangent()
 {
 	for (uint32_t i = 0; i < static_cast<uint32_t>(indices.size()); i += 3)

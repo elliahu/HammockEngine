@@ -9,6 +9,10 @@
 #define GLM_ENABLE_EXPRIMENTAL
 #include <glm/gtx/hash.hpp>
 
+#include <assimp/Importer.hpp>
+#include <assimp/scene.h>
+#include <assimp/postprocess.h>
+
 
 #include <vector>
 #include <cassert>
@@ -64,6 +68,7 @@ namespace Hmck
 			std::vector<uint32_t> indices{};
 
 			ModelInfo loadModel(const std::string& filepath);
+			ModelInfo loadModelAssimp(const std::string& filepath);
 			void calculateTangent();
 		};
 

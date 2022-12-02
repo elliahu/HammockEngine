@@ -25,15 +25,15 @@ namespace Hmck
 		VkDeviceMemory imageMemory;
 		VkImage image;
 		VkImageView imageView;
+		VkFormat format = VK_FORMAT_R32G32B32A32_SFLOAT;
 
 		void loadImage(
 			std::string& filepath, 
 			HmckDevice& hmckDevice,
-			VkFormat format = VK_FORMAT_R8G8B8A8_SRGB,
 			bool flip = true
 		);
 
-		void createImageView(HmckDevice& hmckDevice, VkFormat format);
+		void createImageView(HmckDevice& hmckDevice);
 		void destroyImage(HmckDevice& hmckDevice);
 		void clearImage(HmckDevice& hmckDevice, VkClearColorValue clearColor = { 1.0f, 1.0f, 1.0f, 1.0f }, VkFormat format = VK_FORMAT_R8G8B8A8_SRGB);
 	};

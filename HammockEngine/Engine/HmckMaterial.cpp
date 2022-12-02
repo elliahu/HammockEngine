@@ -36,38 +36,38 @@ void Hmck::HmckMaterial::createMaterial(HmckCreateMaterialInfo& materialInfo)
 	{
 		color = std::make_unique<HmckTexture>();
 		color->image.loadImage(materialInfo.color, hmckDevice);
-		color->image.createImageView(hmckDevice, VK_FORMAT_R8G8B8A8_SRGB);
+		color->image.createImageView(hmckDevice);
 		color->createSampler(hmckDevice);
 	}
 
 	// normal
 	normal = std::make_unique<HmckTexture>();
 	normal->image.loadImage(materialInfo.normal, hmckDevice);
-	normal->image.createImageView(hmckDevice, VK_FORMAT_R8G8B8A8_SRGB);
+	normal->image.createImageView(hmckDevice);
 	normal->createSampler(hmckDevice);
 
 	// roughness
 	roughness = std::make_unique<HmckTexture>();
 	roughness->image.loadImage(materialInfo.roughness, hmckDevice);
-	roughness->image.createImageView(hmckDevice, VK_FORMAT_R8G8B8A8_SRGB);
+	roughness->image.createImageView(hmckDevice);
 	roughness->createSampler(hmckDevice);
 
 	// metalness
 	metalness = std::make_unique<HmckTexture>();
 	metalness->image.loadImage(materialInfo.metalness, hmckDevice);
-	metalness->image.createImageView(hmckDevice, VK_FORMAT_R8G8B8A8_SRGB);
+	metalness->image.createImageView(hmckDevice);
 	metalness->createSampler(hmckDevice);
 
 	// ambient occlusion
 	ambientOcclusion = std::make_unique<HmckTexture>();
 	ambientOcclusion->image.loadImage(materialInfo.ambientOcclusion, hmckDevice);
-	ambientOcclusion->image.createImageView(hmckDevice, VK_FORMAT_R8G8B8A8_SRGB);
+	ambientOcclusion->image.createImageView(hmckDevice);
 	ambientOcclusion->createSampler(hmckDevice);
 
 	// displacement
 	displacement = std::make_unique<HmckTexture>();
 	displacement->image.loadImage(materialInfo.displacement, hmckDevice);
-	displacement->image.createImageView(hmckDevice, VK_FORMAT_R8G8B8A8_SRGB);
+	displacement->image.createImageView(hmckDevice);
 	displacement->createSampler(hmckDevice);
 }
 
@@ -123,15 +123,14 @@ void Hmck::HmckTexture::destroySampler(HmckDevice& hmckDevice)
 
 void Hmck::HmckImage::loadImage(
 	std::string& filepath, 
-	HmckDevice& hmckDevice,  
-	VkFormat format,
+	HmckDevice& hmckDevice,
 	bool flip
 )
 {
 	int imgWidth = 0, imgHeight = 0, imgChannels = 0;
 
 	stbi_set_flip_vertically_on_load(flip);
-	stbi_uc* pixels = stbi_load(filepath.c_str(), &imgWidth, &imgHeight, &imgChannels, STBI_rgb_alpha);
+	float* pixels = stbi_loadf(filepath.c_str(), &imgWidth, &imgHeight, &imgChannels, STBI_rgb_alpha);
 
 	if (!pixels)
 	{
@@ -194,7 +193,7 @@ void Hmck::HmckImage::loadImage(
 	);
 }
 
-void Hmck::HmckImage::createImageView(HmckDevice& hmckDevice, VkFormat format)
+void Hmck::HmckImage::createImageView(HmckDevice& hmckDevice)
 {
 	VkImageViewCreateInfo viewInfo{};
 	viewInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
