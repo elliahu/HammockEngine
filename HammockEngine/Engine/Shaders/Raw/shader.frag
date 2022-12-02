@@ -14,14 +14,16 @@ layout (location = 0) out vec4 outColor;
 layout(set = 1, binding = 0) uniform sampler2D colSampler;
 layout(set = 1, binding = 1) uniform sampler2D normSampler;
 layout(set = 1, binding = 2) uniform sampler2D roughSampler;
-layout(set = 1, binding = 3) uniform sampler2D aoSampler;
-layout(set = 1, binding = 4) uniform sampler2D disSampler;
+layout(set = 1, binding = 3) uniform sampler2D metalSampler;
+layout(set = 1, binding = 4) uniform sampler2D aoSampler;
+layout(set = 1, binding = 5) uniform sampler2D disSampler;
 
 
 struct PointLight
 {
     vec4 position;
     vec4 color;
+    vec4 terms;
 };
 
 struct DirectionalLight
@@ -51,39 +53,7 @@ layout (push_constant) uniform Push
 
 // Normal mapping without precalculated tangents
 // "Followup: Normal Mapping Without Precomputed Tangents" from http://www.thetenthplanet.de/archives/1180
-// TODO needs some work
-mat3 cotangent_frame( vec3 N, vec3 p, vec2 uv )
-{
-    // get edge vectors of the pixel triangle
-    vec3 dp1 = dFdx( p );
-    vec3 dp2 = dFdy( p );
-    vec2 duv1 = dFdx( uv );
-    vec2 duv2 = dFdy( uv );
 
-    // solve the linear system 
-    vec3 dp2perp = cross( dp2, N );
-    vec3 dp1perp = cross( N, dp1 );
-    vec3 T = dp2perp * duv1.x + dp1perp * duv2.x;
-    vec3 B = dp2perp * duv1.y + dp1perp * duv2.y;
-
-    // construct a scale-invariant frame 
-    float invmax = inversesqrt( max( dot(T,T), dot(B,B) ) );
-    return mat3( T * invmax, B * invmax, N );
-   }
-
-vec3 perturb_normal( vec3 N, vec3 V, vec2 texcoord )
-{
-    // assume N, the interpolated vertex normal and V, the view vector (vertex to eye) 
-    vec3 map = texture( normSampler, texcoord ).xyz;
-    // WITH_NORMALMAP_UNSIGNED
-    //map = map * 255./127. - 128./127.;
-    // WITH_NORMALMAP_2CHANNEL
-     map.z = sqrt( 1. - dot( map.xy, map.xy ) );
-    // WITH_NORMALMAP_GREEN_UP
-    // map.y = -map.y;
-    mat3 TBN = cotangent_frame( N, -V, texcoord );
-    return normalize( TBN * map );
-}
 
 // displacement https://learnopengl.com/Advanced-Lighting/Parallax-Mapping
 float heightScale = 0.05;
@@ -139,12 +109,8 @@ void main()
     vec2 uv = textCoords; //displace(textCoords, viewDirection);
 
     // calculating normal
-    vec3 surfaceNormal = texture(normSampler, uv).rgb;
+    vec3 surfaceNormal = texture(normSampler, uv).xyz;
     surfaceNormal = normalize(surfaceNormal * 2.0 - 1.0); // this normal is in tangent space
-
-    // this would be used if tangents were calculated in the sahder
-    //vec3 surfaceNormal = perturb_normal(normalize(fragNormalWorld), viewDirection, uv.st);
-    
 
 
     // directional light
@@ -166,7 +132,7 @@ void main()
         // per-light calculations
         PointLight light = ubo.pointLights[i];
         vec3 directionToLight = (TBN * light.position.xyz) -  (TBN * fragPosWorld);
-        float attenuation = 1.0 / dot(directionToLight, directionToLight);
+        float attenuation = 1.0 / (light.terms.x * dot(directionToLight, directionToLight) + light.terms.y * length(directionToLight) + light.terms.z );
         directionToLight = normalize(directionToLight);
 
         float cosAngIncidence = max(dot(surfaceNormal, directionToLight), 0);
@@ -178,7 +144,7 @@ void main()
         vec3 halfAngle = normalize(directionToLight + viewDirection);
         float blinnTerm = dot(surfaceNormal, halfAngle);
         blinnTerm = clamp(blinnTerm, 0, 1);
-        blinnTerm = pow(blinnTerm, 512.0);  // higher power -> sharper light
+        blinnTerm = pow(blinnTerm, 1024.0 * (1.0 + texture(roughSampler, uv).r));  // higher power -> sharper light
         specularLight += intensity * blinnTerm;
     }
  
@@ -187,7 +153,7 @@ void main()
 
 	outColor = vec4((
             (diffuseLight * sampledColor.rgb) + 
-            (specularLight * texture(roughSampler, uv).r * sampledColor.rgb) +
-            (sunDiffuse * sampledColor.rgb) 
+            (specularLight * ( texture(metalSampler, uv).r)  * sampledColor.rgb) +
+            (sunDiffuse * sampledColor.rgb)
      ), 1.0);    
 }

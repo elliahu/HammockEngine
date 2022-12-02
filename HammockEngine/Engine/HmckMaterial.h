@@ -2,6 +2,7 @@
 
 #include <vulkan/vulkan.h>
 #include <memory>
+#include <glm/glm.hpp>
 
 #include "HmckDevice.h"
 #include "HmckBuffer.h"
@@ -14,6 +15,7 @@ namespace Hmck
 		std::string color{};
 		std::string normal{};
 		std::string roughness{};
+		std::string metalness{};
 		std::string ambientOcclusion{};
 		std::string displacement{};
 	};
@@ -28,11 +30,12 @@ namespace Hmck
 			std::string& filepath, 
 			HmckDevice& hmckDevice,
 			VkFormat format = VK_FORMAT_R8G8B8A8_SRGB,
-			bool flip = false
+			bool flip = true
 		);
 
 		void createImageView(HmckDevice& hmckDevice, VkFormat format);
 		void destroyImage(HmckDevice& hmckDevice);
+		void clearImage(HmckDevice& hmckDevice, VkClearColorValue clearColor = { 1.0f, 1.0f, 1.0f, 1.0f }, VkFormat format = VK_FORMAT_R8G8B8A8_SRGB);
 	};
 
 	struct HmckMaterialDescriptorSetLayoutInfo
@@ -57,6 +60,7 @@ namespace Hmck
 	{
 	public:
 		HmckMaterial(HmckDevice& device);
+		~HmckMaterial();
 
 		// delete copy constructor and copy destructor
 		HmckMaterial(const HmckMaterial&) = delete;
@@ -68,6 +72,7 @@ namespace Hmck
 		std::unique_ptr<HmckTexture> color;
 		std::unique_ptr<HmckTexture> normal;
 		std::unique_ptr<HmckTexture> roughness;
+		std::unique_ptr<HmckTexture> metalness;
 		std::unique_ptr<HmckTexture> ambientOcclusion;
 		std::unique_ptr<HmckTexture> displacement;
 	private:

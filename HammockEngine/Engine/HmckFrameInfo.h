@@ -13,6 +13,10 @@ namespace Hmck
 	{
 		glm::vec4 position{}; // ingnore w
 		glm::vec4 color{}; // w is intensity
+		// x = quadratic term
+		// y = linear term
+		// z = constant term
+		glm::vec4 lightTerms{}; // w is ignored
 	};
 
 	struct HmckDirectionalLight

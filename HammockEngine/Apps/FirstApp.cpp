@@ -16,16 +16,6 @@ Hmck::FirstApp::FirstApp()
         .build();
 }
 
-Hmck::FirstApp::~FirstApp()
-{
-    for (auto& kv : gameObjects)
-    {
-        if (kv.second.materialComponent == nullptr)
-            continue;
-        kv.second.materialComponent->material->destroy();
-    }
-}
-
 void Hmck::FirstApp::run()
 {
     std::vector<std::unique_ptr<HmckBuffer>> uboBuffers{ HmckSwapChain::MAX_FRAMES_IN_FLIGHT };
@@ -130,10 +120,10 @@ void Hmck::FirstApp::run()
             userInterfaceSystem.endUserInterface(commandBuffer);
             
             // check if vases colide
-            if (collisionDetectionSystem.intersect(gameObjects.at(0), gameObjects.at(1)))
-            {
-                HmckLogger::debug("Vases intersect");
-            }
+            //if (collisionDetectionSystem.intersect(gameObjects.at(0), gameObjects.at(1)))
+            //{
+            //    HmckLogger::debug("Vases intersect");
+            //}
 
             // end rendering
 			hmckRenderer.endSwapChainRenderPass(commandBuffer);
@@ -150,25 +140,35 @@ void Hmck::FirstApp::loadGameObjects()
     // models
     std::shared_ptr<HmckModel> vaseModel = HmckModel::createModelFromFile(hmckDevice, std::string(MODELS_DIR) + "smooth_vase.obj");
     std::shared_ptr<HmckModel> cubeModel = HmckModel::createModelFromFile(hmckDevice, std::string(MODELS_DIR) + "cube.obj");
+    std::shared_ptr<HmckModel> sphereModel = HmckModel::createModelFromFile(hmckDevice, std::string(MODELS_DIR) + "sphere.obj");
 
     // materials
-    HmckCreateMaterialInfo bricksMaterialInfo{
-        std::string(MATERIALS_DIR) + "LightBricks/Bricks075A_1K_Color.jpg",
-        std::string(MATERIALS_DIR) + "LightBricks/Bricks075A_1K_NormalDX.jpg",
-        std::string(MATERIALS_DIR) + "LightBricks/Bricks075A_1K_Roughness.jpg",
-        std::string(MATERIALS_DIR) + "LightBricks/Bricks075A_1K_AmbientOcclusion.jpg",
-        std::string(MATERIALS_DIR) + "LightBricks/Bricks075A_1K_Displacement.jpg",
-    };
-    std::shared_ptr<HmckMaterial> bricksMaterial = HmckMaterial::createMaterial(hmckDevice, bricksMaterialInfo);
+    HmckCreateMaterialInfo floorMaterial{};
+    floorMaterial.color = std::string(MATERIALS_DIR) + "DiamondPlate/DiamondPlate006C_1K_Color.jpg";
+    floorMaterial.normal = std::string(MATERIALS_DIR) + "DiamondPlate/DiamondPlate006C_1K_NormalGL.jpg";
+    floorMaterial.roughness = std::string(MATERIALS_DIR) + "DiamondPlate/DiamondPlate006C_1K_Roughness.jpg";
+    floorMaterial.metalness = std::string(MATERIALS_DIR) + "DiamondPlate/DiamondPlate006C_1K_Metalness.jpg";
+    floorMaterial.ambientOcclusion = std::string(MATERIALS_DIR) + "DiamondPlate/DiamondPlate006C_1K_AmbientOcclusion.jpg";
+    floorMaterial.displacement = std::string(MATERIALS_DIR) + "DiamondPlate/DiamondPlate006C_1K_Displacement.jpg";
+    std::shared_ptr<HmckMaterial> bricksMaterial = HmckMaterial::createMaterial(hmckDevice, floorMaterial);
 
-    HmckCreateMaterialInfo metalMaterialInfo{
-        std::string(MATERIALS_DIR) + "Metal/Metal038_1K_Color.jpg",
-        std::string(MATERIALS_DIR) + "Metal/Metal038_1K_NormalDX.jpg",
-        std::string(MATERIALS_DIR) + "Metal/Metal038_1K_Metalness.jpg",
-        std::string(MATERIALS_DIR) + "Metal/Metal038_1K_AmbientOcclusion.jpg",
-        std::string(MATERIALS_DIR) + "Metal/Metal038_1K_Displacement.jpg",
-    };
+    HmckCreateMaterialInfo metalMaterialInfo{};
+    metalMaterialInfo.color = std::string(MATERIALS_DIR) + "Metal/Metal046B_1K_Color.jpg";
+    metalMaterialInfo.normal = std::string(MATERIALS_DIR) + "Metal/Metal046B_1K_NormalGL.jpg";
+    metalMaterialInfo.roughness = std::string(MATERIALS_DIR) + "Metal/Metal046B_1K_Roughness.jpg";
+    metalMaterialInfo.metalness = std::string(MATERIALS_DIR) + "Metal/Metal046B_1K_Metalness.jpg";
+    metalMaterialInfo.ambientOcclusion = std::string(MATERIALS_DIR) + "empty_white.jpg";
+    metalMaterialInfo.displacement = std::string(MATERIALS_DIR) + "Metal/Metal046B_1K_Displacement.jpg";
     std::shared_ptr<HmckMaterial> metalMaterial = HmckMaterial::createMaterial(hmckDevice, metalMaterialInfo);
+
+    HmckCreateMaterialInfo logMaterialInfo{};
+    logMaterialInfo.color = std::string(MATERIALS_DIR) + "Log/3DStick001_SQ-1K_Color.jpg";
+    logMaterialInfo.normal = std::string(MATERIALS_DIR) + "Log/3DStick001_SQ-1K_NormalGL.jpg";
+    logMaterialInfo.roughness = std::string(MATERIALS_DIR) + "empty_white.jpg";
+    logMaterialInfo.metalness = std::string(MATERIALS_DIR) + "empty_white.jpg";
+    logMaterialInfo.ambientOcclusion = std::string(MATERIALS_DIR) + "Log/3DStick001_SQ-1K_AmbientOcclusion.jpg";
+    logMaterialInfo.displacement = std::string(MATERIALS_DIR) + "empty_white.jpg";
+    std::shared_ptr<HmckMaterial> logMaterial = HmckMaterial::createMaterial(hmckDevice, logMaterialInfo);
 
     // layouts
     // TODO think about using array of combined image samplers
@@ -178,33 +178,19 @@ void Hmck::FirstApp::loadGameObjects()
         .addBinding(2, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT)
         .addBinding(3, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT)
         .addBinding(4, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT)
+        .addBinding(5, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT)
         .build();
-
-    // TODO destroy unused materials
-    // TODO BUG when two entities share material, validation errors
-    // probalby wrong cleaning
 
     // vase
     auto vase = HmckGameObject::createGameObject();
     vase.setName("Vase");
-    vase.setModel(vaseModel);
-    vase.transformComponent.translation = { .0f, 0.5f, 0.f };
-    vase.transformComponent.scale = glm::vec3(3.f);
-    vase.fitBoundingBox(vaseModel->modelInfo);
-    vase.setMaterial(metalMaterial);
+    vase.setModel(cubeModel);
+    vase.transformComponent.translation = { .0f, -0.5f, 0.f };
+    vase.transformComponent.scale = glm::vec3(0.25f);
+    vase.fitBoundingBox(cubeModel->modelInfo);
+    vase.setMaterial(bricksMaterial);
     vase.bindDescriptorSet(globalPool, materialLayout);
     gameObjects.emplace(vase.getId(), std::move(vase));
-
-    // vase 2
-    auto cube = HmckGameObject::createGameObject();
-    cube.setName("Small vase");
-    cube.setModel(cubeModel);
-    cube.transformComponent.translation = { 1.0f, 0.f, 0.f };
-    cube.transformComponent.scale = glm::vec3(0.25f);
-    cube.fitBoundingBox(vaseModel->modelInfo);
-    gameObjects.emplace(cube.getId(), std::move(cube));
-
-
 
     // floor
     std::shared_ptr<HmckModel> quadModel = HmckModel::createModelFromFile(hmckDevice, std::string(MODELS_DIR) + "quad.obj");
@@ -213,9 +199,21 @@ void Hmck::FirstApp::loadGameObjects()
     floor.setModel(quadModel);
     floor.transformComponent.translation = { .0f, 0.5f, 0.f };
     floor.transformComponent.scale = glm::vec3(3.f, 1.f, 3.f);
-    floor.setMaterial(bricksMaterial);
+    floor.setMaterial(metalMaterial);
     floor.bindDescriptorSet(globalPool, materialLayout);
     gameObjects.emplace(floor.getId(), std::move(floor));
+
+
+    std::shared_ptr<HmckModel> logModel = HmckModel::createModelFromFile(hmckDevice, std::string(MODELS_DIR) + "log.obj");
+    auto log = HmckGameObject::createGameObject();
+    log.setModel(logModel);
+    log.transformComponent.translation = { 1.f, -0.5f, 0.f };
+    log.transformComponent.scale = glm::vec3(10);
+    log.transformComponent.rotation = glm::vec3(0,0,1);
+    log.setMaterial(logMaterial);
+    log.bindDescriptorSet(globalPool, materialLayout);
+    gameObjects.emplace(log.getId(), std::move(log));
+
 
     // Point light
     std::vector<glm::vec3> lightColors{
@@ -243,6 +241,6 @@ void Hmck::FirstApp::loadGameObjects()
     // Directional light
     auto directionalLight = HmckGameObject::createDirectionalLight();
     directionalLight.setName("Directional light");
-    gameObjects.emplace(directionalLight.getId(), std::move(directionalLight));
+    //gameObjects.emplace(directionalLight.getId(), std::move(directionalLight));
 
 }

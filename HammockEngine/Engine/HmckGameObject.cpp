@@ -121,38 +121,69 @@ void Hmck::HmckGameObject::bindDescriptorSet(
 {
 	descriptorSetComponent = std::make_unique<HmckDescriptorSetComponent>();
 
-	VkDescriptorImageInfo colorInfo{};
-	colorInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-	colorInfo.imageView = materialComponent->material->color->image.imageView;
-	colorInfo.sampler = materialComponent->material->color->sampler;
+	auto descriptorWriter = HmckDescriptorWriter(*setLayout, *pool);
+	
+	if (materialComponent->material->color != nullptr)
+	{
+		VkDescriptorImageInfo colorInfo{};
+		colorInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+		colorInfo.imageView = materialComponent->material->color->image.imageView;
+		colorInfo.sampler = materialComponent->material->color->sampler;
 
-	VkDescriptorImageInfo normalInfo{};
-	normalInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-	normalInfo.imageView = materialComponent->material->normal->image.imageView;
-	normalInfo.sampler = materialComponent->material->normal->sampler;
+		descriptorWriter.writeImage(0, &colorInfo);
+	}
 
-	VkDescriptorImageInfo roughnessInfo{};
-	roughnessInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-	roughnessInfo.imageView = materialComponent->material->roughness->image.imageView;
-	roughnessInfo.sampler = materialComponent->material->roughness->sampler;
+	if (materialComponent->material->normal != nullptr)
+	{
+		VkDescriptorImageInfo normalInfo{};
+		normalInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+		normalInfo.imageView = materialComponent->material->normal->image.imageView;
+		normalInfo.sampler = materialComponent->material->normal->sampler;
 
-	VkDescriptorImageInfo aoInfo{};
-	aoInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-	aoInfo.imageView = materialComponent->material->ambientOcclusion->image.imageView;
-	aoInfo.sampler = materialComponent->material->ambientOcclusion->sampler;
+		descriptorWriter.writeImage(1, &normalInfo);
+	}
 
-	VkDescriptorImageInfo displacementInfo{};
-	displacementInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-	displacementInfo.imageView = materialComponent->material->displacement->image.imageView;
-	displacementInfo.sampler = materialComponent->material->displacement->sampler;
+	if (materialComponent->material->roughness != nullptr)
+	{
+		VkDescriptorImageInfo roughnessInfo{};
+		roughnessInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+		roughnessInfo.imageView = materialComponent->material->roughness->image.imageView;
+		roughnessInfo.sampler = materialComponent->material->roughness->sampler;
 
-	HmckDescriptorWriter(*setLayout, *pool)
-		.writeImage(0, &colorInfo)
-		.writeImage(1, &normalInfo)
-		.writeImage(2, &roughnessInfo)
-		.writeImage(3, &aoInfo)
-		.writeImage(4, &displacementInfo)
-		.build(descriptorSetComponent->set);
+		descriptorWriter.writeImage(2, &roughnessInfo);
+	}
+
+	if (materialComponent->material->metalness != nullptr)
+	{
+		VkDescriptorImageInfo metalnessInfo{};
+		metalnessInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+		metalnessInfo.imageView = materialComponent->material->metalness->image.imageView;
+		metalnessInfo.sampler = materialComponent->material->metalness->sampler;
+
+		descriptorWriter.writeImage(3, &metalnessInfo);
+	}
+
+	if (materialComponent->material->ambientOcclusion != nullptr)
+	{
+		VkDescriptorImageInfo aoInfo{};
+		aoInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+		aoInfo.imageView = materialComponent->material->ambientOcclusion->image.imageView;
+		aoInfo.sampler = materialComponent->material->ambientOcclusion->sampler;
+
+		descriptorWriter.writeImage(4, &aoInfo);
+	}
+
+	if (materialComponent->material->displacement != nullptr)
+	{
+		VkDescriptorImageInfo displacementInfo{};
+		displacementInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+		displacementInfo.imageView = materialComponent->material->displacement->image.imageView;
+		displacementInfo.sampler = materialComponent->material->displacement->sampler;
+
+		descriptorWriter.writeImage(5, &displacementInfo);
+	}
+
+	descriptorWriter.build(descriptorSetComponent->set);
 }
 
 

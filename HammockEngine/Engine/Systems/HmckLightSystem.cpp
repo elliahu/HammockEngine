@@ -129,6 +129,9 @@ void Hmck::HmckLightSystem::update(HmckFrameInfo& frameInfo, HmckGlobalUbo& ubo)
 
 			ubo.pointLights[lightIndex].position = glm::vec4(obj.transformComponent.translation, 1.f);
 			ubo.pointLights[lightIndex].color = glm::vec4(obj.colorComponent, obj.pointLightComponent->lightIntensity);
+			ubo.pointLights[lightIndex].lightTerms.x = obj.pointLightComponent->quadraticTerm;
+			ubo.pointLights[lightIndex].lightTerms.y = obj.pointLightComponent->linearTerm;
+			ubo.pointLights[lightIndex].lightTerms.z = obj.pointLightComponent->constantTerm;
 
 			lightIndex += 1;
 		}

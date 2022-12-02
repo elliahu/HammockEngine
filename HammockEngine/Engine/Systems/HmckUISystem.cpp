@@ -320,6 +320,9 @@ void Hmck::HmckUISystem::gameObjectComponets(HmckGameObject& gameObject)
 		if (ImGui::CollapsingHeader("Point light"))
 		{
 			ImGui::DragFloat("Intensity", &gameObject.pointLightComponent->lightIntensity, 0.01f, 0.0f, 1.0f);
+			ImGui::DragFloat("Quadratic Term", &gameObject.pointLightComponent->quadraticTerm, 0.01f, 0.0f, 4.0f);
+			ImGui::DragFloat("Linear Term", &gameObject.pointLightComponent->linearTerm, 0.01f, 0.0f, 4.0f);
+			ImGui::DragFloat("Constant Term", &gameObject.pointLightComponent->constantTerm, 0.01f, 0.0f, 4.0f);
 		}
 	}
 	if (gameObject.directionalLightComponent != nullptr) // directional light

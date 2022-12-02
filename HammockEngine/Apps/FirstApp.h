@@ -44,7 +44,6 @@ namespace Hmck
 		static constexpr int WINDOW_HEIGHT = 720;
 
 		FirstApp();
-		~FirstApp();
 
 		// delete copy constructor and copy destructor
 		FirstApp(const FirstApp&) = delete;

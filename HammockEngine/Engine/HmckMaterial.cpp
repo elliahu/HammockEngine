@@ -16,11 +16,29 @@ void Hmck::HmckMaterial::createMaterial(HmckCreateMaterialInfo& materialInfo)
 {
 	// TODO check if paths are provided
 	// TODO load default value if not
-	// color
-	color = std::make_unique<HmckTexture>();
-	color->image.loadImage(materialInfo.color, hmckDevice);
-	color->image.createImageView(hmckDevice, VK_FORMAT_R8G8B8A8_SRGB);
-	color->createSampler(hmckDevice);
+
+	VkImageCreateInfo defaultImageInfo{};
+	defaultImageInfo.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
+	defaultImageInfo.imageType = VK_IMAGE_TYPE_2D;
+	defaultImageInfo.extent.width = static_cast<uint32_t>(1024);
+	defaultImageInfo.extent.height = static_cast<uint32_t>(1024);
+	defaultImageInfo.extent.depth = 1;
+	defaultImageInfo.mipLevels = 1;
+	defaultImageInfo.arrayLayers = 1;
+	defaultImageInfo.format = VK_FORMAT_R8G8B8A8_SRGB;
+	defaultImageInfo.tiling = VK_IMAGE_TILING_OPTIMAL;
+	defaultImageInfo.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+	defaultImageInfo.usage = VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT;
+	defaultImageInfo.samples = VK_SAMPLE_COUNT_1_BIT;
+	defaultImageInfo.flags = 0; // Optional
+	
+	if (materialInfo.color.length() != 0)
+	{
+		color = std::make_unique<HmckTexture>();
+		color->image.loadImage(materialInfo.color, hmckDevice);
+		color->image.createImageView(hmckDevice, VK_FORMAT_R8G8B8A8_SRGB);
+		color->createSampler(hmckDevice);
+	}
 
 	// normal
 	normal = std::make_unique<HmckTexture>();
@@ -33,6 +51,12 @@ void Hmck::HmckMaterial::createMaterial(HmckCreateMaterialInfo& materialInfo)
 	roughness->image.loadImage(materialInfo.roughness, hmckDevice);
 	roughness->image.createImageView(hmckDevice, VK_FORMAT_R8G8B8A8_SRGB);
 	roughness->createSampler(hmckDevice);
+
+	// metalness
+	metalness = std::make_unique<HmckTexture>();
+	metalness->image.loadImage(materialInfo.metalness, hmckDevice);
+	metalness->image.createImageView(hmckDevice, VK_FORMAT_R8G8B8A8_SRGB);
+	metalness->createSampler(hmckDevice);
 
 	// ambient occlusion
 	ambientOcclusion = std::make_unique<HmckTexture>();
@@ -47,27 +71,48 @@ void Hmck::HmckMaterial::createMaterial(HmckCreateMaterialInfo& materialInfo)
 	displacement->createSampler(hmckDevice);
 }
 
+Hmck::HmckMaterial::~HmckMaterial()
+{
+	destroy();
+}
+
 void Hmck::HmckMaterial::destroy()
 {
-	// color
-	color->image.destroyImage(hmckDevice);
-	color->destroySampler(hmckDevice);
-
-	// color
-	normal->image.destroyImage(hmckDevice);
-	normal->destroySampler(hmckDevice);
-
-	// roughness
-	roughness->image.destroyImage(hmckDevice);
-	roughness->destroySampler(hmckDevice);
-
-	// ambient occlusion
-	ambientOcclusion->image.destroyImage(hmckDevice);
-	ambientOcclusion->destroySampler(hmckDevice);
-
-	// displacement
-	displacement->image.destroyImage(hmckDevice);
-	displacement->destroySampler(hmckDevice);
+	if (color != nullptr)
+	{
+		color->image.destroyImage(hmckDevice);
+		color->destroySampler(hmckDevice);
+	}
+	
+	if (normal != nullptr)
+	{
+		normal->image.destroyImage(hmckDevice);
+		normal->destroySampler(hmckDevice);
+	}
+	
+	if (roughness != nullptr)
+	{
+		roughness->image.destroyImage(hmckDevice);
+		roughness->destroySampler(hmckDevice);
+	}
+	
+	if (metalness != nullptr)
+	{
+		metalness->image.destroyImage(hmckDevice);
+		metalness->destroySampler(hmckDevice);
+	}
+	
+	if (ambientOcclusion != nullptr)
+	{
+		ambientOcclusion->image.destroyImage(hmckDevice);
+		ambientOcclusion->destroySampler(hmckDevice);
+	}
+	
+	if (displacement != nullptr)
+	{
+		displacement->image.destroyImage(hmckDevice);
+		displacement->destroySampler(hmckDevice);
+	}
 }
 
 void Hmck::HmckTexture::destroySampler(HmckDevice& hmckDevice)
@@ -85,6 +130,7 @@ void Hmck::HmckImage::loadImage(
 {
 	int imgWidth = 0, imgHeight = 0, imgChannels = 0;
 
+	stbi_set_flip_vertically_on_load(flip);
 	stbi_uc* pixels = stbi_load(filepath.c_str(), &imgWidth, &imgHeight, &imgChannels, STBI_rgb_alpha);
 
 	if (!pixels)
@@ -123,7 +169,6 @@ void Hmck::HmckImage::loadImage(
 	imageInfo.format = format;
 	imageInfo.tiling = VK_IMAGE_TILING_OPTIMAL;
 	imageInfo.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-	imageInfo.usage = VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT;
 	imageInfo.usage = VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT;
 	imageInfo.samples = VK_SAMPLE_COUNT_1_BIT;
 	imageInfo.flags = 0; // Optional
@@ -206,4 +251,47 @@ void Hmck::HmckImage::destroyImage(HmckDevice& hmckDevice)
 	vkDestroyImageView(hmckDevice.device(), imageView, nullptr);
 	vkDestroyImage(hmckDevice.device(), image, nullptr);
 	vkFreeMemory(hmckDevice.device(), imageMemory, nullptr);
+}
+
+
+void Hmck::HmckImage::clearImage(
+	HmckDevice& hmckDevice,
+	VkClearColorValue clearColor,
+	VkFormat format)
+{
+	assert(image != VK_NULL_HANDLE && "Cannot clear uninitialized image!");
+
+	hmckDevice.transitionImageLayout(
+		image,
+		format,
+		VK_IMAGE_LAYOUT_UNDEFINED,
+		VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL
+	);
+
+	VkCommandBuffer commandBuffer = hmckDevice.beginSingleTimeCommands();
+
+	VkImageSubresourceRange imageSubresourceRange;
+	imageSubresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+	imageSubresourceRange.baseMipLevel = 0;
+	imageSubresourceRange.levelCount = 1;
+	imageSubresourceRange.baseArrayLayer = 0;
+	imageSubresourceRange.layerCount = 1;
+
+	vkCmdClearColorImage(
+		commandBuffer,
+		image,
+		VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+		&clearColor,
+		1,
+		&imageSubresourceRange
+	);
+
+	hmckDevice.transitionImageLayout(
+		image,
+		format,
+		VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+		VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL
+	);
+
+	hmckDevice.endSingleTimeCommands(commandBuffer);
 }
