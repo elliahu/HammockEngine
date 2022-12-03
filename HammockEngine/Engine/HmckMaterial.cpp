@@ -3,6 +3,10 @@
 #define STB_IMAGE_IMPLEMENTATION
 #include <stb/stb_image.h>
 
+#ifndef MATERIALS_DIR
+#define MATERIALS_DIR "../../Resources/Materials/"
+#endif // !MATERIALS_DIR
+
 Hmck::HmckMaterial::HmckMaterial(HmckDevice& device): hmckDevice{device} {}
 
 std::unique_ptr<Hmck::HmckMaterial> Hmck::HmckMaterial::createMaterial(HmckDevice& hmckDevice, HmckCreateMaterialInfo& materialInfo)
@@ -31,42 +35,50 @@ void Hmck::HmckMaterial::createMaterial(HmckCreateMaterialInfo& materialInfo)
 	defaultImageInfo.usage = VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT;
 	defaultImageInfo.samples = VK_SAMPLE_COUNT_1_BIT;
 	defaultImageInfo.flags = 0; // Optional
+
+	// TODO make this load once and reuse
+	HmckCreateMaterialInfo defaultInfo{
+		std::string(MATERIALS_DIR) + "empty_white.jpg", // color
+		std::string(MATERIALS_DIR) + "empty_normal.jpg", // normal
+		std::string(MATERIALS_DIR) + "empty_black.jpg", // roughness
+		std::string(MATERIALS_DIR) + "empty_black.jpg", // metalness
+		std::string(MATERIALS_DIR) + "empty_white.jpg", // ao
+		std::string(MATERIALS_DIR) + "empty_white.jpg" // displacement
+	};
 	
-	if (materialInfo.color.length() != 0)
-	{
-		color = std::make_unique<HmckTexture>();
-		color->image.loadImage(materialInfo.color, hmckDevice);
-		color->image.createImageView(hmckDevice);
-		color->createSampler(hmckDevice);
-	}
+
+	color = std::make_unique<HmckTexture>();
+	color->image.loadImage(materialInfo.color.length() != 0 ? materialInfo.color : defaultInfo.color, hmckDevice);
+	color->image.createImageView(hmckDevice);
+	color->createSampler(hmckDevice);
 
 	// normal
 	normal = std::make_unique<HmckTexture>();
-	normal->image.loadImage(materialInfo.normal, hmckDevice);
-	normal->image.createImageView(hmckDevice);
+	normal->image.loadImage(materialInfo.normal.length() != 0 ? materialInfo.normal : defaultInfo.normal, hmckDevice, VK_FORMAT_R8G8B8A8_UNORM); // !!!
+	normal->image.createImageView(hmckDevice, VK_FORMAT_R8G8B8A8_UNORM);
 	normal->createSampler(hmckDevice);
 
 	// roughness
 	roughness = std::make_unique<HmckTexture>();
-	roughness->image.loadImage(materialInfo.roughness, hmckDevice);
+	roughness->image.loadImage(materialInfo.roughness.length() != 0 ? materialInfo.roughness: defaultInfo.roughness, hmckDevice);
 	roughness->image.createImageView(hmckDevice);
 	roughness->createSampler(hmckDevice);
 
 	// metalness
 	metalness = std::make_unique<HmckTexture>();
-	metalness->image.loadImage(materialInfo.metalness, hmckDevice);
+	metalness->image.loadImage(materialInfo.metalness.length() != 0 ? materialInfo.metalness: defaultInfo.metalness, hmckDevice);
 	metalness->image.createImageView(hmckDevice);
 	metalness->createSampler(hmckDevice);
 
 	// ambient occlusion
 	ambientOcclusion = std::make_unique<HmckTexture>();
-	ambientOcclusion->image.loadImage(materialInfo.ambientOcclusion, hmckDevice);
+	ambientOcclusion->image.loadImage(materialInfo.ambientOcclusion.length() != 0 ? materialInfo.ambientOcclusion: defaultInfo.ambientOcclusion, hmckDevice);
 	ambientOcclusion->image.createImageView(hmckDevice);
 	ambientOcclusion->createSampler(hmckDevice);
 
 	// displacement
 	displacement = std::make_unique<HmckTexture>();
-	displacement->image.loadImage(materialInfo.displacement, hmckDevice);
+	displacement->image.loadImage(materialInfo.displacement.length() != 0 ? materialInfo.displacement: defaultInfo.displacement, hmckDevice);
 	displacement->image.createImageView(hmckDevice);
 	displacement->createSampler(hmckDevice);
 }
@@ -124,13 +136,14 @@ void Hmck::HmckTexture::destroySampler(HmckDevice& hmckDevice)
 void Hmck::HmckImage::loadImage(
 	std::string& filepath, 
 	HmckDevice& hmckDevice,
+	VkFormat format,
 	bool flip
 )
 {
 	int imgWidth = 0, imgHeight = 0, imgChannels = 0;
 
 	stbi_set_flip_vertically_on_load(flip);
-	float* pixels = stbi_loadf(filepath.c_str(), &imgWidth, &imgHeight, &imgChannels, STBI_rgb_alpha);
+	stbi_uc* pixels = stbi_load(filepath.c_str(), &imgWidth, &imgHeight, &imgChannels, STBI_rgb_alpha);
 
 	if (!pixels)
 	{
@@ -193,7 +206,7 @@ void Hmck::HmckImage::loadImage(
 	);
 }
 
-void Hmck::HmckImage::createImageView(HmckDevice& hmckDevice)
+void Hmck::HmckImage::createImageView(HmckDevice& hmckDevice, VkFormat format)
 {
 	VkImageViewCreateInfo viewInfo{};
 	viewInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;

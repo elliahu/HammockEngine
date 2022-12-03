@@ -5,7 +5,7 @@ layout (location = 0) in vec3 fragColor;
 layout (location = 1) in vec3 fragPosWorld;
 layout (location = 2) in vec3 fragNormalWorld;
 layout (location = 3) in vec2 textCoords;
-layout (location = 4) in mat3 TBN;
+layout (location = 4) in vec3 tangentNormal;
 
 // outputs
 layout (location = 0) out vec4 outColor;
@@ -50,17 +50,71 @@ layout (push_constant) uniform Push
     mat4 normalMatrix; // using mat4 bcs alignment requirements
 } push;
 
+const float PI = 3.14159265359;
 
-// Normal mapping without precalculated tangents
-// "Followup: Normal Mapping Without Precomputed Tangents" from http://www.thetenthplanet.de/archives/1180
+// ----------------------------------------------------------------------------
+vec3 getNormalFromMap(vec2 uv)
+{
+    //return fragNormalWorld;
+    vec3 tangentNormal = texture(normSampler, uv).xyz * 2.0 - 1.0;
 
+	vec3 N = normalize(fragNormalWorld);
+	vec3 T = normalize(tangentNormal);
+	vec3 B = normalize(cross(N, T));
+	mat3 TBN = mat3(T, B, N);
+	return normalize(TBN * tangentNormal);
+}
 
-// displacement https://learnopengl.com/Advanced-Lighting/Parallax-Mapping
-float heightScale = 0.05;
-float numLayers = 8.0;
-vec2 displace(vec2 uv, vec3 viewDir)
-{ 
-    float layerDepth = 1.0 / numLayers;
+// ----------------------------------------------------------------------------
+float DistributionGGX(vec3 N, vec3 H, float roughness)
+{
+    float a = roughness*roughness;
+    float a2 = a*a;
+    float NdotH = max(dot(N, H), 0.0);
+    float NdotH2 = NdotH*NdotH;
+
+    float nom   = a2;
+    float denom = (NdotH2 * (a2 - 1.0) + 1.0);
+    denom = PI * denom * denom;
+
+    return nom / denom;
+}
+
+// ----------------------------------------------------------------------------
+float GeometrySchlickGGX(float NdotV, float roughness)
+{
+    float r = (roughness + 1.0);
+    float k = (r*r) / 8.0;
+
+    float nom   = NdotV;
+    float denom = NdotV * (1.0 - k) + k;
+
+    return nom / denom;
+}
+
+// ----------------------------------------------------------------------------
+float GeometrySmith(vec3 N, vec3 V, vec3 L, float roughness)
+{
+    float NdotV = max(dot(N, V), 0.0);
+    float NdotL = max(dot(N, L), 0.0);
+    float ggx2 = GeometrySchlickGGX(NdotV, roughness);
+    float ggx1 = GeometrySchlickGGX(NdotL, roughness);
+
+    return ggx1 * ggx2;
+}
+
+// ----------------------------------------------------------------------------
+vec3 fresnelSchlick(float cosTheta, vec3 F0)
+{
+    return F0 + (1.0 - F0) * pow(clamp(1.0 - cosTheta, 0.0, 1.0), 5.0);
+}
+
+// -----------------------------------------------------------------------------
+float numLayers = 16.0;
+float heightScale = 1.0;
+vec2 parallaxOcclusionMapping(vec2 uv, vec3 viewDir) 
+{
+	float layerDepth = 1.0 / numLayers;
 	float currLayerDepth = 0.0;
 	vec2 deltaUV = viewDir.xy * heightScale / (viewDir.z * numLayers);
 	vec2 currUV = uv;
@@ -78,66 +132,82 @@ vec2 displace(vec2 uv, vec3 viewDir)
 	float prevDepth = 1.0 - textureLod(disSampler, prevUV, 0.0).a - currLayerDepth + layerDepth;
 	return mix(currUV, prevUV, nextDepth / (nextDepth - prevDepth));
 }
-
+// ----------------------
+// MAIN
 void main()
 {
-    // pre-calculations shared with all lights
-    vec3 diffuseLight = ubo.ambientLightColor.xyz * ubo.ambientLightColor.w;
-    vec3 specularLight = vec3(0.0);
-    vec3 cameraPosWorld = ubo.inverseView[3].xyz;
-    vec3 viewDirection = normalize((TBN * cameraPosWorld) - (TBN * fragPosWorld));
-    vec2 uv =  textCoords;//displace(textCoords, viewDirection);
+    vec3 viewPosition = ubo.inverseView[3].xyz;
+    vec3 wolrdPosition = fragPosWorld;
 
-    // calculating normal
-    vec3 surfaceNormal = textureLod(normSampler, uv, 0.0).rgb;
-    // Discard fragments at texture border
-	if (uv.x < 0.0 || uv.x > 1.0 || uv.y < 0.0 || uv.y > 1.0) {
-		discard;
-	}
-    surfaceNormal = normalize(surfaceNormal);
-
-
-    // directional light
-    vec3 sunDirection = normalize(TBN * ubo.directionalLight.direction.xyz);
-    float sunDiff = max(dot(surfaceNormal, sunDirection), 0.0);
-    vec3 sunDiffuse = sunDiff * (ubo.directionalLight.color.xyz * ubo.directionalLight.color.w); 
     
-    //specular component of light
-    vec3 halfAngle = normalize(sunDirection + viewDirection);
-    float blinnTerm = dot(surfaceNormal, halfAngle);
-    blinnTerm = clamp(blinnTerm, 0, 1);
-    blinnTerm = pow(blinnTerm, 512.0);  // higher power -> sharper light
-    specularLight += (ubo.directionalLight.color.xyz * ubo.directionalLight.color.w) * blinnTerm;
+    vec3 V = normalize(viewPosition - wolrdPosition);
+    vec2 uv =textCoords;// parallaxOcclusionMapping(textCoords, V);
+    vec3 N = getNormalFromMap(uv);
 
+    vec3 albedo = pow(texture(colSampler, uv).rgb, vec3(2.2));
+    float metallic  = texture(metalSampler, uv).r;
+    float roughness = texture(roughSampler, uv).r;
+    float ao        = texture(aoSampler, uv).r;
 
-    // point lights
+    
+
+    
+
+    // calculate reflectance at normal incidence; if dia-electric (like plastic) use F0 
+    // of 0.04 and if it's a metal, use the albedo color as F0 (metallic workflow)    
+    vec3 F0 = vec3(0.04); 
+    F0 = mix(F0, albedo, metallic);
+    
+    // reflectance equation
+    vec3 Lo = vec3(0.0);
     for(int i = 0; i < ubo.numLights; i++)
     {
         // per-light calculations
         PointLight light = ubo.pointLights[i];
-        vec3 directionToLight = (TBN * light.position.xyz) -  (TBN * fragPosWorld);
-        float attenuation = 1.0 / (light.terms.x * dot(directionToLight, directionToLight) + light.terms.y * length(directionToLight) + light.terms.z );
-        directionToLight = normalize(directionToLight);
+        vec3 lightPosition = light.position.xyz;
 
-        float cosAngIncidence = max(dot(surfaceNormal, directionToLight), 0);
-        vec3 intensity = light.color.xyz * light.color.w * attenuation;
+        // calculate per-light radiance
+        vec3 L = normalize(lightPosition - wolrdPosition);
+        vec3 H = normalize(V + L);
+        float distance = length(lightPosition - wolrdPosition);
+        float attenuation = 1.0 / light.terms.x * (distance * distance) + light.terms.y * distance + light.terms.z;
+        vec3 radiance = light.color.xyz * attenuation * light.color.w;
 
-        diffuseLight += intensity * cosAngIncidence;
+        // Cook-Torrance BRDF
+        float NDF = DistributionGGX(N, H, roughness);   
+        float G   = GeometrySmith(N, V, L, roughness);      
+        vec3 F    = fresnelSchlick(max(dot(H, V), 0.0), F0);
+           
+        vec3 numerator    = NDF * G * F; 
+        float denominator = 4.0 * max(dot(N, V), 0.0) * max(dot(N, L), 0.0) + 0.0001; // + 0.0001 to prevent divide by zero
+        vec3 specular = numerator / denominator;
+        
+        // kS is equal to Fresnel
+        vec3 kS = F;
+        // for energy conservation, the diffuse and specular light can't
+        // be above 1.0 (unless the surface emits light); to preserve this
+        // relationship the diffuse component (kD) should equal 1.0 - kS.
+        vec3 kD = vec3(1.0) - kS;
+        // multiply kD by the inverse metalness such that only non-metals 
+        // have diffuse lighting, or a linear blend if partly metal (pure metals
+        // have no diffuse light).
+        kD *= 1.0 - metallic;	  
 
-        //specular component of light
-        vec3 halfAngle = normalize(directionToLight + viewDirection);
-        float blinnTerm = dot(surfaceNormal, halfAngle);
-        blinnTerm = clamp(blinnTerm, 0, 1);
-        blinnTerm = pow(blinnTerm, 1024.0 * (1.0 + texture(roughSampler, uv).r));  // higher power -> sharper light
-        specularLight += intensity * blinnTerm;
+        // scale light by NdotL
+        float NdotL = max(dot(N, L), 0.0);        
+
+        // add to outgoing radiance Lo
+        Lo += (kD * albedo / PI + specular) * radiance * NdotL;  // note that we already multiplied the BRDF by the Fresnel (kS) so we won't multiply by kS again
     }
  
-    // gl_FrontFacing can be used to apply lighting only on front facing surface
-    vec4 sampledColor = texture(colSampler, uv) * texture(aoSampler, uv).r;
+     vec3 ambient = vec3(0.03) * albedo * ao;
+    
+    vec3 color = ambient + Lo;
 
-	outColor = vec4((
-            (diffuseLight * sampledColor.rgb) + 
-            (specularLight * ( texture(metalSampler, uv).r)  * sampledColor.rgb) +
-            (sunDiffuse * sampledColor.rgb)
-     ), 1.0);    
+    // HDR tonemapping
+    color = color / (color + vec3(1.0));
+    // gamma correct
+    color = pow(color, vec3(1.0/2.2)); 
+
+    outColor = vec4(color, 1.0);
 }
