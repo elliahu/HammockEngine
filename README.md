@@ -11,10 +11,6 @@ The following libraries are used:
 - [ImGUI](https://github.com/ocornut/imgui) - Graphical User Interface library
 - [stb](https://github.com/nothings/stb)- stb_image.h for image loading
 
-#### Point light system
-![Point Light System](https://raw.githubusercontent.com/elliahu/HammockEngine/master/Img/point_light_system.png)
-#### UI system
-![UI System](https://raw.githubusercontent.com/elliahu/HammockEngine/master/Img/ui_system.png)
 #### PBR
 ![Textures](https://raw.githubusercontent.com/elliahu/HammockEngine/master/Img/pbr.png)
 
@@ -24,7 +20,7 @@ The following libraries are used:
 - [x] Basic lighting (Blinn-Phong illumination model)
 - [x] Collision detection using AABB (Axis-aligned Bounding Boxes)
 - [x] Basic UI system
-- [x] Materials, Textures and PBR
+- [x] [Still improving] Materials, Textures and PBR
 - [ ] Asset system and audio support
 - [ ] Shadows
 - [ ] Reflections and Cubemaps
