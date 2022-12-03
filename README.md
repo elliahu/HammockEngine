@@ -11,7 +11,6 @@ The following libraries are used:
 - [ImGUI](https://github.com/ocornut/imgui) - Graphical User Interface library
 - [stb](https://github.com/nothings/stb)- stb_image.h for image loading
 
-#### PBR
 ![Textures](https://raw.githubusercontent.com/elliahu/HammockEngine/master/Img/pbr.png)
 
 # Roadmap 🚗
