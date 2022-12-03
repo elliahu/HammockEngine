@@ -66,8 +66,8 @@ namespace Hmck
 	{
 		float lightIntensity = 1.0f;
 		float quadraticTerm = 1.0f;
-		float linearTerm = 1.0f;
-		float constantTerm = 1.0f;
+		float linearTerm = .0f;
+		float constantTerm = .0f;
 	};
 
 	/*

@@ -170,8 +170,8 @@ void main()
         vec3 L = normalize(lightPosition - wolrdPosition);
         vec3 H = normalize(V + L);
         float distance = length(lightPosition - wolrdPosition);
-        float attenuation = 1.0 / light.terms.x * (distance * distance) + light.terms.y * distance + light.terms.z;
-        vec3 radiance = light.color.xyz * attenuation * light.color.w;
+        float attenuation = 1.0 / (light.terms.x * (distance * distance)) + (light.terms.y * distance) + (light.terms.z);
+        vec3 radiance = light.color.xyz * light.color.w * attenuation;
 
         // Cook-Torrance BRDF
         float NDF = DistributionGGX(N, H, roughness);   
@@ -200,7 +200,7 @@ void main()
         Lo += (kD * albedo / PI + specular) * radiance * NdotL;  // note that we already multiplied the BRDF by the Fresnel (kS) so we won't multiply by kS again
     }
  
-     vec3 ambient = vec3(0.03) * albedo * ao;
+    vec3 ambient = (ubo.ambientLightColor.xyz * ubo.ambientLightColor.w) * albedo * ao;
     
     vec3 color = ambient + Lo;
 

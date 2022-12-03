@@ -144,11 +144,11 @@ void Hmck::FirstApp::loadGameObjects()
 
     // materials
     HmckCreateMaterialInfo floorMaterial{};
-    floorMaterial.color = std::string(MATERIALS_DIR) + "Bricks/PavingStones122_1K_Color.jpg";
-    floorMaterial.normal = std::string(MATERIALS_DIR) + "Bricks/PavingStones122_1K_NormalDX.jpg";
-    floorMaterial.roughness = std::string(MATERIALS_DIR) + "Bricks/PavingStones122_1K_Roughness.jpg";
-    floorMaterial.ambientOcclusion = std::string(MATERIALS_DIR) + "Bricks/PavingStones122_1K_AmbientOcclusion.jpg";
-    floorMaterial.displacement = std::string(MATERIALS_DIR) + "Bricks/PavingStones122_1K_Displacement.jpg";
+    floorMaterial.color = std::string(MATERIALS_DIR) + "Wood06/Wood060_1K_Color.jpg";
+    floorMaterial.normal = std::string(MATERIALS_DIR) + "Wood06/Wood060_1K_NormalDX.jpg";
+    floorMaterial.roughness = std::string(MATERIALS_DIR) + "Wood06/Wood060_1K_Roughness.jpg";
+    floorMaterial.ambientOcclusion = std::string(MATERIALS_DIR) + "Wood06/Wood060_1K_AmbientOcclusion.jpg";
+    floorMaterial.displacement = std::string(MATERIALS_DIR) + "Wood06/Wood060_1K_Displacement.jpg";
     std::shared_ptr<HmckMaterial> bricksMaterial = HmckMaterial::createMaterial(hmckDevice, floorMaterial);
 
     HmckCreateMaterialInfo metalMaterialInfo{};
