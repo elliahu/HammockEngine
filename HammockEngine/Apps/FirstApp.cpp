@@ -144,12 +144,12 @@ void Hmck::FirstApp::loadGameObjects()
 
     // materials
     HmckCreateMaterialInfo floorMaterial{};
-    floorMaterial.color = std::string(MATERIALS_DIR) + "DiamondPlate/DiamondPlate006C_1K_Color.jpg";
-    floorMaterial.normal = std::string(MATERIALS_DIR) + "DiamondPlate/DiamondPlate006C_1K_NormalGL.jpg";
-    floorMaterial.roughness = std::string(MATERIALS_DIR) + "DiamondPlate/DiamondPlate006C_1K_Roughness.jpg";
-    floorMaterial.metalness = std::string(MATERIALS_DIR) + "DiamondPlate/DiamondPlate006C_1K_Metalness.jpg";
-    floorMaterial.ambientOcclusion = std::string(MATERIALS_DIR) + "DiamondPlate/DiamondPlate006C_1K_AmbientOcclusion.jpg";
-    floorMaterial.displacement = std::string(MATERIALS_DIR) + "DiamondPlate/DiamondPlate006C_1K_Displacement.jpg";
+    floorMaterial.color = std::string(MATERIALS_DIR) + "DiamondPlate/DiamondPlate006C_1K_Color.png";
+    floorMaterial.normal = std::string(MATERIALS_DIR) + "DiamondPlate/DiamondPlate006C_1K_NormalGL.png";
+    floorMaterial.roughness = std::string(MATERIALS_DIR) + "DiamondPlate/DiamondPlate006C_1K_Roughness.png";
+    floorMaterial.metalness = std::string(MATERIALS_DIR) + "DiamondPlate/DiamondPlate006C_1K_Metalness.png";
+    floorMaterial.ambientOcclusion = std::string(MATERIALS_DIR) + "DiamondPlate/DiamondPlate006C_1K_AmbientOcclusion.png";
+    floorMaterial.displacement = std::string(MATERIALS_DIR) + "DiamondPlate/DiamondPlate006C_1K_Displacement.png";
     std::shared_ptr<HmckMaterial> bricksMaterial = HmckMaterial::createMaterial(hmckDevice, floorMaterial);
 
     HmckCreateMaterialInfo metalMaterialInfo{};
@@ -226,7 +226,7 @@ void Hmck::FirstApp::loadGameObjects()
     };
     for (int i = 0; i < lightColors.size(); i++)
     {
-        auto pointLight = HmckGameObject::createPointLight(0.45f);
+        auto pointLight = HmckGameObject::createPointLight(1.0f);
         pointLight.setName("Point light");
         pointLight.colorComponent = lightColors[i];
         auto rotateLight = glm::rotate(
@@ -234,7 +234,7 @@ void Hmck::FirstApp::loadGameObjects()
             (i * glm::two_pi<float>()) / lightColors.size(),
             { 0.f, -1.f, 0.f }
         );
-        pointLight.transformComponent.translation = glm::vec3(rotateLight * glm::vec4(-1.f, -1.f, -1.f, 1.f));
+        pointLight.transformComponent.translation = glm::vec3(rotateLight * glm::vec4(-1.f, -2.f, -1.f, 1.f));
         gameObjects.emplace(pointLight.getId(), std::move(pointLight));
     }
     

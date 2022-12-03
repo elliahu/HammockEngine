@@ -57,46 +57,26 @@ layout (push_constant) uniform Push
 
 // displacement https://learnopengl.com/Advanced-Lighting/Parallax-Mapping
 float heightScale = 0.05;
-vec2 displace(vec2 texCoords, vec3 viewDir)
+float numLayers = 8.0;
+vec2 displace(vec2 uv, vec3 viewDir)
 { 
-    // number of depth layers
-    const float minLayers = 8;
-    const float maxLayers = 32;
-    float numLayers = mix(maxLayers, minLayers, abs(dot(vec3(0.0, 0.0, 1.0), viewDir)));  
-    // calculate the size of each layer
     float layerDepth = 1.0 / numLayers;
-    // depth of current layer
-    float currentLayerDepth = 0.0;
-    // the amount to shift the texture coordinates per layer (from vector P)
-    vec2 P = viewDir.xy / viewDir.z * heightScale; 
-    vec2 deltaTexCoords = P / numLayers;
-  
-    // get initial values
-    vec2  currentTexCoords     = texCoords;
-    float currentDepthMapValue = texture(disSampler, currentTexCoords).r;
-      
-    while(currentLayerDepth < currentDepthMapValue)
-    {
-        // shift texture coordinates along direction of P
-        currentTexCoords -= deltaTexCoords;
-        // get depthmap value at current texture coordinates
-        currentDepthMapValue = texture(disSampler, currentTexCoords).r;  
-        // get depth of next layer
-        currentLayerDepth += layerDepth;  
-    }
-    
-    // get texture coordinates before collision (reverse operations)
-    vec2 prevTexCoords = currentTexCoords + deltaTexCoords;
-
-    // get depth after and before collision for linear interpolation
-    float afterDepth  = currentDepthMapValue - currentLayerDepth;
-    float beforeDepth = texture(disSampler, prevTexCoords).r - currentLayerDepth + layerDepth;
- 
-    // interpolation of texture coordinates
-    float weight = afterDepth / (afterDepth - beforeDepth);
-    vec2 finalTexCoords = prevTexCoords * weight + currentTexCoords * (1.0 - weight);
-
-    return finalTexCoords;
+	float currLayerDepth = 0.0;
+	vec2 deltaUV = viewDir.xy * heightScale / (viewDir.z * numLayers);
+	vec2 currUV = uv;
+	float height = 1.0 - textureLod(disSampler, currUV, 0.0).a;
+	for (int i = 0; i < numLayers; i++) {
+		currLayerDepth += layerDepth;
+		currUV -= deltaUV;
+		height = 1.0 - textureLod(disSampler, currUV, 0.0).a;
+		if (height < currLayerDepth) {
+			break;
+		}
+	}
+	vec2 prevUV = currUV + deltaUV;
+	float nextDepth = height - currLayerDepth;
+	float prevDepth = 1.0 - textureLod(disSampler, prevUV, 0.0).a - currLayerDepth + layerDepth;
+	return mix(currUV, prevUV, nextDepth / (nextDepth - prevDepth));
 }
 
 void main()
@@ -106,12 +86,16 @@ void main()
     vec3 specularLight = vec3(0.0);
     vec3 cameraPosWorld = ubo.inverseView[3].xyz;
     vec3 viewDirection = normalize((TBN * cameraPosWorld) - (TBN * fragPosWorld));
-    vec2 uv = textCoords; //displace(textCoords, viewDirection);
+    vec2 uv =  textCoords;//displace(textCoords, viewDirection);
 
     // calculating normal
-    vec3 surfaceNormal = texture(normSampler, uv).xyz;
-    surfaceNormal = normalize(surfaceNormal); // this normal is in tangent space
-    //surfaceNormal = fragNormalWorld;
+    vec3 surfaceNormal = textureLod(normSampler, uv, 0.0).rgb;
+    // Discard fragments at texture border
+	if (uv.x < 0.0 || uv.x > 1.0 || uv.y < 0.0 || uv.y > 1.0) {
+		discard;
+	}
+    surfaceNormal = normalize(surfaceNormal);
+
 
     // directional light
     vec3 sunDirection = normalize(TBN * ubo.directionalLight.direction.xyz);
