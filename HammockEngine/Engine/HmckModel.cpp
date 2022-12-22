@@ -257,8 +257,7 @@ Hmck::HmckModel::ModelInfo Hmck::HmckModel::Builder::loadModel(const std::string
 Hmck::HmckModel::ModelInfo Hmck::HmckModel::Builder::loadModelAssimp(const std::string& filepath)
 {
 	Assimp::Importer imp;
-	unsigned int opts = aiProcess_Triangulate
-		| aiProcess_CalcTangentSpace;
+	unsigned int opts = aiProcess_Triangulate | aiProcess_CalcTangentSpace;
 
 	const aiScene* scene = imp.ReadFile(filepath, opts);
 
@@ -271,8 +270,7 @@ Hmck::HmckModel::ModelInfo Hmck::HmckModel::Builder::loadModelAssimp(const std::
 
 		for (unsigned int i = 0; i < scene->mNumMeshes; i++)   
 		{
-			aiMesh* mesh = scene->mMeshes[i];
-
+			aiMesh* mesh = scene->mMeshes[i]; 
 
 			for (unsigned int i = 0; i < mesh->mNumVertices; i++)
 			{
@@ -287,12 +285,10 @@ Hmck::HmckModel::ModelInfo Hmck::HmckModel::Builder::loadModelAssimp(const std::
 					};
 
 					vertex.color = { 1,1,1 };
-
 				}
 
 				if (mesh->HasTextureCoords(0))
 				{
-
 					vertex.uv = {
 						mesh->mTextureCoords[0][i].x,
 						mesh->mTextureCoords[0][i].y
@@ -355,7 +351,6 @@ Hmck::HmckModel::ModelInfo Hmck::HmckModel::Builder::loadModelAssimp(const std::
 				}
 
 				indices.push_back(uniqueVertices[vertex]);
-
 			}
 		}
 

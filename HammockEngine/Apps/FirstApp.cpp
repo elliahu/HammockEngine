@@ -84,7 +84,7 @@ void Hmck::FirstApp::run()
         camera.setViewYXZ(viewerObject.transformComponent.translation, viewerObject.transformComponent.rotation);
 
         float aspect = hmckRenderer.getAspectRatio();
-        camera.setPerspectiveProjection(glm::radians(50.f), aspect, 0.1f, 1000.f);
+        camera.setPerspectiveProjection(glm::radians(50.f), aspect, 0.1f,  1000.f );
 
 		if (auto commandBuffer = hmckRenderer.beginFrame())
 		{
@@ -112,7 +112,7 @@ void Hmck::FirstApp::run()
             // start rendering
 			renderSystem.renderGameObjects(frameInfo);
             lightSystem.render(frameInfo);
-
+        
             // UI
             userInterfaceSystem.beginUserInterface();
             userInterfaceSystem.showDebugStats(viewerObject);
@@ -152,10 +152,11 @@ void Hmck::FirstApp::loadGameObjects()
     std::shared_ptr<HmckMaterial> floorMaterial = HmckMaterial::createMaterial(hmckDevice, floorMaterialIfno);
 
     HmckCreateMaterialInfo spherematerialInfo{};
-    spherematerialInfo.color = std::string(MATERIALS_DIR) + "Fabric/Fabric066_1K_Color.jpg";
-    spherematerialInfo.normal = std::string(MATERIALS_DIR) + "Fabric/Fabric066_1K_NormalDX.jpg";
-    spherematerialInfo.roughness = std::string(MATERIALS_DIR) + "Fabric/Fabric066_1K_Roughness.jpg";
-    spherematerialInfo.displacement = std::string(MATERIALS_DIR) + "Fabric/Fabric066_1K_Displacement.jpg";
+    spherematerialInfo.color = std::string(MATERIALS_DIR) + "Metal/Metal046B_1K_Color.jpg";
+    spherematerialInfo.normal = std::string(MATERIALS_DIR) + "Metal/Metal046B_1K_NormalDX.jpg";
+    spherematerialInfo.roughness = std::string(MATERIALS_DIR) + "Metal/Metal046B_1K_Roughness.jpg";
+    spherematerialInfo.metalness = std::string(MATERIALS_DIR) + "Metal/Metal046B_1K_Metalness.jpg";
+    spherematerialInfo.displacement = std::string(MATERIALS_DIR) + "Metal/Metal046B_1K_Displacement.jpg";
     std::shared_ptr<HmckMaterial> sphereMaterial = HmckMaterial::createMaterial(hmckDevice, spherematerialInfo);
 
     HmckCreateMaterialInfo logMaterialInfo{};
@@ -177,10 +178,10 @@ void Hmck::FirstApp::loadGameObjects()
 
     // vase
     auto sphere = HmckGameObject::createGameObject();
-    sphere.setName("Vase");
+    sphere.setName("Sphere");
     sphere.setModel(sphereModel);
     sphere.transformComponent.translation = { .0f, -0.5f, 0.f };
-    sphere.transformComponent.scale = glm::vec3(1.f);
+    sphere.transformComponent.scale = glm::vec3(.4f);
     sphere.fitBoundingBox(sphereModel->modelInfo);
     sphere.setMaterial(sphereMaterial);
     sphere.bindDescriptorSet(globalPool, materialLayout);
@@ -211,12 +212,12 @@ void Hmck::FirstApp::loadGameObjects()
 
     // Point light
     std::vector<glm::vec3> lightColors{
-     //{1.f, .1f, .1f},
-     //{.1f, .1f, 1.f},
-     //{.1f, 1.f, .1f},
-     //{1.f, 1.f, .1f},
-     //{.1f, 1.f, 1.f},
-     {1.f, 1.f, 1.f}  
+         {1.f, .1f, .1f},
+         {.1f, .1f, 1.f},
+         {.1f, 1.f, .1f},
+         {1.f, 1.f, .1f},
+         {.1f, 1.f, 1.f},
+         {1.f, 1.f, 1.f}, 
     };
     for (int i = 0; i < lightColors.size(); i++)
     {

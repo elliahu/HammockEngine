@@ -17,13 +17,13 @@ External/*
 Resources/*
 
 # Ignore VS files
-*.sln
-*.vcxproj
-*.vcxproj.filters
-HammockEngine/HammockEngine.vcxproj
-HammockEngine/HammockEngine.vcxproj.filters
-HammockEngine/HammockEngine.vcxproj.user
-HammockEngine.sln
+# *.sln
+# *.vcxproj
+# *.vcxproj.filters
+# HammockEngine/HammockEngine.vcxproj
+# HammockEngine/HammockEngine.vcxproj.filters
+# HammockEngine/HammockEngine.vcxproj.user
+# HammockEngine.sln
 
 # Ignore compiled shaders
 *.spv

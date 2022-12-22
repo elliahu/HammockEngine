@@ -10,7 +10,7 @@ layout (location = 4) in vec3 tangentNormal;
 // outputs
 layout (location = 0) out vec4 outColor;
 
-// samplers
+// samplers  
 layout(set = 1, binding = 0) uniform sampler2D colSampler;
 layout(set = 1, binding = 1) uniform sampler2D normSampler;
 layout(set = 1, binding = 2) uniform sampler2D roughSampler;
@@ -42,7 +42,7 @@ layout (set = 0, binding = 0) uniform GlobalUbo
     PointLight pointLights[10];
     int numLights;
 } ubo;
-
+ 
 // push constants
 layout (push_constant) uniform Push
 {
@@ -141,7 +141,7 @@ void main()
 
     
     vec3 V = normalize(viewPosition - wolrdPosition);
-    vec2 uv =textCoords;// parallaxOcclusionMapping(textCoords, V);
+    vec2 uv = textCoords;// parallaxOcclusionMapping(textCoords, V);
     vec3 N = getNormalFromMap(uv);
 
     vec3 albedo = pow(texture(colSampler, uv).rgb, vec3(2.2));
@@ -149,14 +149,10 @@ void main()
     float roughness = texture(roughSampler, uv).r;
     float ao        = texture(aoSampler, uv).r;
 
-    
-
-    
-
     // calculate reflectance at normal incidence; if dia-electric (like plastic) use F0 
     // of 0.04 and if it's a metal, use the albedo color as F0 (metallic workflow)    
     vec3 F0 = vec3(0.04); 
-    F0 = mix(F0, albedo, metallic);
+    F0 = mix(albedo, albedo, metallic);
     
     // reflectance equation
     vec3 Lo = vec3(0.0);
@@ -203,10 +199,10 @@ void main()
     vec3 ambient = (ubo.ambientLightColor.xyz * ubo.ambientLightColor.w) * albedo * ao;
     
     vec3 color = ambient + Lo;
-
-    // HDR tonemapping
-    color = color / (color + vec3(1.0));
-    // gamma correct
+     
+    // HDR tonemapping    
+    color = color / (color + vec3(1.0)); 
+    // gamma correction
     color = pow(color, vec3(1.0/2.2)); 
 
     outColor = vec4(color, 1.0);

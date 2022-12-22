@@ -10,6 +10,10 @@
 
 namespace Hmck
 {
+	/*
+		This struct is used to describe the material that is gonna be loaded
+		specially tha paths to each material map
+	*/
 	struct HmckCreateMaterialInfo 
 	{
 		std::string color{};
@@ -20,13 +24,19 @@ namespace Hmck
 		std::string displacement{};
 	};
 
+	/*
+		This struct represents general purpose image on GPU
+		Does not have a sampler tho
+	*/
 	struct HmckImage
 	{
 		VkDeviceMemory imageMemory;
 		VkImage image;
 		VkImageView imageView;
 
-		//VK_FORMAT_R8G8B8A8_UNORM for normals
+		// Recommended:
+		// VK_FORMAT_R8G8B8A8_UNORM for normals
+		// VK_FORMAT_R8G8B8A8_SRGB for images
 
 		void loadImage(
 			std::string& filepath, 
@@ -40,14 +50,11 @@ namespace Hmck
 		void clearImage(HmckDevice& hmckDevice, VkClearColorValue clearColor = { 1.0f, 1.0f, 1.0f, 1.0f }, VkFormat format = VK_FORMAT_R8G8B8A8_SRGB);
 	};
 
-	struct HmckMaterialDescriptorSetLayoutInfo
-	{
-		uint32_t binding;
-		VkDescriptorType type;
-		VkShaderStageFlags shaderStageFlags;
-		uint32_t count;
-	};
 
+	/*
+		HmckTexture struct represents a texture or a map
+		that can be used to sample from in a shader
+	*/
 	struct HmckTexture
 	{
 		// format: VK_FORMAT_R8G8B8A8_SRGB
@@ -58,6 +65,10 @@ namespace Hmck
 		void destroySampler(HmckDevice& hmckDevice);
 	};
 
+	/*
+		HmckMaterial class consists of logic surrounding creation and usage
+		of material in the HammockEngine
+	*/
 	class HmckMaterial
 	{
 	public:
