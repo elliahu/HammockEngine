@@ -29,10 +29,7 @@ Hmck::HmckModel::~HmckModel(){}
 std::unique_ptr<Hmck::HmckModel> Hmck::HmckModel::createModelFromFile(HmckDevice& device, const std::string& filepath, bool calculateTangents)
 {
 	Builder builder{};
-	ModelInfo mInfo = builder.loadModel(filepath);
-
-	if (calculateTangents)
-		builder.calculateTangent();
+	ModelInfo mInfo = builder.loadModel(filepath, calculateTangents);
 
 	std::unique_ptr<HmckModel> model = std::make_unique<HmckModel>(device, builder);
 	model->modelInfo = mInfo;
@@ -153,7 +150,7 @@ std::vector<VkVertexInputAttributeDescription> Hmck::HmckModel::Vertex::getAttri
 	};
 }
 
-Hmck::HmckModel::ModelInfo Hmck::HmckModel::Builder::loadModel(const std::string& filepath)
+Hmck::HmckModel::ModelInfo Hmck::HmckModel::Builder::loadModel(const std::string& filepath, bool calcTangent)
 {
 	tinyobj::attrib_t attrib;
 	std::vector<tinyobj::shape_t> shapes;
@@ -250,6 +247,9 @@ Hmck::HmckModel::ModelInfo Hmck::HmckModel::Builder::loadModel(const std::string
 			indices.push_back(uniqueVertices[vertex]);
 		}
 	}
+
+	// calculate tangent
+	calculateTangent();
 
 	return mInfo;
 }

@@ -67,6 +67,7 @@ namespace Hmck
 
 		HmckDevice& hmckDevice;
 		std::unique_ptr<HmckPipeline> hmckPipeline;
+		std::unique_ptr<HmckPipeline> hmckOffscreenPipeline;
 		VkPipelineLayout pipelineLayout;
 		
 		

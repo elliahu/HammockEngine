@@ -62,6 +62,7 @@ namespace Hmck
 		VkSampler sampler;
 
 		void createSampler(HmckDevice& hmckDevice);
+		void createDepthSampler(HmckDevice& hmckDevice);
 		void destroySampler(HmckDevice& hmckDevice);
 	};
 

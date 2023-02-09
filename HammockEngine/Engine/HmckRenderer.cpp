@@ -64,7 +64,7 @@ void Hmck::HmckRenderer::recreateSwapChain()
 		}
 	}
 
-	// www
+	//
 }
 
 
@@ -139,9 +139,9 @@ void Hmck::HmckRenderer::beginSwapChainRenderPass(VkCommandBuffer commandBuffer)
 	renderPassInfo.renderArea.extent = hmckSwapChain->getSwapChainExtent();
 
 	std::array<VkClearValue, 2> clearValues{};
-	clearValues[0].color = { 0.f,0.f,0.f,1.f }; // clear color
+	clearValues[0].color = HMCK_CLEAR_COLOR; // clear color
 	clearValues[1].depthStencil = { 1.0f, 0 };
-
+	
 	renderPassInfo.clearValueCount = static_cast<uint32_t>(clearValues.size());
 	renderPassInfo.pClearValues = clearValues.data();
 
@@ -161,8 +161,8 @@ void Hmck::HmckRenderer::beginSwapChainRenderPass(VkCommandBuffer commandBuffer)
 
 void Hmck::HmckRenderer::endSwapChainRenderPass(VkCommandBuffer commandBuffer)
 {
-	assert(isFrameInProgress() && "Cannot call beginSwapChainRenderPass if frame is not in progress");
-	assert(commandBuffer == getCurrentCommandBuffer() && "Cannot begin render pass on command buffer from a different frame");
+	assert(isFrameInProgress() && "Cannot call endSwapChainRenderPass if frame is not in progress");
+	assert(commandBuffer == getCurrentCommandBuffer() && "Cannot end render pass on command buffer from a different frame");
 
 	vkCmdEndRenderPass(commandBuffer);
 }

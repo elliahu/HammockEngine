@@ -50,7 +50,6 @@ void Hmck::HmckRenderSystem::createPipeline(VkRenderPass renderPass)
 		pipelineConfig
 	);
 }
-
 void Hmck::HmckRenderSystem::renderGameObjects(HmckFrameInfo& frameInfo)
 {
 	hmckPipeline->bind(frameInfo.commandBuffer);

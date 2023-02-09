@@ -15,6 +15,16 @@
 #include <stdexcept>
 #include <cassert>
 
+#ifndef SHADOWMAP_RES
+#define SHADOWMAP_RES 2048
+#endif // !SHADOWMAP_RES
+
+#ifndef DEPTH_FORMAT
+#define DEPTH_FORMAT VK_FORMAT_D16_UNORM
+#endif // !DEPTH_FORMAT
+
+#define HMCK_CLEAR_COLOR { 0.f,0.f,0.f,1.f }
+
 namespace Hmck
 {
 	class HmckRenderer

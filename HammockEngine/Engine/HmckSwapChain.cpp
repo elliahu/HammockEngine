@@ -64,6 +64,7 @@ namespace Hmck {
             vkDestroySemaphore(device.device(), imageAvailableSemaphores[i], nullptr);
             vkDestroyFence(device.device(), inFlightFences[i], nullptr);
         }
+
     }
 
     VkResult HmckSwapChain::acquireNextImage(uint32_t* imageIndex) {
@@ -389,18 +390,31 @@ namespace Hmck {
 
     VkPresentModeKHR HmckSwapChain::chooseSwapPresentMode(
         const std::vector<VkPresentModeKHR>& availablePresentModes) {
+
+        // available present modes
+        // https://registry.khronos.org/vulkan/specs/1.3-extensions/man/html/VkPresentModeKHR.html
         for (const auto& availablePresentMode : availablePresentModes) {
+            break; // for now, to fall back to V-Sync for testing
+            // Top option - Mailbox
+            // Lowers imput latency but GPU is 100% saturated = high power consumption
+            // not good for mobile
             if (availablePresentMode == VK_PRESENT_MODE_MAILBOX_KHR) {
                 std::cout << "Present mode: Mailbox" << std::endl;
                 return availablePresentMode;
             }
 
+            // Does NOT perform any vertical synchronization
+            // High GPU and CPU (and power) usage
+            // May result in tearing
+            // For testing max performance
             if (availablePresentMode == VK_PRESENT_MODE_IMMEDIATE_KHR) {
                 std::cout << "Present mode: Immediate" << std::endl;
                 return availablePresentMode;
             }
         }
 
+        // V-sync on as fallback
+        // always available on all GPUs
         std::cout << "Present mode: V-Sync" << std::endl;
         return VK_PRESENT_MODE_FIFO_KHR;
     }
@@ -429,4 +443,4 @@ namespace Hmck {
             VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT);
     }
 
-}  // namespace lve
+}  // namespace Hmck

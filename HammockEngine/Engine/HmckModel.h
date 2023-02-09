@@ -67,7 +67,7 @@ namespace Hmck
 			std::vector<Vertex> vertices{};
 			std::vector<uint32_t> indices{};
 
-			ModelInfo loadModel(const std::string& filepath);
+			ModelInfo loadModel(const std::string& filepath, bool calcTangent = true);
 			ModelInfo loadModelAssimp(const std::string& filepath);
 			void calculateTangent();
 		};

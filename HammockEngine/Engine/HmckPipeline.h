@@ -62,7 +62,7 @@ namespace Hmck
 		
 		void createShaderModule(const std::vector<char>& code, VkShaderModule* shaderModule);
 		
-		HmckDevice& hmckDevice; // potentionaly memmory unsafe
+		HmckDevice& hmckDevice; // TODO potentionaly memmory unsafe
 		VkPipeline graphicsPipeline;
 		VkShaderModule vertShaderModule;
 		VkShaderModule fragShaderModule;

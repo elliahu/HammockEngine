@@ -40,8 +40,8 @@ namespace Hmck
 	class FirstApp
 	{
 	public:
-		static constexpr int WINDOW_WIDTH = 1280;
-		static constexpr int WINDOW_HEIGHT = 720;
+		static constexpr int WINDOW_WIDTH = 1600;
+		static constexpr int WINDOW_HEIGHT = 900;
 
 		FirstApp();
 

@@ -55,14 +55,13 @@ const float PI = 3.14159265359;
 // ----------------------------------------------------------------------------
 vec3 getNormalFromMap(vec2 uv)
 {
-    //return fragNormalWorld;
-    vec3 tangentNormal = texture(normSampler, uv).xyz * 2.0 - 1.0;
+    vec3 mapNormal = texture(normSampler, uv).xyz * 2.0 - 1.0;
 
 	vec3 N = normalize(fragNormalWorld);
 	vec3 T = normalize(tangentNormal);
 	vec3 B = normalize(cross(N, T));
 	mat3 TBN = mat3(T, B, N);
-	return normalize(TBN * tangentNormal);
+	return normalize(TBN * mapNormal);
 }
 
 // ----------------------------------------------------------------------------
@@ -141,7 +140,8 @@ void main()
 
     
     vec3 V = normalize(viewPosition - wolrdPosition);
-    vec2 uv = textCoords;// parallaxOcclusionMapping(textCoords, V);
+    //vec2 uv = textCoords;
+    vec2 uv = parallaxOcclusionMapping(textCoords, V);
     vec3 N = getNormalFromMap(uv);
 
     vec3 albedo = pow(texture(colSampler, uv).rgb, vec3(2.2));
@@ -195,6 +195,30 @@ void main()
         // add to outgoing radiance Lo
         Lo += (kD * albedo / PI + specular) * radiance * NdotL;  // note that we already multiplied the BRDF by the Fresnel (kS) so we won't multiply by kS again
     }
+
+    // directional light 
+    vec3 L = vec3(ubo.directionalLight.direction);
+    vec3 H = normalize(V + L);
+    float attenuation = 1.0;
+    vec3 radiance = ubo.directionalLight.color.xyz * ubo.directionalLight.color.w * attenuation;
+
+    // Cook-Torrance BRDF
+    float NDF = DistributionGGX(N, H, roughness);   
+    float G   = GeometrySmith(N, V, L, roughness);      
+    vec3 F    = fresnelSchlick(max(dot(H, V), 0.0), F0);
+           
+    vec3 numerator    = NDF * G * F; 
+    float denominator = 4.0 * max(dot(N, V), 0.0) * max(dot(N, L), 0.0) + 0.0001; // + 0.0001 to prevent divide by zero
+    vec3 specular = numerator / denominator;
+
+    vec3 kS = F;
+    vec3 kD = vec3(1.0) - kS;
+    kD *= 1.0 - metallic;	  
+
+    float NdotL = max(dot(N, L), 0.0);   
+    // add to outgoing radiance Lo
+    Lo += (kD * albedo / PI + specular) * radiance * NdotL;
+
  
     vec3 ambient = (ubo.ambientLightColor.xyz * ubo.ambientLightColor.w) * albedo * ao;
     

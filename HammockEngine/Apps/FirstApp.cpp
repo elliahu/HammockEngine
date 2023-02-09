@@ -18,8 +18,8 @@ Hmck::FirstApp::FirstApp()
 
 void Hmck::FirstApp::run()
 {
-    std::vector<std::unique_ptr<HmckBuffer>> uboBuffers{ HmckSwapChain::MAX_FRAMES_IN_FLIGHT };
 
+    std::vector<std::unique_ptr<HmckBuffer>> uboBuffers{ HmckSwapChain::MAX_FRAMES_IN_FLIGHT };
     for (int i = 0; i < uboBuffers.size(); i++)
     {
         uboBuffers[i] = std::make_unique<HmckBuffer>(
@@ -52,12 +52,15 @@ void Hmck::FirstApp::run()
         hmckRenderer.getSwapChainRenderPass(), 
         setLayouts
     };
+
     HmckLightSystem lightSystem{
         hmckDevice,
         hmckRenderer.getSwapChainRenderPass(),
         globalSetLayout->getDescriptorSetLayout()
     };
+
     HmckCollisionDetectionSystem collisionDetectionSystem{};
+
     HmckUISystem userInterfaceSystem{
         hmckDevice,
         hmckRenderer.getSwapChainRenderPass(),
@@ -75,6 +78,7 @@ void Hmck::FirstApp::run()
 	while (!hmckWindow.shouldClose())
 	{
         hmckWindow.pollEvents();
+
         // gameloop timing
         auto newTime = std::chrono::high_resolution_clock::now();
         float frameTime = std::chrono::duration<float, std::chrono::seconds::period>(newTime - currentTime).count();
@@ -84,7 +88,7 @@ void Hmck::FirstApp::run()
         camera.setViewYXZ(viewerObject.transformComponent.translation, viewerObject.transformComponent.rotation);
 
         float aspect = hmckRenderer.getAspectRatio();
-        camera.setPerspectiveProjection(glm::radians(50.f), aspect, 0.1f,  1000.f );
+        camera.setPerspectiveProjection(glm::radians(50.0f), aspect, 0.1f,  1000.f );
 
 		if (auto commandBuffer = hmckRenderer.beginFrame())
 		{
@@ -98,7 +102,7 @@ void Hmck::FirstApp::run()
                 gameObjects
             };
 
-            // update
+            // *********** UPDATE ************** //
             HmckGlobalUbo ubo{};
             ubo.projection = camera.getProjection();
             ubo.view = camera.getView();
@@ -106,10 +110,10 @@ void Hmck::FirstApp::run()
             lightSystem.update(frameInfo, ubo);
             uboBuffers[frameIndex]->writeToBuffer(&ubo);
 
-            // render
+            // ********************************* //
 			hmckRenderer.beginSwapChainRenderPass(commandBuffer);
-
-            // start rendering
+            // *********** RENDER ************** //
+            
 			renderSystem.renderGameObjects(frameInfo);
             lightSystem.render(frameInfo);
         
@@ -125,7 +129,7 @@ void Hmck::FirstApp::run()
             //    HmckLogger::debug("Vases intersect");
             //}
 
-            // end rendering
+            // ********************************** //
 			hmckRenderer.endSwapChainRenderPass(commandBuffer);
 			hmckRenderer.endFrame();
 		}
@@ -212,11 +216,11 @@ void Hmck::FirstApp::loadGameObjects()
 
     // Point light
     std::vector<glm::vec3> lightColors{
-         {1.f, .1f, .1f},
-         {.1f, .1f, 1.f},
-         {.1f, 1.f, .1f},
-         {1.f, 1.f, .1f},
-         {.1f, 1.f, 1.f},
+         //{1.f, .1f, .1f},
+         //{.1f, .1f, 1.f},
+         //{.1f, 1.f, .1f},
+         //{1.f, 1.f, .1f},
+         //{.1f, 1.f, 1.f},
          {1.f, 1.f, 1.f}, 
     };
     for (int i = 0; i < lightColors.size(); i++)
@@ -236,6 +240,6 @@ void Hmck::FirstApp::loadGameObjects()
     // Directional light
     auto directionalLight = HmckGameObject::createDirectionalLight();
     directionalLight.setName("Directional light");
-    //gameObjects.emplace(directionalLight.getId(), std::move(directionalLight));
+    gameObjects.emplace(directionalLight.getId(), std::move(directionalLight));
 
 }

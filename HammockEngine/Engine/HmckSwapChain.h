@@ -10,6 +10,9 @@
 
 #include "HmckDevice.h"
 
+#define FB_DIM 512
+#define FB_COLOR_FORMAT VK_FORMAT_R8G8B8A8_UNORM
+
 namespace Hmck {
 
     class HmckSwapChain {
@@ -89,4 +92,4 @@ namespace Hmck {
         size_t currentFrame = 0;
     };
 
-}  // namespace lve
+}  // namespace Hmck
