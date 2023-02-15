@@ -8,8 +8,7 @@ layout (location = 3) in vec2 uv;
 layout (location = 4) in vec3 tangent;
 
 //outputs
-layout (location = 0) out vec4 outPos;
-layout (location = 1) out vec3 outLightPos;
+layout (location = 0) out vec3 fragColor;
 
 struct PointLight
 {
@@ -35,17 +34,9 @@ layout (set = 0, binding = 0) uniform GlobalUbo
     int numLights;
 } ubo;
 
-// push constants
-layout (push_constant) uniform Push
-{
-    mat4 modelMatrix; // model matrix
-    mat4 normalMatrix; // using mat4 bcs alignment requirements
-} push;
 
 void main()
 {
-    gl_Position = ubo.projection * ubo.view * push.modelMatrix * vec4(position, 1.0);
-
-	outPos = vec4(position, 1.0);	
-	outLightPos = ubo.pointLights[0].position.xyz; 
+    fragColor = vec3(1);
+	gl_Position =  vec4(1);
 }

@@ -9,6 +9,7 @@
 #include <memory>
 
 #include "HmckDevice.h"
+#include "HmckUtils.h"
 
 #define FB_DIM 512
 #define FB_COLOR_FORMAT VK_FORMAT_R8G8B8A8_UNORM
@@ -16,6 +17,22 @@
 namespace Hmck {
 
     class HmckSwapChain {
+
+        struct FrameBufferAttachment {
+            VkImage image;
+            VkDeviceMemory mem;
+            VkImageView view;
+        };
+
+        struct OffscreenRenderPass {
+            int32_t width, height;
+            VkFramebuffer frameBuffer;
+            FrameBufferAttachment color, depth;
+            VkRenderPass renderPass;
+            VkSampler sampler;
+            VkDescriptorImageInfo descriptor;
+        };
+
     public:
         static constexpr int MAX_FRAMES_IN_FLIGHT = 2;
 
@@ -27,7 +44,10 @@ namespace Hmck {
         HmckSwapChain& operator=(const HmckSwapChain&) = delete;
 
         VkFramebuffer getFrameBuffer(int index) { return swapChainFramebuffers[index]; }
+        VkFramebuffer getOffscreenFrameBuffer() { return offscreenRenderPass.frameBuffer; }
         VkRenderPass getRenderPass() { return renderPass; }
+        VkRenderPass getOffscreenRenderPass() { return offscreenRenderPass.renderPass; }
+        VkDescriptorImageInfo getOffscreenDescriptorImageInfo() { return offscreenRenderPass.descriptor; }
         VkImageView getImageView(int index) { return swapChainImageViews[index]; }
         size_t imageCount() { return swapChainImages.size(); }
         VkFormat getSwapChainImageFormat() { return swapChainImageFormat; }
@@ -55,6 +75,7 @@ namespace Hmck {
         void createImageViews();
         void createDepthResources();
         void createRenderPass();
+        void createOffscreenRenderPass();
         void createFramebuffers();
         void createSyncObjects();
 
@@ -71,6 +92,8 @@ namespace Hmck {
 
         std::vector<VkFramebuffer> swapChainFramebuffers;
         VkRenderPass renderPass;
+
+        OffscreenRenderPass offscreenRenderPass;
 
         std::vector<VkImage> depthImages;
         std::vector<VkDeviceMemory> depthImageMemorys;

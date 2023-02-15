@@ -171,7 +171,35 @@ void Hmck::HmckRenderer::beginOffscreenRenderPass(VkCommandBuffer commandBuffer)
 	assert(isFrameInProgress() && "Cannot call beginOffscreenRenderPass if frame is not in progress");
 	assert(commandBuffer == getCurrentCommandBuffer() && "Cannot beginOffscreenRenderPass on command buffer from a different frame");
 
-	// TODO
+	// TODO 
+
+	VkRenderPassBeginInfo renderPassInfo{};
+	renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
+	renderPassInfo.renderPass = hmckSwapChain->getOffscreenRenderPass();
+	renderPassInfo.framebuffer = hmckSwapChain->getOffscreenFrameBuffer();
+
+	renderPassInfo.renderArea.offset = { 0, 0 };
+	renderPassInfo.renderArea.extent = hmckSwapChain->getSwapChainExtent();
+
+	std::array<VkClearValue, 2> clearValues{};
+	clearValues[0].color = { 1.0,0.0,0.0,1.0 }; // red clear color
+	clearValues[1].depthStencil = { 1.0f, 0 };
+
+	renderPassInfo.clearValueCount = static_cast<uint32_t>(clearValues.size());
+	renderPassInfo.pClearValues = clearValues.data();
+
+	vkCmdBeginRenderPass(commandBuffer, &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
+
+	VkViewport viewport{};
+	viewport.x = 0.0f;
+	viewport.y = 0.0f;
+	viewport.width = static_cast<float>(hmckSwapChain->getSwapChainExtent().width);
+	viewport.height = static_cast<float>(hmckSwapChain->getSwapChainExtent().height);
+	viewport.minDepth = 0.0f;
+	viewport.maxDepth = 1.0f;
+	VkRect2D scissor{ {0,0}, hmckSwapChain->getSwapChainExtent() };
+	vkCmdSetViewport(commandBuffer, 0, 1, &viewport);
+	vkCmdSetScissor(commandBuffer, 0, 1, &scissor);
 }
 
 void Hmck::HmckRenderer::endOffscreenRenderPass(VkCommandBuffer commandBuffer)
@@ -179,5 +207,5 @@ void Hmck::HmckRenderer::endOffscreenRenderPass(VkCommandBuffer commandBuffer)
 	assert(isFrameInProgress() && "Cannot call endOffscreenRenderPass if frame is not in progress");
 	assert(commandBuffer == getCurrentCommandBuffer() && "Cannot endOffscreenRenderPass on command buffer from a different frame");
 
-	// TODO 
+	vkCmdEndRenderPass(commandBuffer);
 }

@@ -62,6 +62,7 @@ namespace Hmck
 		std::unique_ptr<HmckDescriptorPool> globalPool{};
 		std::unique_ptr<HmckDescriptorSetLayout> globalSetLayout{};
 		std::unique_ptr<HmckDescriptorSetLayout> materialLayout{};
+		std::unique_ptr<HmckDescriptorSetLayout> offscreenSamplerLayout{};
 		HmckGameObject::Map gameObjects;
 	};
 

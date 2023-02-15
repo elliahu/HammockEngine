@@ -39,6 +39,8 @@ namespace Hmck
 		HmckRenderer& operator=(const HmckRenderer&) = delete;
 
 		VkRenderPass getSwapChainRenderPass() const { return hmckSwapChain->getRenderPass(); }
+		VkRenderPass getOffscreenRenderPass() const { return hmckSwapChain->getOffscreenRenderPass(); }
+		VkDescriptorImageInfo getOffscreenDescriptorImageInfo() { return hmckSwapChain->getOffscreenDescriptorImageInfo(); }
 		float getAspectRatio() const { return hmckSwapChain->extentAspectRatio(); }
 		bool isFrameInProgress() const { return isFrameStarted; }
 

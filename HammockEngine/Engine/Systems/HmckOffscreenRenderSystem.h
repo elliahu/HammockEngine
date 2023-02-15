@@ -44,6 +44,7 @@ namespace Hmck
 		HmckDevice& hmckDevice;
 		std::unique_ptr<HmckPipeline> pipeline;
 		VkPipelineLayout pipelineLayout;
+		VkDescriptorSet descriptorSet;
 	};
 }
 

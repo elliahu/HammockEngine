@@ -1,11 +1,10 @@
 #version 450
 
 //inputs
-layout (location = 0) in vec4 inPos;
-layout (location = 1) in vec3 inLightPos;
+layout (location = 0) in vec3 fragColor;
 
 // outputs
-layout (location = 0) out float outColor;
+layout (location = 0) out vec4 outColor;
 
 struct PointLight
 {
@@ -38,10 +37,8 @@ layout (push_constant) uniform Push
     mat4 normalMatrix; // using mat4 bcs alignment requirements
 } push;
 
-
 void main()
 {
-    // Store distance to light as 32 bit float value
-    vec3 lightVec = inPos.xyz - inLightPos;
-    outColor = length(lightVec);
+    // red output
+    outColor = vec4(fragColor,1.0);
 }

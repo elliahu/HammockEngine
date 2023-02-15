@@ -6,6 +6,7 @@ Hmck::HmckOffscreenRenderSystem::HmckOffscreenRenderSystem(
 {
 	createPipelineLayout(setLayouts);
 	createPipeline(renderPass);
+
 }
 
 Hmck::HmckOffscreenRenderSystem::~HmckOffscreenRenderSystem()
@@ -16,6 +17,21 @@ Hmck::HmckOffscreenRenderSystem::~HmckOffscreenRenderSystem()
 void Hmck::HmckOffscreenRenderSystem::renderOffscreen(HmckFrameInfo& frameInfo)
 {
 	// TODO
+	pipeline->bind(frameInfo.commandBuffer);
+
+	// bind global descriptor set
+	vkCmdBindDescriptorSets(
+		frameInfo.commandBuffer,
+		VK_PIPELINE_BIND_POINT_GRAPHICS,
+		pipelineLayout,
+		0, 1,
+		&frameInfo.globalDescriptorSet,
+		0,
+		nullptr
+	);
+
+	// bind image sampler descriptor set
+
 }
 
 void Hmck::HmckOffscreenRenderSystem::createPipelineLayout(std::vector<VkDescriptorSetLayout>& setLayouts)

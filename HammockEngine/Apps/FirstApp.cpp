@@ -13,7 +13,10 @@ Hmck::FirstApp::FirstApp()
 
     globalSetLayout = HmckDescriptorSetLayout::Builder(hmckDevice)
         .addBinding(0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_ALL_GRAPHICS)
-        .addBinding(1, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT)
+        .build();
+
+    offscreenSamplerLayout = HmckDescriptorSetLayout::Builder(hmckDevice)
+        .addBinding(0, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT)
         .build();
 }
 
@@ -42,22 +45,34 @@ void Hmck::FirstApp::run()
             .build(globalDescriptorSets[i]);
     }
 
-    std::vector<VkDescriptorSetLayout> setLayouts{
+    VkDescriptorSet offscreenSamplerDescriptorSet;
+    auto imageInfo = hmckRenderer.getOffscreenDescriptorImageInfo();
+    HmckDescriptorWriter(*offscreenSamplerLayout, *globalPool)
+        .writeImage(0, &imageInfo)
+        .build(offscreenSamplerDescriptorSet);
+
+
+    std::vector<VkDescriptorSetLayout> sceneSetLayouts{
         globalSetLayout->getDescriptorSetLayout(),
-        materialLayout->getDescriptorSetLayout()
+        materialLayout->getDescriptorSetLayout(),
+        offscreenSamplerLayout->getDescriptorSetLayout()
+    };
+
+    std::vector<VkDescriptorSetLayout> offscreenSetLayouts{
+        globalSetLayout->getDescriptorSetLayout(),
     };
 
     // systems
 	HmckRenderSystem renderSystem{ 
         hmckDevice,
         hmckRenderer.getSwapChainRenderPass(), 
-        setLayouts
+        sceneSetLayouts
     };
 
     HmckOffscreenRenderSystem offscreenRenderSystem{
         hmckDevice,
-        hmckRenderer.getSwapChainRenderPass(), // TODO get offscreen render pass
-        setLayouts
+        hmckRenderer.getOffscreenRenderPass(), 
+        offscreenSetLayouts
     };
 
     HmckLightSystem lightSystem{
@@ -107,6 +122,7 @@ void Hmck::FirstApp::run()
                 commandBuffer,
                 camera,
                 globalDescriptorSets[frameIndex],
+                offscreenSamplerDescriptorSet,
                 gameObjects
             };
 

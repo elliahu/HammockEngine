@@ -81,6 +81,16 @@ void Hmck::HmckRenderSystem::renderGameObjects(HmckFrameInfo& frameInfo)
 			);
 		}
 
+		vkCmdBindDescriptorSets(
+			frameInfo.commandBuffer,
+			VK_PIPELINE_BIND_POINT_GRAPHICS,
+			pipelineLayout,
+			2, 1,
+			&frameInfo.offscreenDescriptorSet,
+			0,
+			nullptr
+		);
+
 		HmckModelPushConstantData push{};
 		push.modelMatrix = obj.transformComponent.mat4();
 		push.normalMatrix = obj.transformComponent.normalMatrix();
@@ -98,4 +108,5 @@ void Hmck::HmckRenderSystem::renderGameObjects(HmckFrameInfo& frameInfo)
 		obj.modelComponent->model->bind(frameInfo.commandBuffer);
 		obj.modelComponent->model->draw(frameInfo.commandBuffer);
 	}
+
 }

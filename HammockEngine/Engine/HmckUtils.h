@@ -16,4 +16,43 @@ namespace Hmck
 		(hashCombine(seed, rest), ...);
 	};
 
+	namespace Init 
+	{
+		inline VkImageCreateInfo imageCreateInfo()
+		{
+			VkImageCreateInfo imageCreateInfo{};
+			imageCreateInfo.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
+			return imageCreateInfo;
+		}
+
+		inline VkMemoryAllocateInfo memoryAllocateInfo()
+		{
+			VkMemoryAllocateInfo memAllocInfo{};
+			memAllocInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
+			return memAllocInfo;
+		}
+
+		inline VkImageViewCreateInfo imageViewCreateInfo()
+		{
+			VkImageViewCreateInfo imageViewCreateInfo{};
+			imageViewCreateInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
+			return imageViewCreateInfo;
+		}
+
+		inline VkSamplerCreateInfo samplerCreateInfo()
+		{
+			VkSamplerCreateInfo samplerCreateInfo{};
+			samplerCreateInfo.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
+			samplerCreateInfo.maxAnisotropy = 1.0f;
+			return samplerCreateInfo;
+		}
+
+		inline VkFramebufferCreateInfo framebufferCreateInfo()
+		{
+			VkFramebufferCreateInfo framebufferCreateInfo{};
+			framebufferCreateInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
+			return framebufferCreateInfo;
+		}
+	} // namespace Init
+
 } // namespace Hmck

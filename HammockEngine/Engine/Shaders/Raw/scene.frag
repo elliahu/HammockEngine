@@ -18,6 +18,8 @@ layout(set = 1, binding = 3) uniform sampler2D metalSampler;
 layout(set = 1, binding = 4) uniform sampler2D aoSampler;
 layout(set = 1, binding = 5) uniform sampler2D disSampler;
 
+// offscreen sampler
+layout(set = 2, binding = 0) uniform sampler2D offscreenSampler;
 
 struct PointLight
 {
@@ -230,4 +232,6 @@ void main()
     color = pow(color, vec3(1.0/2.2)); 
 
     outColor = vec4(color, 1.0);
+    
+    //outColor = texture(offscreenSampler, gl_FragCoord.xy);
 }
