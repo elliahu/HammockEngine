@@ -30,8 +30,7 @@ void Hmck::HmckOffscreenRenderSystem::renderOffscreen(HmckFrameInfo& frameInfo)
 		nullptr
 	);
 
-	// bind image sampler descriptor set
-
+	// nothing to render for now
 }
 
 void Hmck::HmckOffscreenRenderSystem::createPipelineLayout(std::vector<VkDescriptorSetLayout>& setLayouts)
