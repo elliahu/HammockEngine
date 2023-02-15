@@ -66,6 +66,7 @@ namespace Hmck
 		VkPipeline graphicsPipeline;
 		VkShaderModule vertShaderModule;
 		VkShaderModule fragShaderModule;
+		//VkShaderModule geomShaderModule;
 	};
 }
 

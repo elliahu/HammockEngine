@@ -124,7 +124,6 @@ void Hmck::HmckRenderer::endFrame()
 
 	currentFrameIndex = (currentFrameIndex + 1) % HmckSwapChain::MAX_FRAMES_IN_FLIGHT;
 }
-
 void Hmck::HmckRenderer::beginSwapChainRenderPass(VkCommandBuffer commandBuffer)
 {
 	assert(isFrameInProgress() && "Cannot call beginSwapChainRenderPass if frame is not in progress");
@@ -165,4 +164,20 @@ void Hmck::HmckRenderer::endSwapChainRenderPass(VkCommandBuffer commandBuffer)
 	assert(commandBuffer == getCurrentCommandBuffer() && "Cannot end render pass on command buffer from a different frame");
 
 	vkCmdEndRenderPass(commandBuffer);
+}
+
+void Hmck::HmckRenderer::beginOffscreenRenderPass(VkCommandBuffer commandBuffer)
+{
+	assert(isFrameInProgress() && "Cannot call beginOffscreenRenderPass if frame is not in progress");
+	assert(commandBuffer == getCurrentCommandBuffer() && "Cannot beginOffscreenRenderPass on command buffer from a different frame");
+
+	// TODO
+}
+
+void Hmck::HmckRenderer::endOffscreenRenderPass(VkCommandBuffer commandBuffer)
+{
+	assert(isFrameInProgress() && "Cannot call endOffscreenRenderPass if frame is not in progress");
+	assert(commandBuffer == getCurrentCommandBuffer() && "Cannot endOffscreenRenderPass on command buffer from a different frame");
+
+	// TODO 
 }

@@ -18,9 +18,7 @@ void Hmck::HmckRenderSystem::createPipelineLayout(std::vector<VkDescriptorSetLay
 	VkPushConstantRange pushConstantRange{};
 	pushConstantRange.stageFlags = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT;
 	pushConstantRange.offset = 0;
-	pushConstantRange.size = sizeof(HmckPushConstantData);
-
-	//std::vector<VkDescriptorSetLayout> descriptorSetLayouts{ globalDescriptorLayout};
+	pushConstantRange.size = sizeof(HmckModelPushConstantData);
 
 	VkPipelineLayoutCreateInfo pipelineLayoutInfo{};
 	pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
@@ -43,16 +41,16 @@ void Hmck::HmckRenderSystem::createPipeline(VkRenderPass renderPass)
 	HmckPipeline::defaultHmckPipelineConfigInfo(pipelineConfig);
 	pipelineConfig.renderPass = renderPass;
 	pipelineConfig.pipelineLayout = pipelineLayout;
-	hmckPipeline = std::make_unique<HmckPipeline>(
+	pipeline = std::make_unique<HmckPipeline>(
 		hmckDevice,
-		std::string(SHADERS_DIR) + "Compiled/shader.vert.spv",
-		std::string(SHADERS_DIR) + "Compiled/shader.frag.spv",
+		std::string(SHADERS_DIR) + "Compiled/scene.vert.spv",
+		std::string(SHADERS_DIR) + "Compiled/scene.frag.spv",
 		pipelineConfig
 	);
 }
 void Hmck::HmckRenderSystem::renderGameObjects(HmckFrameInfo& frameInfo)
 {
-	hmckPipeline->bind(frameInfo.commandBuffer);
+	pipeline->bind(frameInfo.commandBuffer);
 
 	// bind descriptor set
 	vkCmdBindDescriptorSets(
@@ -83,7 +81,7 @@ void Hmck::HmckRenderSystem::renderGameObjects(HmckFrameInfo& frameInfo)
 			);
 		}
 
-		HmckPushConstantData push{};
+		HmckModelPushConstantData push{};
 		push.modelMatrix = obj.transformComponent.mat4();
 		push.normalMatrix = obj.transformComponent.normalMatrix();
 
@@ -93,7 +91,7 @@ void Hmck::HmckRenderSystem::renderGameObjects(HmckFrameInfo& frameInfo)
 			pipelineLayout,
 			VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT,
 			0,
-			sizeof(HmckPushConstantData),
+			sizeof(HmckModelPushConstantData),
 			&push
 		);
 

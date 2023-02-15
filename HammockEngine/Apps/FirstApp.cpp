@@ -13,6 +13,7 @@ Hmck::FirstApp::FirstApp()
 
     globalSetLayout = HmckDescriptorSetLayout::Builder(hmckDevice)
         .addBinding(0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_ALL_GRAPHICS)
+        .addBinding(1, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT)
         .build();
 }
 
@@ -53,6 +54,12 @@ void Hmck::FirstApp::run()
         setLayouts
     };
 
+    HmckOffscreenRenderSystem offscreenRenderSystem{
+        hmckDevice,
+        hmckRenderer.getSwapChainRenderPass(), // TODO get offscreen render pass
+        setLayouts
+    };
+
     HmckLightSystem lightSystem{
         hmckDevice,
         hmckRenderer.getSwapChainRenderPass(),
@@ -90,6 +97,7 @@ void Hmck::FirstApp::run()
         float aspect = hmckRenderer.getAspectRatio();
         camera.setPerspectiveProjection(glm::radians(50.0f), aspect, 0.1f,  1000.f );
 
+        // start a new frame
 		if (auto commandBuffer = hmckRenderer.beginFrame())
 		{
             int frameIndex = hmckRenderer.getFrameIndex();
@@ -102,7 +110,7 @@ void Hmck::FirstApp::run()
                 gameObjects
             };
 
-            // *********** UPDATE ************** //
+            // UPDATE 
             HmckGlobalUbo ubo{};
             ubo.projection = camera.getProjection();
             ubo.view = camera.getView();
@@ -110,26 +118,26 @@ void Hmck::FirstApp::run()
             lightSystem.update(frameInfo, ubo);
             uboBuffers[frameIndex]->writeToBuffer(&ubo);
 
-            // ********************************* //
+            // RENDER
+            // offscreen
+            hmckRenderer.beginOffscreenRenderPass(commandBuffer);
+
+            offscreenRenderSystem.renderOffscreen(frameInfo);
+
+            hmckRenderer.endOffscreenRenderPass(commandBuffer);
+            // on screen
 			hmckRenderer.beginSwapChainRenderPass(commandBuffer);
-            // *********** RENDER ************** //
+            
             
 			renderSystem.renderGameObjects(frameInfo);
             lightSystem.render(frameInfo);
         
-            // UI
+            // ui
             userInterfaceSystem.beginUserInterface();
             userInterfaceSystem.showDebugStats(viewerObject);
             userInterfaceSystem.showGameObjectsInspector(gameObjects);
             userInterfaceSystem.endUserInterface(commandBuffer);
             
-            // check if vases colide
-            //if (collisionDetectionSystem.intersect(gameObjects.at(0), gameObjects.at(1)))
-            //{
-            //    HmckLogger::debug("Vases intersect");
-            //}
-
-            // ********************************** //
 			hmckRenderer.endSwapChainRenderPass(commandBuffer);
 			hmckRenderer.endFrame();
 		}

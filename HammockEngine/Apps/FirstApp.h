@@ -7,6 +7,7 @@
 #include "Systems/HmckLightSystem.h"
 #include "Systems/HmckRenderSystem.h"
 #include "Systems/HmckUISystem.h"
+#include "Systems/HmckOffscreenRenderSystem.h"
 #include "HmckModel.h"
 #include "HmckCamera.h"
 #include "Controllers/KeyboardMovementController.h"

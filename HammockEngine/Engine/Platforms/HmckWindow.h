@@ -9,16 +9,6 @@ namespace Hmck
 {
 	class HmckWindow
 	{
-	private:
-		GLFWwindow* window;
-		int width;
-		int height;
-		bool framebufferResized = false;
-		std::string windowName;
-
-		void initWindow();
-		static void framebufferResizeCallback(GLFWwindow* window, int width, int height);
-
 	public:
 		HmckWindow(int windowWidth, int windowHeight, std::string _windowName);
 		~HmckWindow();
@@ -35,6 +25,17 @@ namespace Hmck
 		void resetWindowResizedFlag() { framebufferResized = false; }
 		GLFWwindow* getGLFWwindow() const { return window; }
 		void pollEvents() { glfwPollEvents(); }
+
+
+	private:
+		GLFWwindow* window;
+		int width;
+		int height;
+		bool framebufferResized = false;
+		std::string windowName;
+
+		void initWindow();
+		static void framebufferResizeCallback(GLFWwindow* window, int width, int height);
 	};
 } 
 

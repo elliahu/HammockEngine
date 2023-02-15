@@ -56,6 +56,8 @@ namespace Hmck
 
 		VkCommandBuffer beginFrame();
 		void endFrame();
+		void beginOffscreenRenderPass(VkCommandBuffer commandBuffer);
+		void endOffscreenRenderPass(VkCommandBuffer commandBuffer);
 		void beginSwapChainRenderPass(VkCommandBuffer commandBuffer);
 		void endSwapChainRenderPass(VkCommandBuffer commandBuffer);
 

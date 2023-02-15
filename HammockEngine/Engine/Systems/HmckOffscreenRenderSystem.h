@@ -19,46 +19,32 @@
 #include <stdexcept>
 
 #ifndef SHADERS_DIR
-	#define SHADERS_DIR "../../HammockEngine/Engine/Shaders/"
+#define SHADERS_DIR "../../HammockEngine/Engine/Shaders/"
 #endif
-
-
-
-/*
- *	A system is a process which acts on all GameObjects with the desired components.
- */
-
-/*
-	At this point app functions as a Master Render System
-	and this class function as subsystem
-
-	subject to change in near future
-*/
 
 namespace Hmck
 {
-	class HmckRenderSystem
+	class HmckOffscreenRenderSystem
 	{
 	public:
-		HmckRenderSystem(HmckDevice& device, VkRenderPass renderPass, std::vector<VkDescriptorSetLayout>& setLayouts);
-		~HmckRenderSystem();
+
+		HmckOffscreenRenderSystem(HmckDevice& device, VkRenderPass renderPass, std::vector<VkDescriptorSetLayout>& setLayouts);
+		~HmckOffscreenRenderSystem();
 
 		// delete copy constructor and copy destructor
-		HmckRenderSystem(const HmckRenderSystem&) = delete;
-		HmckRenderSystem& operator=(const HmckRenderSystem&) = delete;
+		HmckOffscreenRenderSystem(const HmckOffscreenRenderSystem&) = delete;
+		HmckOffscreenRenderSystem& operator=(const HmckOffscreenRenderSystem&) = delete;
 
-		void renderGameObjects(HmckFrameInfo& frameInfo);
+		void renderOffscreen(HmckFrameInfo& frameInfo);
 
 	private:
 		void createPipelineLayout(std::vector<VkDescriptorSetLayout>& setLayouts);
 		void createPipeline(VkRenderPass renderPass);
-		
 
 		HmckDevice& hmckDevice;
 		std::unique_ptr<HmckPipeline> pipeline;
 		VkPipelineLayout pipelineLayout;
-		
-		
 	};
-
 }
+
+

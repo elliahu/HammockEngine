@@ -99,6 +99,9 @@
     <ClCompile Include="Engine\HmckMaterial.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="Engine\Systems\HmckOffscreenRenderSystem.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Apps\FirstApp.h">
@@ -188,6 +191,9 @@
     <ClInclude Include="Engine\HmckMaterial.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="Engine\Systems\HmckOffscreenRenderSystem.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="compile.bat">
@@ -195,7 +201,10 @@
     </None>
     <None Include="Engine\Shaders\Raw\point_light.frag" />
     <None Include="Engine\Shaders\Raw\point_light.vert" />
-    <None Include="Engine\Shaders\Raw\shader.frag" />
-    <None Include="Engine\Shaders\Raw\shader.vert" />
+    <None Include="Engine\Shaders\Raw\scene.frag" />
+    <None Include="Engine\Shaders\Raw\scene.vert" />
+    <None Include="packages.config" />
+    <None Include="Engine\Shaders\Raw\offscreen.frag" />
+    <None Include="Engine\Shaders\Raw\offscreen.vert" />
   </ItemGroup>
 </Project>

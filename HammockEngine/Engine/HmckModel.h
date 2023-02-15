@@ -22,6 +22,15 @@
 
 namespace Hmck
 {
+	// scalar float: N = 4 Bytes
+	// vec2: 2N = 8 Bytes
+	// vec3 (or vec4): 4N = 16 Bytes
+	// taken from 15.6.4 Offset and Stride Assignment
+	struct HmckModelPushConstantData {
+		glm::mat4 modelMatrix{ 1.f };
+		glm::mat4 normalMatrix{ 1.f };
+	};
+
 	class HmckModel
 	{
 	public:
