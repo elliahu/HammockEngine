@@ -27,7 +27,7 @@ namespace Hmck {
         struct OffscreenRenderPass {
             int32_t width, height;
             VkFramebuffer frameBuffer;
-            FrameBufferAttachment color, depth;
+            FrameBufferAttachment depth;
             VkRenderPass renderPass;
             VkSampler sampler;
             VkDescriptorImageInfo descriptor;

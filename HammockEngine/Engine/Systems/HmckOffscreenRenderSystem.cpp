@@ -6,7 +6,6 @@ Hmck::HmckOffscreenRenderSystem::HmckOffscreenRenderSystem(
 {
 	createPipelineLayout(setLayouts);
 	createPipeline(renderPass);
-
 }
 
 Hmck::HmckOffscreenRenderSystem::~HmckOffscreenRenderSystem()
@@ -17,6 +16,15 @@ Hmck::HmckOffscreenRenderSystem::~HmckOffscreenRenderSystem()
 void Hmck::HmckOffscreenRenderSystem::renderOffscreen(HmckFrameInfo& frameInfo)
 {
 	// TODO
+	
+	// Set depth bias (aka "Polygon offset")
+	// Required to avoid shadow mapping artifacts
+	vkCmdSetDepthBias(
+		frameInfo.commandBuffer,
+		depthBiasConstant,
+		0.0f,
+		depthBiasSlope);
+
 	pipeline->bind(frameInfo.commandBuffer);
 
 	// bind global descriptor set
@@ -30,7 +38,28 @@ void Hmck::HmckOffscreenRenderSystem::renderOffscreen(HmckFrameInfo& frameInfo)
 		nullptr
 	);
 
-	// nothing to render for now
+	for (auto& kv : frameInfo.gameObjects)
+	{
+		auto& obj = kv.second;
+		if (obj.modelComponent == nullptr) continue;
+
+		HmckModelPushConstantData push{};
+		push.modelMatrix = obj.transformComponent.mat4();
+		push.normalMatrix = obj.transformComponent.normalMatrix();
+
+		// push data using push constant
+		vkCmdPushConstants(
+			frameInfo.commandBuffer,
+			pipelineLayout,
+			VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT,
+			0,
+			sizeof(HmckModelPushConstantData),
+			&push
+		);
+
+		obj.modelComponent->model->bind(frameInfo.commandBuffer);
+		obj.modelComponent->model->draw(frameInfo.commandBuffer);
+	}
 }
 
 void Hmck::HmckOffscreenRenderSystem::createPipelineLayout(std::vector<VkDescriptorSetLayout>& setLayouts)

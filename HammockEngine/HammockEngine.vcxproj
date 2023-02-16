@@ -232,7 +232,7 @@
     </PostBuildEvent>
     <PreBuildEvent>
       <Command>
-call .\compile.bat</Command>
+call .\compile_shaders.bat</Command>
       <Message>Compile shaders</Message>
     </PreBuildEvent>
   </ItemDefinitionGroup>

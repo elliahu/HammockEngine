@@ -6,6 +6,7 @@ layout (location = 1) in vec3 fragPosWorld;
 layout (location = 2) in vec3 fragNormalWorld;
 layout (location = 3) in vec2 textCoords;
 layout (location = 4) in vec3 tangentNormal;
+layout (location = 5) in vec4 shadowCoord;
 
 // outputs
 layout (location = 0) out vec4 outColor;
@@ -19,7 +20,7 @@ layout(set = 1, binding = 4) uniform sampler2D aoSampler;
 layout(set = 1, binding = 5) uniform sampler2D disSampler;
 
 // offscreen sampler
-layout(set = 2, binding = 0) uniform sampler2D offscreenSampler;
+layout(set = 2, binding = 0) uniform sampler2D shadowMap;
 
 struct PointLight
 {
@@ -34,11 +35,13 @@ struct DirectionalLight
     vec4 color;
 };
 
+
 layout (set = 0, binding = 0) uniform GlobalUbo
 {
     mat4 projection;
     mat4 view;
     mat4 inverseView;
+    mat4 depthBiasMVP;
     vec4 ambientLightColor; // w is intensity
     DirectionalLight directionalLight;
     PointLight pointLights[10];
@@ -134,6 +137,44 @@ vec2 parallaxOcclusionMapping(vec2 uv, vec3 viewDir)
 	return mix(currUV, prevUV, nextDepth / (nextDepth - prevDepth));
 }
 // ----------------------
+
+float textureProj(vec4 shadowCoord, vec2 off)
+{
+	float shadow = 1.0;
+	if ( shadowCoord.z > -1.0 && shadowCoord.z < 1.0 ) 
+	{
+		float dist = texture( shadowMap, shadowCoord.st + off ).r;
+		if ( shadowCoord.w > 0.0 && dist < shadowCoord.z ) 
+		{
+			shadow = ubo.ambientLightColor.w;
+		}
+	}
+	return shadow;
+}
+
+float filterPCF(vec4 sc)
+{
+	ivec2 texDim = textureSize(shadowMap, 0);
+	float scale = 1.5;
+	float dx = scale * 1.0 / float(texDim.x);
+	float dy = scale * 1.0 / float(texDim.y);
+
+	float shadowFactor = 0.0;
+	int count = 0;
+	int range = 1;
+	
+	for (int x = -range; x <= range; x++)
+	{
+		for (int y = -range; y <= range; y++)
+		{
+			shadowFactor += textureProj(sc, vec2(dx*x, dy*y));
+			count++;
+		}
+	
+	}
+	return shadowFactor / count;
+}
+
 // MAIN
 void main()
 {
@@ -146,10 +187,15 @@ void main()
     vec2 uv = parallaxOcclusionMapping(textCoords, V);
     vec3 N = getNormalFromMap(uv);
 
-    vec3 albedo = pow(texture(colSampler, uv).rgb, vec3(2.2));
+    vec3 albedo = /*vec3(texture(shadowMap, uv).x);//*/pow(texture(colSampler, uv).rgb, vec3(2.2));
     float metallic  = texture(metalSampler, uv).r;
     float roughness = texture(roughSampler, uv).r;
     float ao        = texture(aoSampler, uv).r;
+
+    // compute shadows
+    int enablePCF = 1;
+    float shadow = (enablePCF == 1) ? filterPCF(shadowCoord / shadowCoord.w) : textureProj(shadowCoord / shadowCoord.w, vec2(0.0));
+
 
     // calculate reflectance at normal incidence; if dia-electric (like plastic) use F0 
     // of 0.04 and if it's a metal, use the albedo color as F0 (metallic workflow)    
@@ -224,14 +270,12 @@ void main()
  
     vec3 ambient = (ubo.ambientLightColor.xyz * ubo.ambientLightColor.w) * albedo * ao;
     
-    vec3 color = ambient + Lo;
+    vec3 color = ambient + Lo * shadow;
      
     // HDR tonemapping    
     color = color / (color + vec3(1.0)); 
     // gamma correction
     color = pow(color, vec3(1.0/2.2)); 
 
-    outColor = vec4(color, 1.0);
-    
-    //outColor = texture(offscreenSampler, gl_FragCoord.xy);
+    outColor = vec4(color , 1.0);
 }

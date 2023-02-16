@@ -26,6 +26,11 @@ namespace Hmck
 {
 	class HmckOffscreenRenderSystem
 	{
+		struct OffscreenPushConstantData 
+		{
+			glm::mat4 offscreenMVP;
+		};
+
 	public:
 
 		HmckOffscreenRenderSystem(HmckDevice& device, VkRenderPass renderPass, std::vector<VkDescriptorSetLayout>& setLayouts);
@@ -45,6 +50,12 @@ namespace Hmck
 		std::unique_ptr<HmckPipeline> pipeline;
 		VkPipelineLayout pipelineLayout;
 		VkDescriptorSet descriptorSet;
+
+		// Depth bias (and slope) are used to avoid shadowing artifacts
+		// Constant depth bias factor (always applied)
+		float depthBiasConstant = 1.25f;
+		// Slope depth bias factor, applied depending on polygon's slope
+		float depthBiasSlope = 1.75f;
 	};
 }
 

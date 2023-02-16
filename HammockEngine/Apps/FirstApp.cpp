@@ -45,6 +45,8 @@ void Hmck::FirstApp::run()
             .build(globalDescriptorSets[i]);
     }
 
+    // TODO recreate this when extent is changed or it will crash
+    // TODO no reason to have this in application, move to renderer
     VkDescriptorSet offscreenSamplerDescriptorSet;
     auto imageInfo = hmckRenderer.getOffscreenDescriptorImageInfo();
     HmckDescriptorWriter(*offscreenSamplerLayout, *globalPool)
@@ -132,6 +134,10 @@ void Hmck::FirstApp::run()
             ubo.view = camera.getView();
             ubo.inverseView = camera.getInverseView();
             lightSystem.update(frameInfo, ubo);
+            glm::mat4 depthProjectionMatrix = glm::perspective(glm::radians(45.0f), 1.0f, 0.1f, 25.0f);
+            glm::mat4 depthViewMatrix = glm::lookAt(glm::vec3(10.f, -10.f, -10.f), glm::vec3(0.0f), glm::vec3(0, 1, 0));
+            glm::mat4 depthModelMatrix = glm::mat4(1.0f);
+            ubo.depthBiasMVP = depthProjectionMatrix * depthViewMatrix * depthModelMatrix;
             uboBuffers[frameIndex]->writeToBuffer(&ubo);
 
             // RENDER

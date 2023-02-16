@@ -37,10 +37,7 @@ void Hmck::HmckPipeline::defaultHmckPipelineConfigInfo(HmckPipelineConfigInfo& c
     configInfo.rasterizationInfo.lineWidth = 1.0f;
     configInfo.rasterizationInfo.cullMode = VK_CULL_MODE_NONE;
     configInfo.rasterizationInfo.frontFace = VK_FRONT_FACE_CLOCKWISE;
-    configInfo.rasterizationInfo.depthBiasEnable = VK_FALSE;
-    configInfo.rasterizationInfo.depthBiasConstantFactor = 0.0f;  // Optional
-    configInfo.rasterizationInfo.depthBiasClamp = 0.0f;           // Optional
-    configInfo.rasterizationInfo.depthBiasSlopeFactor = 0.0f;     // Optional
+    configInfo.rasterizationInfo.depthBiasEnable = VK_TRUE;
 
     configInfo.multisampleInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO;
     configInfo.multisampleInfo.sampleShadingEnable = VK_FALSE;
@@ -82,7 +79,7 @@ void Hmck::HmckPipeline::defaultHmckPipelineConfigInfo(HmckPipelineConfigInfo& c
     configInfo.depthStencilInfo.front = {};  // Optional
     configInfo.depthStencilInfo.back = {};   // Optional
 
-    configInfo.dynamicStateEnables = { VK_DYNAMIC_STATE_VIEWPORT, VK_DYNAMIC_STATE_SCISSOR };
+    configInfo.dynamicStateEnables = { VK_DYNAMIC_STATE_VIEWPORT, VK_DYNAMIC_STATE_SCISSOR , VK_DYNAMIC_STATE_DEPTH_BIAS };
     configInfo.dynamicStateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO;
     configInfo.dynamicStateInfo.pDynamicStates = configInfo.dynamicStateEnables.data();
     configInfo.dynamicStateInfo.dynamicStateCount =
@@ -237,8 +234,5 @@ void Hmck::HmckPipeline::enablePolygonModeLine(HmckPipelineConfigInfo& configInf
     configInfo.rasterizationInfo.lineWidth = 1.0f;
     configInfo.rasterizationInfo.cullMode = VK_CULL_MODE_NONE;
     configInfo.rasterizationInfo.frontFace = VK_FRONT_FACE_CLOCKWISE;
-    configInfo.rasterizationInfo.depthBiasEnable = VK_FALSE;
-    configInfo.rasterizationInfo.depthBiasConstantFactor = 0.0f;  // Optional
-    configInfo.rasterizationInfo.depthBiasClamp = 0.0f;           // Optional
-    configInfo.rasterizationInfo.depthBiasSlopeFactor = 0.0f;     // Optional
+    configInfo.rasterizationInfo.depthBiasEnable = VK_TRUE;
 }

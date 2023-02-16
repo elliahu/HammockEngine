@@ -8,7 +8,6 @@ layout (location = 3) in vec2 uv;
 layout (location = 4) in vec3 tangent;
 
 //outputs
-layout (location = 0) out vec3 fragColor;
 
 struct PointLight
 {
@@ -28,15 +27,27 @@ layout (set = 0, binding = 0) uniform GlobalUbo
     mat4 projection;
     mat4 view;
     mat4 inverseView;
+    mat4 depthBiasMVP;
     vec4 ambientLightColor; // w is intensity
     DirectionalLight directionalLight;
     PointLight pointLights[10];
     int numLights;
 } ubo;
 
+out gl_PerVertex 
+{
+    vec4 gl_Position;   
+};
+
+// push constants
+layout (push_constant) uniform Push
+{
+    mat4 modelMatrix; // model matrix
+    mat4 normalMatrix; // using mat4 bcs alignment requirements
+} push;
+
 
 void main()
 {
-    fragColor = vec3(1);
-	gl_Position =  vec4(1);
+	gl_Position =  ubo.depthBiasMVP * (push.modelMatrix * vec4(position ,1.0));
 }

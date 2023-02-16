@@ -124,6 +124,7 @@ void Hmck::HmckRenderer::endFrame()
 
 	currentFrameIndex = (currentFrameIndex + 1) % HmckSwapChain::MAX_FRAMES_IN_FLIGHT;
 }
+
 void Hmck::HmckRenderer::beginSwapChainRenderPass(VkCommandBuffer commandBuffer)
 {
 	assert(isFrameInProgress() && "Cannot call beginSwapChainRenderPass if frame is not in progress");
@@ -181,11 +182,10 @@ void Hmck::HmckRenderer::beginOffscreenRenderPass(VkCommandBuffer commandBuffer)
 	renderPassInfo.renderArea.offset = { 0, 0 };
 	renderPassInfo.renderArea.extent = hmckSwapChain->getSwapChainExtent();
 
-	std::array<VkClearValue, 2> clearValues{};
-	clearValues[0].color = { 1.0,0.0,0.0,1.0 }; // red clear color
-	clearValues[1].depthStencil = { 1.0f, 0 };
+	std::array<VkClearValue, 1> clearValues{};
+	clearValues[0].depthStencil = { 1.0f, 0 };
 
-	renderPassInfo.clearValueCount = static_cast<uint32_t>(clearValues.size());
+	renderPassInfo.clearValueCount = 1;
 	renderPassInfo.pClearValues = clearValues.data();
 
 	vkCmdBeginRenderPass(commandBuffer, &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
