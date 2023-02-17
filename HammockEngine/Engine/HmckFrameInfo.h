@@ -58,7 +58,6 @@ namespace Hmck
 		VkCommandBuffer commandBuffer;
 		HmckCamera& camera;
 		VkDescriptorSet globalDescriptorSet;
-		VkDescriptorSet offscreenDescriptorSet;
 		HmckGameObject::Map& gameObjects;
 	};
 }

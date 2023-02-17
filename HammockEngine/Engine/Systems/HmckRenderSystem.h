@@ -47,16 +47,28 @@ namespace Hmck
 		HmckRenderSystem(const HmckRenderSystem&) = delete;
 		HmckRenderSystem& operator=(const HmckRenderSystem&) = delete;
 
+		VkDescriptorSet getDescriptorSet() { return descriptorSet; }
+		VkDescriptorSetLayout getDescriptorSetLayout() { return descriptorLayout->getDescriptorSetLayout(); }
+
+		void writeToDescriptorSet(VkDescriptorImageInfo& imageInfo);
+
 		void renderGameObjects(HmckFrameInfo& frameInfo);
+
 
 	private:
 		void createPipelineLayout(std::vector<VkDescriptorSetLayout>& setLayouts);
 		void createPipeline(VkRenderPass renderPass);
+		void prepareDescriptors();
 		
 
 		HmckDevice& hmckDevice;
 		std::unique_ptr<HmckPipeline> pipeline;
 		VkPipelineLayout pipelineLayout;
+
+		// descriptors
+		std::unique_ptr<HmckDescriptorPool> descriptorPool{};
+		std::unique_ptr<HmckDescriptorSetLayout> descriptorLayout{};
+		VkDescriptorSet descriptorSet;
 		
 		
 	};

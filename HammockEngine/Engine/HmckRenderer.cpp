@@ -127,8 +127,8 @@ void Hmck::HmckRenderer::endFrame()
 		hmckWindow.resetWindowResizedFlag();
 		recreateSwapChain();
 
-		freeOffscreenRenderPass();
-		recreateOffscreenRenderPass();
+		//freeOffscreenRenderPass();
+		//recreateOffscreenRenderPass();
 	}
 
 	else if (result != VK_SUCCESS)
@@ -196,7 +196,8 @@ void Hmck::HmckRenderer::beginOffscreenRenderPass(VkCommandBuffer commandBuffer)
 	renderPassInfo.framebuffer = offscreenRenderPass.frameBuffer;
 
 	renderPassInfo.renderArea.offset = { 0, 0 };
-	renderPassInfo.renderArea.extent = hmckSwapChain->getSwapChainExtent();
+	renderPassInfo.renderArea.extent.width = OFFSCREEN_RESOLUTION_WIDTH;
+	renderPassInfo.renderArea.extent.height = OFFSCREEN_RESOLUTION_HEIGHT;
 
 	std::array<VkClearValue, 1> clearValues{};
 	clearValues[0].depthStencil = { 1.0f, 0 };
@@ -209,11 +210,11 @@ void Hmck::HmckRenderer::beginOffscreenRenderPass(VkCommandBuffer commandBuffer)
 	VkViewport viewport{};
 	viewport.x = 0.0f;
 	viewport.y = 0.0f;
-	viewport.width = static_cast<float>(hmckSwapChain->getSwapChainExtent().width);
-	viewport.height = static_cast<float>(hmckSwapChain->getSwapChainExtent().height);
+	viewport.width = OFFSCREEN_RESOLUTION_WIDTH;
+	viewport.height = OFFSCREEN_RESOLUTION_HEIGHT;
 	viewport.minDepth = 0.0f;
 	viewport.maxDepth = 1.0f;
-	VkRect2D scissor{ {0,0}, hmckSwapChain->getSwapChainExtent() };
+	VkRect2D scissor{ {0,0}, {OFFSCREEN_RESOLUTION_WIDTH, OFFSCREEN_RESOLUTION_HEIGHT} };
 	vkCmdSetViewport(commandBuffer, 0, 1, &viewport);
 	vkCmdSetScissor(commandBuffer, 0, 1, &scissor);
 }
@@ -228,8 +229,8 @@ void Hmck::HmckRenderer::endOffscreenRenderPass(VkCommandBuffer commandBuffer)
 
 void Hmck::HmckRenderer::recreateOffscreenRenderPass()
 {
-	offscreenRenderPass.width = hmckSwapChain->width();
-	offscreenRenderPass.height = hmckSwapChain->height();
+	offscreenRenderPass.width = OFFSCREEN_RESOLUTION_WIDTH; //hmckSwapChain->width();
+	offscreenRenderPass.height = OFFSCREEN_RESOLUTION_HEIGHT;//hmckSwapChain->height();
 
 	// Find a suitable depth format
 	VkFormat fbDepthFormat = hmckSwapChain->findDepthFormat();
@@ -342,6 +343,7 @@ void Hmck::HmckRenderer::recreateOffscreenRenderPass()
 	renderPassInfo.pSubpasses = &subpass;
 	renderPassInfo.dependencyCount = static_cast<uint32_t>(dependencies.size());
 	renderPassInfo.pDependencies = dependencies.data();
+	
 
 	if (vkCreateRenderPass(hmckDevice.device(), &renderPassInfo, nullptr, &offscreenRenderPass.renderPass) != VK_SUCCESS) {
 		throw std::runtime_error("failed to create offscreen renderpass");

@@ -14,10 +14,6 @@ Hmck::App::App()
     globalSetLayout = HmckDescriptorSetLayout::Builder(hmckDevice)
         .addBinding(0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_ALL_GRAPHICS)
         .build();
-
-    offscreenSamplerLayout = HmckDescriptorSetLayout::Builder(hmckDevice)
-        .addBinding(0, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT)
-        .build();
 }
 
 void Hmck::App::run()
@@ -45,36 +41,25 @@ void Hmck::App::run()
             .build(globalDescriptorSets[i]);
     }
 
-    // TODO recreate this when extent is changed or it will crash
-    // TODO no reason to have this in application, move to renderer
-    VkDescriptorSet offscreenSamplerDescriptorSet;
-    auto imageInfo = hmckRenderer.getOffscreenDescriptorImageInfo();
-    HmckDescriptorWriter(*offscreenSamplerLayout, *globalPool)
-        .writeImage(0, &imageInfo)
-        .build(offscreenSamplerDescriptorSet);
-
+    // systems and layouts
+    
+    std::vector<VkDescriptorSetLayout> offscreenSetLayouts{
+        globalSetLayout->getDescriptorSetLayout(),
+    };
+    HmckOffscreenRenderSystem offscreenRenderSystem{
+        hmckDevice,
+        hmckRenderer.getOffscreenRenderPass(),
+        offscreenSetLayouts
+    };
 
     std::vector<VkDescriptorSetLayout> sceneSetLayouts{
         globalSetLayout->getDescriptorSetLayout(),
         materialLayout->getDescriptorSetLayout(),
-        offscreenSamplerLayout->getDescriptorSetLayout()
     };
-
-    std::vector<VkDescriptorSetLayout> offscreenSetLayouts{
-        globalSetLayout->getDescriptorSetLayout(),
-    };
-
-    // systems
 	HmckRenderSystem renderSystem{ 
         hmckDevice,
         hmckRenderer.getSwapChainRenderPass(), 
         sceneSetLayouts
-    };
-
-    HmckOffscreenRenderSystem offscreenRenderSystem{
-        hmckDevice,
-        hmckRenderer.getOffscreenRenderPass(), 
-        offscreenSetLayouts
     };
 
     HmckLightSystem lightSystem{
@@ -90,6 +75,10 @@ void Hmck::App::run()
         hmckRenderer.getSwapChainRenderPass(),
         hmckWindow
     };
+
+    // TODO this is ugly, thinking about restructure
+    VkDescriptorImageInfo imageInfo = hmckRenderer.getOffscreenDescriptorImageInfo();
+    renderSystem.writeToDescriptorSet(imageInfo);
 
     // camera and movement
     HmckCamera camera{};
@@ -124,7 +113,6 @@ void Hmck::App::run()
                 commandBuffer,
                 camera,
                 globalDescriptorSets[frameIndex],
-                offscreenSamplerDescriptorSet,
                 gameObjects
             };
 
@@ -133,6 +121,8 @@ void Hmck::App::run()
             ubo.projection = camera.getProjection();
             ubo.view = camera.getView();
             ubo.inverseView = camera.getInverseView();
+            // TODO make this not ubo as it is not used in all systems
+            // TODO make this get values from spectator object
             glm::mat4 depthProjectionMatrix = glm::perspective(glm::radians(45.0f), 1.0f, 0.1f, 25.0f);
             glm::mat4 depthViewMatrix = glm::lookAt(glm::vec3(10.f, -10.f, -10.f), glm::vec3(0.0f), glm::vec3(0, 1, 0));
             glm::mat4 depthModelMatrix = glm::mat4(1.0f);

@@ -4,6 +4,7 @@ Hmck::HmckRenderSystem::HmckRenderSystem(
 	HmckDevice& device, VkRenderPass renderPass, 
 	std::vector<VkDescriptorSetLayout>& setLayouts) : hmckDevice{ device }
 {
+	prepareDescriptors();
 	createPipelineLayout(setLayouts);
 	createPipeline(renderPass);
 }
@@ -15,6 +16,9 @@ Hmck::HmckRenderSystem::~HmckRenderSystem()
 
 void Hmck::HmckRenderSystem::createPipelineLayout(std::vector<VkDescriptorSetLayout>& setLayouts)
 {
+	std::vector<VkDescriptorSetLayout> layouts{ setLayouts };
+	layouts.push_back(descriptorLayout->getDescriptorSetLayout());
+
 	VkPushConstantRange pushConstantRange{};
 	pushConstantRange.stageFlags = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT;
 	pushConstantRange.offset = 0;
@@ -22,8 +26,8 @@ void Hmck::HmckRenderSystem::createPipelineLayout(std::vector<VkDescriptorSetLay
 
 	VkPipelineLayoutCreateInfo pipelineLayoutInfo{};
 	pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
-	pipelineLayoutInfo.setLayoutCount = static_cast<uint32_t>(setLayouts.size());
-	pipelineLayoutInfo.pSetLayouts = setLayouts.data();
+	pipelineLayoutInfo.setLayoutCount = static_cast<uint32_t>(layouts.size());
+	pipelineLayoutInfo.pSetLayouts = layouts.data();
 	pipelineLayoutInfo.pushConstantRangeCount = 1;
 	pipelineLayoutInfo.pPushConstantRanges = &pushConstantRange;
 
@@ -48,6 +52,8 @@ void Hmck::HmckRenderSystem::createPipeline(VkRenderPass renderPass)
 		pipelineConfig
 	);
 }
+
+
 void Hmck::HmckRenderSystem::renderGameObjects(HmckFrameInfo& frameInfo)
 {
 	pipeline->bind(frameInfo.commandBuffer);
@@ -86,7 +92,7 @@ void Hmck::HmckRenderSystem::renderGameObjects(HmckFrameInfo& frameInfo)
 			VK_PIPELINE_BIND_POINT_GRAPHICS,
 			pipelineLayout,
 			2, 1,
-			&frameInfo.offscreenDescriptorSet,
+			&descriptorSet,
 			0,
 			nullptr
 		);
@@ -109,4 +115,23 @@ void Hmck::HmckRenderSystem::renderGameObjects(HmckFrameInfo& frameInfo)
 		obj.modelComponent->model->draw(frameInfo.commandBuffer);
 	}
 
+}
+
+void Hmck::HmckRenderSystem::prepareDescriptors()
+{
+	descriptorPool = HmckDescriptorPool::Builder(hmckDevice)
+		.setMaxSets(100)
+		.addPoolSize(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1)
+		.build();
+
+	descriptorLayout = HmckDescriptorSetLayout::Builder(hmckDevice)
+		.addBinding(0, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT)
+		.build();
+}
+
+void Hmck::HmckRenderSystem::writeToDescriptorSet(VkDescriptorImageInfo& imageInfo)
+{
+	auto writer = HmckDescriptorWriter(*descriptorLayout, *descriptorPool)
+		.writeImage(0, &imageInfo)
+		.build(descriptorSet);
 }

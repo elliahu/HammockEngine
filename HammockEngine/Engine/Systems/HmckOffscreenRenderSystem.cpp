@@ -5,7 +5,7 @@ Hmck::HmckOffscreenRenderSystem::HmckOffscreenRenderSystem(
 	std::vector<VkDescriptorSetLayout>& setLayouts) : hmckDevice{ device }
 {
 	createPipelineLayout(setLayouts);
-	createPipeline(renderPass);
+	createPipeline(renderPass);		
 }
 
 Hmck::HmckOffscreenRenderSystem::~HmckOffscreenRenderSystem()
@@ -95,3 +95,6 @@ void Hmck::HmckOffscreenRenderSystem::createPipeline(VkRenderPass renderPass)
 		pipelineConfig
 		);
 }
+
+
+
