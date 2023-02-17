@@ -20,7 +20,7 @@ layout(set = 1, binding = 4) uniform sampler2D aoSampler;
 layout(set = 1, binding = 5) uniform sampler2D disSampler;
 
 // offscreen sampler
-layout(set = 2, binding = 0) uniform sampler2D shadowMap;
+layout(set = 2, binding = 0) uniform sampler2D directionalLightDepthMap;
 
 struct PointLight
 {
@@ -143,10 +143,10 @@ float textureProj(vec4 shadowCoord, vec2 off)
 	float shadow = 1.0;
 	if ( shadowCoord.z > -1.0 && shadowCoord.z < 1.0 ) 
 	{
-		float dist = texture( shadowMap, shadowCoord.st + off ).r;
+		float dist = texture( directionalLightDepthMap, shadowCoord.st + off ).r;
 		if ( shadowCoord.w > 0.0 && dist < shadowCoord.z ) 
 		{
-			shadow = ubo.ambientLightColor.w;
+			shadow = 0.0;
 		}
 	}
 	return shadow;
@@ -154,7 +154,7 @@ float textureProj(vec4 shadowCoord, vec2 off)
 
 float filterPCF(vec4 sc)
 {
-	ivec2 texDim = textureSize(shadowMap, 0);
+	ivec2 texDim = textureSize(directionalLightDepthMap, 0);
 	float scale = 1.5;
 	float dx = scale * 1.0 / float(texDim.x);
 	float dy = scale * 1.0 / float(texDim.y);
@@ -187,14 +187,14 @@ void main()
     vec2 uv = parallaxOcclusionMapping(textCoords, V);
     vec3 N = getNormalFromMap(uv);
 
-    vec3 albedo = /*vec3(texture(shadowMap, uv).x);//*/pow(texture(colSampler, uv).rgb, vec3(2.2));
+    vec3 albedo =pow(texture(colSampler, uv).rgb, vec3(2.2));
     float metallic  = texture(metalSampler, uv).r;
     float roughness = texture(roughSampler, uv).r;
     float ao        = texture(aoSampler, uv).r;
 
     // compute shadows
     int enablePCF = 1;
-    float shadow = (enablePCF == 1) ? filterPCF(shadowCoord / shadowCoord.w) : textureProj(shadowCoord / shadowCoord.w, vec2(0.0));
+
 
 
     // calculate reflectance at normal incidence; if dia-electric (like plastic) use F0 
@@ -247,8 +247,7 @@ void main()
     // directional light 
     vec3 L = vec3(ubo.directionalLight.direction);
     vec3 H = normalize(V + L);
-    float attenuation = 1.0;
-    vec3 radiance = ubo.directionalLight.color.xyz * ubo.directionalLight.color.w * attenuation;
+    vec3 radiance = ubo.directionalLight.color.xyz * ubo.directionalLight.color.w;
 
     // Cook-Torrance BRDF
     float NDF = DistributionGGX(N, H, roughness);   
@@ -265,17 +264,18 @@ void main()
 
     float NdotL = max(dot(N, L), 0.0);   
     // add to outgoing radiance Lo
-    Lo += (kD * albedo / PI + specular) * radiance * NdotL;
+    float shadow = (enablePCF == 1) ? filterPCF(shadowCoord / shadowCoord.w) : textureProj(shadowCoord / shadowCoord.w, vec2(0.0));
+    Lo += ((kD * albedo / PI + specular) * radiance * NdotL) * shadow;
 
  
     vec3 ambient = (ubo.ambientLightColor.xyz * ubo.ambientLightColor.w) * albedo * ao;
     
-    vec3 color = ambient + Lo * shadow;
+    vec3 color = ambient + Lo;
      
     // HDR tonemapping    
     color = color / (color + vec3(1.0)); 
     // gamma correction
     color = pow(color, vec3(1.0/2.2)); 
 
-    outColor = vec4(color , 1.0);
+    outColor = vec4(color, 1.0);
 }

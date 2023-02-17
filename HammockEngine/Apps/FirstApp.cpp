@@ -1,6 +1,6 @@
 #include "FirstApp.h"
 
-Hmck::FirstApp::FirstApp()
+Hmck::App::App()
 {
     // TODO change this so that material sets are allocated dynamicly or from different pool object
     globalPool = HmckDescriptorPool::Builder(hmckDevice)
@@ -20,7 +20,7 @@ Hmck::FirstApp::FirstApp()
         .build();
 }
 
-void Hmck::FirstApp::run()
+void Hmck::App::run()
 {
 
     std::vector<std::unique_ptr<HmckBuffer>> uboBuffers{ HmckSwapChain::MAX_FRAMES_IN_FLIGHT };
@@ -133,13 +133,13 @@ void Hmck::FirstApp::run()
             ubo.projection = camera.getProjection();
             ubo.view = camera.getView();
             ubo.inverseView = camera.getInverseView();
-            lightSystem.update(frameInfo, ubo);
             glm::mat4 depthProjectionMatrix = glm::perspective(glm::radians(45.0f), 1.0f, 0.1f, 25.0f);
             glm::mat4 depthViewMatrix = glm::lookAt(glm::vec3(10.f, -10.f, -10.f), glm::vec3(0.0f), glm::vec3(0, 1, 0));
             glm::mat4 depthModelMatrix = glm::mat4(1.0f);
             ubo.depthBiasMVP = depthProjectionMatrix * depthViewMatrix * depthModelMatrix;
-            uboBuffers[frameIndex]->writeToBuffer(&ubo);
+            lightSystem.update(frameInfo, ubo);
 
+            uboBuffers[frameIndex]->writeToBuffer(&ubo);
             // RENDER
             // offscreen
             hmckRenderer.beginOffscreenRenderPass(commandBuffer);
@@ -169,7 +169,7 @@ void Hmck::FirstApp::run()
 	vkDeviceWaitIdle(hmckDevice.device());
 }
 
-void Hmck::FirstApp::loadGameObjects()
+void Hmck::App::loadGameObjects()
 {
     // models
     std::shared_ptr<HmckModel> vaseModel = HmckModel::createModelFromFile(hmckDevice, std::string(MODELS_DIR) + "smooth_vase.obj");

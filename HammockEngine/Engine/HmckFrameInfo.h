@@ -42,7 +42,7 @@ namespace Hmck
 		glm::mat4 view{ 1.f };
 		glm::mat4 inverseView{ 1.f };
 		glm::mat4 depthBiasMVP{ 1.f };
-		glm::vec4 ambientLightColor = { 1.f, 1.f, 1.f, 0.01f }; // w is intensity
+		glm::vec4 ambientLightColor = { 1.f, 1.f, 1.f, 0.001f }; // w is intensity
 		HmckDirectionalLight directionalLight;
 		HmckPointLight pointLights[MAX_LIGHTS];
 		int numLights;

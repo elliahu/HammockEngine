@@ -9,7 +9,7 @@
 
 int main()
 {
-	Hmck::FirstApp app{};
+	Hmck::App app{};
 	try
 	{
 		app.run();

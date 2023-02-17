@@ -38,17 +38,17 @@
 
 namespace Hmck
 {
-	class FirstApp
+	class App
 	{
 	public:
-		static constexpr int WINDOW_WIDTH = 1600;
-		static constexpr int WINDOW_HEIGHT = 900;
+		static constexpr int WINDOW_WIDTH = 1920;
+		static constexpr int WINDOW_HEIGHT = 1080;
 
-		FirstApp();
+		App();
 
 		// delete copy constructor and copy destructor
-		FirstApp(const FirstApp&) = delete;
-		FirstApp& operator=(const FirstApp&) = delete;
+		App(const App&) = delete;
+		App& operator=(const App&) = delete;
 
 		void run();
 

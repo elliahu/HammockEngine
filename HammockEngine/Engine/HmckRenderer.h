@@ -15,20 +15,29 @@
 #include <stdexcept>
 #include <cassert>
 
-#ifndef SHADOWMAP_RES
-#define SHADOWMAP_RES 2048
-#endif // !SHADOWMAP_RES
-
-#ifndef DEPTH_FORMAT
-#define DEPTH_FORMAT VK_FORMAT_D16_UNORM
-#endif // !DEPTH_FORMAT
-
+// black clear color
 #define HMCK_CLEAR_COLOR { 0.f,0.f,0.f,1.f }
 
 namespace Hmck
 {
 	class HmckRenderer
 	{
+
+		struct FrameBufferAttachment {
+			VkImage image;
+			VkDeviceMemory mem;
+			VkImageView view;
+		};
+
+		struct OffscreenRenderPass {
+			int32_t width, height;
+			VkFramebuffer frameBuffer;
+			FrameBufferAttachment depth;
+			VkRenderPass renderPass;
+			VkSampler sampler;
+			VkDescriptorImageInfo descriptor;
+		};
+
 	public:
 
 		HmckRenderer(HmckWindow& window, HmckDevice& device);
@@ -39,10 +48,11 @@ namespace Hmck
 		HmckRenderer& operator=(const HmckRenderer&) = delete;
 
 		VkRenderPass getSwapChainRenderPass() const { return hmckSwapChain->getRenderPass(); }
-		VkRenderPass getOffscreenRenderPass() const { return hmckSwapChain->getOffscreenRenderPass(); }
-		VkDescriptorImageInfo getOffscreenDescriptorImageInfo() { return hmckSwapChain->getOffscreenDescriptorImageInfo(); }
+		VkRenderPass getOffscreenRenderPass() const { return offscreenRenderPass.renderPass; }
 		float getAspectRatio() const { return hmckSwapChain->extentAspectRatio(); }
 		bool isFrameInProgress() const { return isFrameStarted; }
+
+		VkDescriptorImageInfo getOffscreenDescriptorImageInfo() { return offscreenRenderPass.descriptor; }
 
 		VkCommandBuffer getCurrentCommandBuffer() const
 		{
@@ -67,12 +77,15 @@ namespace Hmck
 	private:
 		void createCommandBuffer();
 		void freeCommandBuffers();
+		void freeOffscreenRenderPass();
 		void recreateSwapChain();
+		void recreateOffscreenRenderPass();
 
 		HmckWindow& hmckWindow;
 		HmckDevice& hmckDevice;
 		std::unique_ptr<HmckSwapChain> hmckSwapChain;
 		std::vector<VkCommandBuffer> commandBuffers;
+		OffscreenRenderPass offscreenRenderPass;
 
 		uint32_t currentImageIndex;
 		int currentFrameIndex{ 0 };

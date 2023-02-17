@@ -3,12 +3,14 @@
 Hmck::HmckRenderer::HmckRenderer(HmckWindow& window, HmckDevice& device) : hmckWindow{window}, hmckDevice{device}
 {
 	recreateSwapChain();
+	recreateOffscreenRenderPass();
 	createCommandBuffer();
 }
 
 Hmck::HmckRenderer::~HmckRenderer()
 {
 	freeCommandBuffers();
+	freeOffscreenRenderPass();
 }
 
 
@@ -39,6 +41,17 @@ void Hmck::HmckRenderer::freeCommandBuffers()
 	commandBuffers.clear();
 }
 
+void Hmck::HmckRenderer::freeOffscreenRenderPass()
+{
+	vkDestroyImageView(hmckDevice.device(), offscreenRenderPass.depth.view, nullptr);
+	vkDestroyImage(hmckDevice.device(), offscreenRenderPass.depth.image, nullptr);
+	vkFreeMemory(hmckDevice.device(), offscreenRenderPass.depth.mem, nullptr);
+
+	vkDestroyRenderPass(hmckDevice.device(), offscreenRenderPass.renderPass, nullptr);
+	vkDestroySampler(hmckDevice.device(), offscreenRenderPass.sampler, nullptr);
+	vkDestroyFramebuffer(hmckDevice.device(), offscreenRenderPass.frameBuffer, nullptr);
+}
+
 
 void Hmck::HmckRenderer::recreateSwapChain()
 {
@@ -66,7 +79,6 @@ void Hmck::HmckRenderer::recreateSwapChain()
 
 	//
 }
-
 
 VkCommandBuffer Hmck::HmckRenderer::beginFrame()
 {
@@ -111,8 +123,12 @@ void Hmck::HmckRenderer::endFrame()
 	auto result = hmckSwapChain->submitCommandBuffers(&commandBuffer, &currentImageIndex);
 	if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR || hmckWindow.wasWindowResized())
 	{
+		// Window was resized (resolution was changed)
 		hmckWindow.resetWindowResizedFlag();
 		recreateSwapChain();
+
+		freeOffscreenRenderPass();
+		recreateOffscreenRenderPass();
 	}
 
 	else if (result != VK_SUCCESS)
@@ -176,8 +192,8 @@ void Hmck::HmckRenderer::beginOffscreenRenderPass(VkCommandBuffer commandBuffer)
 
 	VkRenderPassBeginInfo renderPassInfo{};
 	renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
-	renderPassInfo.renderPass = hmckSwapChain->getOffscreenRenderPass();
-	renderPassInfo.framebuffer = hmckSwapChain->getOffscreenFrameBuffer();
+	renderPassInfo.renderPass = offscreenRenderPass.renderPass;
+	renderPassInfo.framebuffer = offscreenRenderPass.frameBuffer;
 
 	renderPassInfo.renderArea.offset = { 0, 0 };
 	renderPassInfo.renderArea.extent = hmckSwapChain->getSwapChainExtent();
@@ -208,4 +224,146 @@ void Hmck::HmckRenderer::endOffscreenRenderPass(VkCommandBuffer commandBuffer)
 	assert(commandBuffer == getCurrentCommandBuffer() && "Cannot endOffscreenRenderPass on command buffer from a different frame");
 
 	vkCmdEndRenderPass(commandBuffer);
+}
+
+void Hmck::HmckRenderer::recreateOffscreenRenderPass()
+{
+	offscreenRenderPass.width = hmckSwapChain->width();
+	offscreenRenderPass.height = hmckSwapChain->height();
+
+	// Find a suitable depth format
+	VkFormat fbDepthFormat = hmckSwapChain->findDepthFormat();
+
+	// Create sampler to sample from the attachment in the fragment shader
+	VkSamplerCreateInfo samplerInfo = Hmck::Init::samplerCreateInfo();
+	samplerInfo.magFilter = VK_FILTER_LINEAR;
+	samplerInfo.minFilter = VK_FILTER_LINEAR;
+	samplerInfo.mipmapMode = VK_SAMPLER_MIPMAP_MODE_LINEAR;
+	samplerInfo.addressModeU = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
+	samplerInfo.addressModeV = samplerInfo.addressModeU;
+	samplerInfo.addressModeW = samplerInfo.addressModeU;
+	samplerInfo.mipLodBias = 0.0f;
+	samplerInfo.maxAnisotropy = 1.0f;
+	samplerInfo.minLod = 0.0f;
+	samplerInfo.maxLod = 1.0f;
+	samplerInfo.borderColor = VK_BORDER_COLOR_FLOAT_OPAQUE_WHITE;
+	if (vkCreateSampler(hmckDevice.device(), &samplerInfo, nullptr, &offscreenRenderPass.sampler) != VK_SUCCESS) {
+		throw std::runtime_error("failed to create sampler");
+	}
+
+	// Depth stencil attachment
+	VkImageCreateInfo image = Hmck::Init::imageCreateInfo();
+	image.imageType = VK_IMAGE_TYPE_2D;
+	image.extent.width = offscreenRenderPass.width;
+	image.extent.height = offscreenRenderPass.height;
+	image.extent.depth = 1;
+	image.mipLevels = 1;
+	image.arrayLayers = 1;
+	image.samples = VK_SAMPLE_COUNT_1_BIT;
+	image.tiling = VK_IMAGE_TILING_OPTIMAL;
+	image.format = fbDepthFormat;																// Depth stencil attachment
+	image.usage = VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT;
+
+	if (vkCreateImage(hmckDevice.device(), &image, nullptr, &offscreenRenderPass.depth.image) != VK_SUCCESS) {
+		throw std::runtime_error("failed to create image");
+	}
+	VkMemoryAllocateInfo memAlloc = Hmck::Init::memoryAllocateInfo();
+	VkMemoryRequirements memReqs;
+	vkGetImageMemoryRequirements(hmckDevice.device(), offscreenRenderPass.depth.image, &memReqs);
+	memAlloc.allocationSize = memReqs.size;
+	memAlloc.memoryTypeIndex = hmckDevice.findMemoryType(memReqs.memoryTypeBits, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
+	if (vkAllocateMemory(hmckDevice.device(), &memAlloc, nullptr, &offscreenRenderPass.depth.mem) != VK_SUCCESS) {
+		throw std::runtime_error("failed to allocate memory");
+	}
+	if (vkBindImageMemory(hmckDevice.device(), offscreenRenderPass.depth.image, offscreenRenderPass.depth.mem, 0) != VK_SUCCESS) {
+		throw std::runtime_error("failed to bind image memory");
+	}
+
+	VkImageViewCreateInfo depthStencilView = Hmck::Init::imageViewCreateInfo();
+	depthStencilView.viewType = VK_IMAGE_VIEW_TYPE_2D;
+	depthStencilView.format = fbDepthFormat;
+	depthStencilView.subresourceRange = {};
+	depthStencilView.subresourceRange.aspectMask = VK_IMAGE_ASPECT_DEPTH_BIT;
+	depthStencilView.subresourceRange.baseMipLevel = 0;
+	depthStencilView.subresourceRange.levelCount = 1;
+	depthStencilView.subresourceRange.baseArrayLayer = 0;
+	depthStencilView.subresourceRange.layerCount = 1;
+	depthStencilView.image = offscreenRenderPass.depth.image;
+	if (vkCreateImageView(hmckDevice.device(), &depthStencilView, nullptr, &offscreenRenderPass.depth.view) != VK_SUCCESS) {
+		throw std::runtime_error("failed to create image view");
+	}
+
+	// Create a separate render pass for the offscreen rendering as it may differ from the one used for scene rendering
+
+	VkAttachmentDescription attachmentDescription{};
+	attachmentDescription.format = fbDepthFormat;
+	attachmentDescription.samples = VK_SAMPLE_COUNT_1_BIT;
+	attachmentDescription.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;							// Clear depth at beginning of the render pass
+	attachmentDescription.storeOp = VK_ATTACHMENT_STORE_OP_STORE;						// We will read from depth, so it's important to store the depth attachment results
+	attachmentDescription.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+	attachmentDescription.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+	attachmentDescription.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;					// We don't care about initial layout of the attachment
+	attachmentDescription.finalLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL;// Attachment will be transitioned to shader read at render pass end
+
+	VkAttachmentReference depthReference = {};
+	depthReference.attachment = 0;
+	depthReference.layout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+
+	VkSubpassDescription subpass = {};
+	subpass.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
+	subpass.colorAttachmentCount = 0;													// No color attachments
+	subpass.pDepthStencilAttachment = &depthReference;
+
+	// Use subpass dependencies for layout transitions
+	std::array<VkSubpassDependency, 2> dependencies;
+
+	dependencies[0].srcSubpass = VK_SUBPASS_EXTERNAL;
+	dependencies[0].dstSubpass = 0;
+	dependencies[0].srcStageMask = VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
+	dependencies[0].dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+	dependencies[0].srcAccessMask = VK_ACCESS_SHADER_READ_BIT;
+	dependencies[0].dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+	dependencies[0].dependencyFlags = VK_DEPENDENCY_BY_REGION_BIT;
+
+	dependencies[1].srcSubpass = 0;
+	dependencies[1].dstSubpass = VK_SUBPASS_EXTERNAL;
+	dependencies[1].srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+	dependencies[1].dstStageMask = VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
+	dependencies[1].srcAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+	dependencies[1].dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
+	dependencies[1].dependencyFlags = VK_DEPENDENCY_BY_REGION_BIT;
+
+	// Create the actual renderpass
+	VkRenderPassCreateInfo renderPassInfo = {};
+	renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
+	renderPassInfo.attachmentCount = 1;
+	renderPassInfo.pAttachments = &attachmentDescription;
+	renderPassInfo.subpassCount = 1;
+	renderPassInfo.pSubpasses = &subpass;
+	renderPassInfo.dependencyCount = static_cast<uint32_t>(dependencies.size());
+	renderPassInfo.pDependencies = dependencies.data();
+
+	if (vkCreateRenderPass(hmckDevice.device(), &renderPassInfo, nullptr, &offscreenRenderPass.renderPass) != VK_SUCCESS) {
+		throw std::runtime_error("failed to create offscreen renderpass");
+	}
+
+	VkImageView attachments[1];
+	attachments[0] = offscreenRenderPass.depth.view;
+
+	VkFramebufferCreateInfo fbufCreateInfo = Hmck::Init::framebufferCreateInfo();
+	fbufCreateInfo.renderPass = offscreenRenderPass.renderPass;
+	fbufCreateInfo.attachmentCount = 1;
+	fbufCreateInfo.pAttachments = attachments;
+	fbufCreateInfo.width = offscreenRenderPass.width;
+	fbufCreateInfo.height = offscreenRenderPass.height;
+	fbufCreateInfo.layers = 1;
+
+	if (vkCreateFramebuffer(hmckDevice.device(), &fbufCreateInfo, nullptr, &offscreenRenderPass.frameBuffer) != VK_SUCCESS) {
+		throw std::runtime_error("failed to create offscreen framebuffer");
+	}
+
+	// Fill a descriptor for later use in a descriptor set
+	offscreenRenderPass.descriptor.imageLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL;
+	offscreenRenderPass.descriptor.imageView = offscreenRenderPass.depth.view;
+	offscreenRenderPass.descriptor.sampler = offscreenRenderPass.sampler;
 }

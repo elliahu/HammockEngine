@@ -45,11 +45,13 @@ namespace Hmck
 	private:
 		void createPipelineLayout(std::vector<VkDescriptorSetLayout>& setLayouts);
 		void createPipeline(VkRenderPass renderPass);
+		void createOffscreenDescriptorSet();
 
 		HmckDevice& hmckDevice;
 		std::unique_ptr<HmckPipeline> pipeline;
 		VkPipelineLayout pipelineLayout;
 		VkDescriptorSet descriptorSet;
+		VkDescriptorSet offscreenSamplerDescriptorSet;
 
 		// Depth bias (and slope) are used to avoid shadowing artifacts
 		// Constant depth bias factor (always applied)

@@ -15,8 +15,8 @@ Hmck::HmckOffscreenRenderSystem::~HmckOffscreenRenderSystem()
 
 void Hmck::HmckOffscreenRenderSystem::renderOffscreen(HmckFrameInfo& frameInfo)
 {
-	// TODO
-	
+	pipeline->bind(frameInfo.commandBuffer);
+
 	// Set depth bias (aka "Polygon offset")
 	// Required to avoid shadow mapping artifacts
 	vkCmdSetDepthBias(
@@ -24,8 +24,6 @@ void Hmck::HmckOffscreenRenderSystem::renderOffscreen(HmckFrameInfo& frameInfo)
 		depthBiasConstant,
 		0.0f,
 		depthBiasSlope);
-
-	pipeline->bind(frameInfo.commandBuffer);
 
 	// bind global descriptor set
 	vkCmdBindDescriptorSets(
