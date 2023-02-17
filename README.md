@@ -28,5 +28,7 @@ The following points are milestones i would like to hit in near future:
 - [ ] Physics and collisions
 - Will see what more
 
-## Currently working on
-Currently, I am working on implementing shadow system that will handle all kind of shadow types and will be performant. I've already implemented basic offscreen rendering pipeline so now I an step closer to this.
+## Currently working on (hot stuff)
+- Implementing shadow system that will handle all kind of shadow types and will be performant. (basic singular-source spot/directional shadow already implemented)
+- Code refactoring and rethinking architectural choices - mainly descriptor handling 
+- Porting from GLFW to SDL2
