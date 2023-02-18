@@ -56,10 +56,10 @@ void Hmck::HmckRenderer::freeOffscreenRenderPass()
 void Hmck::HmckRenderer::recreateSwapChain()
 {
 	auto extent = hmckWindow.getExtent();
-	while (extent.width == 0 || extent.height == 0)
+	while (extent.width == 0 || extent.height == 0 || hmckWindow.isMinimized())
 	{
 		extent = hmckWindow.getExtent();
-		glfwWaitEvents();
+		hmckWindow.waitEvents();
 	}
 	vkDeviceWaitIdle(hmckDevice.device());
 
@@ -125,10 +125,15 @@ void Hmck::HmckRenderer::endFrame()
 	{
 		// Window was resized (resolution was changed)
 		hmckWindow.resetWindowResizedFlag();
-		recreateSwapChain();
 
-		//freeOffscreenRenderPass();
-		//recreateOffscreenRenderPass();
+		auto swapChainExtent = hmckSwapChain->getSwapChainExtent();
+		while (swapChainExtent.width == 0 || swapChainExtent.height == 0)
+		{
+			swapChainExtent = hmckSwapChain->getSwapChainExtent();
+			hmckWindow.waitEvents();
+		}
+
+		recreateSwapChain();
 	}
 
 	else if (result != VK_SUCCESS)

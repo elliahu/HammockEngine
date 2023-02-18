@@ -10,14 +10,14 @@ Hmck::HmckUISystem::~HmckUISystem()
 {
 	vkDestroyDescriptorPool(hmckDevice.device(), imguiPool, nullptr);
 	ImGui_ImplVulkan_Shutdown();
-	ImGui_ImplGlfw_Shutdown();
+	ImGui_ImplSDL2_Shutdown();
 	ImGui::DestroyContext();
 }
 
 void Hmck::HmckUISystem::beginUserInterface()
 {
 	ImGui_ImplVulkan_NewFrame();
-	ImGui_ImplGlfw_NewFrame();
+	ImGui_ImplSDL2_NewFrame();
 	ImGui::NewFrame();
 
 	if(showDemoWindow)
@@ -89,10 +89,9 @@ void Hmck::HmckUISystem::showLog()
 	// TODO
 }
 
-void Hmck::HmckUISystem::forward(int button, bool state)
+void Hmck::HmckUISystem::processInputEvent(SDL_Event& event)
 {
-	ImGuiIO& io = ImGui::GetIO();
-	io.AddMouseButtonEvent(button, state);
+	ImGui_ImplSDL2_ProcessEvent(&event);
 }
 
 
@@ -133,8 +132,9 @@ void Hmck::HmckUISystem::init()
 	//this initializes the core structures of imgui
 	ImGui::CreateContext();
 
-	// initialize for glfw
-	ImGui_ImplGlfw_InitForVulkan(hmckWindow.getGLFWwindow(), true);
+	// initialize for sdl
+	ImGui_ImplSDL2_InitForVulkan(hmckWindow.getSDL_Window());
+
 
 	//this initializes imgui for Vulkan
 	ImGui_ImplVulkan_InitInfo init_info = {};

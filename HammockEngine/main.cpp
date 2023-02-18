@@ -5,9 +5,7 @@
 #include "Apps/App.h"
 #include "Utils/HmckLogger.h"
 
-
-
-int main()
+int main(int argc, char* args[])
 {
 	Hmck::App app{};
 	try

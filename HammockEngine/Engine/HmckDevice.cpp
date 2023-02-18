@@ -75,9 +75,9 @@ namespace Hmck {
 
         VkApplicationInfo appInfo = {};
         appInfo.sType = VK_STRUCTURE_TYPE_APPLICATION_INFO;
-        appInfo.pApplicationName = "LittleVulkanEngine App";
+        appInfo.pApplicationName = "HammockEngine App";
         appInfo.applicationVersion = VK_MAKE_VERSION(1, 0, 0);
-        appInfo.pEngineName = "No Engine";
+        appInfo.pEngineName = "Hammock Engine";
         appInfo.engineVersion = VK_MAKE_VERSION(1, 0, 0);
         appInfo.apiVersion = VK_API_VERSION_1_0;
 
@@ -264,17 +264,16 @@ namespace Hmck {
     }
 
     std::vector<const char*> HmckDevice::getRequiredExtensions() {
-        uint32_t glfwExtensionCount = 0;
-        const char** glfwExtensions;
-        glfwExtensions = glfwGetRequiredInstanceExtensions(&glfwExtensionCount);
-
-        std::vector<const char*> extensions(glfwExtensions, glfwExtensions + glfwExtensionCount);
+        unsigned int extensionCount = 0;
+        SDL_Vulkan_GetInstanceExtensions(window.getSDL_Window(), &extensionCount, nullptr);
+        std::vector<const char*> extensionNames(extensionCount);
+        SDL_Vulkan_GetInstanceExtensions(window.getSDL_Window(), &extensionCount, extensionNames.data());
 
         if (enableValidationLayers) {
-            extensions.push_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
+            extensionNames.push_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
         }
 
-        return extensions;
+        return extensionNames;
     }
 
     void HmckDevice::hasGflwRequiredInstanceExtensions() {

@@ -3,7 +3,7 @@
 #include "HmckDevice.h"
 #include "Utils/HmckLogger.h"
 #include "imgui.h"
-#include "backends/imgui_impl_glfw.h"
+#include "backends/imgui_impl_sdl2.h"
 #include "backends/imgui_impl_vulkan.h"
 #include "HmckGameObject.h"
 
@@ -29,7 +29,7 @@ namespace Hmck
 		void showLog();
 
 		// forwarding events to ImGUI
-		static void forward(int button, bool state);
+		static void processInputEvent(SDL_Event& event);
 
 	private:
 		void init();
