@@ -6,7 +6,7 @@
 #include <iostream>
 #include <cassert>
 #include "HmckDevice.h"
-#include "HmckModel.h"
+#include "HmckMesh.h"
 
 namespace Hmck 
 {

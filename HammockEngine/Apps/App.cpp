@@ -163,9 +163,9 @@ void Hmck::App::run()
 void Hmck::App::loadGameObjects()
 {
     // models
-    std::shared_ptr<HmckModel> vaseModel = HmckModel::createModelFromFile(hmckDevice, std::string(MODELS_DIR) + "smooth_vase.obj");
-    std::shared_ptr<HmckModel> cubeModel = HmckModel::createModelFromFile(hmckDevice, std::string(MODELS_DIR) + "cube.obj");
-    std::shared_ptr<HmckModel> sphereModel = HmckModel::createModelFromFile(hmckDevice, std::string(MODELS_DIR) + "sphere.obj");
+    std::shared_ptr<HmckMesh> vaseModel = HmckMesh::createMeshFromFile(hmckDevice, std::string(MODELS_DIR) + "smooth_vase.obj");
+    std::shared_ptr<HmckMesh> cubeModel = HmckMesh::createMeshFromFile(hmckDevice, std::string(MODELS_DIR) + "cube.obj");
+    std::shared_ptr<HmckMesh> sphereModel = HmckMesh::createMeshFromFile(hmckDevice, std::string(MODELS_DIR) + "sphere.obj");
 
     // materials
     HmckCreateMaterialInfo floorMaterialIfno{};
@@ -213,7 +213,7 @@ void Hmck::App::loadGameObjects()
     gameObjects.emplace(sphere.getId(), std::move(sphere));
 
     // floor
-    std::shared_ptr<HmckModel> quadModel = HmckModel::createModelFromFile(hmckDevice, std::string(MODELS_DIR) + "quad.obj");
+    std::shared_ptr<HmckMesh> quadModel = HmckMesh::createMeshFromFile(hmckDevice, std::string(MODELS_DIR) + "quad.obj");
     auto floor = HmckGameObject::createGameObject();
     floor.setName("Floor");
     floor.setModel(quadModel);
@@ -224,7 +224,7 @@ void Hmck::App::loadGameObjects()
     gameObjects.emplace(floor.getId(), std::move(floor));
 
 
-    std::shared_ptr<HmckModel> logModel = HmckModel::createModelFromFile(hmckDevice, std::string(MODELS_DIR) + "log.obj");
+    std::shared_ptr<HmckMesh> logModel = HmckMesh::createMeshFromFile(hmckDevice, std::string(MODELS_DIR) + "log.obj");
     auto log = HmckGameObject::createGameObject();
     log.setModel(logModel);
     log.transformComponent.translation = { 1.f, -0.5f, 0.f };

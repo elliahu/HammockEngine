@@ -1,4 +1,4 @@
-#include "HmckModel.h"
+#include "HmckMesh.h"
 
 #define TINYOBJLOADER_IMPLEMENTATION
 #include "tiny_obj_loader.h"
@@ -6,9 +6,9 @@
 namespace std
 {
 	template <>
-	struct hash<Hmck::HmckModel::Vertex>
+	struct hash<Hmck::HmckMesh::Vertex>
 	{
-		size_t operator()(Hmck::HmckModel::Vertex const& vertex) const
+		size_t operator()(Hmck::HmckMesh::Vertex const& vertex) const
 		{
 			size_t seed = 0;
 			Hmck::hashCombine(seed, vertex.position, vertex.color, vertex.normal, vertex.uv);
@@ -17,27 +17,27 @@ namespace std
 	};
 }
 
-Hmck::HmckModel::HmckModel(HmckDevice& device, const HmckModel::Builder& builder) : hmckDevice{ device }
+Hmck::HmckMesh::HmckMesh(HmckDevice& device, const HmckMesh::Builder& builder) : hmckDevice{ device }
 {
 	createVertexBuffers(builder.vertices);
 	createIndexBuffers(builder.indices);
 }
 
-Hmck::HmckModel::~HmckModel(){}
+Hmck::HmckMesh::~HmckMesh(){}
 
 
-std::unique_ptr<Hmck::HmckModel> Hmck::HmckModel::createModelFromFile(HmckDevice& device, const std::string& filepath, bool calculateTangents)
+std::unique_ptr<Hmck::HmckMesh> Hmck::HmckMesh::createMeshFromFile(HmckDevice& device, const std::string& filepath, bool calculateTangents)
 {
 	Builder builder{};
-	ModelInfo mInfo = builder.loadModel(filepath, calculateTangents);
+	MeshInfo mInfo = builder.loadMesh(filepath, calculateTangents);
 
-	std::unique_ptr<HmckModel> model = std::make_unique<HmckModel>(device, builder);
+	std::unique_ptr<HmckMesh> model = std::make_unique<HmckMesh>(device, builder);
 	model->modelInfo = mInfo;
 
 	return model;
 }
 
-void Hmck::HmckModel::draw(VkCommandBuffer commandBuffer)
+void Hmck::HmckMesh::draw(VkCommandBuffer commandBuffer)
 {
 	if (hasIndexBuffer)
 	{
@@ -49,7 +49,7 @@ void Hmck::HmckModel::draw(VkCommandBuffer commandBuffer)
 	}
 }
 
-void Hmck::HmckModel::bind(VkCommandBuffer commandBuffer)
+void Hmck::HmckMesh::bind(VkCommandBuffer commandBuffer)
 {
 	VkBuffer buffers[] = { vertexBuffer->getBuffer()};
 	VkDeviceSize offsets[] = { 0 };
@@ -61,7 +61,7 @@ void Hmck::HmckModel::bind(VkCommandBuffer commandBuffer)
 	}
 }
 
-void Hmck::HmckModel::createVertexBuffers(const std::vector<Vertex>& vertices)
+void Hmck::HmckMesh::createVertexBuffers(const std::vector<Vertex>& vertices)
 {
 	// copy data to staging memory on device, then copy from staging to v/i memory
 	vertexCount = static_cast<uint32_t>(vertices.size());
@@ -92,7 +92,7 @@ void Hmck::HmckModel::createVertexBuffers(const std::vector<Vertex>& vertices)
 	hmckDevice.copyBuffer(stagingBuffer.getBuffer(), vertexBuffer->getBuffer(), bufferSize);
 }
 
-void Hmck::HmckModel::createIndexBuffers(const std::vector<uint32_t>& indices)
+void Hmck::HmckMesh::createIndexBuffers(const std::vector<uint32_t>& indices)
 {
 	indexCount = static_cast<uint32_t>(indices.size());
 
@@ -129,7 +129,7 @@ void Hmck::HmckModel::createIndexBuffers(const std::vector<uint32_t>& indices)
 	hmckDevice.copyBuffer(stagingBuffer.getBuffer(), indexBuffer->getBuffer(), bufferSize);
 }
 
-std::vector<VkVertexInputBindingDescription> Hmck::HmckModel::Vertex::getBindingDescriptions()
+std::vector<VkVertexInputBindingDescription> Hmck::HmckMesh::Vertex::getBindingDescriptions()
 {
 	std::vector<VkVertexInputBindingDescription> bindingDescriptions(1);
 	bindingDescriptions[0].binding = 0;
@@ -137,7 +137,7 @@ std::vector<VkVertexInputBindingDescription> Hmck::HmckModel::Vertex::getBinding
 	bindingDescriptions[0].inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
 	return bindingDescriptions;
 }
-std::vector<VkVertexInputAttributeDescription> Hmck::HmckModel::Vertex::getAttributeDescriptions()
+std::vector<VkVertexInputAttributeDescription> Hmck::HmckMesh::Vertex::getAttributeDescriptions()
 {
 	return
 	{	
@@ -150,7 +150,7 @@ std::vector<VkVertexInputAttributeDescription> Hmck::HmckModel::Vertex::getAttri
 	};
 }
 
-Hmck::HmckModel::ModelInfo Hmck::HmckModel::Builder::loadModel(const std::string& filepath, bool calcTangent)
+Hmck::HmckMesh::MeshInfo Hmck::HmckMesh::Builder::loadMesh(const std::string& filepath, bool calcTangent)
 {
 	tinyobj::attrib_t attrib;
 	std::vector<tinyobj::shape_t> shapes;
@@ -165,7 +165,7 @@ Hmck::HmckModel::ModelInfo Hmck::HmckModel::Builder::loadModel(const std::string
 	vertices.clear();
 	indices.clear();
 
-	ModelInfo mInfo{};
+	MeshInfo mInfo{};
 
 	std::unordered_map<Vertex, uint32_t> uniqueVertices{};
 
@@ -254,14 +254,14 @@ Hmck::HmckModel::ModelInfo Hmck::HmckModel::Builder::loadModel(const std::string
 	return mInfo;
 }
 
-Hmck::HmckModel::ModelInfo Hmck::HmckModel::Builder::loadModelAssimp(const std::string& filepath)
+Hmck::HmckMesh::MeshInfo Hmck::HmckMesh::Builder::loadMeshAssimp(const std::string& filepath)
 {
 	Assimp::Importer imp;
 	unsigned int opts = aiProcess_Triangulate | aiProcess_CalcTangentSpace;
 
 	const aiScene* scene = imp.ReadFile(filepath, opts);
 
-	ModelInfo mInfo{};
+	MeshInfo mInfo{};
 
 	std::unordered_map<Vertex, uint32_t> uniqueVertices{};
 
@@ -363,7 +363,7 @@ Hmck::HmckModel::ModelInfo Hmck::HmckModel::Builder::loadModelAssimp(const std::
 	return mInfo;
 }
 
-void Hmck::HmckModel::Builder::calculateTangent()
+void Hmck::HmckMesh::Builder::calculateTangent()
 {
 	for (uint32_t i = 0; i < static_cast<uint32_t>(indices.size()); i += 3)
 	{

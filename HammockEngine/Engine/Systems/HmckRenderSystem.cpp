@@ -22,7 +22,7 @@ void Hmck::HmckRenderSystem::createPipelineLayout(std::vector<VkDescriptorSetLay
 	VkPushConstantRange pushConstantRange{};
 	pushConstantRange.stageFlags = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT;
 	pushConstantRange.offset = 0;
-	pushConstantRange.size = sizeof(HmckModelPushConstantData);
+	pushConstantRange.size = sizeof(HmckMeshPushConstantData);
 
 	VkPipelineLayoutCreateInfo pipelineLayoutInfo{};
 	pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
@@ -72,7 +72,7 @@ void Hmck::HmckRenderSystem::render(HmckFrameInfo& frameInfo)
 	for (auto& kv : frameInfo.gameObjects)
 	{
 		auto& obj = kv.second;
-		if (obj.modelComponent == nullptr) continue;
+		if (obj.meshComponent == nullptr) continue;
 
 		if (obj.materialComponent != nullptr)
 		{
@@ -97,7 +97,7 @@ void Hmck::HmckRenderSystem::render(HmckFrameInfo& frameInfo)
 			nullptr
 		);
 
-		HmckModelPushConstantData push{};
+		HmckMeshPushConstantData push{};
 		push.modelMatrix = obj.transformComponent.mat4();
 		push.normalMatrix = obj.transformComponent.normalMatrix();
 
@@ -107,12 +107,12 @@ void Hmck::HmckRenderSystem::render(HmckFrameInfo& frameInfo)
 			pipelineLayout,
 			VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT,
 			0,
-			sizeof(HmckModelPushConstantData),
+			sizeof(HmckMeshPushConstantData),
 			&push
 		);
 
-		obj.modelComponent->model->bind(frameInfo.commandBuffer);
-		obj.modelComponent->model->draw(frameInfo.commandBuffer);
+		obj.meshComponent->mesh->bind(frameInfo.commandBuffer);
+		obj.meshComponent->mesh->draw(frameInfo.commandBuffer);
 	}
 
 }

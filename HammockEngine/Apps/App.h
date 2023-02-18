@@ -1,6 +1,6 @@
 #pragma once
 
-#include "Platforms/HmckWindow.h"
+#include "Platform/HmckWindow.h"
 #include "HmckDevice.h"
 #include "HmckGameObject.h"
 #include "HmckRenderer.h"
@@ -8,7 +8,7 @@
 #include "Systems/HmckRenderSystem.h"
 #include "Systems/HmckUISystem.h"
 #include "Systems/HmckOffscreenRenderSystem.h"
-#include "HmckModel.h"
+#include "HmckMesh.h"
 #include "HmckCamera.h"
 #include "Controllers/KeyboardMovementController.h"
 #include "HmckBuffer.h"

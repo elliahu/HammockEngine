@@ -36,10 +36,10 @@
     <ClCompile Include="Engine\HmckDevice.cpp" />
     <ClCompile Include="Engine\HmckGameObject.cpp" />
     <ClCompile Include="Engine\HmckMaterial.cpp" />
-    <ClCompile Include="Engine\HmckModel.cpp" />
+    <ClCompile Include="Engine\HmckMesh.cpp" />
     <ClCompile Include="Engine\HmckPipeline.cpp" />
     <ClCompile Include="Engine\HmckRenderer.cpp" />
-    <ClCompile Include="Engine\Platforms\HmckWindow.cpp" />
+    <ClCompile Include="Engine\Platform\HmckWindow.cpp" />
     <ClCompile Include="Engine\Systems\HmckCollisionDetectionSystem.cpp" />
     <ClCompile Include="Engine\Systems\HmckLightSystem.cpp" />
     <ClCompile Include="Engine\Systems\HmckRenderSystem.cpp" />
@@ -67,10 +67,10 @@
     <ClInclude Include="Engine\HmckFrameInfo.h" />
     <ClInclude Include="Engine\HmckGameObject.h" />
     <ClInclude Include="Engine\HmckMaterial.h" />
-    <ClInclude Include="Engine\HmckModel.h" />
+    <ClInclude Include="Engine\HmckMesh.h" />
     <ClInclude Include="Engine\HmckPipeline.h" />
     <ClInclude Include="Engine\HmckRenderer.h" />
-    <ClInclude Include="Engine\Platforms\HmckWindow.h" />
+    <ClInclude Include="Engine\Platform\HmckWindow.h" />
     <ClInclude Include="Engine\Systems\HmckCollisionDetectionSystem.h" />
     <ClInclude Include="Engine\Systems\HmckIRenderSystem.h" />
     <ClInclude Include="Engine\Systems\HmckLightSystem.h" />

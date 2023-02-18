@@ -26,16 +26,16 @@ namespace Hmck
 	// vec2: 2N = 8 Bytes
 	// vec3 (or vec4): 4N = 16 Bytes
 	// taken from 15.6.4 Offset and Stride Assignment
-	struct HmckModelPushConstantData {
+	struct HmckMeshPushConstantData {
 		glm::mat4 modelMatrix{ 1.f };
 		glm::mat4 normalMatrix{ 1.f };
 	};
 
-	class HmckModel
+	class HmckMesh
 	{
 	public:
 
-		struct ModelInfo
+		struct MeshInfo
 		{
 			struct AxisRange
 			{
@@ -76,25 +76,25 @@ namespace Hmck
 			std::vector<Vertex> vertices{};
 			std::vector<uint32_t> indices{};
 
-			ModelInfo loadModel(const std::string& filepath, bool calcTangent = true);
-			ModelInfo loadModelAssimp(const std::string& filepath);
+			MeshInfo loadMesh(const std::string& filepath, bool calcTangent = true);
+			MeshInfo loadMeshAssimp(const std::string& filepath);
 			void calculateTangent();
 		};
 
 
-		HmckModel(HmckDevice& device, const HmckModel::Builder& builder);
-		~HmckModel();
+		HmckMesh(HmckDevice& device, const HmckMesh::Builder& builder);
+		~HmckMesh();
 
-		static std::unique_ptr<HmckModel> createModelFromFile(HmckDevice& device, const std::string& filepath, bool calculateTangents = true);
+		static std::unique_ptr<HmckMesh> createMeshFromFile(HmckDevice& device, const std::string& filepath, bool calculateTangents = true);
 
 		// delete copy constructor and copy destructor
-		HmckModel(const HmckModel&) = delete;
-		HmckModel& operator=(const HmckModel&) = delete;
+		HmckMesh(const HmckMesh&) = delete;
+		HmckMesh& operator=(const HmckMesh&) = delete;
 
 		void bind(VkCommandBuffer commandBuffer);
 		void draw(VkCommandBuffer commandBuffer);
 
-		ModelInfo modelInfo;
+		MeshInfo modelInfo;
 
 	private:
 		void createVertexBuffers(const std::vector<Vertex>& vertices);

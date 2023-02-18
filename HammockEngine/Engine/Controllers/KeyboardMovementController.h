@@ -1,7 +1,7 @@
 #pragma once
 
 #include "HmckGameObject.h"
-#include "Platforms/HmckWindow.h"
+#include "Platform/HmckWindow.h"
 #include "Utils/HmckLogger.h"
 #include "Systems/HmckUISystem.h"
 

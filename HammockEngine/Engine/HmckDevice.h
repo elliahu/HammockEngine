@@ -1,6 +1,6 @@
 #pragma once
 
-#include "Platforms/HmckWindow.h"
+#include "Platform/HmckWindow.h"
 
 // std lib headers
 #include <string>

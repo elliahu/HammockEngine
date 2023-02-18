@@ -296,7 +296,7 @@ void Hmck::HmckUISystem::gameObjectComponets(HmckGameObject& gameObject)
 		};
 		ImGui::ColorEdit3("Color", color_hsv[0], ImGuiColorEditFlags_Float | ImGuiColorEditFlags_DisplayRGB);
 	}
-	if (gameObject.modelComponent != nullptr) // Model
+	if (gameObject.meshComponent != nullptr) // Model
 	{
 		if (ImGui::CollapsingHeader("Model"))
 		{

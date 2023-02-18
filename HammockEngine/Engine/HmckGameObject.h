@@ -1,6 +1,6 @@
 #pragma once
 
-#include "HmckModel.h"
+#include "HmckMesh.h"
 #include "HmckMaterial.h"
 
 #include <glm/gtc/matrix_transform.hpp>
@@ -51,9 +51,9 @@ namespace Hmck
 		Model component functions as a pointer to model
 		If entity has this component it will be rendered by the render system
 	*/
-	struct HmckModelComponent
+	struct HmckMeshComponent
 	{
-		std::shared_ptr<HmckModel> model;
+		std::shared_ptr<HmckMesh> mesh;
 	};
 
 	/*
@@ -141,10 +141,10 @@ namespace Hmck
 			HmckBoundingBoxComponent::HmckBoundingBoxAxis x,
 			HmckBoundingBoxComponent::HmckBoundingBoxAxis y,
 			HmckBoundingBoxComponent::HmckBoundingBoxAxis z);
-		void fitBoundingBox(HmckModel::ModelInfo& modelInfo);
+		void fitBoundingBox(HmckMesh::MeshInfo& modelInfo);
 
 		void setMaterial(std::shared_ptr<HmckMaterial>& material);
-		void setModel(std::shared_ptr<HmckModel>& model);
+		void setModel(std::shared_ptr<HmckMesh>& model);
 		void bindDescriptorSet(
 			std::unique_ptr<HmckDescriptorPool>& pool, 
 			std::unique_ptr<HmckDescriptorSetLayout>& setLayout);
@@ -160,7 +160,7 @@ namespace Hmck
 		void setName(std::string name) { this->name = name; }
 
 		// Components
-		std::unique_ptr<HmckModelComponent> modelComponent = nullptr;
+		std::unique_ptr<HmckMeshComponent> meshComponent = nullptr;
 
 		glm::vec3 colorComponent{};
 
