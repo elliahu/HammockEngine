@@ -89,6 +89,8 @@
     <ClInclude Include="Engine\Systems\ImGUI\misc\cpp\imgui_stdlib.h" />
     <ClInclude Include="Engine\Utils\HmckLogger.h" />
     <ClInclude Include="Engine\Systems\HmckOffscreenRenderSystem.h" />
+    <ClInclude Include="External\stb_image.h" />
+    <ClInclude Include="External\tiny_obj_loader.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include="compile_shaders.bat" />
@@ -216,7 +218,7 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>$(VULKAN_SDK)\Include;$(SolutionDir)External\tiny_object_loader;$(ProjectDir);$(ProjectDir)Engine;$(SolutionDir)External;$(ProjectDir)Engine\Systems;$(ProjectDir)Engine\Systems\ImGUI;$(ProjectDir)Engine\Systems\ImGUI\backends;$(ProjectDir)Engine\Systems\ImGUI\misc\cpp</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(VULKAN_SDK)\Include;$(ProjectDir)External;$(ProjectDir);$(ProjectDir)Engine;$(ProjectDir)Engine\Systems;$(ProjectDir)Engine\Systems\ImGUI;$(ProjectDir)Engine\Systems\ImGUI\backends;$(ProjectDir)Engine\Systems\ImGUI\misc\cpp</AdditionalIncludeDirectories>
       <LanguageStandard>stdcpp17</LanguageStandard>
     </ClCompile>
     <Link>
