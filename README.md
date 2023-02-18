@@ -6,7 +6,7 @@ Custom game engine using Vulkan API.
 ## Engine dependencies 📚
 The following libraries are used:
 - [GLM](https://github.com/g-truc/glm) - Linear algebra (matrix and vector operations) 
-- [GLFW](https://www.glfw.org/) - Window creation and input handling (Will be porting to SDL2 soon)
+- [GLFW](https://www.glfw.org/) - Window creation and input handling
 - [TinyObjectLoader](https://github.com/tinyobjloader/tinyobjloader) - Excellent single header library for object loading
 - [ImGUI](https://github.com/ocornut/imgui) - Graphical User Interface library
 - [stb](https://github.com/nothings/stb)- stb_image.h for image loading
@@ -31,4 +31,3 @@ The following points are milestones i would like to hit in near future:
 ## Currently working on (hot stuff)
 - Implementing shadow system that will handle all kind of shadow types and will be performant. (basic singular-source spot/directional shadow already implemented)
 - Code refactoring and rethinking architectural choices - mainly descriptor handling 
-- Porting from GLFW to SDL2
