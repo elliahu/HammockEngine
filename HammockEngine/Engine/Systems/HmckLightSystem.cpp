@@ -1,8 +1,11 @@
 #include "HmckLightSystem.h"
 
-Hmck::HmckLightSystem::HmckLightSystem(HmckDevice& device, VkRenderPass renderPass, VkDescriptorSetLayout globalSetLayout) : hmckDevice{ device }
+Hmck::HmckLightSystem::HmckLightSystem(
+	HmckDevice& device, 
+	VkRenderPass renderPass, 
+	std::vector<VkDescriptorSetLayout>& setLayouts) : HmckIRenderSystem(device)
 {
-	createPipelineLayout(globalSetLayout);
+	createPipelineLayout(setLayouts);
 	createPipeline(renderPass);
 }
 
@@ -11,21 +14,17 @@ Hmck::HmckLightSystem::~HmckLightSystem()
 	vkDestroyPipelineLayout(hmckDevice.device(), pipelineLayout, nullptr);
 }
 
-void Hmck::HmckLightSystem::createPipelineLayout(VkDescriptorSetLayout globalSetLayout)
+void Hmck::HmckLightSystem::createPipelineLayout(std::vector<VkDescriptorSetLayout>& setLayouts)
 {
 	VkPushConstantRange pushConstantRange{};
 	pushConstantRange.stageFlags = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT;
 	pushConstantRange.offset = 0;
-	pushConstantRange.size = sizeof(HmckPointLightPushConstant);
-
-	std::vector<VkDescriptorSetLayout> descriptorSetLayouts{ 
-		globalSetLayout 
-	};
+	pushConstantRange.size = sizeof(PointLightPushConstant);
 
 	VkPipelineLayoutCreateInfo pipelineLayoutInfo{};
 	pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
-	pipelineLayoutInfo.setLayoutCount = static_cast<uint32_t>(descriptorSetLayouts.size());
-	pipelineLayoutInfo.pSetLayouts = descriptorSetLayouts.data();
+	pipelineLayoutInfo.setLayoutCount = static_cast<uint32_t>(setLayouts.size());
+	pipelineLayoutInfo.pSetLayouts = setLayouts.data();
 	pipelineLayoutInfo.pushConstantRangeCount = 1;
 	pipelineLayoutInfo.pPushConstantRanges = &pushConstantRange;
 
@@ -46,7 +45,7 @@ void Hmck::HmckLightSystem::createPipeline(VkRenderPass renderPass)
 	pipelineConfig.bindingDescriptions.clear();
 	pipelineConfig.renderPass = renderPass;
 	pipelineConfig.pipelineLayout = pipelineLayout;
-	hmckPipeline = std::make_unique<HmckPipeline>(
+	pipeline = std::make_unique<HmckPipeline>(
 		hmckDevice,
 		std::string(SHADERS_DIR) + "Compiled/point_light.vert.spv",
 		std::string(SHADERS_DIR) + "Compiled/point_light.frag.spv",
@@ -69,7 +68,7 @@ void Hmck::HmckLightSystem::render(HmckFrameInfo& frameInfo)
 		sorted[disSqared] = obj.getId();
 	}
 
-	hmckPipeline->bind(frameInfo.commandBuffer);
+	pipeline->bind(frameInfo.commandBuffer);
 
 	vkCmdBindDescriptorSets(
 		frameInfo.commandBuffer,
@@ -86,7 +85,7 @@ void Hmck::HmckLightSystem::render(HmckFrameInfo& frameInfo)
 	{
 		auto& obj = frameInfo.gameObjects.at(it->second);
 
-		HmckPointLightPushConstant push{};
+		PointLightPushConstant push{};
 		push.position = glm::vec4(obj.transformComponent.translation, 1.f);
 		push.color = glm::vec4(obj.colorComponent, obj.pointLightComponent->lightIntensity);
 		push.radius = obj.transformComponent.scale.x;
@@ -96,7 +95,7 @@ void Hmck::HmckLightSystem::render(HmckFrameInfo& frameInfo)
 			pipelineLayout,
 			VK_SHADER_STAGE_VERTEX_BIT |  VK_SHADER_STAGE_FRAGMENT_BIT,
 			0,
-			sizeof(HmckPointLightPushConstant),
+			sizeof(PointLightPushConstant),
 			&push
 		);
 		vkCmdDraw(frameInfo.commandBuffer, 6, 1, 0, 0);

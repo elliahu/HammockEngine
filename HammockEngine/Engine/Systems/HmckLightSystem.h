@@ -16,6 +16,8 @@
 #include <stdexcept>
 #include <map>
 
+#include "HmckIRenderSystem.h"
+
 #ifndef SHADERS_DIR
 	#define SHADERS_DIR "../../HammockEngine/Engine/Shaders/"
 #endif
@@ -26,19 +28,19 @@
 
 namespace Hmck
 {
-	struct HmckPointLightPushConstant
+	class HmckLightSystem : public HmckIRenderSystem
 	{
-		glm::vec4 position{};
-		glm::vec4 color{};
-		float radius;
-	};
 
+		struct PointLightPushConstant
+		{
+			glm::vec4 position{};
+			glm::vec4 color{};
+			float radius;
+		};
 
-	class HmckLightSystem
-	{
 	public:
 
-		HmckLightSystem(HmckDevice& device, VkRenderPass renderPass, VkDescriptorSetLayout globalSetLayout);
+		HmckLightSystem(HmckDevice& device, VkRenderPass renderPass, std::vector<VkDescriptorSetLayout>& setLayouts);
 		~HmckLightSystem();
 
 		// delete copy constructor and copy destructor
@@ -49,12 +51,8 @@ namespace Hmck
 		void render(HmckFrameInfo& frameInfo);
 
 	private:
-		void createPipelineLayout(VkDescriptorSetLayout globalSetLayout);
+		void createPipelineLayout(std::vector<VkDescriptorSetLayout>& setLayouts);
 		void createPipeline(VkRenderPass renderPass);
-
-		HmckDevice& hmckDevice;
-		std::unique_ptr<HmckPipeline> hmckPipeline;
-		VkPipelineLayout pipelineLayout;
 	};
 
 }

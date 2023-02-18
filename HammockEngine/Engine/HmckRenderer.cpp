@@ -196,8 +196,8 @@ void Hmck::HmckRenderer::beginOffscreenRenderPass(VkCommandBuffer commandBuffer)
 	renderPassInfo.framebuffer = offscreenRenderPass.frameBuffer;
 
 	renderPassInfo.renderArea.offset = { 0, 0 };
-	renderPassInfo.renderArea.extent.width = OFFSCREEN_RESOLUTION_WIDTH;
-	renderPassInfo.renderArea.extent.height = OFFSCREEN_RESOLUTION_HEIGHT;
+	renderPassInfo.renderArea.extent.width = static_cast<uint32_t>(OFFSCREEN_RES_WIDTH);
+	renderPassInfo.renderArea.extent.height = static_cast<uint32_t>(OFFSCREEN_RES_HEIGHT);
 
 	std::array<VkClearValue, 1> clearValues{};
 	clearValues[0].depthStencil = { 1.0f, 0 };
@@ -210,11 +210,11 @@ void Hmck::HmckRenderer::beginOffscreenRenderPass(VkCommandBuffer commandBuffer)
 	VkViewport viewport{};
 	viewport.x = 0.0f;
 	viewport.y = 0.0f;
-	viewport.width = OFFSCREEN_RESOLUTION_WIDTH;
-	viewport.height = OFFSCREEN_RESOLUTION_HEIGHT;
+	viewport.width = static_cast<float>(OFFSCREEN_RES_WIDTH);
+	viewport.height = static_cast<float>(OFFSCREEN_RES_HEIGHT);
 	viewport.minDepth = 0.0f;
 	viewport.maxDepth = 1.0f;
-	VkRect2D scissor{ {0,0}, {OFFSCREEN_RESOLUTION_WIDTH, OFFSCREEN_RESOLUTION_HEIGHT} };
+	VkRect2D scissor{ {0,0}, {static_cast<float>(OFFSCREEN_RES_WIDTH), static_cast<float>(OFFSCREEN_RES_HEIGHT)} };
 	vkCmdSetViewport(commandBuffer, 0, 1, &viewport);
 	vkCmdSetScissor(commandBuffer, 0, 1, &scissor);
 }
@@ -229,8 +229,8 @@ void Hmck::HmckRenderer::endOffscreenRenderPass(VkCommandBuffer commandBuffer)
 
 void Hmck::HmckRenderer::recreateOffscreenRenderPass()
 {
-	offscreenRenderPass.width = OFFSCREEN_RESOLUTION_WIDTH; //hmckSwapChain->width();
-	offscreenRenderPass.height = OFFSCREEN_RESOLUTION_HEIGHT;//hmckSwapChain->height();
+	offscreenRenderPass.width = OFFSCREEN_RES_WIDTH; //hmckSwapChain->width();
+	offscreenRenderPass.height = OFFSCREEN_RES_HEIGHT;//hmckSwapChain->height();
 
 	// Find a suitable depth format
 	VkFormat fbDepthFormat = hmckSwapChain->findDepthFormat();

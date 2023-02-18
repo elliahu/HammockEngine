@@ -2,7 +2,7 @@
 #include <iostream>
 #include <stdexcept>
 
-#include "Apps/FirstApp.h"
+#include "Apps/App.h"
 #include "Utils/HmckLogger.h"
 
 
@@ -20,5 +20,6 @@ int main()
 		int c = getchar(); // wait for user to see the error
 		return EXIT_FAILURE;
 	}
+
 	return EXIT_SUCCESS;
 }

@@ -18,13 +18,15 @@
 #include <vector>
 #include <stdexcept>
 
+#include "HmckIRenderSystem.h"
+
 #ifndef SHADERS_DIR
 #define SHADERS_DIR "../../HammockEngine/Engine/Shaders/"
 #endif
 
 namespace Hmck
 {
-	class HmckOffscreenRenderSystem
+	class HmckOffscreenRenderSystem : public HmckIRenderSystem
 	{
 		struct OffscreenPushConstantData 
 		{
@@ -40,16 +42,11 @@ namespace Hmck
 		HmckOffscreenRenderSystem(const HmckOffscreenRenderSystem&) = delete;
 		HmckOffscreenRenderSystem& operator=(const HmckOffscreenRenderSystem&) = delete;
 
-		void renderOffscreen(HmckFrameInfo& frameInfo);
+		void render(HmckFrameInfo& frameInfo);
 
 	private:
 		void createPipelineLayout(std::vector<VkDescriptorSetLayout>& setLayouts);
 		void createPipeline(VkRenderPass renderPass);
-
-		HmckDevice& hmckDevice;
-		std::unique_ptr<HmckPipeline> pipeline;
-		VkPipelineLayout pipelineLayout;
-		
 
 		// Depth bias (and slope) are used to avoid shadowing artifacts
 		// Constant depth bias factor (always applied)

@@ -18,8 +18,8 @@
 // black clear color
 #define HMCK_CLEAR_COLOR { 0.f,0.f,0.f,1.f }
 
-#define OFFSCREEN_RESOLUTION_WIDTH 2048
-#define OFFSCREEN_RESOLUTION_HEIGHT 2048
+constexpr auto OFFSCREEN_RES_WIDTH = 2048;
+constexpr auto OFFSCREEN_RES_HEIGHT = 2048;
 
 namespace Hmck
 {

@@ -2,7 +2,7 @@
 
 Hmck::HmckRenderSystem::HmckRenderSystem(
 	HmckDevice& device, VkRenderPass renderPass, 
-	std::vector<VkDescriptorSetLayout>& setLayouts) : hmckDevice{ device }
+	std::vector<VkDescriptorSetLayout>& setLayouts): HmckIRenderSystem(device)
 {
 	prepareDescriptors();
 	createPipelineLayout(setLayouts);
@@ -54,7 +54,7 @@ void Hmck::HmckRenderSystem::createPipeline(VkRenderPass renderPass)
 }
 
 
-void Hmck::HmckRenderSystem::renderGameObjects(HmckFrameInfo& frameInfo)
+void Hmck::HmckRenderSystem::render(HmckFrameInfo& frameInfo)
 {
 	pipeline->bind(frameInfo.commandBuffer);
 

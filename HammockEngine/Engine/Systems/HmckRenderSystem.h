@@ -8,6 +8,7 @@
 #include "../HmckDescriptors.h"
 #include "../HmckSwapChain.h"
 #include "../HmckModel.h"
+#include "HmckIRenderSystem.h"
 
 #define GLM_FORCE_RADIANS
 #define GLM_FORCE_DEPTH_ZERO_TO_ONE
@@ -37,7 +38,7 @@
 
 namespace Hmck
 {
-	class HmckRenderSystem
+	class HmckRenderSystem: public HmckIRenderSystem
 	{
 	public:
 		HmckRenderSystem(HmckDevice& device, VkRenderPass renderPass, std::vector<VkDescriptorSetLayout>& setLayouts);
@@ -52,18 +53,13 @@ namespace Hmck
 
 		void writeToDescriptorSet(VkDescriptorImageInfo& imageInfo);
 
-		void renderGameObjects(HmckFrameInfo& frameInfo);
+		void render(HmckFrameInfo& frameInfo);
 
 
 	private:
 		void createPipelineLayout(std::vector<VkDescriptorSetLayout>& setLayouts);
 		void createPipeline(VkRenderPass renderPass);
 		void prepareDescriptors();
-		
-
-		HmckDevice& hmckDevice;
-		std::unique_ptr<HmckPipeline> pipeline;
-		VkPipelineLayout pipelineLayout;
 
 		// descriptors
 		std::unique_ptr<HmckDescriptorPool> descriptorPool{};

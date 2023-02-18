@@ -1,4 +1,4 @@
-#include "FirstApp.h"
+#include "App.h"
 
 Hmck::App::App()
 {
@@ -43,13 +43,14 @@ void Hmck::App::run()
 
     // systems and layouts
     
-    std::vector<VkDescriptorSetLayout> offscreenSetLayouts{
+    std::vector<VkDescriptorSetLayout> globalSetLayouts{
         globalSetLayout->getDescriptorSetLayout(),
     };
+
     HmckOffscreenRenderSystem offscreenRenderSystem{
         hmckDevice,
         hmckRenderer.getOffscreenRenderPass(),
-        offscreenSetLayouts
+        globalSetLayouts
     };
 
     std::vector<VkDescriptorSetLayout> sceneSetLayouts{
@@ -65,7 +66,7 @@ void Hmck::App::run()
     HmckLightSystem lightSystem{
         hmckDevice,
         hmckRenderer.getSwapChainRenderPass(),
-        globalSetLayout->getDescriptorSetLayout()
+        globalSetLayouts
     };
 
     HmckCollisionDetectionSystem collisionDetectionSystem{};
@@ -134,14 +135,14 @@ void Hmck::App::run()
             // offscreen
             hmckRenderer.beginOffscreenRenderPass(commandBuffer);
 
-            offscreenRenderSystem.renderOffscreen(frameInfo);
+            offscreenRenderSystem.render(frameInfo);
 
             hmckRenderer.endOffscreenRenderPass(commandBuffer);
             // on screen
 			hmckRenderer.beginSwapChainRenderPass(commandBuffer);
             
             
-			renderSystem.renderGameObjects(frameInfo);
+			renderSystem.render(frameInfo);
             lightSystem.render(frameInfo);
         
             // ui

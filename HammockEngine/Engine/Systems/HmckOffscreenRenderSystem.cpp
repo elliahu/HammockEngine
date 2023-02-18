@@ -2,7 +2,7 @@
 
 Hmck::HmckOffscreenRenderSystem::HmckOffscreenRenderSystem(
 	HmckDevice& device, VkRenderPass renderPass, 
-	std::vector<VkDescriptorSetLayout>& setLayouts) : hmckDevice{ device }
+	std::vector<VkDescriptorSetLayout>& setLayouts) : HmckIRenderSystem(device)
 {
 	createPipelineLayout(setLayouts);
 	createPipeline(renderPass);		
@@ -13,7 +13,7 @@ Hmck::HmckOffscreenRenderSystem::~HmckOffscreenRenderSystem()
 	vkDestroyPipelineLayout(hmckDevice.device(), pipelineLayout, nullptr);
 }
 
-void Hmck::HmckOffscreenRenderSystem::renderOffscreen(HmckFrameInfo& frameInfo)
+void Hmck::HmckOffscreenRenderSystem::render(HmckFrameInfo& frameInfo)
 {
 	pipeline->bind(frameInfo.commandBuffer);
 

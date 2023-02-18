@@ -21,7 +21,7 @@
     <ClCompile Include="main.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="Apps\FirstApp.cpp">
+    <ClCompile Include="Apps\App.cpp">
       <Filter>Test Apps</Filter>
     </ClCompile>
     <ClCompile Include="Engine\HmckPipeline.cpp">
@@ -104,7 +104,7 @@
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="Apps\FirstApp.h">
+    <ClInclude Include="Apps\App.h">
       <Filter>Test Apps</Filter>
     </ClInclude>
     <ClInclude Include="Engine\HmckPipeline.h">
@@ -194,11 +194,11 @@
     <ClInclude Include="Engine\Systems\HmckOffscreenRenderSystem.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="Engine\Systems\HmckIRenderSystem.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <None Include="compile.bat">
-      <Filter>Source Files</Filter>
-    </None>
     <None Include="Engine\Shaders\Raw\point_light.frag" />
     <None Include="Engine\Shaders\Raw\point_light.vert" />
     <None Include="Engine\Shaders\Raw\scene.frag" />
@@ -206,5 +206,8 @@
     <None Include="packages.config" />
     <None Include="Engine\Shaders\Raw\offscreen.frag" />
     <None Include="Engine\Shaders\Raw\offscreen.vert" />
+    <None Include="compile_shaders.bat">
+      <Filter>Source Files</Filter>
+    </None>
   </ItemGroup>
 </Project>
