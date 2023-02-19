@@ -86,7 +86,7 @@ void Hmck::App::run()
     camera.setViewTarget(glm::vec3(-1.f, -2.f, 2.f), glm::vec3(0.f, 0.f, 2.5f));
     auto viewerObject = HmckGameObject::createGameObject();
     viewerObject.transformComponent.translation.z = -2.5f;
-    KeyboardMovementController cameraController{ hmckWindow.getGLFWwindow() };
+    KeyboardMovementController cameraController{};
 
     auto currentTime = std::chrono::high_resolution_clock::now();
 	while (!hmckWindow.shouldClose())
@@ -98,7 +98,7 @@ void Hmck::App::run()
         float frameTime = std::chrono::duration<float, std::chrono::seconds::period>(newTime - currentTime).count();
         currentTime = newTime;
 
-        cameraController.moveInPlaneXZ(hmckWindow.getGLFWwindow(), frameTime, viewerObject);
+        cameraController.moveInPlaneXZ(hmckWindow, frameTime, viewerObject);
         camera.setViewYXZ(viewerObject.transformComponent.translation, viewerObject.transformComponent.rotation);
 
         float aspect = hmckRenderer.getAspectRatio();

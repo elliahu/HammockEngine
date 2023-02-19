@@ -1,38 +1,34 @@
 #include "KeyboardMovementController.h"
 
-bool Hmck::KeyboardMovementController::mouseMotionStarted = false;
-bool Hmck::KeyboardMovementController::mouseMotionEnded = false;
 
-void Hmck::KeyboardMovementController::moveInPlaneXZ(GLFWwindow* window, float dt, HmckGameObject& gameObject)
+void Hmck::KeyboardMovementController::moveInPlaneXZ(HmckWindow& window, float dt, HmckGameObject& gameObject)
 {
 	glm::vec3 rotate{ 0 };
-	if (glfwGetKey(window, keys.lookRight) == GLFW_PRESS) rotate.y += 1.f;
-	if (glfwGetKey(window, keys.lookLeft) == GLFW_PRESS) rotate.y -= 1.f;
-	if (glfwGetKey(window, keys.lookUp) == GLFW_PRESS) rotate.x += 1.f;
-	if (glfwGetKey(window, keys.lookDown) == GLFW_PRESS) rotate.x -= 1.f;
+	if (window.getInputManager().isKeyboardKeyDown(HMCK_KEY_RIGHT)) rotate.y += 1.f;
+	if (window.getInputManager().isKeyboardKeyDown(HMCK_KEY_LEFT)) rotate.y -= 1.f;
+	if (window.getInputManager().isKeyboardKeyDown(HMCK_KEY_UP)) rotate.x += 1.f;
+	if (window.getInputManager().isKeyboardKeyDown(HMCK_KEY_DOWN)) rotate.x -= 1.f;
 
-	if (mouseMotionStarted)
+	if (window.getInputManager().isMouseKeyDown(HMCK_MOUSE_RIGHT) && !mouseInMotion)
 	{
 		mouseInMotion = true;
-		mouseMotionStarted = false;
-		glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+		window.setCursorVisibility(false);
 		double x, y;
-		glfwGetCursorPos(window, &x, &y);
+		window.getCursorPosition(x, y);
 		mouseMotionStartX = x;
 		mouseMotionStartY = y;
 	}
 
-	if (mouseMotionEnded)
+	if (!window.getInputManager().isMouseKeyDown(HMCK_MOUSE_RIGHT) && mouseInMotion)
 	{
 		mouseInMotion = false;
-		mouseMotionEnded = false;
-		glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
+		window.setCursorVisibility(true);
 	}
 
 	if (mouseInMotion)
 	{
 		double x, y;
-		glfwGetCursorPos(window, &x, &y);
+		window.getCursorPosition(x, y);
 
 		double offsetX = x - mouseMotionStartX;
 		double offsetY = mouseMotionStartY - y;
@@ -59,32 +55,15 @@ void Hmck::KeyboardMovementController::moveInPlaneXZ(GLFWwindow* window, float d
 	const glm::vec3 upDir{ 0.0f , -1.f, 0.0f };
 
 	glm::vec3 moveDir{ 0.0f };
-	if (glfwGetKey(window, keys.moveForward) == GLFW_PRESS) moveDir += forwardDir;
-	if (glfwGetKey(window, keys.moveBackward) == GLFW_PRESS) moveDir -= forwardDir;
-	if (glfwGetKey(window, keys.moveRight) == GLFW_PRESS) moveDir += rightDir;
-	if (glfwGetKey(window, keys.moveLeft) == GLFW_PRESS) moveDir -= rightDir;
-	if (glfwGetKey(window, keys.moveUp) == GLFW_PRESS) moveDir += upDir;
-	if (glfwGetKey(window, keys.moveDown) == GLFW_PRESS) moveDir -= upDir;
+	if (window.getInputManager().isKeyboardKeyDown(HMCK_KEY_W)) moveDir += forwardDir;
+	if (window.getInputManager().isKeyboardKeyDown(HMCK_KEY_S)) moveDir -= forwardDir;
+	if (window.getInputManager().isKeyboardKeyDown(HMCK_KEY_D)) moveDir += rightDir;
+	if (window.getInputManager().isKeyboardKeyDown(HMCK_KEY_A)) moveDir -= rightDir;
+	if (window.getInputManager().isKeyboardKeyDown(HMCK_KEY_SPACE)) moveDir += upDir;
+	if (window.getInputManager().isKeyboardKeyDown(HMCK_KEY_LSHIFT)) moveDir -= upDir;
 
 	if (glm::dot(moveDir, moveDir) > std::numeric_limits<float>::epsilon())
 	{
 		gameObject.transformComponent.translation += moveSpeed * dt * glm::normalize(moveDir);
 	}
-}
-
-void Hmck::KeyboardMovementController::mouseButtonCallback(GLFWwindow* window, int button, int action, int mods)
-{
-	// capture right click 
-	if (button == GLFW_MOUSE_BUTTON_RIGHT && action == GLFW_PRESS)
-	{
-		mouseMotionStarted = true;
-	}
-
-	if (button == GLFW_MOUSE_BUTTON_RIGHT && action == GLFW_RELEASE)
-	{
-		mouseMotionEnded = true;
-	}
-
-	// froward the rest
-	HmckUISystem::forward(button, action);
 }

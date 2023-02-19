@@ -5,8 +5,17 @@
 #include <string>
 #include <stdexcept>
 
+#include "HmckInputHandler.h"
+
 namespace Hmck
 {
+	enum HmckWindowMode 
+	{
+		HMCK_WINDOW_MODE_FULLSCREEN,
+		HMCK_WINDOW_MODE_BORDERLESS,
+		HMCK_WINDOW_MODE_WINDOWED
+	};
+
 	class HmckWindow
 	{
 	public:
@@ -25,16 +34,25 @@ namespace Hmck
 		void resetWindowResizedFlag() { framebufferResized = false; }
 		GLFWwindow* getGLFWwindow() const { return window; }
 		void pollEvents() { glfwPollEvents(); }
-
+		HmckInputManager& getInputManager() { return inputHandler; }
+		void setCursorVisibility(bool visible);
+		void getCursorPosition(double& x, double& y);
+		void setWindowMode(HmckWindowMode mode);
+		
 
 	private:
 		GLFWwindow* window;
+		int monitorsCount;
+		GLFWmonitor** monitors = nullptr;
+		int monitorIndex = 0;
 		int width;
 		int height;
 		bool framebufferResized = false;
 		std::string windowName;
 
-		void initWindow();
+		HmckInputManager inputHandler;
+
+		void initWindow(int width, int height);
 		static void framebufferResizeCallback(GLFWwindow* window, int width, int height);
 	};
 } 

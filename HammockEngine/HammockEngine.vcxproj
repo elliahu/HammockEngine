@@ -55,6 +55,7 @@
     <ClCompile Include="Engine\Systems\ImGUI\misc\cpp\imgui_stdlib.cpp" />
     <ClCompile Include="Engine\Utils\HmckLogger.cpp" />
     <ClCompile Include="Engine\Systems\HmckOffscreenRenderSystem.cpp" />
+    <ClCompile Include="Engine\Platform\HmckInputHandler.cpp" />
     <ClCompile Include="main.cpp" />
   </ItemGroup>
   <ItemGroup>
@@ -91,6 +92,7 @@
     <ClInclude Include="Engine\Systems\HmckOffscreenRenderSystem.h" />
     <ClInclude Include="External\stb_image.h" />
     <ClInclude Include="External\tiny_obj_loader.h" />
+    <ClInclude Include="Engine\Platform\HmckInputHandler.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include="compile_shaders.bat" />
