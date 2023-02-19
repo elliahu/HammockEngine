@@ -44,8 +44,6 @@ namespace Hmck
 		void endWindow();
 		void gameObjectComponets(HmckGameObject& gameObject);
 
-		bool showDemoWindow = false;
-
 		HmckDevice& hmckDevice;
 		HmckWindow& hmckWindow;
 		VkRenderPass renderPass;

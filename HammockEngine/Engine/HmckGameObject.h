@@ -78,6 +78,10 @@ namespace Hmck
 	struct HmckDirectionalLightComponent
 	{
 		float lightIntensity = 1.0f;
+		float fov = 50.0f;
+		float near = 0.1f;
+		float far = 100.f;
+		glm::vec3 target{0};
 	};
 	
 
@@ -133,8 +137,9 @@ namespace Hmck
 			glm::vec3 color = glm::vec3(1));
 
 		static HmckGameObject createDirectionalLight(
-			float yaw = 5.5f, float pitch = 5.5f,
-			glm::vec4 directionalLightColor = glm::vec4( 1.0f, 1.0f, 1.0, 0.1 ));
+			glm::vec3 position = glm::vec3(10,-10,-10), glm::vec3 target = glm::vec3(0),
+			glm::vec4 directionalLightColor = glm::vec4( 1.0f, 1.0f, 1.0, 0.1 ),
+			float near = 0.1f, float far = 100.f, float fov = 50.f);
 
 
 		void fitBoundingBox(

@@ -60,7 +60,7 @@ void Hmck::HmckLightSystem::render(HmckFrameInfo& frameInfo)
 	for (auto& kv : frameInfo.gameObjects)
 	{
 		auto& obj = kv.second;
-		if (obj.pointLightComponent == nullptr) continue;
+		if (obj.pointLightComponent == nullptr && obj.directionalLightComponent == nullptr) continue;
 
 		// calculate distance
 		auto offset = frameInfo.camera.getPosition() - obj.transformComponent.translation;
@@ -87,7 +87,10 @@ void Hmck::HmckLightSystem::render(HmckFrameInfo& frameInfo)
 
 		PointLightPushConstant push{};
 		push.position = glm::vec4(obj.transformComponent.translation, 1.f);
-		push.color = glm::vec4(obj.colorComponent, obj.pointLightComponent->lightIntensity);
+		if(obj.directionalLightComponent == nullptr)
+			push.color = glm::vec4(obj.colorComponent, obj.pointLightComponent->lightIntensity);
+		if(obj.pointLightComponent == nullptr)
+			push.color = glm::vec4(obj.colorComponent, obj.directionalLightComponent->lightIntensity);
 		push.radius = obj.transformComponent.scale.x;
 
 		vkCmdPushConstants(
@@ -142,7 +145,18 @@ void Hmck::HmckLightSystem::update(HmckFrameInfo& frameInfo, HmckGlobalUbo& ubo)
 			assert(dirLightIdx < 1 && "Directional light limit exeeded. There can only be one directional light");
 
 			ubo.directionalLight.color = glm::vec4(obj.colorComponent, obj.directionalLightComponent->lightIntensity);
-			ubo.directionalLight.direction = glm::vec4(obj.transformComponent.rotation, 1.f);
+			ubo.directionalLight.direction = glm::vec4(
+				 glm::normalize(obj.directionalLightComponent->target - obj.transformComponent.translation),
+				obj.directionalLightComponent->fov);
+
+			// TODO make this not ubo as it is not used in all systems
+			glm::mat4 depthProjectionMatrix = glm::perspective(
+				obj.directionalLightComponent->fov, 1.0f, 
+				obj.directionalLightComponent->near, 
+				obj.directionalLightComponent->far);
+			glm::mat4 depthViewMatrix = glm::lookAt(obj.transformComponent.translation, obj.directionalLightComponent->target, glm::vec3(0, 1, 0));
+			glm::mat4 depthModelMatrix = glm::mat4(1.0f);
+			ubo.depthBiasMVP = depthProjectionMatrix * depthViewMatrix * depthModelMatrix;
 
 			dirLightIdx += 1;
 		}

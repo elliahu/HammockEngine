@@ -29,7 +29,7 @@ namespace Hmck
 	*/
 	struct HmckDirectionalLight
 	{
-		glm::vec4 direction{}; // w is ignored
+		glm::vec4 direction{}; // w is fov
 		glm::vec4 color{}; // w is intensity
 	};
 

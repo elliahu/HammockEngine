@@ -245,7 +245,7 @@ void main()
     }
 
     // directional light 
-    vec3 L = vec3(ubo.directionalLight.direction);
+    vec3 L = normalize(-vec3(ubo.directionalLight.direction));
     vec3 H = normalize(V + L);
     vec3 radiance = ubo.directionalLight.color.xyz * ubo.directionalLight.color.w;
 

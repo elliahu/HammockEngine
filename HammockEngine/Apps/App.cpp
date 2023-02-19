@@ -122,12 +122,6 @@ void Hmck::App::run()
             ubo.projection = camera.getProjection();
             ubo.view = camera.getView();
             ubo.inverseView = camera.getInverseView();
-            // TODO make this not ubo as it is not used in all systems
-            // TODO make this get values from spectator object
-            glm::mat4 depthProjectionMatrix = glm::perspective(glm::radians(45.0f), 1.0f, 0.1f, 25.0f);
-            glm::mat4 depthViewMatrix = glm::lookAt(glm::vec3(10.f, -10.f, -10.f), glm::vec3(0.0f), glm::vec3(0, 1, 0));
-            glm::mat4 depthModelMatrix = glm::mat4(1.0f);
-            ubo.depthBiasMVP = depthProjectionMatrix * depthViewMatrix * depthModelMatrix;
             lightSystem.update(frameInfo, ubo);
 
             uboBuffers[frameIndex]->writeToBuffer(&ubo);
@@ -147,6 +141,7 @@ void Hmck::App::run()
         
             // ui
             userInterfaceSystem.beginUserInterface();
+            userInterfaceSystem.showDemoWindow();
             userInterfaceSystem.showDebugStats(viewerObject);
             userInterfaceSystem.showWindowControls();
             userInterfaceSystem.showGameObjectsInspector(gameObjects);

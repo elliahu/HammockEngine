@@ -19,9 +19,6 @@ void Hmck::HmckUISystem::beginUserInterface()
 	ImGui_ImplVulkan_NewFrame();
 	ImGui_ImplGlfw_NewFrame();
 	ImGui::NewFrame();
-
-	if(showDemoWindow)
-		ImGui::ShowDemoWindow();
 }
 
 void Hmck::HmckUISystem::endUserInterface(VkCommandBuffer commandBuffer)
@@ -76,7 +73,6 @@ void Hmck::HmckUISystem::showWindowControls()
 		}
 		ImGui::TreePop();
 	}
-	ImGui::Separator();
 	if (ImGui::TreeNode("Resolution"))
 	{
 		static int x = hmckWindow.getExtent().width, y = hmckWindow.getExtent().height;
@@ -88,7 +84,6 @@ void Hmck::HmckUISystem::showWindowControls()
 		}
 		ImGui::TreePop();
 	}
-	ImGui::Separator();
 	ImGui::End();
 }
 
@@ -368,6 +363,15 @@ void Hmck::HmckUISystem::gameObjectComponets(HmckGameObject& gameObject)
 		if (ImGui::CollapsingHeader("Directional light"))
 		{
 			ImGui::DragFloat("Intensity", &gameObject.directionalLightComponent->lightIntensity, 0.01f, 0.0f, 1.0f);
+			ImGui::DragFloat("FOV", &gameObject.directionalLightComponent->fov, 1.0f, 10.0f, 180.f);
+			ImGui::DragFloat("Near", &gameObject.directionalLightComponent->near, 0.01f, 0.001f);
+			ImGui::DragFloat("Far", &gameObject.directionalLightComponent->far, 1.0f, 0.001f);
+			float* target[3] = {
+				&gameObject.directionalLightComponent->target.x,
+				&gameObject.directionalLightComponent->target.y,
+				&gameObject.directionalLightComponent->target.z
+			};
+			ImGui::DragFloat3("Target", target[0],0.1f);
 		}
 	}
 }

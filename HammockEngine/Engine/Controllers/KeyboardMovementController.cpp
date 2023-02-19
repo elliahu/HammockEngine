@@ -1,6 +1,5 @@
 #include "KeyboardMovementController.h"
 
-
 void Hmck::KeyboardMovementController::moveInPlaneXZ(HmckWindow& window, float dt, HmckGameObject& gameObject)
 {
 	glm::vec3 rotate{ 0 };
