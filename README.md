@@ -34,5 +34,5 @@ The following libraries are used:
 ![Textures](https://raw.githubusercontent.com/elliahu/HammockEngine/master/Img/pbr.png)
 
 ## My thoughts
-I have decided to abandon SDL2 and I am gonna be using GLFW from now on even though it lack audio and media support. There are more reasons to this - nut mainly it is that the SDL is too heavy and doesn't always work as it should on modern hardware or W11.
+I have decided to abandon SDL2 and I am gonna be using GLFW from now on even though it lack audio and media support. There are more reasons to this - but mainly it is that SDL is too heavy and doesn't always work as it should on modern hardware or W11.
 
