@@ -38,7 +38,7 @@ namespace Hmck
 		void setCursorVisibility(bool visible);
 		void getCursorPosition(double& x, double& y);
 		void setWindowMode(HmckWindowMode mode);
-		
+		void setWindowResolution(uint32_t resX, uint32_t resY);
 
 	private:
 		GLFWwindow* window;

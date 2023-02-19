@@ -148,6 +148,7 @@ void Hmck::App::run()
             // ui
             userInterfaceSystem.beginUserInterface();
             userInterfaceSystem.showDebugStats(viewerObject);
+            userInterfaceSystem.showWindowControls();
             userInterfaceSystem.showGameObjectsInspector(gameObjects);
             userInterfaceSystem.endUserInterface(commandBuffer);
             

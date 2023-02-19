@@ -23,7 +23,9 @@ namespace Hmck
 		// Ui rendering
 		void beginUserInterface();
 		void endUserInterface(VkCommandBuffer commandBuffer);
+		void showDemoWindow() { ImGui::ShowDemoWindow(); }
 		void showDebugStats(HmckGameObject& camera);
+		void showWindowControls();
 		void showGameObjectComponents(HmckGameObject& gameObject, bool * close = (bool*)0);
 		void showGameObjectsInspector(HmckGameObject::Map& gameObjects);
 		void showLog();

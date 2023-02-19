@@ -54,6 +54,44 @@ void Hmck::HmckUISystem::showDebugStats(HmckGameObject& camera)
 	ImGui::End();
 }
 
+void Hmck::HmckUISystem::showWindowControls()
+{
+	ImGuiWindowFlags window_flags = ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_NoFocusOnAppearing | ImGuiWindowFlags_NoNav;
+	ImGui::SetNextWindowPos({ static_cast<float>(hmckWindow.getExtent().width - 10),10.f}, ImGuiCond_Always, {1.f, 0.f});
+	ImGui::SetNextWindowBgAlpha(0.35f);
+	ImGui::Begin("Window controls", (bool*)0, window_flags);
+	if (ImGui::TreeNode("Window mode"))
+	{
+		if (ImGui::Button("Fullscreen"))
+		{
+			hmckWindow.setWindowMode(HMCK_WINDOW_MODE_FULLSCREEN);
+		}
+		if (ImGui::Button("Borderless"))
+		{
+			hmckWindow.setWindowMode(HMCK_WINDOW_MODE_BORDERLESS);
+		}
+		if (ImGui::Button("Windowed"))
+		{
+			hmckWindow.setWindowMode(HMCK_WINDOW_MODE_WINDOWED);
+		}
+		ImGui::TreePop();
+	}
+	ImGui::Separator();
+	if (ImGui::TreeNode("Resolution"))
+	{
+		static int x = hmckWindow.getExtent().width, y = hmckWindow.getExtent().height;
+		ImGui::DragInt("Horizontal", &x, 1.f, 800, 3840);
+		ImGui::DragInt("Vertical", &y, 1.f, 600, 2160);
+		if (ImGui::Button("Apply"))
+		{
+			hmckWindow.setWindowResolution(x, y);
+		}
+		ImGui::TreePop();
+	}
+	ImGui::Separator();
+	ImGui::End();
+}
+
 void Hmck::HmckUISystem::showGameObjectComponents(HmckGameObject& gameObject, bool* close)
 {
 	beginWindow(gameObject.getName().c_str(), close, ImGuiWindowFlags_AlwaysAutoResize);

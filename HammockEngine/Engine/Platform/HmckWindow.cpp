@@ -87,3 +87,10 @@ void Hmck::HmckWindow::setWindowMode(HmckWindowMode mode)
 
 	
 }
+
+void Hmck::HmckWindow::setWindowResolution(uint32_t resX, uint32_t resY)
+{
+	width = resX;
+	height = resY;
+	glfwSetWindowSize(window, resX, resY);
+}
