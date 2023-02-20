@@ -66,6 +66,7 @@ namespace Hmck
 		VkCommandBuffer beginFrame();
 		void endFrame();
 		void beginShadowmapRenderPass(VkCommandBuffer commandBuffer);
+		void beginGbufferRenderPass(VkCommandBuffer commandBuffer);
 		void beginSwapChainRenderPass(VkCommandBuffer commandBuffer);
 		void beginRenderPass(
 			std::unique_ptr<HmckFramebuffer>& framebuffer,

@@ -205,6 +205,21 @@ void Hmck::HmckRenderer::beginShadowmapRenderPass(VkCommandBuffer commandBuffer)
 	beginRenderPass(shadowmapFramebuffer, commandBuffer, clearValues);
 }
 
+void Hmck::HmckRenderer::beginGbufferRenderPass(VkCommandBuffer commandBuffer)
+{
+	std::vector<VkClearValue> clearValues{ 8 };
+	clearValues[0].color = { { 0.0f, 0.0f, 0.0f, 0.0f } };
+	clearValues[1].color = { { 0.0f, 0.0f, 0.0f, 0.0f } };
+	clearValues[2].color = { { 0.0f, 0.0f, 0.0f, 0.0f } };
+	clearValues[3].color = { { 0.0f, 0.0f, 0.0f, 0.0f } };
+	clearValues[5].color = { { 0.0f, 0.0f, 0.0f, 0.0f } };
+	clearValues[5].color = { { 0.0f, 0.0f, 0.0f, 0.0f } };
+	clearValues[6].color = { { 0.0f, 0.0f, 0.0f, 0.0f } };
+	clearValues[7].depthStencil = { 1.0f, 0 };
+
+	beginRenderPass(gbufferFramebuffer, commandBuffer, clearValues);
+}
+
 void Hmck::HmckRenderer::endRenderPass(VkCommandBuffer commandBuffer)
 {
 	assert(isFrameInProgress() && "Cannot call endActiveRenderPass if frame is not in progress");
@@ -289,7 +304,7 @@ void Hmck::HmckRenderer::recreateGbufferRenderPass()
 	attachmentInfo.format = VK_FORMAT_R16G16B16A16_SFLOAT;
 	gbufferFramebuffer->addAttachment(attachmentInfo);
 
-	// Depth attachment
+	// Attachment 7: Depth attachment
 	attachmentInfo.format = depthFormat;
 	attachmentInfo.usage = VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT;
 	gbufferFramebuffer->addAttachment(attachmentInfo);
