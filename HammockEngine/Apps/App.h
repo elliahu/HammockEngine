@@ -8,6 +8,7 @@
 #include "Systems/HmckDeferredRenderSystem.h"
 #include "Systems/HmckUISystem.h"
 #include "Systems/HmckShadowmapSystem.h"
+#include "Systems/HmckGbufferRenderSystem.h"
 #include "HmckMesh.h"
 #include "HmckCamera.h"
 #include "Controllers/KeyboardMovementController.h"

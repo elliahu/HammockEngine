@@ -70,6 +70,7 @@ void Hmck::HmckLightSystem::render(HmckFrameInfo& frameInfo)
 
 	pipeline->bind(frameInfo.commandBuffer);
 
+	// UBO
 	vkCmdBindDescriptorSets(
 		frameInfo.commandBuffer,
 		VK_PIPELINE_BIND_POINT_GRAPHICS,
@@ -93,6 +94,7 @@ void Hmck::HmckLightSystem::render(HmckFrameInfo& frameInfo)
 			push.color = glm::vec4(obj.colorComponent, obj.directionalLightComponent->lightIntensity);
 		push.radius = obj.transformComponent.scale.x;
 
+		// psh constant
 		vkCmdPushConstants(
 			frameInfo.commandBuffer,
 			pipelineLayout,

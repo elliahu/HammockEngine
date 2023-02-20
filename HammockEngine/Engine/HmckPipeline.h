@@ -50,6 +50,7 @@ namespace Hmck
 			HmckPipelineConfigInfo& configInfo);
 		static void enableAlphaBlending(HmckPipelineConfigInfo& configInfo);
 		static void enablePolygonModeLine(HmckPipelineConfigInfo& configInfo);
+		static void enableGbuffer(HmckPipelineConfigInfo& configInfo, std::array<VkPipelineColorBlendAttachmentState, 7> blendAttachmentStates);
 
 		void bind(VkCommandBuffer commandBuffer);
 
@@ -66,7 +67,6 @@ namespace Hmck
 		VkPipeline graphicsPipeline;
 		VkShaderModule vertShaderModule;
 		VkShaderModule fragShaderModule;
-		//VkShaderModule geomShaderModule;
 	};
 }
 

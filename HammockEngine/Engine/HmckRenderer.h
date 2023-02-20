@@ -38,10 +38,11 @@ namespace Hmck
 
 		VkRenderPass getSwapChainRenderPass() const { return hmckSwapChain->getRenderPass(); }
 		VkRenderPass getOffscreenRenderPass() const { return shadowmapFramebuffer->renderPass; }
+		VkRenderPass getGbufferRenderPass() const { return gbufferFramebuffer->renderPass; }
 		float getAspectRatio() const { return hmckSwapChain->extentAspectRatio(); }
 		bool isFrameInProgress() const { return isFrameStarted; }
 
-		VkDescriptorImageInfo getOffscreenDescriptorImageInfo() 
+		VkDescriptorImageInfo getShadowmapDescriptorImageInfo() 
 		{  
 			VkDescriptorImageInfo descriptorImageInfo{};
 			descriptorImageInfo.imageLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL;
@@ -50,6 +51,17 @@ namespace Hmck
 
 			return descriptorImageInfo;
 		}
+
+		VkDescriptorImageInfo getGbufferDescriptorImageInfo(int index)
+		{
+			VkDescriptorImageInfo descriptorImageInfo{};
+			descriptorImageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+			descriptorImageInfo.imageView = gbufferFramebuffer->attachments[index].view;
+			descriptorImageInfo.sampler = gbufferFramebuffer->sampler;
+
+			return descriptorImageInfo;
+		}
+
 
 		VkCommandBuffer getCurrentCommandBuffer() const
 		{

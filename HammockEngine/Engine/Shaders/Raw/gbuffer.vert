@@ -10,8 +10,8 @@ layout (location = 4) in vec3 tangent;
 // outputs
 layout (location = 0) out vec3 _normal;
 layout (location = 1) out vec2 _uv;
-layout (location = 3) out vec3 _position;
-layout (location = 4) out vec3 _tangent;
+layout (location = 2) out vec3 _position;
+layout (location = 3) out vec3 _tangent;
 
 struct PointLight
 {

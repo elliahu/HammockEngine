@@ -33,7 +33,7 @@ void Hmck::HmckGbufferRenderSystem::render(HmckFrameInfo& frameInfo)
 
 		if (obj.materialComponent != nullptr)
 		{
-			// Material images
+
 			vkCmdBindDescriptorSets(
 				frameInfo.commandBuffer,
 				VK_PIPELINE_BIND_POINT_GRAPHICS,
@@ -90,6 +90,19 @@ void Hmck::HmckGbufferRenderSystem::createPipeline(VkRenderPass renderPass)
 
 	HmckPipelineConfigInfo pipelineConfig{};
 	HmckPipeline::defaultHmckPipelineConfigInfo(pipelineConfig);
+
+	std::array<VkPipelineColorBlendAttachmentState, 7> blendAttachmentStates =
+	{
+		Hmck::Init::pipelineColorBlendAttachmentState(0xf, VK_FALSE),
+		Hmck::Init::pipelineColorBlendAttachmentState(0xf, VK_FALSE),
+		Hmck::Init::pipelineColorBlendAttachmentState(0xf, VK_FALSE),
+		Hmck::Init::pipelineColorBlendAttachmentState(0xf, VK_FALSE),
+		Hmck::Init::pipelineColorBlendAttachmentState(0xf, VK_FALSE),
+		Hmck::Init::pipelineColorBlendAttachmentState(0xf, VK_FALSE),
+		Hmck::Init::pipelineColorBlendAttachmentState(0xf, VK_FALSE),
+	};
+
+	HmckPipeline::enableGbuffer(pipelineConfig, blendAttachmentStates);
 	pipelineConfig.renderPass = renderPass;
 	pipelineConfig.pipelineLayout = pipelineLayout;
 	pipeline = std::make_unique<HmckPipeline>(

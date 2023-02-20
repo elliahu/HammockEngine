@@ -17,19 +17,16 @@ Hmck::HmckDeferredRenderSystem::~HmckDeferredRenderSystem()
 void Hmck::HmckDeferredRenderSystem::createPipelineLayout(std::vector<VkDescriptorSetLayout>& setLayouts)
 {
 	std::vector<VkDescriptorSetLayout> layouts{ setLayouts };
-	layouts.push_back(descriptorLayout->getDescriptorSetLayout());
+	layouts.push_back(gbufferDescriptorLayout->getDescriptorSetLayout());
+	layouts.push_back(shadowmapDescriptorLayout->getDescriptorSetLayout());
 
-	VkPushConstantRange pushConstantRange{};
-	pushConstantRange.stageFlags = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT;
-	pushConstantRange.offset = 0;
-	pushConstantRange.size = sizeof(HmckMeshPushConstantData);
 
 	VkPipelineLayoutCreateInfo pipelineLayoutInfo{};
 	pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
 	pipelineLayoutInfo.setLayoutCount = static_cast<uint32_t>(layouts.size());
 	pipelineLayoutInfo.pSetLayouts = layouts.data();
-	pipelineLayoutInfo.pushConstantRangeCount = 1;
-	pipelineLayoutInfo.pPushConstantRanges = &pushConstantRange;
+	pipelineLayoutInfo.pushConstantRangeCount = 0;
+	pipelineLayoutInfo.pPushConstantRanges = nullptr;
 
 	if (vkCreatePipelineLayout(hmckDevice.device(), &pipelineLayoutInfo, nullptr, &pipelineLayout) != VK_SUCCESS)
 	{
@@ -58,7 +55,7 @@ void Hmck::HmckDeferredRenderSystem::render(HmckFrameInfo& frameInfo)
 {
 	pipeline->bind(frameInfo.commandBuffer);
 
-	// bind descriptor set
+	// bind descriptor set (UBO)
 	vkCmdBindDescriptorSets(
 		frameInfo.commandBuffer,
 		VK_PIPELINE_BIND_POINT_GRAPHICS,
@@ -69,50 +66,35 @@ void Hmck::HmckDeferredRenderSystem::render(HmckFrameInfo& frameInfo)
 		nullptr
 	);
 
+	// gbuffer
+	vkCmdBindDescriptorSets(
+		frameInfo.commandBuffer,
+		VK_PIPELINE_BIND_POINT_GRAPHICS,
+		pipelineLayout,
+		1, 1,
+		&gbufferDescriptorSet,
+		0,
+		nullptr
+	);
+
+	// shadowmap
+	vkCmdBindDescriptorSets(
+		frameInfo.commandBuffer,
+		VK_PIPELINE_BIND_POINT_GRAPHICS,
+		pipelineLayout,
+		2, 1,
+		&shadowmapDescriptorSet,
+		0,
+		nullptr
+	);
+	vkCmdDraw(frameInfo.commandBuffer, 3, 1, 0, 0);
+
 	for (auto& kv : frameInfo.gameObjects)
 	{
 		auto& obj = kv.second;
 		if (obj.meshComponent == nullptr) continue;
 
-		if (obj.materialComponent != nullptr)
-		{
-			vkCmdBindDescriptorSets(
-				frameInfo.commandBuffer,
-				VK_PIPELINE_BIND_POINT_GRAPHICS,
-				pipelineLayout,
-				1, 1,
-				&obj.descriptorSetComponent->set,
-				0,
-				nullptr
-			);
-		}
-
-		vkCmdBindDescriptorSets(
-			frameInfo.commandBuffer,
-			VK_PIPELINE_BIND_POINT_GRAPHICS,
-			pipelineLayout,
-			2, 1,
-			&descriptorSet,
-			0,
-			nullptr
-		);
-
-		HmckMeshPushConstantData push{};
-		push.modelMatrix = obj.transformComponent.mat4();
-		push.normalMatrix = obj.transformComponent.normalMatrix();
-
-		// push data using push constant
-		vkCmdPushConstants(
-			frameInfo.commandBuffer,
-			pipelineLayout,
-			VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT,
-			0,
-			sizeof(HmckMeshPushConstantData),
-			&push
-		);
-
-		obj.meshComponent->mesh->bind(frameInfo.commandBuffer);
-		obj.meshComponent->mesh->draw(frameInfo.commandBuffer);
+		
 	}
 
 }
@@ -121,17 +103,40 @@ void Hmck::HmckDeferredRenderSystem::prepareDescriptors()
 {
 	descriptorPool = HmckDescriptorPool::Builder(hmckDevice)
 		.setMaxSets(100)
-		.addPoolSize(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1)
+		.addPoolSize(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 8)
 		.build();
 
-	descriptorLayout = HmckDescriptorSetLayout::Builder(hmckDevice)
+	shadowmapDescriptorLayout = HmckDescriptorSetLayout::Builder(hmckDevice)
 		.addBinding(0, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT)
+		.build();
+
+	gbufferDescriptorLayout = HmckDescriptorSetLayout::Builder(hmckDevice)
+		.addBinding(0, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT)
+		.addBinding(1, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT)
+		.addBinding(2, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT)
+		.addBinding(3, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT)
+		.addBinding(4, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT)
+		.addBinding(5, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT)
+		.addBinding(6, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT)
 		.build();
 }
 
-void Hmck::HmckDeferredRenderSystem::writeToDescriptorSet(VkDescriptorImageInfo& imageInfo)
+void Hmck::HmckDeferredRenderSystem::updateShadowmapDescriptorSet(VkDescriptorImageInfo& imageInfo)
 {
-	auto writer = HmckDescriptorWriter(*descriptorLayout, *descriptorPool)
+	auto writer = HmckDescriptorWriter(*shadowmapDescriptorLayout, *descriptorPool)
 		.writeImage(0, &imageInfo)
-		.build(descriptorSet);
+		.build(shadowmapDescriptorSet);
+}
+
+void Hmck::HmckDeferredRenderSystem::updateGbufferDescriptorSet(std::array<VkDescriptorImageInfo, 7> imageInfos)
+{
+	auto writer = HmckDescriptorWriter(*gbufferDescriptorLayout, *descriptorPool)
+		.writeImage(0, &imageInfos[0])
+		.writeImage(1, &imageInfos[1])
+		.writeImage(2, &imageInfos[2])
+		.writeImage(3, &imageInfos[3])
+		.writeImage(4, &imageInfos[4])
+		.writeImage(5, &imageInfos[5])
+		.writeImage(6, &imageInfos[6])
+		.build(gbufferDescriptorSet);
 }

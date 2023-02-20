@@ -47,20 +47,28 @@ void Hmck::App::run()
         globalSetLayout->getDescriptorSetLayout(),
     };
 
-    HmckShadowmapSystem offscreenRenderSystem{
+    // TODO make HmckGbufferRenderSystem own material set layout 
+    std::vector<VkDescriptorSetLayout> gbufferSetLayouts{
+        globalSetLayout->getDescriptorSetLayout(),
+        materialLayout->getDescriptorSetLayout()
+    };
+
+    HmckShadowmapSystem shadowmapRenderSystem{
         hmckDevice,
         hmckRenderer.getOffscreenRenderPass(),
         globalSetLayouts
     };
 
-    std::vector<VkDescriptorSetLayout> sceneSetLayouts{
-        globalSetLayout->getDescriptorSetLayout(),
-        materialLayout->getDescriptorSetLayout(),
+    HmckGbufferRenderSystem gbufferRenderSystem{
+        hmckDevice,
+        hmckRenderer.getGbufferRenderPass(),
+        gbufferSetLayouts
     };
-	HmckDeferredRenderSystem renderSystem{ 
+
+	HmckDeferredRenderSystem deferredRenderSystem{ 
         hmckDevice,
         hmckRenderer.getSwapChainRenderPass(), 
-        sceneSetLayouts
+        globalSetLayouts
     };
 
     HmckLightSystem lightSystem{
@@ -78,8 +86,19 @@ void Hmck::App::run()
     };
 
     // TODO this is ugly, thinking about restructure
-    VkDescriptorImageInfo imageInfo = hmckRenderer.getOffscreenDescriptorImageInfo();
-    renderSystem.writeToDescriptorSet(imageInfo);
+    VkDescriptorImageInfo imageInfo = hmckRenderer.getShadowmapDescriptorImageInfo();
+    deferredRenderSystem.updateShadowmapDescriptorSet(imageInfo);
+
+    std::array<VkDescriptorImageInfo, 7> imageInfos{
+        hmckRenderer.getGbufferDescriptorImageInfo(0),
+        hmckRenderer.getGbufferDescriptorImageInfo(1),
+        hmckRenderer.getGbufferDescriptorImageInfo(2),
+        hmckRenderer.getGbufferDescriptorImageInfo(3),
+        hmckRenderer.getGbufferDescriptorImageInfo(4),
+        hmckRenderer.getGbufferDescriptorImageInfo(5),
+        hmckRenderer.getGbufferDescriptorImageInfo(6),
+    };
+    deferredRenderSystem.updateGbufferDescriptorSet(imageInfos);
 
     // camera and movement
     HmckCamera camera{};
@@ -129,14 +148,20 @@ void Hmck::App::run()
             // offscreen
             hmckRenderer.beginShadowmapRenderPass(commandBuffer);
 
-            offscreenRenderSystem.render(frameInfo);
+            shadowmapRenderSystem.render(frameInfo);
+
+            hmckRenderer.endRenderPass(commandBuffer);
+
+            hmckRenderer.beginGbufferRenderPass(commandBuffer);
+
+            gbufferRenderSystem.render(frameInfo);
 
             hmckRenderer.endRenderPass(commandBuffer);
             // on screen
 			hmckRenderer.beginSwapChainRenderPass(commandBuffer);
             
             
-			renderSystem.render(frameInfo);
+			deferredRenderSystem.render(frameInfo);
             lightSystem.render(frameInfo);
         
             // ui

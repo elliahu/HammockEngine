@@ -1,13 +1,14 @@
 #version 450
-
+// inputs
 layout (location = 0) in vec3 normal;
 layout (location = 1) in vec2 uv;
-layout (location = 3) in vec3 position;
-layout (location = 4) in vec3 tangent;
+layout (location = 2) in vec3 position;
+layout (location = 3) in vec3 tangent;
 
+// outputs
 layout (location = 0) out vec4 _position;
-layout (location = 2) out vec4 _albedo;
-layout (location = 1) out vec4 _normal;
+layout (location = 1) out vec4 _albedo;
+layout (location = 2) out vec4 _normal;
 layout (location = 3) out vec4 _rough;
 layout (location = 4) out vec4 _metal;
 layout (location = 5) out vec4 _ao;

@@ -48,10 +48,12 @@ namespace Hmck
 		HmckDeferredRenderSystem(const HmckDeferredRenderSystem&) = delete;
 		HmckDeferredRenderSystem& operator=(const HmckDeferredRenderSystem&) = delete;
 
-		VkDescriptorSet getDescriptorSet() { return descriptorSet; }
-		VkDescriptorSetLayout getDescriptorSetLayout() { return descriptorLayout->getDescriptorSetLayout(); }
+		VkDescriptorSet getShadowmapDescriptorSet() { return shadowmapDescriptorSet; }
+		VkDescriptorSetLayout getShadowmapDescriptorSetLayout() { return shadowmapDescriptorLayout->getDescriptorSetLayout(); }
 
-		void writeToDescriptorSet(VkDescriptorImageInfo& imageInfo);
+		void updateShadowmapDescriptorSet(VkDescriptorImageInfo& imageInfo);
+		void updateGbufferDescriptorSet(std::array<VkDescriptorImageInfo, 7> imageInfos);
+
 
 		void render(HmckFrameInfo& frameInfo);
 
@@ -63,8 +65,10 @@ namespace Hmck
 
 		// descriptors
 		std::unique_ptr<HmckDescriptorPool> descriptorPool{};
-		std::unique_ptr<HmckDescriptorSetLayout> descriptorLayout{};
-		VkDescriptorSet descriptorSet;
+		std::unique_ptr<HmckDescriptorSetLayout> shadowmapDescriptorLayout{};
+		std::unique_ptr<HmckDescriptorSetLayout> gbufferDescriptorLayout{};
+		VkDescriptorSet shadowmapDescriptorSet;
+		VkDescriptorSet gbufferDescriptorSet;
 		
 		
 	};

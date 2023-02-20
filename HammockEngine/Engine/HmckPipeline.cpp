@@ -229,3 +229,9 @@ void Hmck::HmckPipeline::enablePolygonModeLine(HmckPipelineConfigInfo& configInf
     configInfo.rasterizationInfo.frontFace = VK_FRONT_FACE_CLOCKWISE;
     configInfo.rasterizationInfo.depthBiasEnable = VK_TRUE;
 }
+
+void Hmck::HmckPipeline::enableGbuffer(HmckPipelineConfigInfo& configInfo, std::array<VkPipelineColorBlendAttachmentState, 7> blendAttachmentStates)
+{
+    configInfo.colorBlendInfo.attachmentCount = static_cast<uint32_t>(blendAttachmentStates.size());
+    configInfo.colorBlendInfo.pAttachments = blendAttachmentStates.data();
+}

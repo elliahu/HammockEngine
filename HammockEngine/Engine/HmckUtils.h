@@ -54,6 +54,16 @@ namespace Hmck
 			return framebufferCreateInfo;
 		}
 
+		inline VkPipelineColorBlendAttachmentState pipelineColorBlendAttachmentState(
+			VkColorComponentFlags colorWriteMask,
+			VkBool32 blendEnable)
+		{
+			VkPipelineColorBlendAttachmentState pipelineColorBlendAttachmentState{};
+			pipelineColorBlendAttachmentState.colorWriteMask = colorWriteMask;
+			pipelineColorBlendAttachmentState.blendEnable = blendEnable;
+			return pipelineColorBlendAttachmentState;
+		}
+
 
 	} // namespace Init
 

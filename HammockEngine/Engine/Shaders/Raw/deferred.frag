@@ -1,24 +1,21 @@
 #version 450
 
 //inputs
-layout (location = 0) in vec3 fragPosWorld;
-layout (location = 1) in vec3 fragNormalWorld;
-layout (location = 2) in vec2 textCoords;
-layout (location = 3) in vec3 tangentNormal;
-layout (location = 4) in vec4 shadowCoord;
+layout (location = 0) in vec2 uv;
 
 // outputs
 layout (location = 0) out vec4 outColor;
 
-// samplers  
-layout(set = 1, binding = 0) uniform sampler2D colSampler;
-layout(set = 1, binding = 1) uniform sampler2D normSampler;
-layout(set = 1, binding = 2) uniform sampler2D roughSampler;
-layout(set = 1, binding = 3) uniform sampler2D metalSampler;
-layout(set = 1, binding = 4) uniform sampler2D aoSampler;
-layout(set = 1, binding = 5) uniform sampler2D disSampler;
+// gbuffer attachments  
+layout(set = 1, binding = 0) uniform sampler2D positionSampler;
+layout(set = 1, binding = 1) uniform sampler2D albedoSampler;
+layout(set = 1, binding = 2) uniform sampler2D normalSampler;
+layout(set = 1, binding = 3) uniform sampler2D roughSampler;
+layout(set = 1, binding = 4) uniform sampler2D metalSampler;
+layout(set = 1, binding = 5) uniform sampler2D aoSampler;
+layout(set = 1, binding = 6) uniform sampler2D disSampler;
 
-// offscreen sampler
+// shadowmap sampler
 layout(set = 2, binding = 0) uniform sampler2D directionalLightDepthMap;
 
 struct PointLight
@@ -46,26 +43,9 @@ layout (set = 0, binding = 0) uniform GlobalUbo
     PointLight pointLights[10];
     int numLights;
 } ubo;
- 
-// push constants
-layout (push_constant) uniform Push
-{
-    mat4 modelMatrix; // model matrix
-    mat4 normalMatrix; // using mat4 bcs alignment requirements
-} push;
+
 
 const float PI = 3.14159265359;
-
-vec3 getNormalFromMap(vec2 uv)
-{
-    vec3 mapNormal = texture(normSampler, uv).xyz * 2.0 - 1.0;
-
-	vec3 N = normalize(fragNormalWorld);
-	vec3 T = normalize(tangentNormal);
-	vec3 B = normalize(cross(N, T));
-	mat3 TBN = mat3(T, B, N);
-	return normalize(TBN * mapNormal);
-}
 
 float DistributionGGX(vec3 N, vec3 H, float roughness)
 {
@@ -107,32 +87,6 @@ vec3 fresnelSchlick(float cosTheta, vec3 F0)
     return F0 + (1.0 - F0) * pow(clamp(1.0 - cosTheta, 0.0, 1.0), 5.0);
 }
 
-float numLayers = 16.0;
-float heightScale = 1.0;
-
-vec2 parallaxOcclusionMapping(vec2 uv, vec3 viewDir) 
-{
-    // parallax mapping is broken for now
-    return uv;
-	float layerDepth = 1.0 / numLayers;
-	float currLayerDepth = 0.0;
-	vec2 deltaUV = viewDir.xy * heightScale / (viewDir.z * numLayers);
-	vec2 currUV = uv;
-	float height = 1.0 - textureLod(disSampler, currUV, 0.0).a;
-	for (int i = 0; i < numLayers; i++) {
-		currLayerDepth += layerDepth;
-		currUV -= deltaUV;
-		height = 1.0 - textureLod(disSampler, currUV, 0.0).a;
-		if (height < currLayerDepth) {
-			break;
-		}
-	}
-	vec2 prevUV = currUV + deltaUV;
-	float nextDepth = height - currLayerDepth;
-	float prevDepth = 1.0 - textureLod(disSampler, prevUV, 0.0).a - currLayerDepth + layerDepth;
-	return mix(currUV, prevUV, nextDepth / (nextDepth - prevDepth));
-}
-
 float textureProj(vec4 shadowCoord, vec2 off)
 {
 	float shadow = 1.0;
@@ -170,21 +124,29 @@ float filterPCF(vec4 sc)
 	return shadowFactor / count;
 }
 
-    // compute shadows
-    int enablePCF = 1;
+// compute shadows
+int enablePCF = 1;
+
+const mat4 biasMat = mat4( 
+	0.5, 0.0, 0.0, 0.0,
+	0.0, 0.5, 0.0, 0.0,
+	0.0, 0.0, 1.0, 0.0,
+	0.5, 0.5, 0.0, 1.0 
+ );
+
 
 // MAIN
 void main()
 {
+    
     vec3 viewPosition = ubo.inverseView[3].xyz;
-    vec3 wolrdPosition = fragPosWorld;
+    vec3 wolrdPosition = texture(positionSampler, uv).rgb;
 
     
     vec3 V = normalize(viewPosition - wolrdPosition);
-    vec2 uv = parallaxOcclusionMapping(textCoords, V);
-    vec3 N = getNormalFromMap(uv);
+    vec3 N = normalize(texture(normalSampler, uv).rgb);
 
-    vec3 albedo =pow(texture(colSampler, uv).rgb, vec3(2.2));
+    vec3 albedo =pow(texture(albedoSampler, uv).rgb, vec3(2.2));
     float metallic  = texture(metalSampler, uv).r;
     float roughness = texture(roughSampler, uv).r;
     float ao        = texture(aoSampler, uv).r;
@@ -193,6 +155,8 @@ void main()
 	if (uv.x < 0.0 || uv.x > 1.0 || uv.y < 0.0 || uv.y > 1.0) {
 		discard;
 	}
+
+    vec4 shadowCoord = ( biasMat * ubo.depthBiasMVP) * vec4(wolrdPosition, 1.0);
 
     // calculate reflectance at normal incidence; if dia-electric (like plastic) use F0 
     // of 0.04 and if it's a metal, use the albedo color as F0 (metallic workflow)    
