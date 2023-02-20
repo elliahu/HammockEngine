@@ -26,7 +26,7 @@
 
 namespace Hmck
 {
-	class HmckOffscreenRenderSystem : public HmckIRenderSystem
+	class HmckShadowmapSystem : public HmckIRenderSystem
 	{
 		struct OffscreenPushConstantData 
 		{
@@ -35,12 +35,12 @@ namespace Hmck
 
 	public:
 
-		HmckOffscreenRenderSystem(HmckDevice& device, VkRenderPass renderPass, std::vector<VkDescriptorSetLayout>& setLayouts);
-		~HmckOffscreenRenderSystem();
+		HmckShadowmapSystem(HmckDevice& device, VkRenderPass renderPass, std::vector<VkDescriptorSetLayout>& setLayouts);
+		~HmckShadowmapSystem();
 
 		// delete copy constructor and copy destructor
-		HmckOffscreenRenderSystem(const HmckOffscreenRenderSystem&) = delete;
-		HmckOffscreenRenderSystem& operator=(const HmckOffscreenRenderSystem&) = delete;
+		HmckShadowmapSystem(const HmckShadowmapSystem&) = delete;
+		HmckShadowmapSystem& operator=(const HmckShadowmapSystem&) = delete;
 
 		void render(HmckFrameInfo& frameInfo);
 

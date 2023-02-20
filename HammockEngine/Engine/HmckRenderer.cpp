@@ -3,14 +3,16 @@
 Hmck::HmckRenderer::HmckRenderer(HmckWindow& window, HmckDevice& device) : hmckWindow{window}, hmckDevice{device}
 {
 	recreateSwapChain();
-	recreateOffscreenRenderPass();
+	recreateShadowmapRenderPass();
+	recreateGbufferRenderPass();
 	createCommandBuffer();
 }
 
 Hmck::HmckRenderer::~HmckRenderer()
 {
 	freeCommandBuffers();
-	freeOffscreenRenderPass();
+	shadowmapFramebuffer = nullptr;
+	gbufferFramebuffer = nullptr;
 }
 
 
@@ -41,10 +43,6 @@ void Hmck::HmckRenderer::freeCommandBuffers()
 	commandBuffers.clear();
 }
 
-void Hmck::HmckRenderer::freeOffscreenRenderPass()
-{
-	offscreenFramebuffer = nullptr;
-}
 
 
 void Hmck::HmckRenderer::recreateSwapChain()
@@ -120,9 +118,6 @@ void Hmck::HmckRenderer::endFrame()
 		// Window was resized (resolution was changed)
 		hmckWindow.resetWindowResizedFlag();
 		recreateSwapChain();
-
-		//freeOffscreenRenderPass();
-		//recreateOffscreenRenderPass();
 	}
 
 	else if (result != VK_SUCCESS)
@@ -133,6 +128,39 @@ void Hmck::HmckRenderer::endFrame()
 	isFrameStarted = false;
 
 	currentFrameIndex = (currentFrameIndex + 1) % HmckSwapChain::MAX_FRAMES_IN_FLIGHT;
+}
+
+
+void Hmck::HmckRenderer::beginRenderPass(
+	std::unique_ptr<HmckFramebuffer>& framebuffer,
+	VkCommandBuffer commandBuffer, 
+	std::vector<VkClearValue> clearValues)
+{
+	assert(isFrameInProgress() && "Cannot call beginRenderPass if frame is not in progress");
+	assert(commandBuffer == getCurrentCommandBuffer() && "Cannot begin render pass on command buffer from a different frame");
+	assert(framebuffer->renderPass && "Provided framebuffer doesn't have a render pass");
+
+	VkRenderPassBeginInfo renderPassInfo{};
+	renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
+	renderPassInfo.renderPass = framebuffer->renderPass;
+	renderPassInfo.framebuffer = framebuffer->framebuffer;
+	renderPassInfo.renderArea.offset = { 0, 0 };
+	renderPassInfo.renderArea.extent = { framebuffer->width, framebuffer->height};
+	renderPassInfo.clearValueCount = static_cast<uint32_t>(clearValues.size());
+	renderPassInfo.pClearValues = clearValues.data();
+
+	vkCmdBeginRenderPass(commandBuffer, &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
+
+	VkViewport viewport{};
+	viewport.x = 0.0f;
+	viewport.y = 0.0f;
+	viewport.width = static_cast<float>(framebuffer->width);
+	viewport.height = static_cast<float>(framebuffer->height);
+	viewport.minDepth = 0.0f;
+	viewport.maxDepth = 1.0f;
+	VkRect2D scissor{ {0,0}, { framebuffer->width, framebuffer->height} };
+	vkCmdSetViewport(commandBuffer, 0, 1, &viewport);
+	vkCmdSetScissor(commandBuffer, 0, 1, &scissor);
 }
 
 void Hmck::HmckRenderer::beginSwapChainRenderPass(VkCommandBuffer commandBuffer)
@@ -151,7 +179,7 @@ void Hmck::HmckRenderer::beginSwapChainRenderPass(VkCommandBuffer commandBuffer)
 	std::array<VkClearValue, 2> clearValues{};
 	clearValues[0].color = HMCK_CLEAR_COLOR; // clear color
 	clearValues[1].depthStencil = { 1.0f, 0 };
-	
+
 	renderPassInfo.clearValueCount = static_cast<uint32_t>(clearValues.size());
 	renderPassInfo.pClearValues = clearValues.data();
 
@@ -169,70 +197,34 @@ void Hmck::HmckRenderer::beginSwapChainRenderPass(VkCommandBuffer commandBuffer)
 	vkCmdSetScissor(commandBuffer, 0, 1, &scissor);
 }
 
-void Hmck::HmckRenderer::endSwapChainRenderPass(VkCommandBuffer commandBuffer)
+void Hmck::HmckRenderer::beginShadowmapRenderPass(VkCommandBuffer commandBuffer)
 {
-	assert(isFrameInProgress() && "Cannot call endSwapChainRenderPass if frame is not in progress");
+	std::vector<VkClearValue> clearValues{ 1 };
+	clearValues[0].depthStencil = { 1.0f, 0 };
+
+	beginRenderPass(shadowmapFramebuffer, commandBuffer, clearValues);
+}
+
+void Hmck::HmckRenderer::endRenderPass(VkCommandBuffer commandBuffer)
+{
+	assert(isFrameInProgress() && "Cannot call endActiveRenderPass if frame is not in progress");
 	assert(commandBuffer == getCurrentCommandBuffer() && "Cannot end render pass on command buffer from a different frame");
 
 	vkCmdEndRenderPass(commandBuffer);
 }
 
-void Hmck::HmckRenderer::beginOffscreenRenderPass(VkCommandBuffer commandBuffer)
+void Hmck::HmckRenderer::recreateShadowmapRenderPass()
 {
-	assert(isFrameInProgress() && "Cannot call beginOffscreenRenderPass if frame is not in progress");
-	assert(commandBuffer == getCurrentCommandBuffer() && "Cannot beginOffscreenRenderPass on command buffer from a different frame");
+	shadowmapFramebuffer = std::make_unique<HmckFramebuffer>(hmckDevice);
 
-	// TODO 
-
-	VkRenderPassBeginInfo renderPassInfo{};
-	renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
-	renderPassInfo.renderPass = offscreenFramebuffer->renderPass;
-	renderPassInfo.framebuffer = offscreenFramebuffer->framebuffer;
-
-	renderPassInfo.renderArea.offset = { 0, 0 };
-	renderPassInfo.renderArea.extent.width = static_cast<uint32_t>(OFFSCREEN_RES_WIDTH);
-	renderPassInfo.renderArea.extent.height = static_cast<uint32_t>(OFFSCREEN_RES_HEIGHT);
-
-	std::array<VkClearValue, 1> clearValues{};
-	clearValues[0].depthStencil = { 1.0f, 0 };
-
-	renderPassInfo.clearValueCount = 1;
-	renderPassInfo.pClearValues = clearValues.data();
-
-	vkCmdBeginRenderPass(commandBuffer, &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
-
-	VkViewport viewport{};
-	viewport.x = 0.0f;
-	viewport.y = 0.0f;
-	viewport.width = static_cast<float>(OFFSCREEN_RES_WIDTH);
-	viewport.height = static_cast<float>(OFFSCREEN_RES_HEIGHT);
-	viewport.minDepth = 0.0f;
-	viewport.maxDepth = 1.0f;
-	VkRect2D scissor{ {0,0}, {static_cast<float>(OFFSCREEN_RES_WIDTH), static_cast<float>(OFFSCREEN_RES_HEIGHT)} };
-	vkCmdSetViewport(commandBuffer, 0, 1, &viewport);
-	vkCmdSetScissor(commandBuffer, 0, 1, &scissor);
-}
-
-void Hmck::HmckRenderer::endOffscreenRenderPass(VkCommandBuffer commandBuffer)
-{
-	assert(isFrameInProgress() && "Cannot call endOffscreenRenderPass if frame is not in progress");
-	assert(commandBuffer == getCurrentCommandBuffer() && "Cannot endOffscreenRenderPass on command buffer from a different frame");
-
-	vkCmdEndRenderPass(commandBuffer);
-}
-
-void Hmck::HmckRenderer::recreateOffscreenRenderPass()
-{
-	offscreenFramebuffer = std::make_unique<HmckFramebuffer>(hmckDevice);
-
-	offscreenFramebuffer->width = OFFSCREEN_RES_WIDTH;
-	offscreenFramebuffer->height = OFFSCREEN_RES_HEIGHT;
+	shadowmapFramebuffer->width = OFFSCREEN_RES_WIDTH;
+	shadowmapFramebuffer->height = OFFSCREEN_RES_HEIGHT;
 
 	// Find a suitable depth format
-	VkFormat fbDepthFormat = hmckSwapChain->findDepthFormat();
+	VkFormat depthFormat = hmckSwapChain->findDepthFormat();
 
 	// Create sampler to sample from depth attachment
-	if (offscreenFramebuffer->createSampler(VK_FILTER_LINEAR, VK_FILTER_LINEAR, VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE) != VK_SUCCESS) {
+	if (shadowmapFramebuffer->createSampler(VK_FILTER_LINEAR, VK_FILTER_LINEAR, VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE) != VK_SUCCESS) {
 		throw std::runtime_error("Failed to create depth sampler");
 	}
 
@@ -242,11 +234,73 @@ void Hmck::HmckRenderer::recreateOffscreenRenderPass()
 	attachmentInfo.height = OFFSCREEN_RES_HEIGHT;
 	attachmentInfo.layerCount = 1;
 	attachmentInfo.usage = VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT;
-	attachmentInfo.format = fbDepthFormat;
-	offscreenFramebuffer->addAttachment(attachmentInfo);
+	attachmentInfo.format = depthFormat;
+	shadowmapFramebuffer->addAttachment(attachmentInfo);
 
 	// create renderpass with framebuffer
-	if (offscreenFramebuffer->createRenderPass() != VK_SUCCESS) {
+	if (shadowmapFramebuffer->createRenderPass() != VK_SUCCESS) {
+		throw std::runtime_error("Failed to create offscreen renderpass");
+	}
+}
+
+void Hmck::HmckRenderer::recreateGbufferRenderPass()
+{
+	gbufferFramebuffer = std::make_unique<HmckFramebuffer>(hmckDevice);
+
+	gbufferFramebuffer->width = hmckSwapChain->width();
+	gbufferFramebuffer->height = hmckSwapChain->height();
+
+	// Find a suitable depth format
+	VkFormat depthFormat = hmckSwapChain->findDepthFormat();
+
+	// Seven attachments (7 color, 1 depth)
+	HmckAttachmentCreateInfo attachmentInfo = {};
+	attachmentInfo.width = gbufferFramebuffer->width;
+	attachmentInfo.height = gbufferFramebuffer->height;
+	attachmentInfo.layerCount = 1;
+	attachmentInfo.usage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT;
+
+	// Color attachments
+	// Attachment 0: position
+	attachmentInfo.format = VK_FORMAT_R16G16B16A16_SFLOAT;
+	gbufferFramebuffer->addAttachment(attachmentInfo);
+
+	// Attachment 1: albedo (color)
+	attachmentInfo.format = VK_FORMAT_R8G8B8A8_UNORM;
+	gbufferFramebuffer->addAttachment(attachmentInfo);
+
+	// Attachment 2: normal
+	attachmentInfo.format = VK_FORMAT_R16G16B16A16_SFLOAT;
+	gbufferFramebuffer->addAttachment(attachmentInfo);
+
+	// Attachment 3: roughness
+	attachmentInfo.format = VK_FORMAT_R16G16B16A16_SFLOAT;
+	gbufferFramebuffer->addAttachment(attachmentInfo);
+
+	// Attachment 4: metalness
+	attachmentInfo.format = VK_FORMAT_R16G16B16A16_SFLOAT;
+	gbufferFramebuffer->addAttachment(attachmentInfo);
+
+	// Attachment 5: ambient occlusion
+	attachmentInfo.format = VK_FORMAT_R16G16B16A16_SFLOAT;
+	gbufferFramebuffer->addAttachment(attachmentInfo);
+
+	// Attachment 6: displacement
+	attachmentInfo.format = VK_FORMAT_R16G16B16A16_SFLOAT;
+	gbufferFramebuffer->addAttachment(attachmentInfo);
+
+	// Depth attachment
+	attachmentInfo.format = depthFormat;
+	attachmentInfo.usage = VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT;
+	gbufferFramebuffer->addAttachment(attachmentInfo);
+
+	// Create sampler to sample from color attachments
+	if (gbufferFramebuffer->createSampler(VK_FILTER_NEAREST, VK_FILTER_NEAREST, VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE) != VK_SUCCESS) {
+		throw std::runtime_error("Failed to create depth sampler");
+	}
+
+	// create renderpass with framebuffer
+	if (gbufferFramebuffer->createRenderPass() != VK_SUCCESS) {
 		throw std::runtime_error("Failed to create offscreen renderpass");
 	}
 }

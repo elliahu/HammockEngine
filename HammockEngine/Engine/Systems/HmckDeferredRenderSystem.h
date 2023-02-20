@@ -38,15 +38,15 @@
 
 namespace Hmck
 {
-	class HmckRenderSystem: public HmckIRenderSystem
+	class HmckDeferredRenderSystem: public HmckIRenderSystem
 	{
 	public:
-		HmckRenderSystem(HmckDevice& device, VkRenderPass renderPass, std::vector<VkDescriptorSetLayout>& setLayouts);
-		~HmckRenderSystem();
+		HmckDeferredRenderSystem(HmckDevice& device, VkRenderPass renderPass, std::vector<VkDescriptorSetLayout>& setLayouts);
+		~HmckDeferredRenderSystem();
 
 		// delete copy constructor and copy destructor
-		HmckRenderSystem(const HmckRenderSystem&) = delete;
-		HmckRenderSystem& operator=(const HmckRenderSystem&) = delete;
+		HmckDeferredRenderSystem(const HmckDeferredRenderSystem&) = delete;
+		HmckDeferredRenderSystem& operator=(const HmckDeferredRenderSystem&) = delete;
 
 		VkDescriptorSet getDescriptorSet() { return descriptorSet; }
 		VkDescriptorSetLayout getDescriptorSetLayout() { return descriptorLayout->getDescriptorSetLayout(); }

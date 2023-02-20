@@ -1,6 +1,6 @@
-#include "HmckRenderSystem.h"
+#include "HmckDeferredRenderSystem.h"
 
-Hmck::HmckRenderSystem::HmckRenderSystem(
+Hmck::HmckDeferredRenderSystem::HmckDeferredRenderSystem(
 	HmckDevice& device, VkRenderPass renderPass, 
 	std::vector<VkDescriptorSetLayout>& setLayouts): HmckIRenderSystem(device)
 {
@@ -9,12 +9,12 @@ Hmck::HmckRenderSystem::HmckRenderSystem(
 	createPipeline(renderPass);
 }
 
-Hmck::HmckRenderSystem::~HmckRenderSystem()
+Hmck::HmckDeferredRenderSystem::~HmckDeferredRenderSystem()
 {
 	vkDestroyPipelineLayout(hmckDevice.device(), pipelineLayout, nullptr);
 }
 
-void Hmck::HmckRenderSystem::createPipelineLayout(std::vector<VkDescriptorSetLayout>& setLayouts)
+void Hmck::HmckDeferredRenderSystem::createPipelineLayout(std::vector<VkDescriptorSetLayout>& setLayouts)
 {
 	std::vector<VkDescriptorSetLayout> layouts{ setLayouts };
 	layouts.push_back(descriptorLayout->getDescriptorSetLayout());
@@ -37,7 +37,7 @@ void Hmck::HmckRenderSystem::createPipelineLayout(std::vector<VkDescriptorSetLay
 	}
 }
 
-void Hmck::HmckRenderSystem::createPipeline(VkRenderPass renderPass)
+void Hmck::HmckDeferredRenderSystem::createPipeline(VkRenderPass renderPass)
 {
 	assert(pipelineLayout != nullptr && "Cannot create pipeline before pipeline layout");
 
@@ -54,7 +54,7 @@ void Hmck::HmckRenderSystem::createPipeline(VkRenderPass renderPass)
 }
 
 
-void Hmck::HmckRenderSystem::render(HmckFrameInfo& frameInfo)
+void Hmck::HmckDeferredRenderSystem::render(HmckFrameInfo& frameInfo)
 {
 	pipeline->bind(frameInfo.commandBuffer);
 
@@ -117,7 +117,7 @@ void Hmck::HmckRenderSystem::render(HmckFrameInfo& frameInfo)
 
 }
 
-void Hmck::HmckRenderSystem::prepareDescriptors()
+void Hmck::HmckDeferredRenderSystem::prepareDescriptors()
 {
 	descriptorPool = HmckDescriptorPool::Builder(hmckDevice)
 		.setMaxSets(100)
@@ -129,7 +129,7 @@ void Hmck::HmckRenderSystem::prepareDescriptors()
 		.build();
 }
 
-void Hmck::HmckRenderSystem::writeToDescriptorSet(VkDescriptorImageInfo& imageInfo)
+void Hmck::HmckDeferredRenderSystem::writeToDescriptorSet(VkDescriptorImageInfo& imageInfo)
 {
 	auto writer = HmckDescriptorWriter(*descriptorLayout, *descriptorPool)
 		.writeImage(0, &imageInfo)

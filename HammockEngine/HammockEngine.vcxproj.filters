@@ -36,7 +36,7 @@
     <ClCompile Include="Engine\HmckRenderer.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="Engine\Systems\HmckRenderSystem.cpp">
+    <ClCompile Include="Engine\Systems\HmckDeferredRenderSystem.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="Engine\HmckCamera.cpp">
@@ -93,7 +93,7 @@
     <ClCompile Include="Engine\HmckMaterial.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="Engine\Systems\HmckOffscreenRenderSystem.cpp">
+    <ClCompile Include="Engine\Systems\HmckShadowmapSystem.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="Engine\HmckMesh.cpp">
@@ -125,7 +125,7 @@
     <ClInclude Include="Engine\HmckRenderer.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="Engine\Systems\HmckRenderSystem.h">
+    <ClInclude Include="Engine\Systems\HmckDeferredRenderSystem.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="Engine\HmckCamera.h">
@@ -188,7 +188,7 @@
     <ClInclude Include="Engine\HmckMaterial.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="Engine\Systems\HmckOffscreenRenderSystem.h">
+    <ClInclude Include="Engine\Systems\HmckShadowmapSystem.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="Engine\Systems\HmckIRenderSystem.h">

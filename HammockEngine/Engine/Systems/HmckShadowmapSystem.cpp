@@ -1,6 +1,6 @@
-#include "HmckOffscreenRenderSystem.h"
+#include "HmckShadowmapSystem.h"
 
-Hmck::HmckOffscreenRenderSystem::HmckOffscreenRenderSystem(
+Hmck::HmckShadowmapSystem::HmckShadowmapSystem(
 	HmckDevice& device, VkRenderPass renderPass, 
 	std::vector<VkDescriptorSetLayout>& setLayouts) : HmckIRenderSystem(device)
 {
@@ -8,12 +8,12 @@ Hmck::HmckOffscreenRenderSystem::HmckOffscreenRenderSystem(
 	createPipeline(renderPass);		
 }
 
-Hmck::HmckOffscreenRenderSystem::~HmckOffscreenRenderSystem()
+Hmck::HmckShadowmapSystem::~HmckShadowmapSystem()
 {
 	vkDestroyPipelineLayout(hmckDevice.device(), pipelineLayout, nullptr);
 }
 
-void Hmck::HmckOffscreenRenderSystem::render(HmckFrameInfo& frameInfo)
+void Hmck::HmckShadowmapSystem::render(HmckFrameInfo& frameInfo)
 {
 	pipeline->bind(frameInfo.commandBuffer);
 
@@ -60,7 +60,7 @@ void Hmck::HmckOffscreenRenderSystem::render(HmckFrameInfo& frameInfo)
 	}
 }
 
-void Hmck::HmckOffscreenRenderSystem::createPipelineLayout(std::vector<VkDescriptorSetLayout>& setLayouts)
+void Hmck::HmckShadowmapSystem::createPipelineLayout(std::vector<VkDescriptorSetLayout>& setLayouts)
 {
 	VkPushConstantRange pushConstantRange{};
 	pushConstantRange.stageFlags = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT;
@@ -80,7 +80,7 @@ void Hmck::HmckOffscreenRenderSystem::createPipelineLayout(std::vector<VkDescrip
 	}
 }
 
-void Hmck::HmckOffscreenRenderSystem::createPipeline(VkRenderPass renderPass)
+void Hmck::HmckShadowmapSystem::createPipeline(VkRenderPass renderPass)
 {
 	assert(pipelineLayout != nullptr && "Cannot create pipeline before pipeline layout");
 

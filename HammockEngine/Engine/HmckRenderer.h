@@ -37,7 +37,7 @@ namespace Hmck
 		HmckRenderer& operator=(const HmckRenderer&) = delete;
 
 		VkRenderPass getSwapChainRenderPass() const { return hmckSwapChain->getRenderPass(); }
-		VkRenderPass getOffscreenRenderPass() const { return offscreenFramebuffer->renderPass; }
+		VkRenderPass getOffscreenRenderPass() const { return shadowmapFramebuffer->renderPass; }
 		float getAspectRatio() const { return hmckSwapChain->extentAspectRatio(); }
 		bool isFrameInProgress() const { return isFrameStarted; }
 
@@ -45,8 +45,8 @@ namespace Hmck
 		{  
 			VkDescriptorImageInfo descriptorImageInfo{};
 			descriptorImageInfo.imageLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL;
-			descriptorImageInfo.imageView = offscreenFramebuffer->attachments[0].view;
-			descriptorImageInfo.sampler = offscreenFramebuffer->sampler;
+			descriptorImageInfo.imageView = shadowmapFramebuffer->attachments[0].view;
+			descriptorImageInfo.sampler = shadowmapFramebuffer->sampler;
 
 			return descriptorImageInfo;
 		}
@@ -65,24 +65,29 @@ namespace Hmck
 
 		VkCommandBuffer beginFrame();
 		void endFrame();
-		void beginOffscreenRenderPass(VkCommandBuffer commandBuffer);
-		void endOffscreenRenderPass(VkCommandBuffer commandBuffer);
+		void beginShadowmapRenderPass(VkCommandBuffer commandBuffer);
 		void beginSwapChainRenderPass(VkCommandBuffer commandBuffer);
-		void endSwapChainRenderPass(VkCommandBuffer commandBuffer);
+		void beginRenderPass(
+			std::unique_ptr<HmckFramebuffer>& framebuffer,
+			VkCommandBuffer commandBuffer,
+			std::vector<VkClearValue> clearValues);
+		void endRenderPass(VkCommandBuffer commandBuffer);
 
 
 	private:
 		void createCommandBuffer();
 		void freeCommandBuffers();
-		void freeOffscreenRenderPass();
 		void recreateSwapChain();
-		void recreateOffscreenRenderPass();
+		void recreateShadowmapRenderPass();
+		void recreateGbufferRenderPass();
 
 		HmckWindow& hmckWindow;
 		HmckDevice& hmckDevice;
 		std::unique_ptr<HmckSwapChain> hmckSwapChain;
 		std::vector<VkCommandBuffer> commandBuffers;
-		std::unique_ptr<HmckFramebuffer> offscreenFramebuffer;
+		std::unique_ptr<HmckFramebuffer> shadowmapFramebuffer;
+		std::unique_ptr<HmckFramebuffer> gbufferFramebuffer;
+		
 
 		uint32_t currentImageIndex;
 		int currentFrameIndex{ 0 };

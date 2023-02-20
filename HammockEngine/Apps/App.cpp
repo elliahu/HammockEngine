@@ -47,7 +47,7 @@ void Hmck::App::run()
         globalSetLayout->getDescriptorSetLayout(),
     };
 
-    HmckOffscreenRenderSystem offscreenRenderSystem{
+    HmckShadowmapSystem offscreenRenderSystem{
         hmckDevice,
         hmckRenderer.getOffscreenRenderPass(),
         globalSetLayouts
@@ -57,7 +57,7 @@ void Hmck::App::run()
         globalSetLayout->getDescriptorSetLayout(),
         materialLayout->getDescriptorSetLayout(),
     };
-	HmckRenderSystem renderSystem{ 
+	HmckDeferredRenderSystem renderSystem{ 
         hmckDevice,
         hmckRenderer.getSwapChainRenderPass(), 
         sceneSetLayouts
@@ -127,11 +127,11 @@ void Hmck::App::run()
             uboBuffers[frameIndex]->writeToBuffer(&ubo);
             // RENDER
             // offscreen
-            hmckRenderer.beginOffscreenRenderPass(commandBuffer);
+            hmckRenderer.beginShadowmapRenderPass(commandBuffer);
 
             offscreenRenderSystem.render(frameInfo);
 
-            hmckRenderer.endOffscreenRenderPass(commandBuffer);
+            hmckRenderer.endRenderPass(commandBuffer);
             // on screen
 			hmckRenderer.beginSwapChainRenderPass(commandBuffer);
             
@@ -147,7 +147,7 @@ void Hmck::App::run()
             userInterfaceSystem.showGameObjectsInspector(gameObjects);
             userInterfaceSystem.endUserInterface(commandBuffer);
             
-			hmckRenderer.endSwapChainRenderPass(commandBuffer);
+			hmckRenderer.endRenderPass(commandBuffer);
 			hmckRenderer.endFrame();
 		}
 
