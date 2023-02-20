@@ -162,6 +162,7 @@ void Hmck::App::run()
             
             
 			deferredRenderSystem.render(frameInfo);
+            // TODO make sure it is visible
             lightSystem.render(frameInfo);
         
             // ui

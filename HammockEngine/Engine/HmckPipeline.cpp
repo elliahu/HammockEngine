@@ -235,3 +235,8 @@ void Hmck::HmckPipeline::enableGbuffer(HmckPipelineConfigInfo& configInfo, std::
     configInfo.colorBlendInfo.attachmentCount = static_cast<uint32_t>(blendAttachmentStates.size());
     configInfo.colorBlendInfo.pAttachments = blendAttachmentStates.data();
 }
+
+void Hmck::HmckPipeline::disableDepthTest(HmckPipelineConfigInfo& configInfo)
+{
+    configInfo.depthStencilInfo.depthTestEnable = VK_FALSE;
+}
