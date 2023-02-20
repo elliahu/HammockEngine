@@ -90,8 +90,8 @@ void Hmck::HmckOffscreenRenderSystem::createPipeline(VkRenderPass renderPass)
 	pipelineConfig.pipelineLayout = pipelineLayout;
 	pipeline = std::make_unique<HmckPipeline>(
 		hmckDevice,
-		std::string(SHADERS_DIR) + "Compiled/offscreen.vert.spv",
-		std::string(SHADERS_DIR) + "Compiled/offscreen.frag.spv",
+		std::string(SHADERS_DIR) + "Compiled/shadowmap.vert.spv",
+		std::string(SHADERS_DIR) + "Compiled/shadowmap.frag.spv",
 		pipelineConfig
 		);
 }

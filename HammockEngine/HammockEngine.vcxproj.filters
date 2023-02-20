@@ -216,13 +216,15 @@
   <ItemGroup>
     <None Include="Engine\Shaders\Raw\point_light.frag" />
     <None Include="Engine\Shaders\Raw\point_light.vert" />
-    <None Include="Engine\Shaders\Raw\scene.frag" />
-    <None Include="Engine\Shaders\Raw\scene.vert" />
+    <None Include="Engine\Shaders\Raw\deferred.frag" />
+    <None Include="Engine\Shaders\Raw\deferred.vert" />
     <None Include="packages.config" />
-    <None Include="Engine\Shaders\Raw\offscreen.frag" />
-    <None Include="Engine\Shaders\Raw\offscreen.vert" />
+    <None Include="Engine\Shaders\Raw\shadowmap.frag" />
+    <None Include="Engine\Shaders\Raw\shadowmap.vert" />
     <None Include="compile_shaders.bat">
       <Filter>Source Files</Filter>
     </None>
+    <None Include="Engine\Shaders\Raw\gbuffer.frag" />
+    <None Include="Engine\Shaders\Raw\gbuffer.vert" />
   </ItemGroup>
 </Project>
