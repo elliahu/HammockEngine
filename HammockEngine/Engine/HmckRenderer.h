@@ -4,6 +4,7 @@
 #include "HmckDevice.h"
 #include "HmckSwapChain.h"
 #include "Systems/HmckUISystem.h"
+#include "HmckFramebuffer.h"
 
 #define GLM_FORCE_RADIANS
 #define GLM_FORCE_DEPTH_ZERO_TO_ONE
@@ -26,21 +27,6 @@ namespace Hmck
 	class HmckRenderer
 	{
 
-		struct FrameBufferAttachment {
-			VkImage image;
-			VkDeviceMemory mem;
-			VkImageView view;
-		};
-
-		struct OffscreenRenderPass {
-			int32_t width, height;
-			VkFramebuffer frameBuffer;
-			FrameBufferAttachment depth;
-			VkRenderPass renderPass;
-			VkSampler sampler;
-			VkDescriptorImageInfo descriptor;
-		};
-
 	public:
 
 		HmckRenderer(HmckWindow& window, HmckDevice& device);
@@ -51,11 +37,19 @@ namespace Hmck
 		HmckRenderer& operator=(const HmckRenderer&) = delete;
 
 		VkRenderPass getSwapChainRenderPass() const { return hmckSwapChain->getRenderPass(); }
-		VkRenderPass getOffscreenRenderPass() const { return offscreenRenderPass.renderPass; }
+		VkRenderPass getOffscreenRenderPass() const { return offscreenFramebuffer->renderPass; }
 		float getAspectRatio() const { return hmckSwapChain->extentAspectRatio(); }
 		bool isFrameInProgress() const { return isFrameStarted; }
 
-		VkDescriptorImageInfo getOffscreenDescriptorImageInfo() { return offscreenRenderPass.descriptor; }
+		VkDescriptorImageInfo getOffscreenDescriptorImageInfo() 
+		{  
+			VkDescriptorImageInfo descriptorImageInfo{};
+			descriptorImageInfo.imageLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL;
+			descriptorImageInfo.imageView = offscreenFramebuffer->attachments[0].view;
+			descriptorImageInfo.sampler = offscreenFramebuffer->sampler;
+
+			return descriptorImageInfo;
+		}
 
 		VkCommandBuffer getCurrentCommandBuffer() const
 		{
@@ -88,7 +82,7 @@ namespace Hmck
 		HmckDevice& hmckDevice;
 		std::unique_ptr<HmckSwapChain> hmckSwapChain;
 		std::vector<VkCommandBuffer> commandBuffers;
-		OffscreenRenderPass offscreenRenderPass;
+		std::unique_ptr<HmckFramebuffer> offscreenFramebuffer;
 
 		uint32_t currentImageIndex;
 		int currentFrameIndex{ 0 };
