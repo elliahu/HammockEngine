@@ -88,15 +88,6 @@ void Hmck::HmckDeferredRenderSystem::render(HmckFrameInfo& frameInfo)
 		nullptr
 	);
 	vkCmdDraw(frameInfo.commandBuffer, 3, 1, 0, 0);
-
-	for (auto& kv : frameInfo.gameObjects)
-	{
-		auto& obj = kv.second;
-		if (obj.meshComponent == nullptr) continue;
-
-		
-	}
-
 }
 
 void Hmck::HmckDeferredRenderSystem::prepareDescriptors()

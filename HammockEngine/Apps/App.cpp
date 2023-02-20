@@ -85,7 +85,7 @@ void Hmck::App::run()
         hmckWindow
     };
 
-    // TODO this is ugly, thinking about restructure
+
     VkDescriptorImageInfo imageInfo = hmckRenderer.getShadowmapDescriptorImageInfo();
     deferredRenderSystem.updateShadowmapDescriptorSet(imageInfo);
 
@@ -147,23 +147,18 @@ void Hmck::App::run()
             // RENDER
             // offscreen
             hmckRenderer.beginShadowmapRenderPass(commandBuffer);
-
             shadowmapRenderSystem.render(frameInfo);
-
             hmckRenderer.endRenderPass(commandBuffer);
 
             hmckRenderer.beginGbufferRenderPass(commandBuffer);
-
             gbufferRenderSystem.render(frameInfo);
-
             hmckRenderer.endRenderPass(commandBuffer);
+
             // on screen
 			hmckRenderer.beginSwapChainRenderPass(commandBuffer);
-            
-            
 			deferredRenderSystem.render(frameInfo);
-            // TODO make sure it is visible
-            lightSystem.render(frameInfo);
+            // TODO doesn't work because of the depth test failing 
+            //lightSystem.render(frameInfo);
         
             // ui
             userInterfaceSystem.beginUserInterface();
@@ -214,6 +209,7 @@ void Hmck::App::loadGameObjects()
 
     // layouts
     // TODO think about using array of combined image samplers
+    // TODO move this to Gbuffer system as it is the only system that uses this, no need for this to be in App
     materialLayout = HmckDescriptorSetLayout::Builder(hmckDevice)
         .addBinding(0, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT)
         .addBinding(1, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT)

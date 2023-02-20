@@ -398,10 +398,10 @@ namespace Hmck {
             // Top option - Mailbox
             // Lowers imput latency but GPU is 100% saturated = high power consumption
             // not good for mobile
-            if (availablePresentMode == VK_PRESENT_MODE_MAILBOX_KHR) {
-                std::cout << "Present mode: Mailbox" << std::endl;
-                return availablePresentMode;
-            }
+            //if (availablePresentMode == VK_PRESENT_MODE_MAILBOX_KHR) {
+            //    std::cout << "Present mode: Mailbox" << std::endl;
+            //    return availablePresentMode;
+            //}
 
             // Does NOT perform any vertical synchronization
             // High GPU and CPU (and power) usage

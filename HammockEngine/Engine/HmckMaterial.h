@@ -59,6 +59,7 @@ namespace Hmck
 	{
 		// format: VK_FORMAT_R8G8B8A8_SRGB
 		HmckImage image{};
+		// TODO no need for one sampler per texture - all texture can share one sampler
 		VkSampler sampler;
 
 		void createSampler(HmckDevice& hmckDevice);
