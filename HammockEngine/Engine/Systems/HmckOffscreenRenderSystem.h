@@ -50,9 +50,9 @@ namespace Hmck
 
 		// Depth bias (and slope) are used to avoid shadowing artifacts
 		// Constant depth bias factor (always applied)
-		float depthBiasConstant = 1.25f;
+		float depthBiasConstant = 0.55f;
 		// Slope depth bias factor, applied depending on polygon's slope
-		float depthBiasSlope = 1.75f;
+		float depthBiasSlope = 0.75f;
 	};
 }
 

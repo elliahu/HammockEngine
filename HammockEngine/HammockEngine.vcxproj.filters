@@ -33,9 +33,6 @@
     <ClCompile Include="Engine\HmckSwapChain.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="Engine\HmckModel.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="Engine\HmckRenderer.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -90,9 +87,6 @@
     <ClCompile Include="Engine\Controllers\KeyboardMovementController.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="Engine\Platforms\HmckWindow.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="Engine\Systems\HmckLightSystem.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -100,6 +94,15 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="Engine\Systems\HmckOffscreenRenderSystem.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Engine\HmckMesh.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Engine\Platform\HmckWindow.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Engine\Platform\HmckInputHandler.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
@@ -114,9 +117,6 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="Engine\HmckSwapChain.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="Engine\HmckModel.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="Engine\HmckGameObject.h">
@@ -182,9 +182,6 @@
     <ClInclude Include="Engine\Controllers\KeyboardMovementController.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="Engine\Platforms\HmckWindow.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="Engine\Systems\HmckLightSystem.h">
       <Filter>Header Files</Filter>
     </ClInclude>
@@ -195,6 +192,24 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="Engine\Systems\HmckIRenderSystem.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Engine\HmckMesh.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Engine\Platform\HmckWindow.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="External\stb_image.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="External\tiny_obj_loader.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Engine\Platform\HmckInputHandler.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Engine\HmckFramebuffer.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

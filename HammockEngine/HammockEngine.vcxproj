@@ -93,6 +93,7 @@
     <ClInclude Include="External\stb_image.h" />
     <ClInclude Include="External\tiny_obj_loader.h" />
     <ClInclude Include="Engine\Platform\HmckInputHandler.h" />
+    <ClInclude Include="Engine\HmckFramebuffer.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include="compile_shaders.bat" />

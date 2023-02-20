@@ -141,7 +141,7 @@ void Hmck::App::run()
         
             // ui
             userInterfaceSystem.beginUserInterface();
-            userInterfaceSystem.showDemoWindow();
+            //userInterfaceSystem.showDemoWindow();
             userInterfaceSystem.showDebugStats(viewerObject);
             userInterfaceSystem.showWindowControls();
             userInterfaceSystem.showGameObjectsInspector(gameObjects);
@@ -197,7 +197,7 @@ void Hmck::App::loadGameObjects()
         .addBinding(5, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT)
         .build();
 
-    // vase
+    // sphere
     auto sphere = HmckGameObject::createGameObject();
     sphere.setName("Sphere");
     sphere.setModel(sphereModel);
@@ -219,7 +219,7 @@ void Hmck::App::loadGameObjects()
     floor.bindDescriptorSet(globalPool, materialLayout);
     gameObjects.emplace(floor.getId(), std::move(floor));
 
-
+    // log
     std::shared_ptr<HmckMesh> logModel = HmckMesh::createMeshFromFile(hmckDevice, std::string(MODELS_DIR) + "log.obj");
     auto log = HmckGameObject::createGameObject();
     log.setModel(logModel);
@@ -228,16 +228,16 @@ void Hmck::App::loadGameObjects()
     log.transformComponent.rotation = glm::vec3(0,0,1);
     log.setMaterial(logMaterial);
     log.bindDescriptorSet(globalPool, materialLayout);
-    //gameObjects.emplace(log.getId(), std::move(log));
+    gameObjects.emplace(log.getId(), std::move(log));
 
 
-    // Point light
+    // Point lights
     std::vector<glm::vec3> lightColors{
-         //{1.f, .1f, .1f},
-         //{.1f, .1f, 1.f},
-         //{.1f, 1.f, .1f},
-         //{1.f, 1.f, .1f},
-         //{.1f, 1.f, 1.f},
+         {1.f, .1f, .1f},
+         {.1f, .1f, 1.f},
+         {.1f, 1.f, .1f},
+         {1.f, 1.f, .1f},
+         {.1f, 1.f, 1.f},
          {1.f, 1.f, 1.f}, 
     };
     for (int i = 0; i < lightColors.size(); i++)

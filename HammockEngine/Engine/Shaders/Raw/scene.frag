@@ -1,12 +1,11 @@
 #version 450
 
 //inputs
-layout (location = 0) in vec3 fragColor;
-layout (location = 1) in vec3 fragPosWorld;
-layout (location = 2) in vec3 fragNormalWorld;
-layout (location = 3) in vec2 textCoords;
-layout (location = 4) in vec3 tangentNormal;
-layout (location = 5) in vec4 shadowCoord;
+layout (location = 0) in vec3 fragPosWorld;
+layout (location = 1) in vec3 fragNormalWorld;
+layout (location = 2) in vec2 textCoords;
+layout (location = 3) in vec3 tangentNormal;
+layout (location = 4) in vec4 shadowCoord;
 
 // outputs
 layout (location = 0) out vec4 outColor;
@@ -57,7 +56,6 @@ layout (push_constant) uniform Push
 
 const float PI = 3.14159265359;
 
-// ----------------------------------------------------------------------------
 vec3 getNormalFromMap(vec2 uv)
 {
     vec3 mapNormal = texture(normSampler, uv).xyz * 2.0 - 1.0;
@@ -69,7 +67,6 @@ vec3 getNormalFromMap(vec2 uv)
 	return normalize(TBN * mapNormal);
 }
 
-// ----------------------------------------------------------------------------
 float DistributionGGX(vec3 N, vec3 H, float roughness)
 {
     float a = roughness*roughness;
@@ -84,7 +81,6 @@ float DistributionGGX(vec3 N, vec3 H, float roughness)
     return nom / denom;
 }
 
-// ----------------------------------------------------------------------------
 float GeometrySchlickGGX(float NdotV, float roughness)
 {
     float r = (roughness + 1.0);
@@ -96,7 +92,6 @@ float GeometrySchlickGGX(float NdotV, float roughness)
     return nom / denom;
 }
 
-// ----------------------------------------------------------------------------
 float GeometrySmith(vec3 N, vec3 V, vec3 L, float roughness)
 {
     float NdotV = max(dot(N, V), 0.0);
@@ -107,17 +102,18 @@ float GeometrySmith(vec3 N, vec3 V, vec3 L, float roughness)
     return ggx1 * ggx2;
 }
 
-// ----------------------------------------------------------------------------
 vec3 fresnelSchlick(float cosTheta, vec3 F0)
 {
     return F0 + (1.0 - F0) * pow(clamp(1.0 - cosTheta, 0.0, 1.0), 5.0);
 }
 
-// -----------------------------------------------------------------------------
 float numLayers = 16.0;
 float heightScale = 1.0;
+
 vec2 parallaxOcclusionMapping(vec2 uv, vec3 viewDir) 
 {
+    // parallax mapping is broken for now
+    return uv;
 	float layerDepth = 1.0 / numLayers;
 	float currLayerDepth = 0.0;
 	vec2 deltaUV = viewDir.xy * heightScale / (viewDir.z * numLayers);
@@ -136,7 +132,6 @@ vec2 parallaxOcclusionMapping(vec2 uv, vec3 viewDir)
 	float prevDepth = 1.0 - textureLod(disSampler, prevUV, 0.0).a - currLayerDepth + layerDepth;
 	return mix(currUV, prevUV, nextDepth / (nextDepth - prevDepth));
 }
-// ----------------------
 
 float textureProj(vec4 shadowCoord, vec2 off)
 {
@@ -175,6 +170,9 @@ float filterPCF(vec4 sc)
 	return shadowFactor / count;
 }
 
+    // compute shadows
+    int enablePCF = 1;
+
 // MAIN
 void main()
 {
@@ -183,7 +181,6 @@ void main()
 
     
     vec3 V = normalize(viewPosition - wolrdPosition);
-    //vec2 uv = textCoords;
     vec2 uv = parallaxOcclusionMapping(textCoords, V);
     vec3 N = getNormalFromMap(uv);
 
@@ -192,10 +189,10 @@ void main()
     float roughness = texture(roughSampler, uv).r;
     float ao        = texture(aoSampler, uv).r;
 
-    // compute shadows
-    int enablePCF = 1;
-
-
+    // Discard fragments at texture border
+	if (uv.x < 0.0 || uv.x > 1.0 || uv.y < 0.0 || uv.y > 1.0) {
+		discard;
+	}
 
     // calculate reflectance at normal incidence; if dia-electric (like plastic) use F0 
     // of 0.04 and if it's a metal, use the albedo color as F0 (metallic workflow)    

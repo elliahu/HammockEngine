@@ -53,6 +53,8 @@ namespace Hmck
 			framebufferCreateInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
 			return framebufferCreateInfo;
 		}
+
+
 	} // namespace Init
 
 } // namespace Hmck
