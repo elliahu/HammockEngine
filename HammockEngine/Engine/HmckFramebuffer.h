@@ -12,7 +12,9 @@
 
 namespace Hmck
 {
-	// Losely base on https://github.com/SaschaWillems/Vulkan/blob/master/base/VulkanFrameBuffer.hpp by Sascha Willems
+	// Loosely based of framebuffer abstraction
+	// https://github.com/SaschaWillems/Vulkan/blob/master/base/VulkanFrameBuffer.hpp by Sascha Willems
+
 	struct HmckFramebufferAttachment
 	{
 		VkImage image;
