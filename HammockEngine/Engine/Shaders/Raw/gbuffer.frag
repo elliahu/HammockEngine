@@ -10,8 +10,6 @@ layout (location = 0) out vec4 _position;
 layout (location = 1) out vec4 _albedo;
 layout (location = 2) out vec4 _normal;
 layout (location = 3) out vec4 _material;
-layout (location = 4) out vec4 _metal;
-layout (location = 5) out vec4 _ao;
 
 
 layout(set = 1, binding = 0) uniform sampler2D albedoSampler;
@@ -68,6 +66,4 @@ void main()
 
     _albedo = texture(albedoSampler, uv);
     _material = vec4(texture(roughSampler, uv).r, texture(metalSampler, uv).r, texture(aoSampler, uv).r, 1.0);
-    _metal = texture(metalSampler, uv);
-    _ao = texture(aoSampler, uv);
 }

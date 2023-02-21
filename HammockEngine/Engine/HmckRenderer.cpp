@@ -212,9 +212,7 @@ void Hmck::HmckRenderer::beginGbufferRenderPass(VkCommandBuffer commandBuffer)
 	clearValues[1].color = { { 0.0f, 0.0f, 0.0f, 0.0f } };
 	clearValues[2].color = { { 0.0f, 0.0f, 0.0f, 0.0f } };
 	clearValues[3].color = { { 0.0f, 0.0f, 0.0f, 0.0f } };
-	clearValues[5].color = { { 0.0f, 0.0f, 0.0f, 0.0f } };
-	clearValues[5].color = { { 0.0f, 0.0f, 0.0f, 0.0f } };
-	clearValues[6].depthStencil = { 1.0f, 0 };
+	clearValues[4].depthStencil = { 1.0f, 0 };
 
 	beginRenderPass(gbufferFramebuffer, commandBuffer, clearValues);
 }
@@ -267,7 +265,7 @@ void Hmck::HmckRenderer::recreateGbufferRenderPass()
 	// Find a suitable depth format
 	VkFormat depthFormat = hmckSwapChain->findDepthFormat();
 
-	// Six attachments (6 color, 1 depth)
+	// Five attachments (4 color, 1 depth)
 	HmckAttachmentCreateInfo attachmentInfo = {};
 	attachmentInfo.width = gbufferFramebuffer->width;
 	attachmentInfo.height = gbufferFramebuffer->height;
@@ -287,19 +285,11 @@ void Hmck::HmckRenderer::recreateGbufferRenderPass()
 	attachmentInfo.format = VK_FORMAT_R16G16B16A16_SFLOAT;
 	gbufferFramebuffer->addAttachment(attachmentInfo);
 
-	// Attachment 3: roughness
+	// Attachment 3: x: roughness, y: metalness, z: ambient occlusion
 	attachmentInfo.format = VK_FORMAT_R16G16B16A16_SFLOAT;
 	gbufferFramebuffer->addAttachment(attachmentInfo);
 
-	// Attachment 4: metalness
-	attachmentInfo.format = VK_FORMAT_R16G16B16A16_SFLOAT;
-	gbufferFramebuffer->addAttachment(attachmentInfo);
-
-	// Attachment 5: ambient occlusion
-	attachmentInfo.format = VK_FORMAT_R16G16B16A16_SFLOAT;
-	gbufferFramebuffer->addAttachment(attachmentInfo);
-
-	// Attachment 6: Depth attachment
+	// Attachment 4: Depth attachment
 	attachmentInfo.format = depthFormat;
 	attachmentInfo.usage = VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT;
 	gbufferFramebuffer->addAttachment(attachmentInfo);
