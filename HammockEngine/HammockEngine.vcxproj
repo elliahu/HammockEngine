@@ -92,7 +92,10 @@
     <ClInclude Include="Engine\Systems\ImGUI\misc\cpp\imgui_stdlib.h" />
     <ClInclude Include="Engine\Utils\HmckLogger.h" />
     <ClInclude Include="Engine\Systems\HmckShadowmapSystem.h" />
+    <ClInclude Include="External\json.hpp" />
     <ClInclude Include="External\stb_image.h" />
+    <ClInclude Include="External\stb_image_write.h" />
+    <ClInclude Include="External\tiny_gltf.h" />
     <ClInclude Include="External\tiny_obj_loader.h" />
     <ClInclude Include="Engine\Platform\HmckInputHandler.h" />
     <ClInclude Include="Engine\HmckFramebuffer.h" />
