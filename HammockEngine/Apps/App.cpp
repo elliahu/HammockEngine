@@ -89,14 +89,13 @@ void Hmck::App::run()
     VkDescriptorImageInfo imageInfo = hmckRenderer.getShadowmapDescriptorImageInfo();
     deferredRenderSystem.updateShadowmapDescriptorSet(imageInfo);
 
-    std::array<VkDescriptorImageInfo, 7> imageInfos{
+    std::array<VkDescriptorImageInfo, 6> imageInfos{
         hmckRenderer.getGbufferDescriptorImageInfo(0),
         hmckRenderer.getGbufferDescriptorImageInfo(1),
         hmckRenderer.getGbufferDescriptorImageInfo(2),
         hmckRenderer.getGbufferDescriptorImageInfo(3),
         hmckRenderer.getGbufferDescriptorImageInfo(4),
         hmckRenderer.getGbufferDescriptorImageInfo(5),
-        hmckRenderer.getGbufferDescriptorImageInfo(6),
     };
     deferredRenderSystem.updateGbufferDescriptorSet(imageInfos);
 

@@ -52,7 +52,7 @@ namespace Hmck
 		VkDescriptorSetLayout getShadowmapDescriptorSetLayout() { return shadowmapDescriptorLayout->getDescriptorSetLayout(); }
 
 		void updateShadowmapDescriptorSet(VkDescriptorImageInfo& imageInfo);
-		void updateGbufferDescriptorSet(std::array<VkDescriptorImageInfo, 7> imageInfos);
+		void updateGbufferDescriptorSet(std::array<VkDescriptorImageInfo, 6> imageInfos);
 
 
 		void render(HmckFrameInfo& frameInfo);

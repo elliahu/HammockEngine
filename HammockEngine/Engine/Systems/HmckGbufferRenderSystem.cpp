@@ -91,9 +91,8 @@ void Hmck::HmckGbufferRenderSystem::createPipeline(VkRenderPass renderPass)
 	HmckPipelineConfigInfo pipelineConfig{};
 	HmckPipeline::defaultHmckPipelineConfigInfo(pipelineConfig);
 
-	std::array<VkPipelineColorBlendAttachmentState, 7> blendAttachmentStates =
+	std::array<VkPipelineColorBlendAttachmentState, 6> blendAttachmentStates =
 	{
-		Hmck::Init::pipelineColorBlendAttachmentState(0xf, VK_FALSE),
 		Hmck::Init::pipelineColorBlendAttachmentState(0xf, VK_FALSE),
 		Hmck::Init::pipelineColorBlendAttachmentState(0xf, VK_FALSE),
 		Hmck::Init::pipelineColorBlendAttachmentState(0xf, VK_FALSE),

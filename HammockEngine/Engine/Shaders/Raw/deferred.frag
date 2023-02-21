@@ -13,7 +13,6 @@ layout(set = 1, binding = 2) uniform sampler2D normalSampler;
 layout(set = 1, binding = 3) uniform sampler2D materialPropertySampler;
 layout(set = 1, binding = 4) uniform sampler2D metalSampler;
 layout(set = 1, binding = 5) uniform sampler2D aoSampler;
-layout(set = 1, binding = 6) uniform sampler2D disSampler;
 
 // shadowmap sampler
 layout(set = 2, binding = 0) uniform sampler2D directionalLightDepthMap;

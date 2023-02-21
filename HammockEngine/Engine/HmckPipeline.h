@@ -50,7 +50,7 @@ namespace Hmck
 			HmckPipelineConfigInfo& configInfo);
 		static void enableAlphaBlending(HmckPipelineConfigInfo& configInfo);
 		static void enablePolygonModeLine(HmckPipelineConfigInfo& configInfo);
-		static void enableGbuffer(HmckPipelineConfigInfo& configInfo, std::array<VkPipelineColorBlendAttachmentState, 7> blendAttachmentStates);
+		static void enableGbuffer(HmckPipelineConfigInfo& configInfo, std::array<VkPipelineColorBlendAttachmentState, 6> blendAttachmentStates);
 		static void disableDepthTest(HmckPipelineConfigInfo& configInfo);
 
 		void bind(VkCommandBuffer commandBuffer);

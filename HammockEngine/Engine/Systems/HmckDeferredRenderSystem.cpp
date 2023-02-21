@@ -94,7 +94,7 @@ void Hmck::HmckDeferredRenderSystem::prepareDescriptors()
 {
 	descriptorPool = HmckDescriptorPool::Builder(hmckDevice)
 		.setMaxSets(100)
-		.addPoolSize(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 8)
+		.addPoolSize(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 7)
 		.build();
 
 	shadowmapDescriptorLayout = HmckDescriptorSetLayout::Builder(hmckDevice)
@@ -108,7 +108,6 @@ void Hmck::HmckDeferredRenderSystem::prepareDescriptors()
 		.addBinding(3, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT) // roughness
 		.addBinding(4, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT) // metalness
 		.addBinding(5, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT) // ao
-		.addBinding(6, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT)
 		.build();
 }
 
@@ -119,7 +118,7 @@ void Hmck::HmckDeferredRenderSystem::updateShadowmapDescriptorSet(VkDescriptorIm
 		.build(shadowmapDescriptorSet);
 }
 
-void Hmck::HmckDeferredRenderSystem::updateGbufferDescriptorSet(std::array<VkDescriptorImageInfo, 7> imageInfos)
+void Hmck::HmckDeferredRenderSystem::updateGbufferDescriptorSet(std::array<VkDescriptorImageInfo, 6> imageInfos)
 {
 	auto writer = HmckDescriptorWriter(*gbufferDescriptorLayout, *descriptorPool)
 		.writeImage(0, &imageInfos[0]) // position
@@ -128,6 +127,5 @@ void Hmck::HmckDeferredRenderSystem::updateGbufferDescriptorSet(std::array<VkDes
 		.writeImage(3, &imageInfos[3]) // roughness
 		.writeImage(4, &imageInfos[4]) // metalness
 		.writeImage(5, &imageInfos[5]) // ao
-		.writeImage(6, &imageInfos[6])
 		.build(gbufferDescriptorSet);
 }

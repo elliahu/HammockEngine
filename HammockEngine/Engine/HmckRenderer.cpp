@@ -214,8 +214,7 @@ void Hmck::HmckRenderer::beginGbufferRenderPass(VkCommandBuffer commandBuffer)
 	clearValues[3].color = { { 0.0f, 0.0f, 0.0f, 0.0f } };
 	clearValues[5].color = { { 0.0f, 0.0f, 0.0f, 0.0f } };
 	clearValues[5].color = { { 0.0f, 0.0f, 0.0f, 0.0f } };
-	clearValues[6].color = { { 0.0f, 0.0f, 0.0f, 0.0f } };
-	clearValues[7].depthStencil = { 1.0f, 0 };
+	clearValues[6].depthStencil = { 1.0f, 0 };
 
 	beginRenderPass(gbufferFramebuffer, commandBuffer, clearValues);
 }
@@ -268,7 +267,7 @@ void Hmck::HmckRenderer::recreateGbufferRenderPass()
 	// Find a suitable depth format
 	VkFormat depthFormat = hmckSwapChain->findDepthFormat();
 
-	// Seven attachments (7 color, 1 depth)
+	// Six attachments (6 color, 1 depth)
 	HmckAttachmentCreateInfo attachmentInfo = {};
 	attachmentInfo.width = gbufferFramebuffer->width;
 	attachmentInfo.height = gbufferFramebuffer->height;
@@ -300,11 +299,7 @@ void Hmck::HmckRenderer::recreateGbufferRenderPass()
 	attachmentInfo.format = VK_FORMAT_R16G16B16A16_SFLOAT;
 	gbufferFramebuffer->addAttachment(attachmentInfo);
 
-	// Attachment 6: displacement
-	attachmentInfo.format = VK_FORMAT_R16G16B16A16_SFLOAT;
-	gbufferFramebuffer->addAttachment(attachmentInfo);
-
-	// Attachment 7: Depth attachment
+	// Attachment 6: Depth attachment
 	attachmentInfo.format = depthFormat;
 	attachmentInfo.usage = VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT;
 	gbufferFramebuffer->addAttachment(attachmentInfo);
