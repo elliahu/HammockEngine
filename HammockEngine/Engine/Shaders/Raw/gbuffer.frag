@@ -9,7 +9,7 @@ layout (location = 3) in vec3 tangent;
 layout (location = 0) out vec4 _position;
 layout (location = 1) out vec4 _albedo;
 layout (location = 2) out vec4 _normal;
-layout (location = 3) out vec4 _rough;
+layout (location = 3) out vec4 _rmao;
 layout (location = 4) out vec4 _metal;
 layout (location = 5) out vec4 _ao;
 layout (location = 6) out vec4 _displacement;
@@ -68,7 +68,7 @@ void main()
 	_normal = vec4(tnorm, 1.0);
 
     _albedo = texture(albedoSampler, uv);
-    _rough = texture(roughSampler, uv);
+    _rmao = vec4(texture(roughSampler, uv).r, texture(metalSampler, uv).r, texture(aoSampler, uv).r, 1.0);
     _metal = texture(metalSampler, uv);
     _ao = texture(aoSampler, uv);
     _displacement = texture(disSampler, uv);

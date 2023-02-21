@@ -10,7 +10,7 @@ layout (location = 0) out vec4 outColor;
 layout(set = 1, binding = 0) uniform sampler2D positionSampler;
 layout(set = 1, binding = 1) uniform sampler2D albedoSampler;
 layout(set = 1, binding = 2) uniform sampler2D normalSampler;
-layout(set = 1, binding = 3) uniform sampler2D roughSampler;
+layout(set = 1, binding = 3) uniform sampler2D rmaoSampler;
 layout(set = 1, binding = 4) uniform sampler2D metalSampler;
 layout(set = 1, binding = 5) uniform sampler2D aoSampler;
 layout(set = 1, binding = 6) uniform sampler2D disSampler;
@@ -147,9 +147,9 @@ void main()
     vec3 N = normalize(texture(normalSampler, uv).rgb);
 
     vec3 albedo =pow(texture(albedoSampler, uv).rgb, vec3(2.2));
-    float metallic  = texture(metalSampler, uv).r;
-    float roughness = texture(roughSampler, uv).r;
-    float ao        = texture(aoSampler, uv).r;
+    float roughness = texture(rmaoSampler, uv).r;
+    float metallic  = texture(rmaoSampler, uv).g;
+    float ao        = texture(rmaoSampler, uv).b;
 
     // Discard fragments at texture border
 	if (uv.x < 0.0 || uv.x > 1.0 || uv.y < 0.0 || uv.y > 1.0) {
