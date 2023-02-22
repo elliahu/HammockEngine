@@ -28,7 +28,7 @@
 #include <chrono>
 
 #ifndef MODELS_DIR
-#define MODELS_DIR "../../HammockEngine/Models/"
+#define MODELS_DIR "../../Resources/Models/"
 #endif // !MODELS_DIR
 
 #ifndef MATERIALS_DIR
