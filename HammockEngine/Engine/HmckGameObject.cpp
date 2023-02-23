@@ -130,7 +130,7 @@ void Hmck::HmckGameObject::bindDescriptorSet(
 	{
 		VkDescriptorImageInfo colorInfo{};
 		colorInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-		colorInfo.imageView = materialComponent->material->color->image.imageView;
+		colorInfo.imageView = materialComponent->material->color->view;
 		colorInfo.sampler = materialComponent->material->color->sampler;
 
 		descriptorWriter.writeImage(0, &colorInfo);
@@ -140,7 +140,7 @@ void Hmck::HmckGameObject::bindDescriptorSet(
 	{
 		VkDescriptorImageInfo normalInfo{};
 		normalInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-		normalInfo.imageView = materialComponent->material->normal->image.imageView;
+		normalInfo.imageView = materialComponent->material->normal->view;
 		normalInfo.sampler = materialComponent->material->normal->sampler;
 
 		descriptorWriter.writeImage(1, &normalInfo);
@@ -150,7 +150,7 @@ void Hmck::HmckGameObject::bindDescriptorSet(
 	{
 		VkDescriptorImageInfo roughnessInfo{};
 		roughnessInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-		roughnessInfo.imageView = materialComponent->material->roughness->image.imageView;
+		roughnessInfo.imageView = materialComponent->material->roughness->view;
 		roughnessInfo.sampler = materialComponent->material->roughness->sampler;
 
 		descriptorWriter.writeImage(2, &roughnessInfo);
@@ -160,7 +160,7 @@ void Hmck::HmckGameObject::bindDescriptorSet(
 	{
 		VkDescriptorImageInfo metalnessInfo{};
 		metalnessInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-		metalnessInfo.imageView = materialComponent->material->metalness->image.imageView;
+		metalnessInfo.imageView = materialComponent->material->metalness->view;
 		metalnessInfo.sampler = materialComponent->material->metalness->sampler;
 
 		descriptorWriter.writeImage(3, &metalnessInfo);
@@ -170,7 +170,7 @@ void Hmck::HmckGameObject::bindDescriptorSet(
 	{
 		VkDescriptorImageInfo aoInfo{};
 		aoInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-		aoInfo.imageView = materialComponent->material->ambientOcclusion->image.imageView;
+		aoInfo.imageView = materialComponent->material->ambientOcclusion->view;
 		aoInfo.sampler = materialComponent->material->ambientOcclusion->sampler;
 
 		descriptorWriter.writeImage(4, &aoInfo);
@@ -180,7 +180,7 @@ void Hmck::HmckGameObject::bindDescriptorSet(
 	{
 		VkDescriptorImageInfo displacementInfo{};
 		displacementInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-		displacementInfo.imageView = materialComponent->material->displacement->image.imageView;
+		displacementInfo.imageView = materialComponent->material->displacement->view;
 		displacementInfo.sampler = materialComponent->material->displacement->sampler;
 
 		descriptorWriter.writeImage(5, &displacementInfo);

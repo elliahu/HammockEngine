@@ -6,6 +6,9 @@
 #include <glm/gtc/constants.hpp>
 
 #include <functional>
+#include <fstream>
+#include <iostream>
+#include <string>
 
 namespace Hmck
 {
@@ -85,5 +88,15 @@ namespace Hmck
 		}
 
 	} // namespace Init
+
+	namespace Filesystem
+	{
+		inline bool fileExists(const std::string& filename)
+		{
+			std::ifstream f(filename.c_str());
+			return !f.fail();
+		}
+
+	} // namespace Filesystem
 
 } // namespace Hmck

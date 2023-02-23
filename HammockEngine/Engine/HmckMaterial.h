@@ -7,13 +7,10 @@
 #include "HmckDevice.h"
 #include "HmckBuffer.h"
 #include "HmckDescriptors.h"
+#include "HmckTexture.h"
 
 namespace Hmck
 {
-	/*
-		This struct is used to describe the material that is gonna be loaded
-		specially tha paths to each material map
-	*/
 	struct HmckCreateMaterialInfo 
 	{
 		std::string color{};
@@ -22,49 +19,6 @@ namespace Hmck
 		std::string metalness{};
 		std::string ambientOcclusion{};
 		std::string displacement{};
-	};
-
-	/*
-		This struct represents general purpose image on GPU
-		Does not have a sampler tho
-	*/
-	struct HmckImage
-	{
-		VkDeviceMemory imageMemory;
-		VkImage image;
-		VkImageView imageView;
-
-		// Recommended:
-		// VK_FORMAT_R8G8B8A8_UNORM for normals
-		// VK_FORMAT_R8G8B8A8_SRGB for images
-
-		void loadImage(
-			std::string& filepath, 
-			HmckDevice& hmckDevice,
-			VkFormat format = VK_FORMAT_R8G8B8A8_SRGB,
-			bool flip = true
-		);
-
-		void createImageView(HmckDevice& hmckDevice, VkFormat format = VK_FORMAT_R8G8B8A8_SRGB);
-		void destroyImage(HmckDevice& hmckDevice);
-		void clearImage(HmckDevice& hmckDevice, VkClearColorValue clearColor = { 1.0f, 1.0f, 1.0f, 1.0f }, VkFormat format = VK_FORMAT_R8G8B8A8_SRGB);
-	};
-
-
-	/*
-		HmckTexture struct represents a texture or a map
-		that can be used to sample from in a shader
-	*/
-	struct HmckTexture
-	{
-		// format: VK_FORMAT_R8G8B8A8_SRGB
-		HmckImage image{};
-		// TODO no need for one sampler per texture - all texture can share one sampler
-		VkSampler sampler;
-
-		void createSampler(HmckDevice& hmckDevice);
-		void createDepthSampler(HmckDevice& hmckDevice);
-		void destroySampler(HmckDevice& hmckDevice);
 	};
 
 	/*
@@ -84,12 +38,12 @@ namespace Hmck
 		static std::unique_ptr<HmckMaterial> createMaterial(HmckDevice& hmckDevice, HmckCreateMaterialInfo& materialInfo);
 		void destroy();
 
-		std::unique_ptr<HmckTexture> color;
-		std::unique_ptr<HmckTexture> normal;
-		std::unique_ptr<HmckTexture> roughness;
-		std::unique_ptr<HmckTexture> metalness;
-		std::unique_ptr<HmckTexture> ambientOcclusion;
-		std::unique_ptr<HmckTexture> displacement;
+		std::unique_ptr<HmckTexture2D> color;
+		std::unique_ptr<HmckTexture2D> normal;
+		std::unique_ptr<HmckTexture2D> roughness;
+		std::unique_ptr<HmckTexture2D> metalness;
+		std::unique_ptr<HmckTexture2D> ambientOcclusion;
+		std::unique_ptr<HmckTexture2D> displacement;
 	private:
 		void createMaterial(HmckCreateMaterialInfo& materialInfo);
 
