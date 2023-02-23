@@ -84,10 +84,10 @@ namespace Hmck
 	struct HmckFramebuffer
 	{
 	public:
-		uint32_t width, height;
-		VkFramebuffer framebuffer;
-		VkRenderPass renderPass;
-		VkSampler sampler;
+		uint32_t width = 0, height = 0;
+		VkFramebuffer framebuffer = nullptr;
+		VkRenderPass renderPass = nullptr;
+		VkSampler sampler = nullptr;
 		std::vector<HmckFramebufferAttachment> attachments;
 
 		/**
@@ -258,6 +258,8 @@ namespace Hmck
 		*/
 		VkResult createRenderPass()
 		{
+			assert(width > 0 && height > 0 && "Cannot create renderpass - width has to > 0, height has to be > 0");
+
 			std::vector<VkAttachmentDescription> attachmentDescriptions;
 			for (auto& attachment : attachments)
 			{
@@ -343,7 +345,7 @@ namespace Hmck
 
 			// Find. max number of layers across attachments
 			uint32_t maxLayers = 0;
-			for (auto attachment : attachments)
+			for (auto& attachment : attachments)
 			{
 				if (attachment.subresourceRange.layerCount > maxLayers)
 				{

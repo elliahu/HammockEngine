@@ -151,13 +151,10 @@ void Hmck::HmckRenderer::beginRenderPass(
 
 	vkCmdBeginRenderPass(commandBuffer, &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
 
-	VkViewport viewport{};
-	viewport.x = 0.0f;
-	viewport.y = 0.0f;
-	viewport.width = static_cast<float>(framebuffer->width);
-	viewport.height = static_cast<float>(framebuffer->height);
-	viewport.minDepth = 0.0f;
-	viewport.maxDepth = 1.0f;
+	VkViewport viewport = Hmck::Init::viewport(
+		static_cast<float>(framebuffer->width),
+		static_cast<float>(framebuffer->height),
+		0.0f, 1.0f);
 	VkRect2D scissor{ {0,0}, { framebuffer->width, framebuffer->height} };
 	vkCmdSetViewport(commandBuffer, 0, 1, &viewport);
 	vkCmdSetScissor(commandBuffer, 0, 1, &scissor);
@@ -185,13 +182,10 @@ void Hmck::HmckRenderer::beginSwapChainRenderPass(VkCommandBuffer commandBuffer)
 
 	vkCmdBeginRenderPass(commandBuffer, &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
 
-	VkViewport viewport{};
-	viewport.x = 0.0f;
-	viewport.y = 0.0f;
-	viewport.width = static_cast<float>(hmckSwapChain->getSwapChainExtent().width);
-	viewport.height = static_cast<float>(hmckSwapChain->getSwapChainExtent().height);
-	viewport.minDepth = 0.0f;
-	viewport.maxDepth = 1.0f;
+	VkViewport viewport = Hmck::Init::viewport(
+		static_cast<float>(hmckSwapChain->getSwapChainExtent().width),
+		static_cast<float>(hmckSwapChain->getSwapChainExtent().height),
+		0.0f, 1.0f);
 	VkRect2D scissor{ {0,0}, hmckSwapChain->getSwapChainExtent() };
 	vkCmdSetViewport(commandBuffer, 0, 1, &viewport);
 	vkCmdSetScissor(commandBuffer, 0, 1, &scissor);
@@ -207,7 +201,7 @@ void Hmck::HmckRenderer::beginShadowmapRenderPass(VkCommandBuffer commandBuffer)
 
 void Hmck::HmckRenderer::beginGbufferRenderPass(VkCommandBuffer commandBuffer)
 {
-	std::vector<VkClearValue> clearValues{ 8 };
+	std::vector<VkClearValue> clearValues{ 5 };
 	clearValues[0].color = { { 0.0f, 0.0f, 0.0f, 0.0f } };
 	clearValues[1].color = { { 0.0f, 0.0f, 0.0f, 0.0f } };
 	clearValues[2].color = { { 0.0f, 0.0f, 0.0f, 0.0f } };

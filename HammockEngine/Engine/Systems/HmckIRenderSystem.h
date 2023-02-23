@@ -19,6 +19,6 @@ namespace Hmck
 
 		HmckDevice& hmckDevice;
 		std::unique_ptr<HmckPipeline> pipeline;
-		VkPipelineLayout pipelineLayout;
+		VkPipelineLayout pipelineLayout = nullptr;
 	};
 }
