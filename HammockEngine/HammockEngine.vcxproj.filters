@@ -108,49 +108,7 @@
     <ClCompile Include="Engine\Systems\HmckGbufferRenderSystem.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="External\ktx\lib\checkheader.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="External\ktx\lib\errstr.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="External\ktx\lib\etcdec.cxx">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="External\ktx\lib\etcunpack.cxx">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="External\ktx\lib\filestream.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="External\ktx\lib\glloader.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="External\ktx\lib\hashlist.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="External\ktx\lib\hashtable.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="External\ktx\lib\memstream.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="External\ktx\lib\swap.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="External\ktx\lib\texture.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="External\ktx\lib\vk_funcs.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="External\ktx\lib\vkloader.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="External\ktx\lib\writer.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="External\ktx\lib\writer_v1.c">
+    <ClCompile Include="Engine\HmckTexture.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
@@ -272,70 +230,25 @@
     <ClInclude Include="External\tiny_gltf.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="External\ktx\include\ktx.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="External\ktx\include\ktxvulkan.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="External\ktx\lib\filestream.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="External\ktx\lib\gl_format.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="External\ktx\lib\gl_funcptrs.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="External\ktx\lib\gles1_funcptrs.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="External\ktx\lib\gles2_funcptrs.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="External\ktx\lib\gles3_funcptrs.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="External\ktx\lib\ktxgl.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="External\ktx\lib\ktxint.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="External\ktx\lib\memstream.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="External\ktx\lib\stream.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="External\ktx\lib\uthash.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="External\ktx\lib\vk_format.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="External\ktx\lib\vk_funcs.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="External\ktx\other_include\KHR\khrplatform.h">
+    <ClInclude Include="Engine\HmckTexture.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <None Include="Engine\Shaders\Raw\point_light.frag" />
-    <None Include="Engine\Shaders\Raw\point_light.vert" />
-    <None Include="Engine\Shaders\Raw\deferred.frag" />
-    <None Include="Engine\Shaders\Raw\deferred.vert" />
+    <None Include="Engine\Shaders\Raw\glsl\point_light.frag" />
+    <None Include="Engine\Shaders\Raw\glsl\point_light.vert" />
+    <None Include="Engine\Shaders\Raw\glsl\deferred.frag" />
+    <None Include="Engine\Shaders\Raw\glsl\deferred.vert" />
     <None Include="packages.config" />
-    <None Include="Engine\Shaders\Raw\shadowmap.frag" />
-    <None Include="Engine\Shaders\Raw\shadowmap.vert" />
+    <None Include="Engine\Shaders\Raw\glsl\shadowmap.frag" />
+    <None Include="Engine\Shaders\Raw\glsl\shadowmap.vert" />
     <None Include="compile_shaders.bat">
       <Filter>Source Files</Filter>
     </None>
-    <None Include="Engine\Shaders\Raw\gbuffer.frag" />
-    <None Include="Engine\Shaders\Raw\gbuffer.vert" />
-    <None Include="External\ktx\lib\vk_funclist.inl">
-      <Filter>Header Files</Filter>
+    <None Include="Engine\Shaders\Raw\glsl\gbuffer.frag" />
+    <None Include="Engine\Shaders\Raw\glsl\gbuffer.vert" />
+    <None Include="compile_shaders_hlsl.bat">
+      <Filter>Source Files</Filter>
     </None>
   </ItemGroup>
 </Project>

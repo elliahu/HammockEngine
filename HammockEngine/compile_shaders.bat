@@ -1,5 +1,5 @@
 set COMPILER=%VULKAN_SDK%\Bin\glslc.exe
-set INPUT=.\Engine\Shaders\Raw
+set INPUT=.\Engine\Shaders\Raw\glsl
 set OUTPUT=.\Engine\Shaders\Compiled
 
 for /f %%f in ('dir /b %INPUT%') do %COMPILER% %INPUT%\%%f -o %OUTPUT%\%%f.spv

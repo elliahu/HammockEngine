@@ -90,7 +90,7 @@ void Hmck::HmckShadowmapSystem::createPipeline(VkRenderPass renderPass)
 	pipelineConfig.pipelineLayout = pipelineLayout;
 	pipeline = std::make_unique<HmckPipeline>(
 		hmckDevice,
-		std::string(SHADERS_DIR) + "Compiled/shadowmap.vert.spv",
+		std::string(SHADERS_DIR) + "Compiled/shadowmap.vs.hlsl.spv",
 		std::string(SHADERS_DIR) + "Compiled/shadowmap.frag.spv",
 		pipelineConfig
 		);

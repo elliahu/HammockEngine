@@ -34,10 +34,6 @@ layout (set = 0, binding = 0) uniform GlobalUbo
     int numLights;
 } ubo;
 
-out gl_PerVertex 
-{
-    vec4 gl_Position;   
-};
 
 // push constants
 layout (push_constant) uniform Push

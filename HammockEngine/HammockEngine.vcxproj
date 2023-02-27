@@ -104,14 +104,15 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="compile_shaders.bat" />
-    <None Include="Engine\Shaders\Raw\gbuffer.frag" />
-    <None Include="Engine\Shaders\Raw\gbuffer.vert" />
-    <None Include="Engine\Shaders\Raw\shadowmap.frag" />
-    <None Include="Engine\Shaders\Raw\shadowmap.vert" />
-    <None Include="Engine\Shaders\Raw\point_light.frag" />
-    <None Include="Engine\Shaders\Raw\point_light.vert" />
-    <None Include="Engine\Shaders\Raw\deferred.frag" />
-    <None Include="Engine\Shaders\Raw\deferred.vert" />
+    <None Include="compile_shaders_hlsl.bat" />
+    <None Include="Engine\Shaders\Raw\glsl\gbuffer.frag" />
+    <None Include="Engine\Shaders\Raw\glsl\gbuffer.vert" />
+    <None Include="Engine\Shaders\Raw\glsl\shadowmap.frag" />
+    <None Include="Engine\Shaders\Raw\glsl\shadowmap.vert" />
+    <None Include="Engine\Shaders\Raw\glsl\point_light.frag" />
+    <None Include="Engine\Shaders\Raw\glsl\point_light.vert" />
+    <None Include="Engine\Shaders\Raw\glsl\deferred.frag" />
+    <None Include="Engine\Shaders\Raw\glsl\deferred.vert" />
     <None Include="packages.config" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
