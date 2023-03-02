@@ -228,7 +228,7 @@ void Hmck::App::loadGameObjects()
     gameObjects.emplace(sphere.getId(), std::move(sphere));
 
     // floor
-    std::shared_ptr<HmckMesh> quadModel = HmckMesh::createMeshFromFile(hmckDevice, std::string(MODELS_DIR) + "plane.FBX");
+    std::shared_ptr<HmckMesh> quadModel = HmckMesh::createMeshFromFile(hmckDevice, std::string(MODELS_DIR) + "plane.obj");
     auto floor = HmckGameObject::createGameObject();
     floor.setName("Floor");
     floor.setModel(quadModel);

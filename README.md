@@ -28,7 +28,6 @@ The following points are milestones i would like to hit in near future:
 The following NuGet packages are used:
 - [GLM](https://github.com/g-truc/glm) - Linear algebra lib for matrix and vector operations (may switch to handmade math later as it is much lighter)
 - [GLFW](https://www.glfw.org/) - Window creation and input handling
-- [Assimp](https://github.com/assimp/assimp) - Asset import library (will be moving to glTF 2.0 custom loading in future)
 
 ![Textures](https://raw.githubusercontent.com/elliahu/HammockEngine/master/Img/pbr.png)
 

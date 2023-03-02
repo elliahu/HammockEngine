@@ -9,9 +9,6 @@
 #define GLM_ENABLE_EXPRIMENTAL
 #include <glm/gtx/hash.hpp>
 
-#include <assimp/Importer.hpp>
-#include <assimp/scene.h>
-#include <assimp/postprocess.h>
 
 #include <vector>
 #include <cassert>
@@ -77,7 +74,6 @@ namespace Hmck
 			std::vector<uint32_t> indices{};
 
 			MeshInfo loadObjMesh(const std::string& filepath, bool calcTangent = true);
-			MeshInfo loadMeshAssimp(const std::string& filepath);
 			void updateMeshInfo(MeshInfo& mInfo, Vertex& vertex);
 			void calculateTangent();
 		};

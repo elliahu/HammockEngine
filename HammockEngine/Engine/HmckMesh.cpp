@@ -30,7 +30,7 @@ Hmck::HmckMesh::~HmckMesh() {}
 std::unique_ptr<Hmck::HmckMesh> Hmck::HmckMesh::createMeshFromFile(HmckDevice& device, const std::string& filepath, bool calculateTangents)
 {
 	Builder builder{};
-	MeshInfo mInfo = builder.loadMeshAssimp(filepath); //builder.loadObjMesh(filepath, calculateTangents);
+	MeshInfo mInfo = builder.loadObjMesh(filepath, calculateTangents);
 
 	std::unique_ptr<HmckMesh> model = std::make_unique<HmckMesh>(device, builder);
 	model->modelInfo = mInfo;
@@ -228,90 +228,6 @@ Hmck::HmckMesh::MeshInfo Hmck::HmckMesh::Builder::loadObjMesh(const std::string&
 	return mInfo;
 }
 
-Hmck::HmckMesh::MeshInfo Hmck::HmckMesh::Builder::loadMeshAssimp(const std::string& filepath)
-{
-	Assimp::Importer imp;
-	unsigned int opts =
-		aiProcess_Triangulate |
-		aiProcess_CalcTangentSpace |
-		aiProcess_JoinIdenticalVertices |
-		aiProcess_FlipWindingOrder;
-
-	// load the data from file into a scene object
-	const aiScene* scene = imp.ReadFile(filepath, opts);
-
-	if (scene == nullptr)
-	{
-		std::cerr << imp.GetErrorString() << std::endl;
-		throw std::runtime_error("Failed to load a scene");
-	}
-
-	MeshInfo mInfo{};
-
-	// fro each mesh in the file
-	for (unsigned int i = 0; i < scene->mNumMeshes; i++)
-	{
-		aiMesh* mesh = scene->mMeshes[i];
-
-		// process vertices
-		for (unsigned int i = 0; i < mesh->mNumVertices; i++)
-		{
-			Vertex vertex{};
-
-			if (mesh->HasPositions())
-			{
-				vertex.position = {
-					mesh->mVertices[i].x,
-					mesh->mVertices[i].y,
-					mesh->mVertices[i].z
-				};
-
-				vertex.color = { 1,1,1 };
-			}
-
-			if (mesh->HasTextureCoords(0))
-			{
-				vertex.uv = {
-					mesh->mTextureCoords[0][i].x,
-					mesh->mTextureCoords[0][i].y
-				};
-			}
-
-			if (mesh->HasNormals())
-			{
-				vertex.normal = {
-					mesh->mNormals[i].x,
-					mesh->mNormals[i].y,
-					mesh->mNormals[i].z
-				};
-			}
-
-			if (mesh->HasTangentsAndBitangents())
-			{
-				vertex.tangent = {
-					mesh->mTangents[i].x,
-					mesh->mTangents[i].y,
-					mesh->mTangents[i].z
-				};
-			}
-
-			vertices.push_back(vertex);
-			updateMeshInfo(mInfo, vertex);
-		}
-
-		// proces indices
-		for (unsigned int i = 0; i < mesh->mNumFaces; i++)
-		{
-			aiFace face = mesh->mFaces[i];
-			assert(face.mNumIndices == 3 && "Face has to be a triangle!");
-			indices.push_back(face.mIndices[0]);
-			indices.push_back(face.mIndices[1]);
-			indices.push_back(face.mIndices[2]);	
-		}
-	}
-
-	return mInfo;
-}
 
 void Hmck::HmckMesh::Builder::updateMeshInfo(MeshInfo& mInfo, Vertex& vertex)
 {
