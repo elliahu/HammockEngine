@@ -58,6 +58,7 @@
     <ClCompile Include="Engine\Utils\HmckLogger.cpp" />
     <ClCompile Include="Engine\Systems\HmckShadowmapSystem.cpp" />
     <ClCompile Include="Engine\Platform\HmckInputHandler.cpp" />
+    <ClCompile Include="Engine\HmckGLTF.cpp" />
     <ClCompile Include="main.cpp" />
   </ItemGroup>
   <ItemGroup>
@@ -101,6 +102,7 @@
     <ClInclude Include="External\tiny_obj_loader.h" />
     <ClInclude Include="Engine\Platform\HmckInputHandler.h" />
     <ClInclude Include="Engine\HmckFramebuffer.h" />
+    <ClInclude Include="Engine\HmckGLTF.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include="compile_shaders.bat" />

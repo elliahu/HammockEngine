@@ -3,6 +3,7 @@
 #define TINYOBJLOADER_IMPLEMENTATION
 #include <tiny_obj_loader.h>
 
+
 namespace std
 {
 	template <>
@@ -23,13 +24,13 @@ Hmck::HmckMesh::HmckMesh(HmckDevice& device, const HmckMesh::Builder& builder) :
 	createIndexBuffers(builder.indices);
 }
 
-Hmck::HmckMesh::~HmckMesh(){}
+Hmck::HmckMesh::~HmckMesh() {}
 
 
 std::unique_ptr<Hmck::HmckMesh> Hmck::HmckMesh::createMeshFromFile(HmckDevice& device, const std::string& filepath, bool calculateTangents)
 {
 	Builder builder{};
-	MeshInfo mInfo = builder.loadMesh(filepath, calculateTangents);
+	MeshInfo mInfo = builder.loadMeshAssimp(filepath); //builder.loadObjMesh(filepath, calculateTangents);
 
 	std::unique_ptr<HmckMesh> model = std::make_unique<HmckMesh>(device, builder);
 	model->modelInfo = mInfo;
@@ -43,7 +44,7 @@ void Hmck::HmckMesh::draw(VkCommandBuffer commandBuffer)
 	{
 		vkCmdDrawIndexed(commandBuffer, indexCount, 1, 0, 0, 0);
 	}
-	else 
+	else
 	{
 		vkCmdDraw(commandBuffer, vertexCount, 1, 0, 0);
 	}
@@ -51,13 +52,13 @@ void Hmck::HmckMesh::draw(VkCommandBuffer commandBuffer)
 
 void Hmck::HmckMesh::bind(VkCommandBuffer commandBuffer)
 {
-	VkBuffer buffers[] = { vertexBuffer->getBuffer()};
+	VkBuffer buffers[] = { vertexBuffer->getBuffer() };
 	VkDeviceSize offsets[] = { 0 };
 	vkCmdBindVertexBuffers(commandBuffer, 0, 1, buffers, offsets);
 
 	if (hasIndexBuffer)
 	{
-		vkCmdBindIndexBuffer(commandBuffer, indexBuffer->getBuffer() , 0, VK_INDEX_TYPE_UINT32);
+		vkCmdBindIndexBuffer(commandBuffer, indexBuffer->getBuffer(), 0, VK_INDEX_TYPE_UINT32);
 	}
 }
 
@@ -87,7 +88,7 @@ void Hmck::HmckMesh::createVertexBuffers(const std::vector<Vertex>& vertices)
 		vertexCount,
 		VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT,
 		VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT
-	);
+		);
 
 	hmckDevice.copyBuffer(stagingBuffer.getBuffer(), vertexBuffer->getBuffer(), bufferSize);
 }
@@ -113,7 +114,7 @@ void Hmck::HmckMesh::createIndexBuffers(const std::vector<uint32_t>& indices)
 		VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
 		VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT
 	};
-	
+
 	stagingBuffer.map();
 	stagingBuffer.writeToBuffer((void*)indices.data());
 
@@ -123,9 +124,9 @@ void Hmck::HmckMesh::createIndexBuffers(const std::vector<uint32_t>& indices)
 		indexCount,
 		VK_BUFFER_USAGE_INDEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT,
 		VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT
-	);
+		);
 
-	
+
 	hmckDevice.copyBuffer(stagingBuffer.getBuffer(), indexBuffer->getBuffer(), bufferSize);
 }
 
@@ -137,10 +138,11 @@ std::vector<VkVertexInputBindingDescription> Hmck::HmckMesh::Vertex::getBindingD
 	bindingDescriptions[0].inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
 	return bindingDescriptions;
 }
+
 std::vector<VkVertexInputAttributeDescription> Hmck::HmckMesh::Vertex::getAttributeDescriptions()
 {
 	return
-	{	
+	{
 		// order is location, binding, format, offset
 		{0, 0, VK_FORMAT_R32G32B32_SFLOAT, offsetof(Vertex, position)},
 		{1, 0, VK_FORMAT_R32G32B32_SFLOAT, offsetof(Vertex, color)},
@@ -150,7 +152,7 @@ std::vector<VkVertexInputAttributeDescription> Hmck::HmckMesh::Vertex::getAttrib
 	};
 }
 
-Hmck::HmckMesh::MeshInfo Hmck::HmckMesh::Builder::loadMesh(const std::string& filepath, bool calcTangent)
+Hmck::HmckMesh::MeshInfo Hmck::HmckMesh::Builder::loadObjMesh(const std::string& filepath, bool calcTangent)
 {
 	tinyobj::attrib_t attrib;
 	std::vector<tinyobj::shape_t> shapes;
@@ -169,7 +171,7 @@ Hmck::HmckMesh::MeshInfo Hmck::HmckMesh::Builder::loadMesh(const std::string& fi
 
 	std::unordered_map<Vertex, uint32_t> uniqueVertices{};
 
-	for (const auto &shape : shapes)
+	for (const auto& shape : shapes)
 	{
 		for (const auto& index : shape.mesh.indices)
 		{
@@ -199,7 +201,7 @@ Hmck::HmckMesh::MeshInfo Hmck::HmckMesh::Builder::loadMesh(const std::string& fi
 				};
 			}
 
-			if (index.texcoord_index >= 0) 
+			if (index.texcoord_index >= 0)
 			{
 				vertex.uv = {
 					attrib.texcoords[2 * index.texcoord_index + 0],
@@ -213,35 +215,7 @@ Hmck::HmckMesh::MeshInfo Hmck::HmckMesh::Builder::loadMesh(const std::string& fi
 				vertices.push_back(vertex);
 
 				// fill Info struct
-				if (vertex.position.x <= mInfo.x.min)
-				{
-					mInfo.x.min = vertex.position.x;
-				}
-
-				if (vertex.position.x >= mInfo.x.max)
-				{
-					mInfo.x.max = vertex.position.x;
-				}
-
-				if (vertex.position.y <= mInfo.y.min)
-				{
-					mInfo.y.min = vertex.position.y;
-				}
-
-				if (vertex.position.y >= mInfo.y.max)
-				{
-					mInfo.y.max = vertex.position.y;
-				}
-
-				if (vertex.position.z <= mInfo.z.min)
-				{
-					mInfo.z.min = vertex.position.z;
-				}
-
-				if (vertex.position.z >= mInfo.z.max)
-				{
-					mInfo.z.max = vertex.position.z;
-				}
+				updateMeshInfo(mInfo, vertex);
 			}
 
 			indices.push_back(uniqueVertices[vertex]);
@@ -257,111 +231,121 @@ Hmck::HmckMesh::MeshInfo Hmck::HmckMesh::Builder::loadMesh(const std::string& fi
 Hmck::HmckMesh::MeshInfo Hmck::HmckMesh::Builder::loadMeshAssimp(const std::string& filepath)
 {
 	Assimp::Importer imp;
-	unsigned int opts = aiProcess_Triangulate | aiProcess_CalcTangentSpace;
+	unsigned int opts =
+		aiProcess_Triangulate |
+		aiProcess_CalcTangentSpace |
+		aiProcess_JoinIdenticalVertices |
+		aiProcess_FlipWindingOrder;
 
+	// load the data from file into a scene object
 	const aiScene* scene = imp.ReadFile(filepath, opts);
+
+	if (scene == nullptr)
+	{
+		std::cerr << imp.GetErrorString() << std::endl;
+		throw std::runtime_error("Failed to load a scene");
+	}
 
 	MeshInfo mInfo{};
 
-	std::unordered_map<Vertex, uint32_t> uniqueVertices{};
-
-	if (scene)
+	// fro each mesh in the file
+	for (unsigned int i = 0; i < scene->mNumMeshes; i++)
 	{
+		aiMesh* mesh = scene->mMeshes[i];
 
-		for (unsigned int i = 0; i < scene->mNumMeshes; i++)   
+		// process vertices
+		for (unsigned int i = 0; i < mesh->mNumVertices; i++)
 		{
-			aiMesh* mesh = scene->mMeshes[i]; 
+			Vertex vertex{};
 
-			for (unsigned int i = 0; i < mesh->mNumVertices; i++)
+			if (mesh->HasPositions())
 			{
-				Vertex vertex{};
+				vertex.position = {
+					mesh->mVertices[i].x,
+					mesh->mVertices[i].y,
+					mesh->mVertices[i].z
+				};
 
-				if (mesh->HasPositions())
-				{
-					vertex.position = {
-						mesh->mVertices[i].x,
-						mesh->mVertices[i].y,
-						mesh->mVertices[i].z
-					};
-
-					vertex.color = { 1,1,1 };
-				}
-
-				if (mesh->HasTextureCoords(0))
-				{
-					vertex.uv = {
-						mesh->mTextureCoords[0][i].x,
-						mesh->mTextureCoords[0][i].y
-					};
-				}
-
-				if (mesh->HasNormals())
-				{
-					vertex.normal = {
-						mesh->mNormals[i].x,
-						mesh->mNormals[i].y,
-						mesh->mNormals[i].z
-					};
-				}
-
-				if (mesh->HasTangentsAndBitangents())
-				{
-					vertex.tangent = {
-						mesh->mTangents[i].x,
-						mesh->mTangents[i].y,
-						mesh->mTangents[i].z
-					};
-				}
-
-				if (uniqueVertices.count(vertex) == 0)
-				{
-					uniqueVertices[vertex] = static_cast<uint32_t>(vertices.size());
-					vertices.push_back(vertex);
-
-					// fill Info struct
-					if (vertex.position.x <= mInfo.x.min)
-					{
-						mInfo.x.min = vertex.position.x;
-					}
-
-					if (vertex.position.x >= mInfo.x.max)
-					{
-						mInfo.x.max = vertex.position.x;
-					}
-
-					if (vertex.position.y <= mInfo.y.min)
-					{
-						mInfo.y.min = vertex.position.y;
-					}
-
-					if (vertex.position.y >= mInfo.y.max)
-					{
-						mInfo.y.max = vertex.position.y;
-					}
-
-					if (vertex.position.z <= mInfo.z.min)
-					{
-						mInfo.z.min = vertex.position.z;
-					}
-
-					if (vertex.position.z >= mInfo.z.max)
-					{
-						mInfo.z.max = vertex.position.z;
-					}
-				}
-
-				indices.push_back(uniqueVertices[vertex]);
+				vertex.color = { 1,1,1 };
 			}
+
+			if (mesh->HasTextureCoords(0))
+			{
+				vertex.uv = {
+					mesh->mTextureCoords[0][i].x,
+					mesh->mTextureCoords[0][i].y
+				};
+			}
+
+			if (mesh->HasNormals())
+			{
+				vertex.normal = {
+					mesh->mNormals[i].x,
+					mesh->mNormals[i].y,
+					mesh->mNormals[i].z
+				};
+			}
+
+			if (mesh->HasTangentsAndBitangents())
+			{
+				vertex.tangent = {
+					mesh->mTangents[i].x,
+					mesh->mTangents[i].y,
+					mesh->mTangents[i].z
+				};
+			}
+
+			vertices.push_back(vertex);
+			updateMeshInfo(mInfo, vertex);
 		}
 
-	}
-	else
-	{
-		std::runtime_error("Could not load model");
+		// proces indices
+		for (unsigned int i = 0; i < mesh->mNumFaces; i++)
+		{
+			aiFace face = mesh->mFaces[i];
+			assert(face.mNumIndices == 3 && "Face has to be a triangle!");
+			indices.push_back(face.mIndices[0]);
+			indices.push_back(face.mIndices[1]);
+			indices.push_back(face.mIndices[2]);	
+		}
 	}
 
 	return mInfo;
 }
+
+void Hmck::HmckMesh::Builder::updateMeshInfo(MeshInfo& mInfo, Vertex& vertex)
+{
+	if (vertex.position.x <= mInfo.x.min)
+	{
+		mInfo.x.min = vertex.position.x;
+	}
+
+	if (vertex.position.x >= mInfo.x.max)
+	{
+		mInfo.x.max = vertex.position.x;
+	}
+
+	if (vertex.position.y <= mInfo.y.min)
+	{
+		mInfo.y.min = vertex.position.y;
+	}
+
+	if (vertex.position.y >= mInfo.y.max)
+	{
+		mInfo.y.max = vertex.position.y;
+	}
+
+	if (vertex.position.z <= mInfo.z.min)
+	{
+		mInfo.z.min = vertex.position.z;
+	}
+
+	if (vertex.position.z >= mInfo.z.max)
+	{
+		mInfo.z.max = vertex.position.z;
+	}
+}
+
 
 void Hmck::HmckMesh::Builder::calculateTangent()
 {

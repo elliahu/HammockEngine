@@ -13,12 +13,12 @@
 #include <assimp/scene.h>
 #include <assimp/postprocess.h>
 
-
 #include <vector>
 #include <cassert>
 #include <cstring>
 #include <memory>
 #include <unordered_map>
+
 
 namespace Hmck
 {
@@ -76,8 +76,9 @@ namespace Hmck
 			std::vector<Vertex> vertices{};
 			std::vector<uint32_t> indices{};
 
-			MeshInfo loadMesh(const std::string& filepath, bool calcTangent = true);
+			MeshInfo loadObjMesh(const std::string& filepath, bool calcTangent = true);
 			MeshInfo loadMeshAssimp(const std::string& filepath);
+			void updateMeshInfo(MeshInfo& mInfo, Vertex& vertex);
 			void calculateTangent();
 		};
 

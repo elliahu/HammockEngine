@@ -1,5 +1,7 @@
 #include "HmckTexture.h"
+#define TINYGLTF_IMPLEMENTATION
 #define STB_IMAGE_IMPLEMENTATION
+#define STB_IMAGE_WRITE_IMPLEMENTATION
 #include <stb_image.h>
 
 void Hmck::HmckTexture2D::destroy(HmckDevice& hmckDevice)
