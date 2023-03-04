@@ -373,7 +373,7 @@ void Hmck::HmckUISystem::gameObjectComponets(HmckGameObject& gameObject)
 	{
 		if (ImGui::CollapsingHeader("Point light"))
 		{
-			ImGui::DragFloat("Intensity", &gameObject.pointLightComponent->lightIntensity, 0.01f, 0.0f, 1.0f);
+			ImGui::DragFloat("Intensity", &gameObject.pointLightComponent->lightIntensity, 0.01f, 0.0f);
 			ImGui::DragFloat("Quadratic Term", &gameObject.pointLightComponent->quadraticTerm, 0.01f, 0.0f, 4.0f);
 			ImGui::DragFloat("Linear Term", &gameObject.pointLightComponent->linearTerm, 0.01f, 0.0f, 4.0f);
 			ImGui::DragFloat("Constant Term", &gameObject.pointLightComponent->constantTerm, 0.01f, 0.0f, 4.0f);
@@ -383,7 +383,7 @@ void Hmck::HmckUISystem::gameObjectComponets(HmckGameObject& gameObject)
 	{
 		if (ImGui::CollapsingHeader("Directional light"))
 		{
-			ImGui::DragFloat("Intensity", &gameObject.directionalLightComponent->lightIntensity, 0.01f, 0.0f, 1.0f);
+			ImGui::DragFloat("Intensity", &gameObject.directionalLightComponent->lightIntensity, 0.01f, 0.0f);
 			ImGui::DragFloat("FOV", &gameObject.directionalLightComponent->fov, 1.0f, 10.0f, 180.f);
 			ImGui::DragFloat("Near", &gameObject.directionalLightComponent->_near, 0.01f, 0.001f);
 			ImGui::DragFloat("Far", &gameObject.directionalLightComponent->_far, 1.0f, 0.001f);
