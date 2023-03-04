@@ -12,8 +12,8 @@ The following points are milestones i would like to hit in near future:
 - [x] Basic UI system
 - [x] PBR (still improving, mainly descriptor binding)
 - [x] Deferred rendering
-- [ ] Shadows (somewhat done, but not completely)
-- [ ] glTF 2.0 support
+- [x] glTF 2.0 support (still improving, mainly descriptor binding)
+- [ ] Shadows (still improving, currently only one directional/spot source)
 - [ ] Indirect drawing 
 - [ ] Asset system and audio support
 - [ ] Reflections and Cubemaps
@@ -30,5 +30,6 @@ The following NuGet packages are used:
 - [GLFW](https://www.glfw.org/) - Window creation and input handling
 
 ![Textures](https://raw.githubusercontent.com/elliahu/HammockEngine/master/Img/pbr.png)
+![Textures](https://raw.githubusercontent.com/elliahu/HammockEngine/master/Img/pbr2.png)
 
 
