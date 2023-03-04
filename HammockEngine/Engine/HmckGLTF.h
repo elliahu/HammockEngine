@@ -45,14 +45,10 @@ namespace Hmck
 			int32_t materialIndex;
 		};
 
-		struct Mesh
-		{
-			std::vector<Primitive> primitives;
-		};
-
 		struct Image
 		{
 			std::string uri;
+			std::string name;
 			HmckTexture2D texture{};
 		};
 
@@ -64,6 +60,7 @@ namespace Hmck
 
 		struct Material
 		{
+			std::string name;
 			glm::vec4 baseColorFactor = glm::vec4(1.0f);
 			uint32_t baseColorTextureIndex;
 			uint32_t normalTextureIndex;
@@ -73,6 +70,12 @@ namespace Hmck
 			bool doubleSided = false;
 			VkDescriptorSet descriptorSet;
 			VkPipeline pipeline;
+		};
+
+		struct Mesh
+		{
+			std::vector<Primitive> primitives;
+			std::string name;
 		};
 
 		struct Node {

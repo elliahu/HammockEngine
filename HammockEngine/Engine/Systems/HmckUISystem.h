@@ -6,6 +6,7 @@
 #include "backends/imgui_impl_glfw.h"
 #include "backends/imgui_impl_vulkan.h"
 #include "HmckGameObject.h"
+#include "HmckFrameInfo.h"
 
 #include <exception>
 #include <deque>
@@ -28,6 +29,7 @@ namespace Hmck
 		void showWindowControls();
 		void showGameObjectComponents(HmckGameObject& gameObject, bool * close = (bool*)0);
 		void showGameObjectsInspector(HmckGameObject::Map& gameObjects);
+		void showGlobalSettings(HmckGlobalUbo& ubo);
 		void showLog();
 
 		// forwarding events to ImGUI

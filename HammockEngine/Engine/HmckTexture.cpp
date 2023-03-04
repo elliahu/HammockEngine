@@ -24,7 +24,7 @@ void Hmck::HmckTexture2D::loadFromFile(
 {
 	stbi_set_flip_vertically_on_load(true);
 	stbi_uc* pixels = stbi_load(filepath.c_str(), &width, &height, &channels, STBI_rgb_alpha);
-
+	stbi_set_flip_vertically_on_load(false);
 	if (!pixels)
 	{
 		throw std::runtime_error("Could not load image from disk");

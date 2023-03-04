@@ -104,6 +104,8 @@ void Hmck::App::run()
     viewerObject.transformComponent.translation.z = -2.5f;
     KeyboardMovementController cameraController{};
 
+    HmckGlobalUbo ubo{};
+
     auto currentTime = std::chrono::high_resolution_clock::now();
 	while (!hmckWindow.shouldClose())
 	{
@@ -134,7 +136,6 @@ void Hmck::App::run()
             };
 
             // UPDATE 
-            HmckGlobalUbo ubo{};
             ubo.projection = camera.getProjection();
             ubo.view = camera.getView();
             ubo.inverseView = camera.getInverseView();
@@ -163,6 +164,7 @@ void Hmck::App::run()
             userInterfaceSystem.showDebugStats(viewerObject);
             userInterfaceSystem.showWindowControls();
             userInterfaceSystem.showGameObjectsInspector(gameObjects);
+            userInterfaceSystem.showGlobalSettings(ubo);
             userInterfaceSystem.endUserInterface(commandBuffer);
             
 			hmckRenderer.endRenderPass(commandBuffer);
@@ -202,13 +204,16 @@ void Hmck::App::loadGameObjects()
     sphere.fitBoundingBox(sphereModel->modelInfo);
     sphere.setMtlMaterial(floorMaterial);
     sphere.bindDescriptorSet(globalPool, materialLayout);
-    gameObjects.emplace(sphere.getId(), std::move(sphere));
+    //gameObjects.emplace(sphere.getId(), std::move(sphere));
+
+    auto helmet = HmckGameObject::createFromGLTF(std::string(MODELS_DIR) + "helmet/helmet.gltf", hmckDevice);
+    helmet.setName("Flight Helmet");
+    gameObjects.emplace(helmet.getId(), std::move(helmet));
 
     // floor
-    auto floor = HmckGameObject::createFromGLTF(std::string(MODELS_DIR) + "plane/plane.gltf",hmckDevice);
-    floor.setName("Floor");
-    floor.bindDescriptorSet(globalPool, materialLayout);
-    gameObjects.emplace(floor.getId(), std::move(floor));
+    //auto floor = HmckGameObject::createFromGLTF(std::string(MODELS_DIR) + "plane/plane.gltf",hmckDevice);
+    //floor.setName("Floor");
+    //gameObjects.emplace(floor.getId(), std::move(floor));
 
 
     // Point lights

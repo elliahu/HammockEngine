@@ -71,19 +71,17 @@ void Hmck::HmckGLTF::load(std::string filepath, Config& info)
 		const gltf::Node node = model.nodes[scene.nodes[i]];
 		loadNode(node, model, nullptr);
 	}
-	//calculateTangent();
 	createVertexBuffer();
 	createIndexBuffer();
 	vertices.clear();
 	indices.clear();
-
 	prepareDescriptors();
 }
 
 void Hmck::HmckGLTF::draw(VkCommandBuffer commandBuffer, VkPipelineLayout pipelineLayout)
 {
-	VkBuffer buffers[] = { vertexBuffer->getBuffer() };
 	VkDeviceSize offsets[] = { 0 };
+	VkBuffer buffers[] = { vertexBuffer->getBuffer() };
 	vkCmdBindVertexBuffers(commandBuffer, 0, 1, buffers, offsets);
 	vkCmdBindIndexBuffer(commandBuffer, indexBuffer->getBuffer(), 0, VK_INDEX_TYPE_UINT32);
 
@@ -171,9 +169,8 @@ void Hmck::HmckGLTF::loadImages(gltf::Model& input)
 		}
 		// Load texture from image buffer
 		images[i].uri = glTFImage.uri;
+		images[i].name = glTFImage.name;
 		images[i].texture.loadFromBuffer(buffer,bufferSize, glTFImage.width, glTFImage.height,device, VK_FORMAT_R8G8B8A8_UNORM);
-		//std::string path = "../../Resources/Models/plane/" + glTFImage.uri;
-		//images[i].texture.loadFromFile(path, device, VK_FORMAT_R8G8B8A8_UNORM);
 		images[i].texture.createSampler(device);
 		images[i].texture.updateDescriptor();
 		if (deleteBuffer) {
@@ -200,9 +197,9 @@ void Hmck::HmckGLTF::loadMaterials(gltf::Model& input)
 			materials[i].baseColorTextureIndex = glTFMaterial.values["baseColorTexture"].TextureIndex();
 		}
 		// Get normal texture index
-		if (glTFMaterial.values.find("normalTexture") != glTFMaterial.values.end()) 
+		if (glTFMaterial.additionalValues.find("normalTexture") != glTFMaterial.additionalValues.end()) 
 		{
-			materials[i].normalTextureIndex = glTFMaterial.values["normalTexture"].TextureIndex();
+			materials[i].normalTextureIndex = glTFMaterial.additionalValues["normalTexture"].TextureIndex();
 		}
 		// Get rough/metal texture index
 		if (glTFMaterial.values.find("metallicRoughnessTexture") != glTFMaterial.values.end()) 
@@ -212,6 +209,7 @@ void Hmck::HmckGLTF::loadMaterials(gltf::Model& input)
 		materials[i].alphaMode = glTFMaterial.alphaMode;
 		materials[i].alphaCutOff = (float)glTFMaterial.alphaCutoff;
 		materials[i].doubleSided = glTFMaterial.doubleSided;
+		materials[i].name = glTFMaterial.name;
 	}
 }
 
@@ -228,6 +226,7 @@ void Hmck::HmckGLTF::loadNode(const tinygltf::Node& inputNode, const tinygltf::M
 	std::shared_ptr<Node> node = std::make_unique<Node>();
 	node->matrix = glm::mat4(1.0f);
 	node->parent = parent;
+	node->name = inputNode.name;
 
 	// Get the local node matrix
 	// It's either made up from translation, rotation, scale or a 4x4 matrix
@@ -244,6 +243,7 @@ void Hmck::HmckGLTF::loadNode(const tinygltf::Node& inputNode, const tinygltf::M
 	if (inputNode.matrix.size() == 16) {
 		node->matrix = glm::make_mat4x4(inputNode.matrix.data());
 	};
+
 
 	// Load node's children
 	if (inputNode.children.size() > 0) 
@@ -264,6 +264,7 @@ void Hmck::HmckGLTF::loadNode(const tinygltf::Node& inputNode, const tinygltf::M
 		{
 			const gltf::Primitive& glTFPrimitive = mesh.primitives[i];
 			uint32_t firstIndex = static_cast<uint32_t>(indices.size());
+			uint32_t vertexStart = static_cast<uint32_t>(vertices.size());
 			uint32_t indexCount = 0;
 			// Vertices
 			{
@@ -331,7 +332,7 @@ void Hmck::HmckGLTF::loadNode(const tinygltf::Node& inputNode, const tinygltf::M
 				{
 					const uint32_t* buf = reinterpret_cast<const uint32_t*>(&buffer.data[accessor.byteOffset + bufferView.byteOffset]);
 					for (size_t index = 0; index < accessor.count; index++) {
-						indices.push_back(buf[index]);
+						indices.push_back(buf[index] + vertexStart);
 					}
 					break;
 				}
@@ -339,7 +340,7 @@ void Hmck::HmckGLTF::loadNode(const tinygltf::Node& inputNode, const tinygltf::M
 				{
 					const uint16_t* buf = reinterpret_cast<const uint16_t*>(&buffer.data[accessor.byteOffset + bufferView.byteOffset]);
 					for (size_t index = 0; index < accessor.count; index++) {
-						indices.push_back(buf[index]);
+						indices.push_back(buf[index] + vertexStart);
 					}
 					break;
 				}
@@ -347,7 +348,7 @@ void Hmck::HmckGLTF::loadNode(const tinygltf::Node& inputNode, const tinygltf::M
 				{
 					const uint8_t* buf = reinterpret_cast<const uint8_t*>(&buffer.data[accessor.byteOffset + bufferView.byteOffset]);
 					for (size_t index = 0; index < accessor.count; index++) {
-						indices.push_back(buf[index]);
+						indices.push_back(buf[index] + vertexStart);
 					}
 					break;
 				}
@@ -363,7 +364,7 @@ void Hmck::HmckGLTF::loadNode(const tinygltf::Node& inputNode, const tinygltf::M
 			primitive.materialIndex = glTFPrimitive.material;
 			node->mesh.primitives.push_back(primitive);
 		}
-
+		node->mesh.name = mesh.name;
 	}
 
 	if (parent) {
