@@ -1,5 +1,8 @@
 #include "HmckGameObject.h"
 
+#define TINYOBJLOADER_IMPLEMENTATION
+#include <tiny_obj_loader.h>
+
 
 // Matrix corrsponds to Translate * Ry * Rx * Rz * Scale
 // Rotations correspond to Tait-bryan angles of Y(1), X(2), Z(3)
@@ -74,18 +77,38 @@ Hmck::HmckGameObject Hmck::HmckGameObject::createPointLight(float intensity,floa
 Hmck::HmckGameObject Hmck::HmckGameObject::createDirectionalLight(
 	glm::vec3 position, glm::vec3 target,
 	glm::vec4 directionalLightColor,
-	float near, float far, float fov)
+	float nearClip, float farClip, float fov)
 {
 	HmckGameObject gameObj = HmckGameObject::createGameObject();
 	gameObj.directionalLightComponent = std::make_unique<HmckDirectionalLightComponent>();
 	gameObj.directionalLightComponent->lightIntensity = directionalLightColor.w;
 	gameObj.directionalLightComponent->target = target;
-	gameObj.directionalLightComponent->near = near;
-	gameObj.directionalLightComponent->far = far;
+	gameObj.directionalLightComponent->_near = nearClip;
+	gameObj.directionalLightComponent->_far = farClip;
 	gameObj.directionalLightComponent->fov = fov;
 	gameObj.colorComponent = glm::vec3(directionalLightColor);
 	gameObj.transformComponent.translation = position;
 	return gameObj;
+}
+
+Hmck::HmckGameObject Hmck::HmckGameObject::createFromGLTF(std::string filepath, HmckDevice& device, HmckGLTF::Config config)
+{
+	HmckGameObject obj = HmckGameObject::createGameObject();
+	obj.glTFComponent = std::make_unique<HmckGLTFComponent>();
+	auto glTF = std::make_unique<HmckGLTF>(device);
+	glTF->load(filepath, config);
+	obj.glTFComponent->glTF = std::move(glTF);
+	
+
+	// model matrix
+	glm::quat rotation;
+	glm::vec3 skew;
+	glm::vec4 perspective;
+	glm::mat4 m = obj.glTFComponent->glTF->nodes[0]->matrix;
+	glm::decompose(obj.glTFComponent->glTF->nodes[0]->matrix, obj.transformComponent.scale, rotation, obj.transformComponent.translation, skew, perspective);
+	obj.transformComponent.rotation = glm::eulerAngles(rotation);
+
+	return obj;
 }
 
 void Hmck::HmckGameObject::fitBoundingBox(HmckBoundingBoxComponent::HmckBoundingBoxAxis x, HmckBoundingBoxComponent::HmckBoundingBoxAxis y, HmckBoundingBoxComponent::HmckBoundingBoxAxis z)
@@ -105,18 +128,23 @@ void Hmck::HmckGameObject::fitBoundingBox(HmckMesh::MeshInfo& modelInfo)
 		{ modelInfo.z.min * transformComponent.scale.z, modelInfo.z.max * transformComponent.scale.z });
 }
 
-void Hmck::HmckGameObject::setMaterial(std::shared_ptr<HmckMaterial>& material)
+void Hmck::HmckGameObject::setMtlMaterial(std::shared_ptr<HmckMaterial>& material)
 {
-	this->materialComponent = std::make_unique<HmckMaterialComponent>();
-	this->materialComponent->material = material;
+	assert(glTFComponent == nullptr && "Cannot use Wavefront OBJ, glTF is used.");
+	if (this->wavefrontObjComponent == nullptr) {
+		this->wavefrontObjComponent = std::make_unique<HmckWavefrontObjComponent>();
+	}
+	this->wavefrontObjComponent->material = material;
 }
 
-void Hmck::HmckGameObject::setModel(std::shared_ptr<HmckMesh>& model)
+void Hmck::HmckGameObject::setObjMesh(std::shared_ptr<HmckMesh>& model)
 {
-	this->meshComponent = std::make_unique<HmckMeshComponent>();
-	this->meshComponent->mesh = model;
+	assert(glTFComponent == nullptr && "Cannot use Wavefront OBJ, glTF is used.");
+	if (this->wavefrontObjComponent == nullptr) {
+		this->wavefrontObjComponent = std::make_unique<HmckWavefrontObjComponent>();
+	}
+	this->wavefrontObjComponent->mesh = model;
 }
-
 
 void Hmck::HmckGameObject::bindDescriptorSet(
 	std::unique_ptr<HmckDescriptorPool>& pool,
@@ -125,67 +153,19 @@ void Hmck::HmckGameObject::bindDescriptorSet(
 	descriptorSetComponent = std::make_unique<HmckDescriptorSetComponent>();
 
 	auto descriptorWriter = HmckDescriptorWriter(*setLayout, *pool);
-	
-	if (materialComponent->material->color != nullptr)
+
+	if (glTFComponent != nullptr)
 	{
-		VkDescriptorImageInfo colorInfo{};
-		colorInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-		colorInfo.imageView = materialComponent->material->color->view;
-		colorInfo.sampler = materialComponent->material->color->sampler;
-
-		descriptorWriter.writeImage(0, &colorInfo);
+		descriptorWriter.writeImage(0, &glTFComponent->glTF->images[glTFComponent->glTF->materials[0].baseColorTextureIndex].texture.descriptor);
+		descriptorWriter.writeImage(1, &glTFComponent->glTF->images[glTFComponent->glTF->materials[0].normalTextureIndex].texture.descriptor);
+		descriptorWriter.writeImage(2, &glTFComponent->glTF->images[glTFComponent->glTF->materials[0].metallicRoughnessTexture].texture.descriptor);
 	}
-
-	if (materialComponent->material->normal != nullptr)
+	else if (wavefrontObjComponent != nullptr)
 	{
-		VkDescriptorImageInfo normalInfo{};
-		normalInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-		normalInfo.imageView = materialComponent->material->normal->view;
-		normalInfo.sampler = materialComponent->material->normal->sampler;
-
-		descriptorWriter.writeImage(1, &normalInfo);
+		descriptorWriter.writeImage(0, &wavefrontObjComponent->material->color->descriptor);
+		descriptorWriter.writeImage(1, &wavefrontObjComponent->material->normal->descriptor);
+		descriptorWriter.writeImage(2, &wavefrontObjComponent->material->roughnessMetalness->descriptor);
 	}
-
-	if (materialComponent->material->roughness != nullptr)
-	{
-		VkDescriptorImageInfo roughnessInfo{};
-		roughnessInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-		roughnessInfo.imageView = materialComponent->material->roughness->view;
-		roughnessInfo.sampler = materialComponent->material->roughness->sampler;
-
-		descriptorWriter.writeImage(2, &roughnessInfo);
-	}
-
-	if (materialComponent->material->metalness != nullptr)
-	{
-		VkDescriptorImageInfo metalnessInfo{};
-		metalnessInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-		metalnessInfo.imageView = materialComponent->material->metalness->view;
-		metalnessInfo.sampler = materialComponent->material->metalness->sampler;
-
-		descriptorWriter.writeImage(3, &metalnessInfo);
-	}
-
-	if (materialComponent->material->ambientOcclusion != nullptr)
-	{
-		VkDescriptorImageInfo aoInfo{};
-		aoInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-		aoInfo.imageView = materialComponent->material->ambientOcclusion->view;
-		aoInfo.sampler = materialComponent->material->ambientOcclusion->sampler;
-
-		descriptorWriter.writeImage(4, &aoInfo);
-	}
-
-	if (materialComponent->material->displacement != nullptr)
-	{
-		VkDescriptorImageInfo displacementInfo{};
-		displacementInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-		displacementInfo.imageView = materialComponent->material->displacement->view;
-		displacementInfo.sampler = materialComponent->material->displacement->sampler;
-
-		descriptorWriter.writeImage(5, &displacementInfo);
-	}
-
 	descriptorWriter.build(descriptorSetComponent->set);
 }
 

@@ -2,6 +2,7 @@
 #include "HmckDevice.h"
 #include "HmckUtils.h"
 #include "HmckBuffer.h"
+#include "HmckGLTF.h"
 
 #define GLM_FORCE_RADIANS
 #define GLM_FORCE_DEPTH_ZERO_TO_ONE
@@ -53,7 +54,7 @@ namespace Hmck
 			glm::vec3 color{};
 			glm::vec3 normal{};
 			glm::vec2 uv{};
-			glm::vec3 tangent{};
+			glm::vec4 tangent{};
 
 			static std::vector<VkVertexInputBindingDescription> getBindingDescriptions();
 			static std::vector<VkVertexInputAttributeDescription> getAttributeDescriptions();
@@ -82,7 +83,7 @@ namespace Hmck
 		HmckMesh(HmckDevice& device, const HmckMesh::Builder& builder);
 		~HmckMesh();
 
-		static std::unique_ptr<HmckMesh> createMeshFromFile(HmckDevice& device, const std::string& filepath, bool calculateTangents = true);
+		static std::unique_ptr<HmckMesh> createMeshFromObjFile(HmckDevice& device, const std::string& filepath, bool calculateTangents = true);
 
 		// delete copy constructor and copy destructor
 		HmckMesh(const HmckMesh&) = delete;

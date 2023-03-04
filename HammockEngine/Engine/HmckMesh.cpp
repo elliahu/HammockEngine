@@ -1,8 +1,6 @@
 #include "HmckMesh.h"
 
-#define TINYOBJLOADER_IMPLEMENTATION
 #include <tiny_obj_loader.h>
-
 
 namespace std
 {
@@ -27,7 +25,7 @@ Hmck::HmckMesh::HmckMesh(HmckDevice& device, const HmckMesh::Builder& builder) :
 Hmck::HmckMesh::~HmckMesh() {}
 
 
-std::unique_ptr<Hmck::HmckMesh> Hmck::HmckMesh::createMeshFromFile(HmckDevice& device, const std::string& filepath, bool calculateTangents)
+std::unique_ptr<Hmck::HmckMesh> Hmck::HmckMesh::createMeshFromObjFile(HmckDevice& device, const std::string& filepath, bool calculateTangents)
 {
 	Builder builder{};
 	MeshInfo mInfo = builder.loadObjMesh(filepath, calculateTangents);
@@ -159,6 +157,7 @@ Hmck::HmckMesh::MeshInfo Hmck::HmckMesh::Builder::loadObjMesh(const std::string&
 	std::vector<tinyobj::material_t> materials;
 	std::string warn, err;
 
+
 	if (!tinyobj::LoadObj(&attrib, &shapes, &materials, &warn, &err, filepath.c_str()))
 	{
 		throw std::runtime_error(warn + err);
@@ -227,8 +226,6 @@ Hmck::HmckMesh::MeshInfo Hmck::HmckMesh::Builder::loadObjMesh(const std::string&
 
 	return mInfo;
 }
-
-
 void Hmck::HmckMesh::Builder::updateMeshInfo(MeshInfo& mInfo, Vertex& vertex)
 {
 	if (vertex.position.x <= mInfo.x.min)
@@ -293,8 +290,12 @@ void Hmck::HmckMesh::Builder::calculateTangent()
 		glm::vec3 tangent = (deltaPos1 * deltaUV2.y - deltaPos2 * deltaUV1.y) * r;
 		glm::vec3 bitangent = (deltaPos2 * deltaUV1.x - deltaPos1 * deltaUV2.x) * r;
 
-		vertices[i0].tangent = tangent;
-		vertices[i1].tangent = tangent;
-		vertices[i2].tangent = tangent;
+		float sx = deltaUV1.x, sy = deltaUV1.y;
+		float tx = deltaUV2.x, ty = deltaUV2.y;
+		float hand = ((tx * sy - ty * sx) > 0.0f) ? -1.0f : 1.0f;
+
+		vertices[i0].tangent = glm::vec4(tangent, hand);
+		vertices[i1].tangent = glm::vec4(tangent, hand);
+		vertices[i2].tangent = glm::vec4(tangent, hand);
 	}
 }

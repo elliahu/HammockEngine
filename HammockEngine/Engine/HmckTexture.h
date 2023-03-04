@@ -23,7 +23,11 @@ namespace Hmck
 		VkDeviceMemory memory;
 		VkImage image;
 		VkImageView view;
+		VkImageLayout layout;
 		int width, height, channels;
+		VkDescriptorImageInfo descriptor;
+
+		void updateDescriptor();
 	};
 
 
@@ -36,6 +40,16 @@ namespace Hmck
 			VkFormat format,
 			VkImageLayout imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL
 		);
+
+		void loadFromBuffer(
+			unsigned char* buffer,
+			uint32_t bufferSize,
+			uint32_t width, uint32_t height,
+			HmckDevice& hmckDevice,
+			VkFormat format,
+			VkImageLayout imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL
+		);
+
 		void createSampler(HmckDevice& hmckDevice);
 		void destroy(HmckDevice& hmckDevice);
 	};

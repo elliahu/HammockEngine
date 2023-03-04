@@ -29,21 +29,8 @@ void Hmck::HmckGbufferRenderSystem::render(HmckFrameInfo& frameInfo)
 	for (auto& kv : frameInfo.gameObjects)
 	{
 		auto& obj = kv.second;
-		if (obj.meshComponent == nullptr) continue;
-
-		if (obj.materialComponent != nullptr)
-		{
-
-			vkCmdBindDescriptorSets(
-				frameInfo.commandBuffer,
-				VK_PIPELINE_BIND_POINT_GRAPHICS,
-				pipelineLayout,
-				1, 1,
-				&obj.descriptorSetComponent->set,
-				0,
-				nullptr
-			);
-		}
+		// dont render object that would not be visible
+		if (obj.wavefrontObjComponent == nullptr && obj.glTFComponent == nullptr) continue;	
 
 		HmckMeshPushConstantData push{};
 		push.modelMatrix = obj.transformComponent.mat4();
@@ -59,8 +46,25 @@ void Hmck::HmckGbufferRenderSystem::render(HmckFrameInfo& frameInfo)
 			&push
 		);
 
-		obj.meshComponent->mesh->bind(frameInfo.commandBuffer);
-		obj.meshComponent->mesh->draw(frameInfo.commandBuffer);
+		if (obj.wavefrontObjComponent != nullptr)
+		{			
+			// bind MTL materials
+			vkCmdBindDescriptorSets(
+				frameInfo.commandBuffer,
+				VK_PIPELINE_BIND_POINT_GRAPHICS,
+				pipelineLayout,
+				1, 1,
+				&obj.descriptorSetComponent->set,
+				0,
+				nullptr
+			);
+			obj.wavefrontObjComponent->mesh->bind(frameInfo.commandBuffer);
+			obj.wavefrontObjComponent->mesh->draw(frameInfo.commandBuffer);
+		}
+		else if (obj.glTFComponent != nullptr)
+		{
+			obj.glTFComponent->glTF->draw(frameInfo.commandBuffer, pipelineLayout);
+		}
 	}
 }
 

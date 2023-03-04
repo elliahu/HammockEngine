@@ -2,8 +2,10 @@
 
 #include "HmckMesh.h"
 #include "HmckMaterial.h"
+#include "HmckGLTF.h"
 
 #include <glm/gtc/matrix_transform.hpp>
+#include <glm/gtx/matrix_decompose.hpp>
 
 #include <memory>
 #include <unordered_map>
@@ -47,13 +49,24 @@ namespace Hmck
 	};
 
 	/*
-		ModelComponent 
-		Model component functions as a pointer to model
-		If entity has this component it will be rendered by the render system
+		 WavefrontObjComponent
+		 Represents .obj mesh and .mtl material of object
+		 Cannot be used when HmckGLTFComponent is used
 	*/
-	struct HmckMeshComponent
+	struct HmckWavefrontObjComponent
 	{
+		std::shared_ptr<HmckMaterial> material;
 		std::shared_ptr<HmckMesh> mesh;
+	};
+
+	/*
+		glTFComponent
+		This component represents all the data loaded from the source glTF 2.0 file
+		Cannot be used when HmckWavefrontObjComponent is used
+	*/
+	struct HmckGLTFComponent
+	{
+		std::shared_ptr<HmckGLTF> glTF;
 	};
 
 	/*
@@ -79,8 +92,8 @@ namespace Hmck
 	{
 		float lightIntensity = 1.0f;
 		float fov = 50.0f;
-		float near = 0.1f;
-		float far = 100.f;
+		float _near = 0.1f;
+		float _far = 100.f;
 		glm::vec3 target{0};
 	};
 	
@@ -103,16 +116,6 @@ namespace Hmck
 		HmckBoundingBoxAxis z;
 	};
 
-
-	/*
-		MaterialComponent
-		Material component containes reference to material that will
-		be applied to the entity
-	*/
-	struct HmckMaterialComponent 
-	{
-		std::shared_ptr<HmckMaterial> material;
-	};
 
 	/*
 		GameObject
@@ -139,8 +142,9 @@ namespace Hmck
 		static HmckGameObject createDirectionalLight(
 			glm::vec3 position = glm::vec3(10,-10,-10), glm::vec3 target = glm::vec3(0),
 			glm::vec4 directionalLightColor = glm::vec4( 1.0f, 1.0f, 1.0, 0.1 ),
-			float near = 0.1f, float far = 100.f, float fov = 50.f);
+			float nearClip = 0.1f, float farClip = 100.f, float fov = 50.f);
 
+		static HmckGameObject createFromGLTF(std::string filepath, HmckDevice& device, HmckGLTF::Config config = {});
 
 		void fitBoundingBox(
 			HmckBoundingBoxComponent::HmckBoundingBoxAxis x,
@@ -148,8 +152,9 @@ namespace Hmck
 			HmckBoundingBoxComponent::HmckBoundingBoxAxis z);
 		void fitBoundingBox(HmckMesh::MeshInfo& modelInfo);
 
-		void setMaterial(std::shared_ptr<HmckMaterial>& material);
-		void setModel(std::shared_ptr<HmckMesh>& model);
+		void setMtlMaterial(std::shared_ptr<HmckMaterial>& material);
+		void setObjMesh(std::shared_ptr<HmckMesh>& model);
+		
 		void bindDescriptorSet(
 			std::unique_ptr<HmckDescriptorPool>& pool, 
 			std::unique_ptr<HmckDescriptorSetLayout>& setLayout);
@@ -165,9 +170,7 @@ namespace Hmck
 		void setName(std::string name) { this->name = name; }
 
 		// Components
-		std::unique_ptr<HmckMeshComponent> meshComponent = nullptr;
-
-		glm::vec3 colorComponent{};
+		glm::vec3 colorComponent{}; 
 
 		HmckTransformComponent transformComponent{}; // every game object has this
 
@@ -179,7 +182,9 @@ namespace Hmck
 
 		std::unique_ptr<HmckDirectionalLightComponent> directionalLightComponent = nullptr;
 
-		std::unique_ptr<HmckMaterialComponent> materialComponent = nullptr;
+		std::unique_ptr<HmckWavefrontObjComponent> wavefrontObjComponent = nullptr;
+
+		std::unique_ptr<HmckGLTFComponent> glTFComponent = nullptr;
 
 	private:
 		HmckGameObject(id_t objId) : id{ objId } {}

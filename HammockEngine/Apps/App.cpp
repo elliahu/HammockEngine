@@ -56,7 +56,7 @@ void Hmck::App::run()
     HmckShadowmapSystem shadowmapRenderSystem{
         hmckDevice,
         hmckRenderer.getOffscreenRenderPass(),
-        globalSetLayouts
+        gbufferSetLayouts
     };
 
     HmckGbufferRenderSystem gbufferRenderSystem{
@@ -176,33 +176,12 @@ void Hmck::App::run()
 
 void Hmck::App::loadGameObjects()
 {
-    // models
-    std::shared_ptr<HmckMesh> vaseModel = HmckMesh::createMeshFromFile(hmckDevice, std::string(MODELS_DIR) + "smooth_vase.obj");
-    std::shared_ptr<HmckMesh> cubeModel = HmckMesh::createMeshFromFile(hmckDevice, std::string(MODELS_DIR) + "cube.obj");
-    std::shared_ptr<HmckMesh> sphereModel = HmckMesh::createMeshFromFile(hmckDevice, std::string(MODELS_DIR) + "sphere.obj");
-
     // materials
     HmckCreateMaterialInfo floorMaterialIfno{};
     floorMaterialIfno.color = std::string(MATERIALS_DIR) + "Wood06/Wood060_1K_Color.jpg";
     floorMaterialIfno.normal = std::string(MATERIALS_DIR) + "Wood06/Wood060_1K_NormalDX.jpg";
-    floorMaterialIfno.roughness = std::string(MATERIALS_DIR) + "Wood06/Wood060_1K_Roughness.jpg";
-    floorMaterialIfno.ambientOcclusion = std::string(MATERIALS_DIR) + "Wood06/Wood060_1K_AmbientOcclusion.jpg";
-    floorMaterialIfno.displacement = std::string(MATERIALS_DIR) + "Wood06/Wood060_1K_Displacement.jpg";
+    floorMaterialIfno.roughnessMetalness = std::string(MATERIALS_DIR) + "Wood06/Wood060_1K_Roughness.jpg";
     std::shared_ptr<HmckMaterial> floorMaterial = HmckMaterial::createMaterial(hmckDevice, floorMaterialIfno);
-
-    HmckCreateMaterialInfo spherematerialInfo{};
-    spherematerialInfo.color = std::string(MATERIALS_DIR) + "Metal/Metal046B_1K_Color.jpg";
-    spherematerialInfo.normal = std::string(MATERIALS_DIR) + "Metal/Metal046B_1K_NormalDX.jpg";
-    spherematerialInfo.roughness = std::string(MATERIALS_DIR) + "Metal/Metal046B_1K_Roughness.jpg";
-    spherematerialInfo.metalness = std::string(MATERIALS_DIR) + "Metal/Metal046B_1K_Metalness.jpg";
-    spherematerialInfo.displacement = std::string(MATERIALS_DIR) + "Metal/Metal046B_1K_Displacement.jpg";
-    std::shared_ptr<HmckMaterial> sphereMaterial = HmckMaterial::createMaterial(hmckDevice, spherematerialInfo);
-
-    HmckCreateMaterialInfo logMaterialInfo{};
-    logMaterialInfo.color = std::string(MATERIALS_DIR) + "Log/3DStick001_SQ-1K_Color.jpg";
-    logMaterialInfo.normal = std::string(MATERIALS_DIR) + "Log/3DStick001_SQ-1K_NormalDX.jpg";
-    logMaterialInfo.ambientOcclusion = std::string(MATERIALS_DIR) + "Log/3DStick001_SQ-1K_AmbientOcclusion.jpg";
-    std::shared_ptr<HmckMaterial> logMaterial = HmckMaterial::createMaterial(hmckDevice, logMaterialInfo);
 
     // layouts
     // TODO think about using array of combined image samplers
@@ -211,51 +190,34 @@ void Hmck::App::loadGameObjects()
         .addBinding(0, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT)
         .addBinding(1, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT)
         .addBinding(2, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT)
-        .addBinding(3, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT)
-        .addBinding(4, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT)
-        .addBinding(5, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT)
         .build();
 
     // sphere
+    std::shared_ptr<HmckMesh> sphereModel = HmckMesh::createMeshFromObjFile(hmckDevice, std::string(MODELS_DIR) + "sphere.obj");
     auto sphere = HmckGameObject::createGameObject();
     sphere.setName("Sphere");
-    sphere.setModel(sphereModel);
-    sphere.transformComponent.translation = { .0f, -0.5f, 0.f };
+    sphere.setObjMesh(sphereModel);
+    sphere.transformComponent.translation = { 0.0f, -0.5f, 0.f };
     sphere.transformComponent.scale = glm::vec3(.4f);
     sphere.fitBoundingBox(sphereModel->modelInfo);
-    sphere.setMaterial(sphereMaterial);
+    sphere.setMtlMaterial(floorMaterial);
     sphere.bindDescriptorSet(globalPool, materialLayout);
     gameObjects.emplace(sphere.getId(), std::move(sphere));
 
     // floor
-    std::shared_ptr<HmckMesh> quadModel = HmckMesh::createMeshFromFile(hmckDevice, std::string(MODELS_DIR) + "plane.obj");
-    auto floor = HmckGameObject::createGameObject();
+    auto floor = HmckGameObject::createFromGLTF(std::string(MODELS_DIR) + "plane/plane.gltf",hmckDevice);
     floor.setName("Floor");
-    floor.setModel(quadModel);
-    floor.transformComponent.translation = { .0f, 0.5f, 0.f };
-    floor.setMaterial(floorMaterial);
     floor.bindDescriptorSet(globalPool, materialLayout);
     gameObjects.emplace(floor.getId(), std::move(floor));
-
-    // log
-    std::shared_ptr<HmckMesh> logModel = HmckMesh::createMeshFromFile(hmckDevice, std::string(MODELS_DIR) + "log.obj");
-    auto log = HmckGameObject::createGameObject();
-    log.setModel(logModel);
-    log.transformComponent.translation = { 1.f, -0.5f, 0.f };
-    log.transformComponent.scale = glm::vec3(10);
-    log.transformComponent.rotation = glm::vec3(0,0,1);
-    log.setMaterial(logMaterial);
-    log.bindDescriptorSet(globalPool, materialLayout);
-    gameObjects.emplace(log.getId(), std::move(log));
 
 
     // Point lights
     std::vector<glm::vec3> lightColors{
-         {1.f, .1f, .1f},
-         {.1f, .1f, 1.f},
-         {.1f, 1.f, .1f},
-         {1.f, 1.f, .1f},
-         {.1f, 1.f, 1.f},
+         //{1.f, .1f, .1f},
+         //{.1f, .1f, 1.f},
+         //{.1f, 1.f, .1f},
+         //{1.f, 1.f, .1f},
+         //{.1f, 1.f, 1.f},
          {1.f, 1.f, 1.f}, 
     };
     for (int i = 0; i < lightColors.size(); i++)
@@ -277,4 +239,5 @@ void Hmck::App::loadGameObjects()
     directionalLight.setName("Directional light");
     gameObjects.emplace(directionalLight.getId(), std::move(directionalLight));
 
+    
 }

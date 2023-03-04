@@ -154,8 +154,8 @@ void Hmck::HmckLightSystem::update(HmckFrameInfo& frameInfo, HmckGlobalUbo& ubo)
 			// TODO make this not ubo as it is not used in all systems
 			glm::mat4 depthProjectionMatrix = glm::perspective(
 				obj.directionalLightComponent->fov, 1.0f, 
-				obj.directionalLightComponent->near, 
-				obj.directionalLightComponent->far);
+				obj.directionalLightComponent->_near, 
+				obj.directionalLightComponent->_far);
 			glm::mat4 depthViewMatrix = glm::lookAt(obj.transformComponent.translation, obj.directionalLightComponent->target, glm::vec3(0, 1, 0));
 			glm::mat4 depthModelMatrix = glm::mat4(1.0f);
 			ubo.depthBiasMVP = depthProjectionMatrix * depthViewMatrix * depthModelMatrix;

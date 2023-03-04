@@ -15,10 +15,7 @@ namespace Hmck
 	{
 		std::string color{};
 		std::string normal{};
-		std::string roughness{};
-		std::string metalness{};
-		std::string ambientOcclusion{};
-		std::string displacement{};
+		std::string roughnessMetalness{};
 	};
 
 	/*
@@ -40,10 +37,7 @@ namespace Hmck
 
 		std::unique_ptr<HmckTexture2D> color;
 		std::unique_ptr<HmckTexture2D> normal;
-		std::unique_ptr<HmckTexture2D> roughness;
-		std::unique_ptr<HmckTexture2D> metalness;
-		std::unique_ptr<HmckTexture2D> ambientOcclusion;
-		std::unique_ptr<HmckTexture2D> displacement;
+		std::unique_ptr<HmckTexture2D> roughnessMetalness;
 	private:
 		void createMaterial(HmckCreateMaterialInfo& materialInfo);
 

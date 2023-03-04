@@ -143,7 +143,7 @@ void main()
     vec3 V = normalize(viewPosition - wolrdPosition);
     vec3 N = normalize(texture(normalSampler, uv).rgb);
 
-    vec3 albedo =pow(texture(albedoSampler, uv).rgb, vec3(2.2));
+    vec3 albedo = pow(texture(albedoSampler, uv).rgb, vec3(2.2));
     float roughness = texture(materialPropertySampler, uv).r;
     float metallic  = texture(materialPropertySampler, uv).g;
     float ao        = texture(materialPropertySampler, uv).b;
@@ -233,7 +233,7 @@ void main()
     // HDR tonemapping    
     color = color / (color + vec3(1.0)); 
     // gamma correction
-    color = pow(color, vec3(1.0/2.2)); 
+    //color = pow(color, vec3(1.0/2.2)); 
 
     outColor = vec4(color, 1.0);
 }

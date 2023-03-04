@@ -329,9 +329,9 @@ void Hmck::HmckUISystem::gameObjectComponets(HmckGameObject& gameObject)
 		};
 		ImGui::ColorEdit3("Color", color_hsv[0], ImGuiColorEditFlags_Float | ImGuiColorEditFlags_DisplayRGB);
 	}
-	if (gameObject.meshComponent != nullptr) // Model
+	if (gameObject.wavefrontObjComponent != nullptr) // Model
 	{
-		if (ImGui::CollapsingHeader("Model"))
+		if (ImGui::CollapsingHeader("Wavefront OBJ"))
 		{
 			ImGui::Text("Has model");
 		}
@@ -364,8 +364,8 @@ void Hmck::HmckUISystem::gameObjectComponets(HmckGameObject& gameObject)
 		{
 			ImGui::DragFloat("Intensity", &gameObject.directionalLightComponent->lightIntensity, 0.01f, 0.0f, 1.0f);
 			ImGui::DragFloat("FOV", &gameObject.directionalLightComponent->fov, 1.0f, 10.0f, 180.f);
-			ImGui::DragFloat("Near", &gameObject.directionalLightComponent->near, 0.01f, 0.001f);
-			ImGui::DragFloat("Far", &gameObject.directionalLightComponent->far, 1.0f, 0.001f);
+			ImGui::DragFloat("Near", &gameObject.directionalLightComponent->_near, 0.01f, 0.001f);
+			ImGui::DragFloat("Far", &gameObject.directionalLightComponent->_far, 1.0f, 0.001f);
 			float* target[3] = {
 				&gameObject.directionalLightComponent->target.x,
 				&gameObject.directionalLightComponent->target.y,
