@@ -15,10 +15,11 @@ Hmck::HmckGLTF::HmckGLTF(HmckDevice& device): device{device}
 		.build();
 
 	descriptorSetLayout = HmckDescriptorSetLayout::Builder(device)
-	.addBinding(0, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT)
-	.addBinding(1, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT)
-	.addBinding(2, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT)
-	.build();
+		.addBinding(0, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT) // albedo
+		.addBinding(1, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT) // normal
+		.addBinding(2, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT) // roughnessMetalic
+		.addBinding(3, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT) // occlusion
+		.build();
 }
 
 Hmck::HmckGLTF::~HmckGLTF()
@@ -62,6 +63,8 @@ void Hmck::HmckGLTF::load(std::string filepath, Config& info)
 	if (!loaded) {
 		std::cerr << "Failed to parse glTF\n";
 	}
+
+	path = filepath;
 
 	const gltf::Scene& scene = model.scenes[0];
 	for (size_t i = 0; i < scene.nodes.size(); i++) {
@@ -143,6 +146,7 @@ void Hmck::HmckGLTF::prepareDescriptors()
 			.writeImage(0, &images[textures[material.baseColorTextureIndex].imageIndex].texture.descriptor)
 			.writeImage(1, &images[textures[material.normalTextureIndex].imageIndex].texture.descriptor)
 			.writeImage(2, &images[textures[material.metallicRoughnessTexture].imageIndex].texture.descriptor)
+			.writeImage(3, &images[textures[material.occlusionTexture].imageIndex].texture.descriptor)
 			.build(material.descriptorSet);
 	}
 }
@@ -205,6 +209,11 @@ void Hmck::HmckGLTF::loadMaterials(gltf::Model& input)
 		if (glTFMaterial.values.find("metallicRoughnessTexture") != glTFMaterial.values.end()) 
 		{
 			materials[i].metallicRoughnessTexture = glTFMaterial.values["metallicRoughnessTexture"].TextureIndex();
+		}
+		// Get occlusion texture index
+		if (glTFMaterial.additionalValues.find("occlusionTexture") != glTFMaterial.additionalValues.end())
+		{
+			materials[i].occlusionTexture = glTFMaterial.additionalValues["occlusionTexture"].TextureIndex();
 		}
 		materials[i].alphaMode = glTFMaterial.alphaMode;
 		materials[i].alphaCutOff = (float)glTFMaterial.alphaCutoff;

@@ -182,29 +182,29 @@ void Hmck::App::loadGameObjects()
     HmckCreateMaterialInfo floorMaterialIfno{};
     floorMaterialIfno.color = std::string(MATERIALS_DIR) + "Wood06/Wood060_1K_Color.jpg";
     floorMaterialIfno.normal = std::string(MATERIALS_DIR) + "Wood06/Wood060_1K_NormalDX.jpg";
-    floorMaterialIfno.roughnessMetalness = std::string(MATERIALS_DIR) + "Wood06/Wood060_1K_Roughness.jpg";
+    floorMaterialIfno.occlusionRoughnessMetalness = std::string(MATERIALS_DIR) + "Wood06/Wood060_1K_Roughness.jpg";
     std::shared_ptr<HmckMaterial> floorMaterial = HmckMaterial::createMaterial(hmckDevice, floorMaterialIfno);
 
     // layouts
     // TODO think about using array of combined image samplers
     // TODO move this to Gbuffer system as it is the only system that uses this, no need for this to be in App
     materialLayout = HmckDescriptorSetLayout::Builder(hmckDevice)
-        .addBinding(0, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT)
-        .addBinding(1, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT)
-        .addBinding(2, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT)
+        .addBinding(0, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT) // albedo
+        .addBinding(1, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT) // normal
+        .addBinding(2, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT) // roughnessMetalic
+        .addBinding(3, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT) // occlusion
         .build();
 
     // sphere
     std::shared_ptr<HmckMesh> sphereModel = HmckMesh::createMeshFromObjFile(hmckDevice, std::string(MODELS_DIR) + "sphere.obj");
     auto sphere = HmckGameObject::createGameObject();
+    sphere.transformComponent.translation = { 1.5f, 0.f, 0.f };
+    sphere.transformComponent.scale = glm::vec3(.25f);
     sphere.setName("Sphere");
     sphere.setObjMesh(sphereModel);
-    sphere.transformComponent.translation = { 0.0f, -0.5f, 0.f };
-    sphere.transformComponent.scale = glm::vec3(.4f);
-    sphere.fitBoundingBox(sphereModel->modelInfo);
     sphere.setMtlMaterial(floorMaterial);
-    sphere.bindDescriptorSet(globalPool, materialLayout);
-    //gameObjects.emplace(sphere.getId(), std::move(sphere));
+    sphere.bindMtlDescriptorSet(globalPool, materialLayout);
+    gameObjects.emplace(sphere.getId(), std::move(sphere));
 
     auto helmet = HmckGameObject::createFromGLTF(std::string(MODELS_DIR) + "helmet/helmet.gltf", hmckDevice);
     helmet.setName("Flight Helmet");

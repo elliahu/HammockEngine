@@ -65,6 +65,7 @@ namespace Hmck
 			uint32_t baseColorTextureIndex;
 			uint32_t normalTextureIndex;
 			uint32_t metallicRoughnessTexture;
+			uint32_t occlusionTexture;
 			std::string alphaMode = "OPAQUE";
 			float alphaCutOff;
 			bool doubleSided = false;

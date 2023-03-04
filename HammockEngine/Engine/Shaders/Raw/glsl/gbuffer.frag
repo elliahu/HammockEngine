@@ -15,6 +15,7 @@ layout (location = 3) out vec4 _material;
 layout(set = 1, binding = 0) uniform sampler2D albedoSampler;
 layout(set = 1, binding = 1) uniform sampler2D normSampler;
 layout(set = 1, binding = 2) uniform sampler2D roughMetalSampler;
+layout(set = 1, binding = 3) uniform sampler2D occlusionSampler;
 
 struct PointLight
 {
@@ -62,6 +63,6 @@ void main()
     vec3 tnorm = TBN * normalize(texture(normSampler, uv).xyz * 2.0 - vec3(1.0));
 	_normal = vec4(tnorm, 1.0);
 
-    _albedo = texture(albedoSampler, uv); // vec4(normal,1.0); 
-    _material = vec4(texture(roughMetalSampler, uv).g, texture(roughMetalSampler, uv).b, 1.0, 1.0);
+    _albedo = texture(albedoSampler, uv);
+    _material = vec4(texture(roughMetalSampler, uv).g, texture(roughMetalSampler, uv).b, texture(occlusionSampler, uv).r, 1.0);
 }

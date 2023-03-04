@@ -155,7 +155,7 @@ namespace Hmck
 		void setMtlMaterial(std::shared_ptr<HmckMaterial>& material);
 		void setObjMesh(std::shared_ptr<HmckMesh>& model);
 		
-		void bindDescriptorSet(
+		void bindMtlDescriptorSet(
 			std::unique_ptr<HmckDescriptorPool>& pool, 
 			std::unique_ptr<HmckDescriptorSetLayout>& setLayout);
 

@@ -146,26 +146,17 @@ void Hmck::HmckGameObject::setObjMesh(std::shared_ptr<HmckMesh>& model)
 	this->wavefrontObjComponent->mesh = model;
 }
 
-void Hmck::HmckGameObject::bindDescriptorSet(
+void Hmck::HmckGameObject::bindMtlDescriptorSet(
 	std::unique_ptr<HmckDescriptorPool>& pool,
 	std::unique_ptr<HmckDescriptorSetLayout>& setLayout)
 {
 	descriptorSetComponent = std::make_unique<HmckDescriptorSetComponent>();
 
 	auto descriptorWriter = HmckDescriptorWriter(*setLayout, *pool);
-
-	if (glTFComponent != nullptr)
-	{
-		descriptorWriter.writeImage(0, &glTFComponent->glTF->images[glTFComponent->glTF->materials[0].baseColorTextureIndex].texture.descriptor);
-		descriptorWriter.writeImage(1, &glTFComponent->glTF->images[glTFComponent->glTF->materials[0].normalTextureIndex].texture.descriptor);
-		descriptorWriter.writeImage(2, &glTFComponent->glTF->images[glTFComponent->glTF->materials[0].metallicRoughnessTexture].texture.descriptor);
-	}
-	else if (wavefrontObjComponent != nullptr)
-	{
-		descriptorWriter.writeImage(0, &wavefrontObjComponent->material->color->descriptor);
-		descriptorWriter.writeImage(1, &wavefrontObjComponent->material->normal->descriptor);
-		descriptorWriter.writeImage(2, &wavefrontObjComponent->material->roughnessMetalness->descriptor);
-	}
+	descriptorWriter.writeImage(0, &wavefrontObjComponent->material->color->descriptor);
+	descriptorWriter.writeImage(1, &wavefrontObjComponent->material->normal->descriptor);
+	descriptorWriter.writeImage(2, &wavefrontObjComponent->material->occlusionRoughnessMetalness->descriptor);
+	descriptorWriter.writeImage(3, &wavefrontObjComponent->material->occlusionRoughnessMetalness->descriptor);
 	descriptorWriter.build(descriptorSetComponent->set);
 }
 

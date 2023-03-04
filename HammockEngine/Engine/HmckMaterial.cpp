@@ -36,10 +36,10 @@ void Hmck::HmckMaterial::createMaterial(HmckCreateMaterialInfo& materialInfo)
 	normal->updateDescriptor();
 
 	// roughness
-	roughnessMetalness = std::make_unique<HmckTexture2D>();
-	roughnessMetalness->loadFromFile(materialInfo.roughnessMetalness.length() != 0 ? materialInfo.roughnessMetalness : defaultInfo.roughnessMetalness, hmckDevice, VK_FORMAT_R8G8B8A8_UNORM);
-	roughnessMetalness->createSampler(hmckDevice);
-	roughnessMetalness->updateDescriptor();
+	occlusionRoughnessMetalness = std::make_unique<HmckTexture2D>();
+	occlusionRoughnessMetalness->loadFromFile(materialInfo.occlusionRoughnessMetalness.length() != 0 ? materialInfo.occlusionRoughnessMetalness : defaultInfo.occlusionRoughnessMetalness, hmckDevice, VK_FORMAT_R8G8B8A8_UNORM);
+	occlusionRoughnessMetalness->createSampler(hmckDevice);
+	occlusionRoughnessMetalness->updateDescriptor();
 }
 
 Hmck::HmckMaterial::~HmckMaterial()
@@ -59,9 +59,9 @@ void Hmck::HmckMaterial::destroy()
 		normal->destroy(hmckDevice);
 	}
 	
-	if (roughnessMetalness != nullptr)
+	if (occlusionRoughnessMetalness != nullptr)
 	{
-		roughnessMetalness->destroy(hmckDevice);
+		occlusionRoughnessMetalness->destroy(hmckDevice);
 	}
 }
 
