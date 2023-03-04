@@ -171,9 +171,9 @@ void Hmck::HmckGLTF::loadImages(gltf::Model& input)
 		}
 		// Load texture from image buffer
 		images[i].uri = glTFImage.uri;
-		//images[i].texture.loadFromBuffer(buffer,bufferSize, glTFImage.width, glTFImage.height,device, VK_FORMAT_R8G8B8A8_UNORM);
-		std::string path = "../../Resources/Models/plane/" + glTFImage.uri;
-		images[i].texture.loadFromFile(path, device, VK_FORMAT_R8G8B8A8_UNORM);
+		images[i].texture.loadFromBuffer(buffer,bufferSize, glTFImage.width, glTFImage.height,device, VK_FORMAT_R8G8B8A8_UNORM);
+		//std::string path = "../../Resources/Models/plane/" + glTFImage.uri;
+		//images[i].texture.loadFromFile(path, device, VK_FORMAT_R8G8B8A8_UNORM);
 		images[i].texture.createSampler(device);
 		images[i].texture.updateDescriptor();
 		if (deleteBuffer) {
