@@ -250,7 +250,7 @@
     </PostBuildEvent>
     <PreBuildEvent>
       <Command>
-call .\compile_shaders.bat</Command>
+      </Command>
       <Message>Compile shaders</Message>
     </PreBuildEvent>
   </ItemDefinitionGroup>
