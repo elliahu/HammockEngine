@@ -251,7 +251,8 @@
     <PreBuildEvent>
       <Command>
       </Command>
-      <Message>Compile shaders</Message>
+      <Message>
+      </Message>
     </PreBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Testing|x64'">
