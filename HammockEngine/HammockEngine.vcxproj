@@ -277,9 +277,8 @@
       </Message>
     </PostBuildEvent>
     <PreBuildEvent>
-      <Command>
-call .\compile.bat</Command>
-      <Message>Compile shaders</Message>
+      <Command></Command>
+      <Message></Message>
     </PreBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
@@ -308,9 +307,8 @@ call .\compile.bat</Command>
       </Message>
     </PostBuildEvent>
     <PreBuildEvent>
-      <Command>
-call .\compile.bat</Command>
-      <Message>Compile shaders</Message>
+      <Command></Command>
+      <Message></Message>
     </PreBuildEvent>
   </ItemDefinitionGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
