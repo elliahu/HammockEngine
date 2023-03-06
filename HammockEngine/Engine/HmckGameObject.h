@@ -57,6 +57,7 @@ namespace Hmck
 	{
 		std::shared_ptr<HmckMaterial> material;
 		std::shared_ptr<HmckMesh> mesh;
+		glm::mat4 matrix{ 1.0f };
 	};
 
 	/*

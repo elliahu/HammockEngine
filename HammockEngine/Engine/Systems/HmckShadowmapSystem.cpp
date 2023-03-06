@@ -41,22 +41,22 @@ void Hmck::HmckShadowmapSystem::render(HmckFrameInfo& frameInfo)
 		auto& obj = kv.second;
 		if (obj.wavefrontObjComponent == nullptr && obj.glTFComponent == nullptr) continue;
 
-		HmckMeshPushConstantData push{};
-		push.modelMatrix = obj.transformComponent.mat4();
-		push.normalMatrix = obj.transformComponent.normalMatrix();
-
-		// push data using push constant
-		vkCmdPushConstants(
-			frameInfo.commandBuffer,
-			pipelineLayout,
-			VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT,
-			0,
-			sizeof(HmckMeshPushConstantData),
-			&push
-		);
-
 		if (obj.wavefrontObjComponent != nullptr)
 		{
+			HmckMeshPushConstantData push{};
+			push.modelMatrix = obj.transformComponent.mat4();
+			push.normalMatrix = obj.transformComponent.normalMatrix();
+
+			// push data using push constant
+			vkCmdPushConstants(
+				frameInfo.commandBuffer,
+				pipelineLayout,
+				VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT,
+				0,
+				sizeof(HmckMeshPushConstantData),
+				&push
+			);
+
 			// bind MTL materials
 			vkCmdBindDescriptorSets(
 				frameInfo.commandBuffer,

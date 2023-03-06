@@ -55,7 +55,7 @@ void Hmck::HmckDeferredRenderSystem::render(HmckFrameInfo& frameInfo)
 {
 	pipeline->bind(frameInfo.commandBuffer);
 
-	// bind descriptor set (UBO)
+	// ubo
 	vkCmdBindDescriptorSets(
 		frameInfo.commandBuffer,
 		VK_PIPELINE_BIND_POINT_GRAPHICS,
@@ -87,6 +87,7 @@ void Hmck::HmckDeferredRenderSystem::render(HmckFrameInfo& frameInfo)
 		0,
 		nullptr
 	);
+
 	vkCmdDraw(frameInfo.commandBuffer, 3, 1, 0, 0);
 }
 

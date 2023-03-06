@@ -32,22 +32,22 @@ void Hmck::HmckGbufferRenderSystem::render(HmckFrameInfo& frameInfo)
 		// dont render object that would not be visible
 		if (obj.wavefrontObjComponent == nullptr && obj.glTFComponent == nullptr) continue;	
 
-		HmckMeshPushConstantData push{};
-		push.modelMatrix = obj.transformComponent.mat4();
-		push.normalMatrix = obj.transformComponent.normalMatrix();
-
-		// push data using push constant
-		vkCmdPushConstants(
-			frameInfo.commandBuffer,
-			pipelineLayout,
-			VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT,
-			0,
-			sizeof(HmckMeshPushConstantData),
-			&push
-		);
-
 		if (obj.wavefrontObjComponent != nullptr)
 		{			
+			HmckMeshPushConstantData push{};
+			push.modelMatrix = obj.transformComponent.mat4();
+			push.normalMatrix = obj.transformComponent.normalMatrix();
+
+			// push data using push constant
+			vkCmdPushConstants(
+				frameInfo.commandBuffer,
+				pipelineLayout,
+				VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT,
+				0,
+				sizeof(HmckMeshPushConstantData),
+				&push
+			);
+
 			// bind MTL materials
 			vkCmdBindDescriptorSets(
 				frameInfo.commandBuffer,
@@ -94,6 +94,7 @@ void Hmck::HmckGbufferRenderSystem::createPipeline(VkRenderPass renderPass)
 
 	HmckPipelineConfigInfo pipelineConfig{};
 	HmckPipeline::defaultHmckPipelineConfigInfo(pipelineConfig);
+	HmckPipeline::enableAlphaBlending(pipelineConfig);
 
 	std::array<VkPipelineColorBlendAttachmentState, 4> blendAttachmentStates =
 	{

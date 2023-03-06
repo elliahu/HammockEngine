@@ -248,14 +248,8 @@
     <None Include="packages.config" />
     <None Include="Engine\Shaders\Raw\glsl\shadowmap.frag" />
     <None Include="Engine\Shaders\Raw\glsl\shadowmap.vert" />
-    <None Include="compile_shaders.bat">
-      <Filter>Source Files</Filter>
-    </None>
     <None Include="Engine\Shaders\Raw\glsl\gbuffer.frag" />
     <None Include="Engine\Shaders\Raw\glsl\gbuffer.vert" />
-    <None Include="compile_shaders_hlsl.bat">
-      <Filter>Source Files</Filter>
-    </None>
     <None Include="build_shaders_glsl.py" />
     <None Include="build_shaders_hlsl.py" />
   </ItemGroup>

@@ -120,7 +120,7 @@ void Hmck::App::run()
         camera.setViewYXZ(viewerObject.transformComponent.translation, viewerObject.transformComponent.rotation);
 
         float aspect = hmckRenderer.getAspectRatio();
-        camera.setPerspectiveProjection(glm::radians(50.0f), aspect, 0.1f,  1000.f );
+        camera.setPerspectiveProjection(glm::radians(50.0f), aspect, 0.01f,  1000.f );
 
         // start a new frame
 		if (auto commandBuffer = hmckRenderer.beginFrame())
@@ -204,7 +204,7 @@ void Hmck::App::loadGameObjects()
     sphere.setObjMesh(sphereModel);
     sphere.setMtlMaterial(floorMaterial);
     sphere.bindMtlDescriptorSet(globalPool, materialLayout);
-    gameObjects.emplace(sphere.getId(), std::move(sphere));
+    //gameObjects.emplace(sphere.getId(), std::move(sphere));
 
     auto helmet = HmckGameObject::createFromGLTF(std::string(MODELS_DIR) + "helmet/helmet.gltf", hmckDevice);
     helmet.setName("Flight Helmet");

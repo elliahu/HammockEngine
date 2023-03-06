@@ -16,7 +16,6 @@ std::unique_ptr<Hmck::HmckMaterial> Hmck::HmckMaterial::createMaterial(HmckDevic
 void Hmck::HmckMaterial::createMaterial(HmckCreateMaterialInfo& materialInfo)
 {
 	// TODO check if paths are provided
-	// TODO load default value if not
 	// TODO make this load once and reuse
 	HmckCreateMaterialInfo defaultInfo{
 		std::string(MATERIALS_DIR) + "empty_white.jpg", // color

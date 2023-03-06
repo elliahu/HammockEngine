@@ -4,6 +4,7 @@
 #define GLM_FORCE_DEPTH_ZERO_TO_ONE
 #include <glm/glm.hpp>
 #include <glm/gtc/constants.hpp>
+#include <glm/gtx/matrix_decompose.hpp>
 
 #include <functional>
 #include <fstream>
@@ -98,5 +99,36 @@ namespace Hmck
 		}
 
 	} // namespace Filesystem
+
+	namespace Math
+	{
+		inline glm::mat4 normal(glm::mat4& model)
+		{
+			return glm::transpose(glm::inverse(model));
+		}
+
+		inline glm::vec3 decomposeTranslation(glm::mat4& transform)
+		{
+			return transform[3];
+		}
+
+		inline glm::vec3 decomposeRotation(glm::mat4& transform)
+		{
+			glm::vec3 scale, translation, skew;
+			glm::vec4 perspective;
+			glm::quat orientation;
+			glm::decompose(transform, scale, orientation, translation, skew, perspective);
+			return glm::eulerAngles(orientation);
+		}
+
+		inline glm::vec3 decomposeScale(glm::mat4& transform)
+		{
+			return {
+				glm::length(transform[0]),
+				glm::length(transform[1]),
+				glm::length(transform[2])
+			};
+		}
+	}
 
 } // namespace Hmck
