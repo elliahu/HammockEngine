@@ -256,5 +256,7 @@
     <None Include="compile_shaders_hlsl.bat">
       <Filter>Source Files</Filter>
     </None>
+    <None Include="build_shaders_glsl.py" />
+    <None Include="build_shaders_hlsl.py" />
   </ItemGroup>
 </Project>

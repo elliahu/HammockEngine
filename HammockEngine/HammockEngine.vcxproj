@@ -105,6 +105,8 @@
     <ClInclude Include="Engine\HmckGLTF.h" />
   </ItemGroup>
   <ItemGroup>
+    <None Include="build_shaders_glsl.py" />
+    <None Include="build_shaders_hlsl.py" />
     <None Include="compile_shaders.bat" />
     <None Include="compile_shaders_hlsl.bat" />
     <None Include="Engine\Shaders\Raw\glsl\gbuffer.frag" />
@@ -277,8 +279,10 @@
       </Message>
     </PostBuildEvent>
     <PreBuildEvent>
-      <Command></Command>
-      <Message></Message>
+      <Command>
+      </Command>
+      <Message>
+      </Message>
     </PreBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
@@ -307,8 +311,10 @@
       </Message>
     </PostBuildEvent>
     <PreBuildEvent>
-      <Command></Command>
-      <Message></Message>
+      <Command>
+      </Command>
+      <Message>
+      </Message>
     </PreBuildEvent>
   </ItemDefinitionGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
