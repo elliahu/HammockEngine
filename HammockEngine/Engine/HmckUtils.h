@@ -88,6 +88,38 @@ namespace Hmck
 			return rect2D;
 		}
 
+		/** @brief Initialize a map entry for a shader specialization constant */
+		inline VkSpecializationMapEntry specializationMapEntry(uint32_t constantID, uint32_t offset, size_t size)
+		{
+			VkSpecializationMapEntry specializationMapEntry{};
+			specializationMapEntry.constantID = constantID;
+			specializationMapEntry.offset = offset;
+			specializationMapEntry.size = size;
+			return specializationMapEntry;
+		}
+
+		/** @brief Initialize a specialization constant info structure to pass to a shader stage */
+		inline VkSpecializationInfo specializationInfo(uint32_t mapEntryCount, const VkSpecializationMapEntry* mapEntries, size_t dataSize, const void* data)
+		{
+			VkSpecializationInfo specializationInfo{};
+			specializationInfo.mapEntryCount = mapEntryCount;
+			specializationInfo.pMapEntries = mapEntries;
+			specializationInfo.dataSize = dataSize;
+			specializationInfo.pData = data;
+			return specializationInfo;
+		}
+
+		/** @brief Initialize a specialization constant info structure to pass to a shader stage */
+		inline VkSpecializationInfo specializationInfo(const std::vector<VkSpecializationMapEntry>& mapEntries, size_t dataSize, const void* data)
+		{
+			VkSpecializationInfo specializationInfo{};
+			specializationInfo.mapEntryCount = static_cast<uint32_t>(mapEntries.size());
+			specializationInfo.pMapEntries = mapEntries.data();
+			specializationInfo.dataSize = dataSize;
+			specializationInfo.pData = data;
+			return specializationInfo;
+		}
+
 	} // namespace Init
 
 	namespace Filesystem

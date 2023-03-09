@@ -51,9 +51,20 @@ layout (push_constant) uniform Push
 } push;
 
 
+layout (constant_id = 0) const bool ALPHA_MASK = false;
+layout (constant_id = 1) const float ALPHA_MASK_CUTOFF = 0.0f;
+
 void main()
 {
     _position = vec4(position, 1.0);
+    _albedo = texture(albedoSampler, uv);
+    _material = vec4(texture(roughMetalSampler, uv).g, texture(roughMetalSampler, uv).b, texture(occlusionSampler, uv).r, 1.0);
+
+    if (ALPHA_MASK) {
+		if (_albedo.a < ALPHA_MASK_CUTOFF) {
+			discard;
+		}
+	}
 
     // Calculate normal in tangent space
 	vec3 N = normalize(normal);
@@ -62,7 +73,4 @@ void main()
 	mat3 TBN = mat3(T, B, N);
     vec3 tnorm = TBN * normalize(texture(normSampler, uv).xyz * 2.0 - vec3(1.0));
 	_normal = vec4(tnorm, 1.0);
-
-    _albedo = texture(albedoSampler, uv);
-    _material = vec4(texture(roughMetalSampler, uv).g, texture(roughMetalSampler, uv).b, texture(occlusionSampler, uv).r, 1.0);
 }

@@ -5,6 +5,7 @@
 #define STB_IMAGE_WRITE_IMPLEMENTATION
 #include "tiny_gltf.h"
 
+
 namespace gltf = tinygltf;
 
 Hmck::HmckGLTF::HmckGLTF(HmckDevice& device): device{device}
@@ -81,7 +82,7 @@ void Hmck::HmckGLTF::load(std::string filepath, Config& info)
 	prepareDescriptors();
 }
 
-void Hmck::HmckGLTF::draw(VkCommandBuffer commandBuffer, VkPipelineLayout pipelineLayout)
+void Hmck::HmckGLTF::draw(VkCommandBuffer commandBuffer, VkPipelineLayout pipelineLayout, glm::mat4 transform)
 {
 	VkDeviceSize offsets[] = { 0 };
 	VkBuffer buffers[] = { vertexBuffer->getBuffer() };
@@ -90,11 +91,11 @@ void Hmck::HmckGLTF::draw(VkCommandBuffer commandBuffer, VkPipelineLayout pipeli
 
 	// Render all nodes at top-level
 	for (auto& node : nodes) {
-		drawNode(commandBuffer, node, pipelineLayout);
+		drawNode(commandBuffer, node, pipelineLayout, transform);
 	}
 }
 
-void Hmck::HmckGLTF::drawNode(VkCommandBuffer commandBuffer, std::shared_ptr<Node>& node, VkPipelineLayout pipelineLayout)
+void Hmck::HmckGLTF::drawNode(VkCommandBuffer commandBuffer, std::shared_ptr<Node>& node, VkPipelineLayout pipelineLayout, glm::mat4 objectTransform)
 {
 	// don't render invisible nodes
 	if (!node->visible) { return; }
@@ -108,6 +109,7 @@ void Hmck::HmckGLTF::drawNode(VkCommandBuffer commandBuffer, std::shared_ptr<Nod
 			nodeMatrix = currentParent->matrix * nodeMatrix;
 			currentParent = currentParent->parent;
 		}
+		nodeMatrix = objectTransform * nodeMatrix;
 		// Pass the final matrix to the vertex shader using push constants
 		struct MatrixPushConstantData
 		{
@@ -133,7 +135,7 @@ void Hmck::HmckGLTF::drawNode(VkCommandBuffer commandBuffer, std::shared_ptr<Nod
 		}
 	}
 	for (auto& child : node->children) {
-		drawNode(commandBuffer, child, pipelineLayout);
+		drawNode(commandBuffer, child, pipelineLayout, objectTransform);
 	}
 }
 

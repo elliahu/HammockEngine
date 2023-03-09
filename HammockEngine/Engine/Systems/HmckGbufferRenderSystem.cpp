@@ -63,7 +63,7 @@ void Hmck::HmckGbufferRenderSystem::render(HmckFrameInfo& frameInfo)
 		}
 		else if (obj.glTFComponent != nullptr)
 		{
-			obj.glTFComponent->glTF->draw(frameInfo.commandBuffer, pipelineLayout);
+			obj.glTFComponent->glTF->draw(frameInfo.commandBuffer, pipelineLayout, obj.transformComponent.mat4());
 		}
 	}
 }

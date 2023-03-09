@@ -96,8 +96,8 @@ namespace Hmck
 		};
 
 		void load(std::string filepath, Config& info);
-		void draw(VkCommandBuffer commandBuffer, VkPipelineLayout pipelineLayout);
-		void drawNode(VkCommandBuffer commandBuffer, std::shared_ptr<Node>& node, VkPipelineLayout pipelineLayout);
+		void draw(VkCommandBuffer commandBuffer, VkPipelineLayout pipelineLayout, glm::mat4 transform);
+		void drawNode(VkCommandBuffer commandBuffer, std::shared_ptr<Node>& node, VkPipelineLayout pipelineLayout, glm::mat4 objectTransform);
 
 		void prepareDescriptors();
 		// TODO create per-material pipelines

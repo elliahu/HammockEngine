@@ -210,10 +210,9 @@ void Hmck::App::loadGameObjects()
     helmet.setName("Flight Helmet");
     gameObjects.emplace(helmet.getId(), std::move(helmet));
 
-    // floor
-    //auto floor = HmckGameObject::createFromGLTF(std::string(MODELS_DIR) + "plane/plane.gltf",hmckDevice);
-    //floor.setName("Floor");
-    //gameObjects.emplace(floor.getId(), std::move(floor));
+    //auto obj = HmckGameObject::createFromGLTF(std::string(MODELS_DIR) + "helmet/helmet.gltf",hmckDevice);
+    //obj.setName("Floor");
+    //gameObjects.emplace(obj.getId(), std::move(obj));
 
 
     // Point lights
