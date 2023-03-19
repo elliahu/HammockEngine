@@ -42,7 +42,7 @@ void Hmck::App::run()
     }
 
     // systems and layouts
-    
+
     std::vector<VkDescriptorSetLayout> globalSetLayouts{
         globalSetLayout->getDescriptorSetLayout(),
     };
@@ -65,6 +65,13 @@ void Hmck::App::run()
         gbufferSetLayouts
     };
 
+    HmckSSAOSystem ssaoSystem{
+        hmckDevice,
+        hmckRenderer.getSSAORenderPass(),
+        hmckRenderer.getSSAOBlurRenderPass(),
+        globalSetLayouts
+    };
+
 	HmckDeferredRenderSystem deferredRenderSystem{ 
         hmckDevice,
         hmckRenderer.getSwapChainRenderPass(), 
@@ -77,14 +84,11 @@ void Hmck::App::run()
         globalSetLayouts
     };
 
-    HmckCollisionDetectionSystem collisionDetectionSystem{};
-
     HmckUISystem userInterfaceSystem{
         hmckDevice,
         hmckRenderer.getSwapChainRenderPass(),
         hmckWindow
     };
-
 
     VkDescriptorImageInfo imageInfo = hmckRenderer.getShadowmapDescriptorImageInfo();
     deferredRenderSystem.updateShadowmapDescriptorSet(imageInfo);
@@ -96,6 +100,20 @@ void Hmck::App::run()
         hmckRenderer.getGbufferDescriptorImageInfo(3),
     };
     deferredRenderSystem.updateGbufferDescriptorSet(imageInfos);
+
+    std::array<VkDescriptorImageInfo, 2> ssaoImageInfos{
+        hmckRenderer.getGbufferDescriptorImageInfo(0),
+        hmckRenderer.getGbufferDescriptorImageInfo(2),
+    };
+    ssaoSystem.updateSSAODescriptorSet(ssaoImageInfos);
+
+    auto ssao = hmckRenderer.getSSAODescriptorImageInfo();
+    auto ssaBlur = hmckRenderer.getSSAOBlurDescriptorImageInfo();
+    deferredRenderSystem.updateSSAODescriptorSet(ssao, ssaBlur);
+
+    // TODO layout error
+    auto ssaoImageInfo = hmckRenderer.getSSAODescriptorImageInfo();
+    ssaoSystem.updateSSAOBlurDescriptorSet(ssaoImageInfo);
 
     // camera and movement
     HmckCamera camera{};
@@ -152,9 +170,18 @@ void Hmck::App::run()
             gbufferRenderSystem.render(frameInfo);
             hmckRenderer.endRenderPass(commandBuffer);
 
+            hmckRenderer.beginSSAORenderPass(commandBuffer);
+            ssaoSystem.ssao(frameInfo);
+            hmckRenderer.endRenderPass(commandBuffer);
+
+            hmckRenderer.beginSSAOBlurRenderPass(commandBuffer);
+            ssaoSystem.ssaoBlur(frameInfo);
+            hmckRenderer.endRenderPass(commandBuffer);
+
             // on screen
 			hmckRenderer.beginSwapChainRenderPass(commandBuffer);
 			deferredRenderSystem.render(frameInfo);
+
             // TODO doesn't work because of the depth test failing 
             //lightSystem.render(frameInfo);
         
@@ -206,22 +233,29 @@ void Hmck::App::loadGameObjects()
     sphere.bindMtlDescriptorSet(globalPool, materialLayout);
     //gameObjects.emplace(sphere.getId(), std::move(sphere));
 
-    auto helmet = HmckGameObject::createFromGLTF(std::string(MODELS_DIR) + "helmet/helmet.gltf", hmckDevice);
-    helmet.setName("Flight Helmet");
-    gameObjects.emplace(helmet.getId(), std::move(helmet));
+    //auto helmet = HmckGameObject::createFromGLTF(std::string(MODELS_DIR) + "helmet/helmet.gltf", hmckDevice);
+    //helmet.setName("Flight Helmet");
+    //gameObjects.emplace(helmet.getId(), std::move(helmet));
 
-    //auto obj = HmckGameObject::createFromGLTF(std::string(MODELS_DIR) + "helmet/helmet.gltf",hmckDevice);
-    //obj.setName("Floor");
-    //gameObjects.emplace(obj.getId(), std::move(obj));
+    auto blocks = HmckGameObject::createFromGLTF(std::string(MODELS_DIR) + "blocks/blocks.gltf", hmckDevice);
+    blocks.setName("Blocks");
+    blocks.transformComponent.translation = { 1.280f, -0.840f, 2.350f };
+    blocks.transformComponent.scale = glm::vec3(0.3f);
+    gameObjects.emplace(blocks.getId(), std::move(blocks));
+
+    auto obj = HmckGameObject::createFromGLTF(std::string(MODELS_DIR) + "room/room.gltf",hmckDevice);
+    obj.transformComponent.translation.y = -2.190f;
+    obj.setName("Room");
+    gameObjects.emplace(obj.getId(), std::move(obj));
 
 
     // Point lights
     std::vector<glm::vec3> lightColors{
-         //{1.f, .1f, .1f},
-         //{.1f, .1f, 1.f},
-         //{.1f, 1.f, .1f},
-         //{1.f, 1.f, .1f},
-         //{.1f, 1.f, 1.f},
+         {1.f, .1f, .1f},
+         {.1f, .1f, 1.f},
+         {.1f, 1.f, .1f},
+         {1.f, 1.f, .1f},
+         {.1f, 1.f, 1.f},
          {1.f, 1.f, 1.f}, 
     };
     for (int i = 0; i < lightColors.size(); i++)
@@ -240,6 +274,7 @@ void Hmck::App::loadGameObjects()
     
     // Directional light
     auto directionalLight = HmckGameObject::createDirectionalLight();
+    directionalLight.transformComponent.translation = { 2.f, -2.f, -2.f };
     directionalLight.setName("Directional light");
     gameObjects.emplace(directionalLight.getId(), std::move(directionalLight));
 

@@ -114,6 +114,9 @@
     <ClCompile Include="Engine\HmckGLTF.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="Engine\Systems\HmckSSAOSystem.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Apps\App.h">
@@ -239,12 +242,15 @@
     <ClInclude Include="External\json.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="Engine\Systems\HmckSSAOSystem.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="Engine\Shaders\Raw\glsl\point_light.frag" />
     <None Include="Engine\Shaders\Raw\glsl\point_light.vert" />
     <None Include="Engine\Shaders\Raw\glsl\deferred.frag" />
-    <None Include="Engine\Shaders\Raw\glsl\deferred.vert" />
+    <None Include="Engine\Shaders\Raw\glsl\fullscreen.vert" />
     <None Include="packages.config" />
     <None Include="Engine\Shaders\Raw\glsl\shadowmap.frag" />
     <None Include="Engine\Shaders\Raw\glsl\shadowmap.vert" />
@@ -252,5 +258,7 @@
     <None Include="Engine\Shaders\Raw\glsl\gbuffer.vert" />
     <None Include="build_shaders_glsl.py" />
     <None Include="build_shaders_hlsl.py" />
+    <None Include="Engine\Shaders\Raw\glsl\blur.frag" />
+    <None Include="Engine\Shaders\Raw\glsl\ssao.frag" />
   </ItemGroup>
 </Project>

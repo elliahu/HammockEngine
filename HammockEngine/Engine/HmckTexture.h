@@ -50,7 +50,7 @@ namespace Hmck
 			VkImageLayout imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL
 		);
 
-		void createSampler(HmckDevice& hmckDevice);
+		void createSampler(HmckDevice& hmckDevice, VkFilter filter = VK_FILTER_LINEAR);
 		void destroy(HmckDevice& hmckDevice);
 	};
 }

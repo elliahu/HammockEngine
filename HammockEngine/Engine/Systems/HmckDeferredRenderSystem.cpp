@@ -19,7 +19,7 @@ void Hmck::HmckDeferredRenderSystem::createPipelineLayout(std::vector<VkDescript
 	std::vector<VkDescriptorSetLayout> layouts{ setLayouts };
 	layouts.push_back(gbufferDescriptorLayout->getDescriptorSetLayout());
 	layouts.push_back(shadowmapDescriptorLayout->getDescriptorSetLayout());
-
+	layouts.push_back(ssaoDescriptorLayout->getDescriptorSetLayout());
 
 	VkPipelineLayoutCreateInfo pipelineLayoutInfo{};
 	pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
@@ -44,7 +44,7 @@ void Hmck::HmckDeferredRenderSystem::createPipeline(VkRenderPass renderPass)
 	pipelineConfig.pipelineLayout = pipelineLayout;
 	pipeline = std::make_unique<HmckPipeline>(
 		hmckDevice,
-		std::string(SHADERS_DIR) + "Compiled/deferred.vert.spv",
+		std::string(SHADERS_DIR) + "Compiled/fullscreen.vert.spv",
 		std::string(SHADERS_DIR) + "Compiled/deferred.frag.spv",
 		pipelineConfig
 	);
@@ -88,6 +88,17 @@ void Hmck::HmckDeferredRenderSystem::render(HmckFrameInfo& frameInfo)
 		nullptr
 	);
 
+	// ssao
+	vkCmdBindDescriptorSets(
+		frameInfo.commandBuffer,
+		VK_PIPELINE_BIND_POINT_GRAPHICS,
+		pipelineLayout,
+		3, 1,
+		&ssaoDescriptorSet,
+		0,
+		nullptr
+	);
+
 	vkCmdDraw(frameInfo.commandBuffer, 3, 1, 0, 0);
 }
 
@@ -95,7 +106,7 @@ void Hmck::HmckDeferredRenderSystem::prepareDescriptors()
 {
 	descriptorPool = HmckDescriptorPool::Builder(hmckDevice)
 		.setMaxSets(100)
-		.addPoolSize(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 7)
+		.addPoolSize(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 9)
 		.build();
 
 	shadowmapDescriptorLayout = HmckDescriptorSetLayout::Builder(hmckDevice)
@@ -107,6 +118,11 @@ void Hmck::HmckDeferredRenderSystem::prepareDescriptors()
 		.addBinding(1, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT) // albedo
 		.addBinding(2, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT) // normal
 		.addBinding(3, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT) // material (roughness, metalness, ao)
+		.build();
+
+	ssaoDescriptorLayout = HmckDescriptorSetLayout::Builder(hmckDevice)
+		.addBinding(0, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT) // ssao
+		.addBinding(1, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT) // ssao blur
 		.build();
 }
 
@@ -125,4 +141,12 @@ void Hmck::HmckDeferredRenderSystem::updateGbufferDescriptorSet(std::array<VkDes
 		.writeImage(2, &imageInfos[2]) // normal
 		.writeImage(3, &imageInfos[3]) // // material (roughness, metalness, ao)
 		.build(gbufferDescriptorSet);
+}
+
+void Hmck::HmckDeferredRenderSystem::updateSSAODescriptorSet(VkDescriptorImageInfo& ssao, VkDescriptorImageInfo& ssaoBlur)
+{
+	auto writer = HmckDescriptorWriter(*ssaoDescriptorLayout, *descriptorPool)
+		.writeImage(0, &ssao)
+		.writeImage(1, &ssaoBlur)
+		.build(ssaoDescriptorSet);
 }

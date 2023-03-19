@@ -17,10 +17,11 @@
 #include <cassert>
 
 // black clear color
-#define HMCK_CLEAR_COLOR { 0.f,0.f,0.f,1.f }
+#define HMCK_CLEAR_COLOR { 1.f,1.f,1.f,1.f }
 
 constexpr auto OFFSCREEN_RES_WIDTH = 4096;
 constexpr auto OFFSCREEN_RES_HEIGHT = 4096;
+#define TEX_FILTER VK_FILTER_LINEAR;
 
 namespace Hmck
 {
@@ -39,6 +40,8 @@ namespace Hmck
 		VkRenderPass getSwapChainRenderPass() const { return hmckSwapChain->getRenderPass(); }
 		VkRenderPass getOffscreenRenderPass() const { return shadowmapFramebuffer->renderPass; }
 		VkRenderPass getGbufferRenderPass() const { return gbufferFramebuffer->renderPass; }
+		VkRenderPass getSSAORenderPass() const { return ssaoFramebuffer->renderPass; }
+		VkRenderPass getSSAOBlurRenderPass() const { return ssaoBlurFramebuffer->renderPass; }
 		float getAspectRatio() const { return hmckSwapChain->extentAspectRatio(); }
 		bool isFrameInProgress() const { return isFrameStarted; }
 
@@ -62,6 +65,36 @@ namespace Hmck
 			return descriptorImageInfo;
 		}
 
+		VkDescriptorImageInfo getGbufferDescriptorDepthImageInfo()
+		{
+			VkDescriptorImageInfo descriptorImageInfo{};
+			descriptorImageInfo.imageLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL;
+			descriptorImageInfo.imageView = gbufferFramebuffer->attachments[4].view;
+			descriptorImageInfo.sampler = gbufferFramebuffer->sampler;
+
+			return descriptorImageInfo;
+		}
+
+		VkDescriptorImageInfo getSSAODescriptorImageInfo()
+		{
+			VkDescriptorImageInfo descriptorImageInfo{};
+			descriptorImageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+			descriptorImageInfo.imageView = ssaoFramebuffer->attachments[0].view;
+			descriptorImageInfo.sampler = ssaoFramebuffer->sampler;
+
+			return descriptorImageInfo;
+		}
+
+		VkDescriptorImageInfo getSSAOBlurDescriptorImageInfo()
+		{
+			VkDescriptorImageInfo descriptorImageInfo{};
+			descriptorImageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+			descriptorImageInfo.imageView = ssaoBlurFramebuffer->attachments[0].view;
+			descriptorImageInfo.sampler = ssaoBlurFramebuffer->sampler;
+
+			return descriptorImageInfo;
+		}
+
 
 		VkCommandBuffer getCurrentCommandBuffer() const
 		{
@@ -79,6 +112,8 @@ namespace Hmck
 		void endFrame();
 		void beginShadowmapRenderPass(VkCommandBuffer commandBuffer);
 		void beginGbufferRenderPass(VkCommandBuffer commandBuffer);
+		void beginSSAORenderPass(VkCommandBuffer commandBuffer);
+		void beginSSAOBlurRenderPass(VkCommandBuffer commandBuffer);
 		void beginSwapChainRenderPass(VkCommandBuffer commandBuffer);
 		void beginRenderPass(
 			std::unique_ptr<HmckFramebuffer>& framebuffer,
@@ -92,14 +127,23 @@ namespace Hmck
 		void freeCommandBuffers();
 		void recreateSwapChain();
 		void recreateShadowmapRenderPass();
+		void recreateOmniShadowmapFramebuffer();
 		void recreateGbufferRenderPass();
+		void recreateSSAORenderPasses();
+		void createShadowCubeMap();
 
 		HmckWindow& hmckWindow;
 		HmckDevice& hmckDevice;
 		std::unique_ptr<HmckSwapChain> hmckSwapChain;
 		std::vector<VkCommandBuffer> commandBuffers;
 		std::unique_ptr<HmckFramebuffer> shadowmapFramebuffer;
+		std::unique_ptr<HmckFramebuffer> omniShadowmapFramebuffer;
 		std::unique_ptr<HmckFramebuffer> gbufferFramebuffer;
+		std::unique_ptr<HmckFramebuffer> ssaoFramebuffer;
+		std::unique_ptr<HmckFramebuffer> ssaoBlurFramebuffer;
+
+		HmckTexture shadowCubeMap;
+		std::array<VkImageView, 6> shadowCubeMapFaceImageViews;
 		
 
 		uint32_t currentImageIndex;

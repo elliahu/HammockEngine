@@ -35,6 +35,11 @@ layout (set = 0, binding = 0) uniform GlobalUbo
     PointLight pointLights[10];
     int numLights;
 } ubo;
+
+out gl_PerVertex
+{
+	vec4 gl_Position;
+};
  
 void main() 
 {

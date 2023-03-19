@@ -142,7 +142,7 @@ namespace Hmck
 		static HmckGameObject createDirectionalLight(
 			glm::vec3 position = glm::vec3(10,-10,-10), glm::vec3 target = glm::vec3(0),
 			glm::vec4 directionalLightColor = glm::vec4( 1.0f, 1.0f, 1.0, 1.0f ),
-			float nearClip = 0.1f, float farClip = 100.f, float fov = 50.f);
+			float nearClip = 0.1f, float farClip = 100.f, float fov = 180.f);
 
 		static HmckGameObject createFromGLTF(std::string filepath, HmckDevice& device, HmckGLTF::Config config = {});
 

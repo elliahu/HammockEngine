@@ -3,6 +3,11 @@
 #include "HmckFrameInfo.h"
 #include "HmckPipeline.h"
 
+#ifndef SHADERS_DIR
+#define SHADERS_DIR "../../HammockEngine/Engine/Shaders/"
+#endif
+
+
 namespace Hmck
 {
 	// Renders system interface

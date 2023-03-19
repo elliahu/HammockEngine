@@ -53,7 +53,9 @@ namespace Hmck
 
 		void updateShadowmapDescriptorSet(VkDescriptorImageInfo& imageInfo);
 		void updateGbufferDescriptorSet(std::array<VkDescriptorImageInfo, 4> imageInfos);
-
+		void updateSSAODescriptorSet(
+			VkDescriptorImageInfo& ssao,
+			VkDescriptorImageInfo& ssaoBlur);
 
 		void render(HmckFrameInfo& frameInfo);
 
@@ -67,8 +69,10 @@ namespace Hmck
 		std::unique_ptr<HmckDescriptorPool> descriptorPool{};
 		std::unique_ptr<HmckDescriptorSetLayout> shadowmapDescriptorLayout{};
 		std::unique_ptr<HmckDescriptorSetLayout> gbufferDescriptorLayout{};
+		std::unique_ptr<HmckDescriptorSetLayout> ssaoDescriptorLayout{};
 		VkDescriptorSet shadowmapDescriptorSet;
 		VkDescriptorSet gbufferDescriptorSet;
+		VkDescriptorSet ssaoDescriptorSet;
 		
 		
 	};

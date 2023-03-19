@@ -176,12 +176,12 @@ void Hmck::HmckTexture2D::loadFromBuffer(unsigned char* buffer, uint32_t bufferS
 	}
 }
 
-void Hmck::HmckTexture2D::createSampler(HmckDevice& hmckDevice)
+void Hmck::HmckTexture2D::createSampler(HmckDevice& hmckDevice, VkFilter filter)
 {
 	VkSamplerCreateInfo samplerInfo{};
 	samplerInfo.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
-	samplerInfo.magFilter = VK_FILTER_LINEAR;
-	samplerInfo.minFilter = VK_FILTER_LINEAR;
+	samplerInfo.magFilter = filter;
+	samplerInfo.minFilter = filter;
 	samplerInfo.addressModeU = VK_SAMPLER_ADDRESS_MODE_REPEAT;
 	samplerInfo.addressModeV = VK_SAMPLER_ADDRESS_MODE_REPEAT;
 	samplerInfo.addressModeW = VK_SAMPLER_ADDRESS_MODE_REPEAT;

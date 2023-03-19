@@ -5,6 +5,7 @@ Hmck::HmckRenderer::HmckRenderer(HmckWindow& window, HmckDevice& device) : hmckW
 	recreateSwapChain();
 	recreateShadowmapRenderPass();
 	recreateGbufferRenderPass();
+	recreateSSAORenderPasses();
 	createCommandBuffer();
 }
 
@@ -13,6 +14,17 @@ Hmck::HmckRenderer::~HmckRenderer()
 	freeCommandBuffers();
 	shadowmapFramebuffer = nullptr;
 	gbufferFramebuffer = nullptr;
+
+	// Cube map
+	for (uint32_t i = 0; i < 6; i++)
+	{
+		vkDestroyImageView(hmckDevice.device(), shadowCubeMapFaceImageViews[i], nullptr);
+	}
+
+	vkDestroyImageView(hmckDevice.device(), shadowCubeMap.view, nullptr);
+	vkDestroyImage(hmckDevice.device(), shadowCubeMap.image, nullptr);
+	vkDestroySampler(hmckDevice.device(), shadowCubeMap.sampler, nullptr);
+	vkFreeMemory(hmckDevice.device(), shadowCubeMap.memory, nullptr);
 }
 
 
@@ -211,6 +223,23 @@ void Hmck::HmckRenderer::beginGbufferRenderPass(VkCommandBuffer commandBuffer)
 	beginRenderPass(gbufferFramebuffer, commandBuffer, clearValues);
 }
 
+void Hmck::HmckRenderer::beginSSAORenderPass(VkCommandBuffer commandBuffer)
+{
+	std::vector<VkClearValue> clearValues{ 2 };
+	clearValues[0].color = { { 0.0f, 0.0f, 0.0f, 1.0f } };
+	clearValues[1].depthStencil = { 1.0f, 0 };
+
+	beginRenderPass(ssaoFramebuffer, commandBuffer, clearValues);
+}
+
+void Hmck::HmckRenderer::beginSSAOBlurRenderPass(VkCommandBuffer commandBuffer)
+{
+	std::vector<VkClearValue> clearValues{ 2 };
+	clearValues[0].color = { { 0.0f, 0.0f, 0.0f, 1.0f } };
+	clearValues[1].depthStencil = { 1.0f, 0 };
+	beginRenderPass(ssaoBlurFramebuffer, commandBuffer, clearValues);
+}
+
 void Hmck::HmckRenderer::endRenderPass(VkCommandBuffer commandBuffer)
 {
 	assert(isFrameInProgress() && "Cannot call endActiveRenderPass if frame is not in progress");
@@ -249,6 +278,23 @@ void Hmck::HmckRenderer::recreateShadowmapRenderPass()
 	}
 }
 
+void Hmck::HmckRenderer::recreateOmniShadowmapFramebuffer()
+{
+	omniShadowmapFramebuffer = std::make_unique<HmckFramebuffer>(hmckDevice);
+
+	shadowmapFramebuffer->width = OFFSCREEN_RES_WIDTH;
+	shadowmapFramebuffer->height = OFFSCREEN_RES_HEIGHT;
+
+	VkFormat fbColorFormat = VK_FORMAT_R32_SFLOAT;
+
+	HmckAttachmentCreateInfo attachmentInfo{};
+	attachmentInfo.width = OFFSCREEN_RES_WIDTH;
+	attachmentInfo.height = OFFSCREEN_RES_HEIGHT;
+	attachmentInfo.layerCount = 1;
+	attachmentInfo.usage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT;;
+
+}
+
 void Hmck::HmckRenderer::recreateGbufferRenderPass()
 {
 	gbufferFramebuffer = std::make_unique<HmckFramebuffer>(hmckDevice);
@@ -285,7 +331,7 @@ void Hmck::HmckRenderer::recreateGbufferRenderPass()
 
 	// Attachment 4: Depth attachment
 	attachmentInfo.format = depthFormat;
-	attachmentInfo.usage = VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT;
+	attachmentInfo.usage = VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT;
 	gbufferFramebuffer->addAttachment(attachmentInfo);
 
 	// Create sampler to sample from color attachments
@@ -296,5 +342,133 @@ void Hmck::HmckRenderer::recreateGbufferRenderPass()
 	// create renderpass with framebuffer
 	if (gbufferFramebuffer->createRenderPass() != VK_SUCCESS) {
 		throw std::runtime_error("Failed to create offscreen renderpass");
+	}
+}
+
+void Hmck::HmckRenderer::recreateSSAORenderPasses()
+{
+	ssaoFramebuffer = std::make_unique<HmckFramebuffer>(hmckDevice);
+	ssaoBlurFramebuffer = std::make_unique<HmckFramebuffer>(hmckDevice);
+
+	ssaoFramebuffer->width = hmckSwapChain->width();
+	ssaoFramebuffer->height = hmckSwapChain->height();
+	ssaoBlurFramebuffer->width = hmckSwapChain->width();
+	ssaoBlurFramebuffer->height = hmckSwapChain->height();
+
+	// Find a suitable depth format
+	VkFormat validDepthFormat = hmckSwapChain->findDepthFormat();
+
+	// color attachments
+	HmckAttachmentCreateInfo attachmentInfo = {};
+	attachmentInfo.width = hmckSwapChain->width();
+	attachmentInfo.height = hmckSwapChain->height();
+	attachmentInfo.layerCount = 1;
+	attachmentInfo.usage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT;
+	attachmentInfo.format = VK_FORMAT_R8_UNORM;
+	ssaoFramebuffer->addAttachment(attachmentInfo);
+	ssaoBlurFramebuffer->addAttachment(attachmentInfo);
+
+	// create samplers
+	if (ssaoFramebuffer->createSampler(VK_FILTER_NEAREST, VK_FILTER_NEAREST, VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE) != VK_SUCCESS) {
+		throw std::runtime_error("Failed to create ssao sampler");
+	}
+
+	if (ssaoBlurFramebuffer->createSampler(VK_FILTER_NEAREST, VK_FILTER_NEAREST, VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE) != VK_SUCCESS) {
+		throw std::runtime_error("Failed to create ssao blur sampler");
+	}
+
+	// create renderpass with framebuffer
+	if (ssaoFramebuffer->createRenderPass() != VK_SUCCESS) {
+		throw std::runtime_error("Failed to create ssao renderpass");
+	}
+
+	if (ssaoBlurFramebuffer->createRenderPass() != VK_SUCCESS) {
+		throw std::runtime_error("Failed to create ssao blur renderpass");
+	}
+}
+
+void Hmck::HmckRenderer::createShadowCubeMap()
+{
+	shadowCubeMap.width = OFFSCREEN_RES_WIDTH;
+	shadowCubeMap.height = OFFSCREEN_RES_HEIGHT;
+
+	// 32 bit float format for higher precision
+	VkFormat format = VK_FORMAT_R32_SFLOAT;
+
+	// Cube map image description
+	VkImageCreateInfo imageCreateInfo = Hmck::Init::imageCreateInfo();
+	imageCreateInfo.imageType = VK_IMAGE_TYPE_2D;
+	imageCreateInfo.format = format;
+	imageCreateInfo.extent = { static_cast<uint32_t>(shadowCubeMap.width), static_cast<uint32_t>(shadowCubeMap.height), 1 };
+	imageCreateInfo.mipLevels = 1;
+	imageCreateInfo.arrayLayers = 6;
+	imageCreateInfo.samples = VK_SAMPLE_COUNT_1_BIT;
+	imageCreateInfo.tiling = VK_IMAGE_TILING_OPTIMAL;
+	imageCreateInfo.usage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT;
+	imageCreateInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+	imageCreateInfo.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+	imageCreateInfo.flags = VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT;
+
+	VkMemoryAllocateInfo memAllocInfo = Hmck::Init::memoryAllocateInfo();
+	VkMemoryRequirements memReqs;
+
+	if (vkCreateImage(hmckDevice.device(), &imageCreateInfo, nullptr, &shadowCubeMap.image) != VK_SUCCESS) {
+		throw std::runtime_error("failed to create image");
+	}
+
+	vkGetImageMemoryRequirements(hmckDevice.device(), shadowCubeMap.image, &memReqs);
+
+	memAllocInfo.allocationSize = memReqs.size;
+	memAllocInfo.memoryTypeIndex = hmckDevice.findMemoryType(memReqs.memoryTypeBits, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
+	if (vkAllocateMemory(hmckDevice.device(), &memAllocInfo, nullptr, &shadowCubeMap.memory) != VK_SUCCESS) {
+		throw std::runtime_error("failed to allocate memory");
+	}
+	if (vkBindImageMemory(hmckDevice.device(), shadowCubeMap.image, shadowCubeMap.memory, 0) != VK_SUCCESS){
+		throw std::runtime_error("failed to bind memory");
+	}
+
+	hmckDevice.transitionImageLayout(shadowCubeMap.image, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+
+	// Create sampler
+	VkSamplerCreateInfo sampler = Hmck::Init::samplerCreateInfo();
+	sampler.magFilter = TEX_FILTER;
+	sampler.minFilter = TEX_FILTER;
+	sampler.mipmapMode = VK_SAMPLER_MIPMAP_MODE_LINEAR;
+	sampler.addressModeU = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_BORDER;
+	sampler.addressModeV = sampler.addressModeU;
+	sampler.addressModeW = sampler.addressModeU;
+	sampler.mipLodBias = 0.0f;
+	sampler.maxAnisotropy = 1.0f;
+	sampler.compareOp = VK_COMPARE_OP_NEVER;
+	sampler.minLod = 0.0f;
+	sampler.maxLod = 1.0f;
+	sampler.borderColor = VK_BORDER_COLOR_FLOAT_OPAQUE_WHITE;
+	if (vkCreateSampler(hmckDevice.device(), &sampler, nullptr, &shadowCubeMap.sampler) != VK_SUCCESS){
+		throw std::runtime_error("failed to create sampler");
+	}
+
+	// Create image view
+	VkImageViewCreateInfo view = Hmck::Init::imageViewCreateInfo();
+	view.image = VK_NULL_HANDLE;
+	view.viewType = VK_IMAGE_VIEW_TYPE_CUBE;
+	view.format = format;
+	view.components = { VK_COMPONENT_SWIZZLE_R };
+	view.subresourceRange = { VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1 };
+	view.subresourceRange.layerCount = 6;
+	view.image = shadowCubeMap.image;
+	if (vkCreateImageView(hmckDevice.device(), &view, nullptr, &shadowCubeMap.view) != VK_SUCCESS) {
+		throw std::runtime_error("failed to create image view");
+	}
+
+	view.viewType = VK_IMAGE_VIEW_TYPE_2D;
+	view.subresourceRange.layerCount = 1;
+	view.image = shadowCubeMap.image;
+
+	for (uint32_t i = 0; i < 6; i++)
+	{
+		view.subresourceRange.baseArrayLayer = i;
+		if (vkCreateImageView(hmckDevice.device(), &view, nullptr, &shadowCubeMapFaceImageViews[i]) != VK_SUCCESS) {
+			throw std::runtime_error("failed to create image view");
+		}
 	}
 }

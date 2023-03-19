@@ -15,6 +15,10 @@ layout(set = 1, binding = 3) uniform sampler2D materialPropertySampler;
 // shadowmap sampler
 layout(set = 2, binding = 0) uniform sampler2D directionalLightDepthMap;
 
+// ssao
+layout(set = 3, binding = 0) uniform sampler2D ssaoSampler;
+layout(set = 3, binding = 1) uniform sampler2D ssaoBlurSampler;
+
 struct PointLight
 {
     vec4 position;
@@ -138,15 +142,15 @@ void main()
     
     vec3 viewPosition = ubo.inverseView[3].xyz;
     vec3 wolrdPosition = texture(positionSampler, uv).rgb;
-
     
     vec3 V = normalize(viewPosition - wolrdPosition);
-    vec3 N = normalize(texture(normalSampler, uv).rgb);
+    vec3 N = normalize(texture(normalSampler, uv).rgb * 2.0 - 1.0);
 
     vec3 albedo = pow(texture(albedoSampler, uv).rgb, vec3(2.2));
     float roughness = texture(materialPropertySampler, uv).r;
     float metallic  = texture(materialPropertySampler, uv).g;
     float ao        = texture(materialPropertySampler, uv).b;
+    float ssao      = texture(ssaoBlurSampler, uv).r;
 
     // Discard fragments at texture border
 	if (uv.x < 0.0 || uv.x > 1.0 || uv.y < 0.0 || uv.y > 1.0) {
@@ -234,6 +238,11 @@ void main()
     color = color / (color + vec3(1.0)); 
     // gamma correction
     //color = pow(color, vec3(1.0/2.2)); 
+    outColor = vec4(color,1.0);
+    
+    
+    outColor.rgb = ssao.rrr;
+    outColor.rgb *= color;
 
-    outColor = vec4(color, 1.0);
+    outColor.rgb = ssao.rrr;
 }

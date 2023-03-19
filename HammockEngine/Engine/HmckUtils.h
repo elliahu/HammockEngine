@@ -134,6 +134,11 @@ namespace Hmck
 
 	namespace Math
 	{
+		inline float lerp(float a, float b, float f)
+		{
+			return a + f * (b - a);
+		}
+
 		inline glm::mat4 normal(glm::mat4& model)
 		{
 			return glm::transpose(glm::inverse(model));

@@ -94,7 +94,6 @@ void Hmck::HmckGbufferRenderSystem::createPipeline(VkRenderPass renderPass)
 
 	HmckPipelineConfigInfo pipelineConfig{};
 	HmckPipeline::defaultHmckPipelineConfigInfo(pipelineConfig);
-	HmckPipeline::enableAlphaBlending(pipelineConfig);
 
 	std::array<VkPipelineColorBlendAttachmentState, 4> blendAttachmentStates =
 	{
