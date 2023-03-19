@@ -136,6 +136,13 @@ const mat4 biasMat = mat4(
 	0.5, 0.5, 0.0, 1.0 
  );
 
+ float clip(float value, float minv, float maxv)
+ {
+    if(value >= minv && value <= maxv)
+        return value;
+    if(value < minv) return minv;
+    if(value > maxv) return maxv;
+ }
 
 
 // MAIN
@@ -242,6 +249,8 @@ void main()
     //color = pow(color, vec3(1.0/2.2)); 
     outColor = vec4(color,1.0);
     
-    outColor.rgb *= (ssao.rrr);
+    outColor.rgb *= ssao.rrr;
+
+    outColor.rgb = vec3(clip(ssao.r, 0.0, 0.7)); // ugly :(
 
 }

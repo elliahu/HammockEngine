@@ -13,7 +13,7 @@ layout (set = 0, binding = 0) uniform GlobalUbo
 } ubo;
 
 layout (constant_id = 0) const int SSAO_KERNEL_SIZE = 64;
-layout (constant_id = 1) const float SSAO_RADIUS = 0.5;
+layout (constant_id = 1) const float SSAO_RADIUS = 0.9;
 
 layout (set = 1, binding = 0) uniform sampler2D samplerPositionDepth;
 layout (set = 1, binding = 1) uniform sampler2D samplerNormal;
@@ -48,7 +48,7 @@ void main()
 	// Calculate occlusion value
 	float occlusion = 0.0f;
 	// remove banding
-	const float bias = 0.018f;
+	const float bias = 0.025f;
 	for(int i = 0; i < SSAO_KERNEL_SIZE; i++)
 	{		
 		vec3 samplePos = TBN * uboSSAOKernel.samples[i].xyz; 
