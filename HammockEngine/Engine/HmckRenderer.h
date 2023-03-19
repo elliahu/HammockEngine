@@ -65,7 +65,7 @@ namespace Hmck
 			return descriptorImageInfo;
 		}
 
-		VkDescriptorImageInfo getGbufferDescriptorDepthImageInfo()
+		VkDescriptorImageInfo getGbufferDepthDescriptorImageInfo()
 		{
 			VkDescriptorImageInfo descriptorImageInfo{};
 			descriptorImageInfo.imageLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL;

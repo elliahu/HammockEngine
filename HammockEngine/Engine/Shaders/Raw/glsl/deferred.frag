@@ -32,6 +32,7 @@ struct DirectionalLight
     vec4 color;
 };
 
+#define SHADOW_FACTOR 0.25
 
 layout (set = 0, binding = 0) uniform GlobalUbo
 {
@@ -96,7 +97,7 @@ float textureProj(vec4 shadowCoord, vec2 off)
 		float dist = texture( directionalLightDepthMap, shadowCoord.st + off ).r;
 		if ( shadowCoord.w > 0.0 && dist < shadowCoord.z ) 
 		{
-			shadow = 0.0;
+			shadow = SHADOW_FACTOR;
 		}
 	}
 	return shadow;
@@ -136,6 +137,7 @@ const mat4 biasMat = mat4(
  );
 
 
+
 // MAIN
 void main()
 {
@@ -143,8 +145,8 @@ void main()
     vec3 viewPosition = ubo.inverseView[3].xyz;
     vec3 wolrdPosition = texture(positionSampler, uv).rgb;
     
-    vec3 V = normalize(viewPosition - wolrdPosition);
-    vec3 N = normalize(texture(normalSampler, uv).rgb * 2.0 - 1.0);
+    vec3 V = normalize( - wolrdPosition);
+    vec3 N = normalize(texture(normalSampler, uv).rgb);
 
     vec3 albedo = pow(texture(albedoSampler, uv).rgb, vec3(2.2));
     float roughness = texture(materialPropertySampler, uv).r;
@@ -157,7 +159,7 @@ void main()
 		discard;
 	}
 
-    vec4 shadowCoord = ( biasMat * ubo.depthBiasMVP) * vec4(wolrdPosition, 1.0);
+    vec4 shadowCoord = ( biasMat * ubo.depthBiasMVP) * (ubo.inverseView * vec4(wolrdPosition, 1.0));
 
     // calculate reflectance at normal incidence; if dia-electric (like plastic) use F0 
     // of 0.04 and if it's a metal, use the albedo color as F0 (metallic workflow)    
@@ -240,9 +242,6 @@ void main()
     //color = pow(color, vec3(1.0/2.2)); 
     outColor = vec4(color,1.0);
     
-    
-    outColor.rgb = ssao.rrr;
-    outColor.rgb *= color;
+    outColor.rgb *= (ssao.rrr);
 
-    outColor.rgb = ssao.rrr;
 }

@@ -101,9 +101,10 @@ void Hmck::App::run()
     };
     deferredRenderSystem.updateGbufferDescriptorSet(imageInfos);
 
-    std::array<VkDescriptorImageInfo, 2> ssaoImageInfos{
+    std::array<VkDescriptorImageInfo, 3> ssaoImageInfos{
         hmckRenderer.getGbufferDescriptorImageInfo(0),
         hmckRenderer.getGbufferDescriptorImageInfo(2),
+        hmckRenderer.getGbufferDepthDescriptorImageInfo()
     };
     ssaoSystem.updateSSAODescriptorSet(ssaoImageInfos);
 
@@ -138,7 +139,7 @@ void Hmck::App::run()
         camera.setViewYXZ(viewerObject.transformComponent.translation, viewerObject.transformComponent.rotation);
 
         float aspect = hmckRenderer.getAspectRatio();
-        camera.setPerspectiveProjection(glm::radians(50.0f), aspect, 0.01f,  1000.f );
+        camera.setPerspectiveProjection(glm::radians(50.0f), aspect, 0.1f,  64.f );
 
         // start a new frame
 		if (auto commandBuffer = hmckRenderer.beginFrame())

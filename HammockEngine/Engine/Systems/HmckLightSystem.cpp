@@ -118,6 +118,13 @@ void Hmck::HmckLightSystem::update(HmckFrameInfo& frameInfo, HmckGlobalUbo& ubo)
 		{ 0.f, -1.f, 0.f }
 	);
 
+	glm::vec3 cameraPos = {
+		ubo.inverseView[3].x,
+		ubo.inverseView[3].y,
+		ubo.inverseView[3].z,
+	};
+
+
 	int dirLightIdx = 0;
 	int lightIndex = 0;
 	for (auto& kv : frameInfo.gameObjects)
@@ -129,9 +136,9 @@ void Hmck::HmckLightSystem::update(HmckFrameInfo& frameInfo, HmckGlobalUbo& ubo)
 			assert(lightIndex < MAX_LIGHTS && "Point light limit exeeded");
 
 			// update lights
-			obj.transformComponent.translation = glm::vec3(rotateLight * glm::vec4(obj.transformComponent.translation, 1.f));
+			obj.transformComponent.translation = glm::vec3(rotateLight * glm::vec4(obj.transformComponent.translation, 1.f));	
 
-			ubo.pointLights[lightIndex].position = glm::vec4(obj.transformComponent.translation, 1.f);
+			ubo.pointLights[lightIndex].position = ubo.view * glm::vec4(obj.transformComponent.translation, 1.f);
 			ubo.pointLights[lightIndex].color = glm::vec4(obj.colorComponent, obj.pointLightComponent->lightIntensity);
 			ubo.pointLights[lightIndex].lightTerms.x = obj.pointLightComponent->quadraticTerm;
 			ubo.pointLights[lightIndex].lightTerms.y = obj.pointLightComponent->linearTerm;
@@ -145,6 +152,8 @@ void Hmck::HmckLightSystem::update(HmckFrameInfo& frameInfo, HmckGlobalUbo& ubo)
 			// directional light
 
 			assert(dirLightIdx < 1 && "Directional light limit exeeded. There can only be one directional light");
+
+			glm::mat3 view = glm::mat3(ubo.view);
 
 			ubo.directionalLight.color = glm::vec4(obj.colorComponent, obj.directionalLightComponent->lightIntensity);
 			ubo.directionalLight.direction = glm::vec4(

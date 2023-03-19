@@ -73,7 +73,7 @@ void Hmck::HmckSSAOSystem::ssaoBlur(HmckFrameInfo& frameInfo)
 	vkCmdDraw(frameInfo.commandBuffer, 3, 1, 0, 0);
 }
 
-void Hmck::HmckSSAOSystem::updateSSAODescriptorSet(std::array<VkDescriptorImageInfo, 2> imageInfos)
+void Hmck::HmckSSAOSystem::updateSSAODescriptorSet(std::array<VkDescriptorImageInfo, 3> imageInfos)
 {
 	auto bufferInfo = ssaoKernelBuffer->descriptorInfo();
 	auto writer = HmckDescriptorWriter(*ssaoLayout, *descriptorPool)
@@ -81,6 +81,7 @@ void Hmck::HmckSSAOSystem::updateSSAODescriptorSet(std::array<VkDescriptorImageI
 		.writeImage(1, &imageInfos[1])
 		.writeImage(2, &ssaoNoiseTexture.descriptor)
 		.writeBuffer(3, &bufferInfo)
+		.writeImage(4, &imageInfos[2])
 		.build(ssaoDescriptorSet);
 }
 
@@ -202,7 +203,7 @@ void Hmck::HmckSSAOSystem::prepareDescriptors()
 	descriptorPool = HmckDescriptorPool::Builder(hmckDevice)
 		.setMaxSets(100)
 		.addPoolSize(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1)
-		.addPoolSize(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 4)
+		.addPoolSize(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 5)
 		.build();
 
 	ssaoLayout = HmckDescriptorSetLayout::Builder(hmckDevice)
@@ -210,6 +211,7 @@ void Hmck::HmckSSAOSystem::prepareDescriptors()
 		.addBinding(1, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT)
 		.addBinding(2, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT)
 		.addBinding(3, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_FRAGMENT_BIT)
+		.addBinding(4, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT)
 		.build();
 
 	ssaoBlurLayout = HmckDescriptorSetLayout::Builder(hmckDevice)

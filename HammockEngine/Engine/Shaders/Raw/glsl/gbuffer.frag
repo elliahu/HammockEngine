@@ -60,5 +60,5 @@ void main()
 	vec3 B = cross(normal, tangent.xyz) * tangent.w;
 	mat3 TBN = mat3(T, B, N);
     vec3 tnorm = TBN * normalize(texture(normSampler, uv).xyz * 2.0 - vec3(1.0));
-	_normal = vec4(normalize(tnorm) * 0.5 + 0.5, 1.0);
+	_normal = vec4(normalize(tnorm), 1.0);
 }

@@ -28,7 +28,7 @@ layout (push_constant) uniform Push
 
 void main()
 {
-	/*gl_Position = ubo.projection * ubo.view * push.modelMatrix * vec4(position, 1.0);
+	gl_Position = ubo.projection * ubo.view * push.modelMatrix * vec4(position, 1.0);
 	_uv = uv;
 
     // vertex pos in viewspace
@@ -37,8 +37,10 @@ void main()
     // normal in view space
     mat3 normalMatrix = transpose(inverse(mat3(ubo.view * push.modelMatrix)));
 	_normal = normalMatrix * normalize(normal);	
-	_tangent = mat4(normalMatrix) * normalize(tangent);*/
+	_tangent = mat4(normalMatrix) * normalize(tangent);
 
+
+	/*
     gl_Position = ubo.projection * ubo.view * push.modelMatrix * vec4(position, 1.0);
 	
 	_uv = uv;
@@ -48,5 +50,5 @@ void main()
 
 	// Normal in world space
 	_normal = mat3(push.normalMatrix) * normalize(normal);	
-	_tangent = push.normalMatrix * normalize(tangent);
+	_tangent = push.normalMatrix * normalize(tangent);*/
 }
