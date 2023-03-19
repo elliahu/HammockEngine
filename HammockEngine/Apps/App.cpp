@@ -234,9 +234,9 @@ void Hmck::App::loadGameObjects()
     sphere.bindMtlDescriptorSet(globalPool, materialLayout);
     //gameObjects.emplace(sphere.getId(), std::move(sphere));
 
-    //auto helmet = HmckGameObject::createFromGLTF(std::string(MODELS_DIR) + "helmet/helmet.gltf", hmckDevice);
-    //helmet.setName("Flight Helmet");
-    //gameObjects.emplace(helmet.getId(), std::move(helmet));
+    auto helmet = HmckGameObject::createFromGLTF(std::string(MODELS_DIR) + "helmet/helmet.gltf", hmckDevice);
+    helmet.setName("Flight Helmet");
+    gameObjects.emplace(helmet.getId(), std::move(helmet));
 
     auto blocks = HmckGameObject::createFromGLTF(std::string(MODELS_DIR) + "blocks/blocks.gltf", hmckDevice);
     blocks.setName("Blocks");
@@ -275,9 +275,8 @@ void Hmck::App::loadGameObjects()
     
     // Directional light
     auto directionalLight = HmckGameObject::createDirectionalLight();
-    directionalLight.transformComponent.translation = { 2.f, -2.f, -2.f };
+    directionalLight.transformComponent.translation = { -2.f, -2.f, -2.f };
     directionalLight.setName("Directional light");
     gameObjects.emplace(directionalLight.getId(), std::move(directionalLight));
 
-    
 }
