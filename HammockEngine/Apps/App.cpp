@@ -224,7 +224,7 @@ void Hmck::App::loadGameObjects()
         .build();
 
     // sphere
-    std::shared_ptr<HmckMesh> sphereModel = HmckMesh::createMeshFromObjFile(hmckDevice, std::string(MODELS_DIR) + "sphere.obj");
+    /*std::shared_ptr<HmckMesh> sphereModel = HmckMesh::createMeshFromObjFile(hmckDevice, std::string(MODELS_DIR) + "sphere.obj");
     auto sphere = HmckGameObject::createGameObject();
     sphere.transformComponent.translation = { 1.5f, 0.f, 0.f };
     sphere.transformComponent.scale = glm::vec3(.25f);
@@ -232,13 +232,13 @@ void Hmck::App::loadGameObjects()
     sphere.setObjMesh(sphereModel);
     sphere.setMtlMaterial(floorMaterial);
     sphere.bindMtlDescriptorSet(globalPool, materialLayout);
-    //gameObjects.emplace(sphere.getId(), std::move(sphere));
+    gameObjects.emplace(sphere.getId(), std::move(sphere));*/
 
     auto helmet = HmckGameObject::createFromGLTF(std::string(MODELS_DIR) + "helmet/helmet.gltf", hmckDevice);
     helmet.setName("Flight Helmet");
     gameObjects.emplace(helmet.getId(), std::move(helmet));
 
-    auto blocks = HmckGameObject::createFromGLTF(std::string(MODELS_DIR) + "blocks/blocks.gltf", hmckDevice);
+    /*auto blocks = HmckGameObject::createFromGLTF(std::string(MODELS_DIR) + "blocks/blocks.gltf", hmckDevice);
     blocks.setName("Blocks");
     blocks.transformComponent.translation = { 1.280f, -0.840f, 2.350f };
     blocks.transformComponent.scale = glm::vec3(0.3f);
@@ -247,16 +247,16 @@ void Hmck::App::loadGameObjects()
     auto obj = HmckGameObject::createFromGLTF(std::string(MODELS_DIR) + "room/room.gltf",hmckDevice);
     obj.transformComponent.translation.y = -2.190f;
     obj.setName("Room");
-    gameObjects.emplace(obj.getId(), std::move(obj));
+    gameObjects.emplace(obj.getId(), std::move(obj));*/
 
 
     // Point lights
     std::vector<glm::vec3> lightColors{
-         {1.f, .1f, .1f},
-         {.1f, .1f, 1.f},
-         {.1f, 1.f, .1f},
-         {1.f, 1.f, .1f},
-         {.1f, 1.f, 1.f},
+         //{1.f, .1f, .1f},
+         //{.1f, .1f, 1.f},
+         //{.1f, 1.f, .1f},
+         //{1.f, 1.f, .1f},
+         //{.1f, 1.f, 1.f},
          {1.f, 1.f, 1.f}, 
     };
     for (int i = 0; i < lightColors.size(); i++)

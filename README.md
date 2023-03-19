@@ -32,7 +32,6 @@ The following NuGet packages are used:
 - [GLM](https://github.com/g-truc/glm) - Linear algebra lib for matrix and vector operations (may switch to handmade math later as it is much lighter)
 - [GLFW](https://www.glfw.org/) - Window creation and input handling
 
-![glTF 2.0](https://raw.githubusercontent.com/elliahu/HammockEngine/master/Img/pbr.png)
 ![glTF 2.0](https://raw.githubusercontent.com/elliahu/HammockEngine/master/Img/pbr2.png)
 ![Lighting and PBR](https://raw.githubusercontent.com/elliahu/HammockEngine/master/Img/lighting.png)
 ### Screen space ambient occlusion
