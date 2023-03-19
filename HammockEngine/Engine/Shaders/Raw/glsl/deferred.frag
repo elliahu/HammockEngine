@@ -247,10 +247,6 @@ void main()
     color = color / (color + vec3(1.0)); 
     // gamma correction
     //color = pow(color, vec3(1.0/2.2)); 
-    outColor = vec4(color,1.0);
-    
-    outColor.rgb *= ssao.rrr;
-
-    outColor.rgb = vec3(clip(ssao.r, 0.0, 0.7)); // ugly :(
-
+    outColor.rgb = vec3(clip(ssao.r, 0.0, 0.62)); // ugly :(
+    outColor.rgb *= color;
 }
