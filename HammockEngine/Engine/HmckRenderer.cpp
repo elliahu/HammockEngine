@@ -252,8 +252,8 @@ void Hmck::HmckRenderer::recreateShadowmapRenderPass()
 {
 	shadowmapFramebuffer = std::make_unique<HmckFramebuffer>(hmckDevice);
 
-	shadowmapFramebuffer->width = OFFSCREEN_RES_WIDTH;
-	shadowmapFramebuffer->height = OFFSCREEN_RES_HEIGHT;
+	shadowmapFramebuffer->width = SHADOW_RES_WIDTH;
+	shadowmapFramebuffer->height = SHADOW_RES_HEIGHT;
 
 	// Find a suitable depth format
 	VkFormat depthFormat = hmckSwapChain->findDepthFormat();
@@ -265,8 +265,8 @@ void Hmck::HmckRenderer::recreateShadowmapRenderPass()
 
 	// Create depth attachment
 	HmckAttachmentCreateInfo attachmentInfo{};
-	attachmentInfo.width = OFFSCREEN_RES_WIDTH;
-	attachmentInfo.height = OFFSCREEN_RES_HEIGHT;
+	attachmentInfo.width = SHADOW_RES_WIDTH;
+	attachmentInfo.height = SHADOW_RES_HEIGHT;
 	attachmentInfo.layerCount = 1;
 	attachmentInfo.usage = VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT;
 	attachmentInfo.format = depthFormat;
@@ -282,14 +282,14 @@ void Hmck::HmckRenderer::recreateOmniShadowmapFramebuffer()
 {
 	omniShadowmapFramebuffer = std::make_unique<HmckFramebuffer>(hmckDevice);
 
-	shadowmapFramebuffer->width = OFFSCREEN_RES_WIDTH;
-	shadowmapFramebuffer->height = OFFSCREEN_RES_HEIGHT;
+	shadowmapFramebuffer->width = SHADOW_RES_WIDTH;
+	shadowmapFramebuffer->height = SHADOW_RES_HEIGHT;
 
 	VkFormat fbColorFormat = VK_FORMAT_R32_SFLOAT;
 
 	HmckAttachmentCreateInfo attachmentInfo{};
-	attachmentInfo.width = OFFSCREEN_RES_WIDTH;
-	attachmentInfo.height = OFFSCREEN_RES_HEIGHT;
+	attachmentInfo.width = SHADOW_RES_WIDTH;
+	attachmentInfo.height = SHADOW_RES_HEIGHT;
 	attachmentInfo.layerCount = 1;
 	attachmentInfo.usage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT;;
 
@@ -350,8 +350,8 @@ void Hmck::HmckRenderer::recreateSSAORenderPasses()
 	ssaoFramebuffer = std::make_unique<HmckFramebuffer>(hmckDevice);
 	ssaoBlurFramebuffer = std::make_unique<HmckFramebuffer>(hmckDevice);
 
-	ssaoFramebuffer->width = hmckSwapChain->width();
-	ssaoFramebuffer->height = hmckSwapChain->height();
+	ssaoFramebuffer->width = hmckSwapChain->width() * SSAO_RES_MULTIPLIER;
+	ssaoFramebuffer->height = hmckSwapChain->height() * SSAO_RES_MULTIPLIER;
 	ssaoBlurFramebuffer->width = hmckSwapChain->width();
 	ssaoBlurFramebuffer->height = hmckSwapChain->height();
 
@@ -360,12 +360,14 @@ void Hmck::HmckRenderer::recreateSSAORenderPasses()
 
 	// color attachments
 	HmckAttachmentCreateInfo attachmentInfo = {};
-	attachmentInfo.width = hmckSwapChain->width();
-	attachmentInfo.height = hmckSwapChain->height();
+	attachmentInfo.width = ssaoFramebuffer->width;
+	attachmentInfo.height = ssaoFramebuffer->height;
 	attachmentInfo.layerCount = 1;
 	attachmentInfo.usage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT;
 	attachmentInfo.format = VK_FORMAT_R8_UNORM;
 	ssaoFramebuffer->addAttachment(attachmentInfo);
+	attachmentInfo.width = ssaoBlurFramebuffer->width;
+	attachmentInfo.height = ssaoBlurFramebuffer->height;
 	ssaoBlurFramebuffer->addAttachment(attachmentInfo);
 
 	// create samplers
@@ -389,8 +391,8 @@ void Hmck::HmckRenderer::recreateSSAORenderPasses()
 
 void Hmck::HmckRenderer::createShadowCubeMap()
 {
-	shadowCubeMap.width = OFFSCREEN_RES_WIDTH;
-	shadowCubeMap.height = OFFSCREEN_RES_HEIGHT;
+	shadowCubeMap.width = SHADOW_RES_WIDTH;
+	shadowCubeMap.height = SHADOW_RES_HEIGHT;
 
 	// 32 bit float format for higher precision
 	VkFormat format = VK_FORMAT_R32_SFLOAT;
@@ -431,8 +433,8 @@ void Hmck::HmckRenderer::createShadowCubeMap()
 
 	// Create sampler
 	VkSamplerCreateInfo sampler = Hmck::Init::samplerCreateInfo();
-	sampler.magFilter = TEX_FILTER;
-	sampler.minFilter = TEX_FILTER;
+	sampler.magFilter = SHADOW_TEX_FILTER;
+	sampler.minFilter = SHADOW_TEX_FILTER;
 	sampler.mipmapMode = VK_SAMPLER_MIPMAP_MODE_LINEAR;
 	sampler.addressModeU = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_BORDER;
 	sampler.addressModeV = sampler.addressModeU;

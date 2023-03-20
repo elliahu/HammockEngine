@@ -234,11 +234,11 @@ void Hmck::App::loadGameObjects()
     sphere.bindMtlDescriptorSet(globalPool, materialLayout);
     gameObjects.emplace(sphere.getId(), std::move(sphere));*/
 
-    auto helmet = HmckGameObject::createFromGLTF(std::string(MODELS_DIR) + "helmet/helmet.gltf", hmckDevice);
+    /*auto helmet = HmckGameObject::createFromGLTF(std::string(MODELS_DIR) + "helmet/helmet.gltf", hmckDevice);
     helmet.setName("Flight Helmet");
-    gameObjects.emplace(helmet.getId(), std::move(helmet));
+    gameObjects.emplace(helmet.getId(), std::move(helmet));*/
 
-    /*auto blocks = HmckGameObject::createFromGLTF(std::string(MODELS_DIR) + "blocks/blocks.gltf", hmckDevice);
+    auto blocks = HmckGameObject::createFromGLTF(std::string(MODELS_DIR) + "blocks/blocks.gltf", hmckDevice);
     blocks.setName("Blocks");
     blocks.transformComponent.translation = { 1.280f, -0.840f, 2.350f };
     blocks.transformComponent.scale = glm::vec3(0.3f);
@@ -247,7 +247,7 @@ void Hmck::App::loadGameObjects()
     auto obj = HmckGameObject::createFromGLTF(std::string(MODELS_DIR) + "room/room.gltf",hmckDevice);
     obj.transformComponent.translation.y = -2.190f;
     obj.setName("Room");
-    gameObjects.emplace(obj.getId(), std::move(obj));*/
+    gameObjects.emplace(obj.getId(), std::move(obj));
 
 
     // Point lights

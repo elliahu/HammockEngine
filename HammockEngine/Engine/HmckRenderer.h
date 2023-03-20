@@ -19,9 +19,11 @@
 // black clear color
 #define HMCK_CLEAR_COLOR { 1.f,1.f,1.f,1.f }
 
-constexpr auto OFFSCREEN_RES_WIDTH = 4096;
-constexpr auto OFFSCREEN_RES_HEIGHT = 4096;
-#define TEX_FILTER VK_FILTER_LINEAR;
+#define SHADOW_RES_WIDTH 2048
+#define SHADOW_RES_HEIGHT 2048
+#define SHADOW_TEX_FILTER VK_FILTER_LINEAR
+
+#define SSAO_RES_MULTIPLIER 0.5
 
 namespace Hmck
 {

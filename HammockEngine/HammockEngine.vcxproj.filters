@@ -54,28 +54,28 @@
     <ClCompile Include="Engine\Utils\HmckLogger.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="Engine\Systems\ImGUI\backends\imgui_impl_glfw.cpp">
+    <ClCompile Include="External\backends\imgui_impl_glfw.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="Engine\Systems\ImGUI\backends\imgui_impl_vulkan.cpp">
+    <ClCompile Include="External\backends\imgui_impl_vulkan.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="Engine\Systems\ImGUI\misc\cpp\imgui_stdlib.cpp">
+    <ClCompile Include="External\misc\cpp\imgui_stdlib.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="Engine\Systems\ImGUI\imgui.cpp">
+    <ClCompile Include="External\imgui.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="Engine\Systems\ImGUI\imgui_demo.cpp">
+    <ClCompile Include="External\imgui_demo.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="Engine\Systems\ImGUI\imgui_draw.cpp">
+    <ClCompile Include="External\imgui_draw.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="Engine\Systems\ImGUI\imgui_tables.cpp">
+    <ClCompile Include="External\imgui_tables.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="Engine\Systems\ImGUI\imgui_widgets.cpp">
+    <ClCompile Include="External\imgui_widgets.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="Engine\Systems\HmckCollisionDetectionSystem.cpp">
@@ -158,31 +158,31 @@
     <ClInclude Include="Engine\Utils\HmckLogger.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="Engine\Systems\ImGUI\backends\imgui_impl_glfw.h">
+    <ClInclude Include="External\backends\imgui_impl_glfw.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="Engine\Systems\ImGUI\backends\imgui_impl_vulkan.h">
+    <ClInclude Include="External\backends\imgui_impl_vulkan.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="Engine\Systems\ImGUI\misc\cpp\imgui_stdlib.h">
+    <ClInclude Include="External\misc\cpp\imgui_stdlib.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="Engine\Systems\ImGUI\imconfig.h">
+    <ClInclude Include="External\imconfig.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="Engine\Systems\ImGUI\imgui.h">
+    <ClInclude Include="External\imgui.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="Engine\Systems\ImGUI\imgui_internal.h">
+    <ClInclude Include="External\imgui_internal.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="Engine\Systems\ImGUI\imstb_rectpack.h">
+    <ClInclude Include="External\imstb_rectpack.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="Engine\Systems\ImGUI\imstb_textedit.h">
+    <ClInclude Include="External\imstb_textedit.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="Engine\Systems\ImGUI\imstb_truetype.h">
+    <ClInclude Include="External\imstb_truetype.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="Engine\Systems\HmckCollisionDetectionSystem.h">
