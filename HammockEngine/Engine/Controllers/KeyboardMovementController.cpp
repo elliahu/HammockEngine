@@ -5,8 +5,8 @@ void Hmck::KeyboardMovementController::moveInPlaneXZ(HmckWindow& window, float d
 	glm::vec3 rotate{ 0 };
 	if (window.getInputManager().isKeyboardKeyDown(HMCK_KEY_RIGHT)) rotate.y += 1.f;
 	if (window.getInputManager().isKeyboardKeyDown(HMCK_KEY_LEFT)) rotate.y -= 1.f;
-	if (window.getInputManager().isKeyboardKeyDown(HMCK_KEY_UP)) rotate.x += 1.f;
-	if (window.getInputManager().isKeyboardKeyDown(HMCK_KEY_DOWN)) rotate.x -= 1.f;
+	if (window.getInputManager().isKeyboardKeyDown(HMCK_KEY_UP)) rotate.x -= 1.f;
+	if (window.getInputManager().isKeyboardKeyDown(HMCK_KEY_DOWN)) rotate.x += 1.f;
 
 	if (window.getInputManager().isMouseKeyDown(HMCK_MOUSE_RIGHT) && !mouseInMotion)
 	{
