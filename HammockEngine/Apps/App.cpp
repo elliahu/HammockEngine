@@ -184,7 +184,7 @@ void Hmck::App::run()
 			deferredRenderSystem.render(frameInfo);
 
             // TODO doesn't work because of the depth test failing 
-            lightSystem.render(frameInfo);
+            //lightSystem.render(frameInfo);
         
             // ui
             userInterfaceSystem.beginUserInterface();

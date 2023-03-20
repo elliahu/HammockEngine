@@ -34,6 +34,8 @@ struct DirectionalLight
 
 #define SHADOW_FACTOR 0.0
 #define SSAO_CLAMP 0.85
+#define EXPOSURE 4.5
+#define GAMMA 1.0
 
 layout (set = 0, binding = 0) uniform GlobalUbo
 {
@@ -49,6 +51,18 @@ layout (set = 0, binding = 0) uniform GlobalUbo
 
 
 const float PI = 3.14159265359;
+
+// From http://filmicgames.com/archives/75
+vec3 Uncharted2Tonemap(vec3 x)
+{
+	float A = 0.15;
+	float B = 0.50;
+	float C = 0.10;
+	float D = 0.20;
+	float E = 0.02;
+	float F = 0.30;
+	return ((x*(A*x+C*B)+D*E)/(x*(A*x+B)+D*F))-E/F;
+}
 
 float DistributionGGX(vec3 N, vec3 H, float roughness)
 {
@@ -137,49 +151,12 @@ const mat4 biasMat = mat4(
 	0.5, 0.5, 0.0, 1.0 
  );
 
-
-// MAIN
-void main()
-{
-    
-    vec3 viewPosition = ubo.inverseView[3].xyz;
-    vec3 wolrdPosition = texture(positionSampler, uv).rgb;
-    
-    vec3 V = normalize( - wolrdPosition);
-    vec3 N = normalize(texture(normalSampler, uv).rgb);
-
-    vec3 albedo = pow(texture(albedoSampler, uv).rgb, vec3(2.2));
-    float roughness = texture(materialPropertySampler, uv).r;
-    float metallic  = texture(materialPropertySampler, uv).g;
-    float ao        = texture(materialPropertySampler, uv).b;
-    float ssao      = texture(ssaoBlurSampler, uv).r;
-
-    // Discard fragments at texture border
-	if (uv.x < 0.0 || uv.x > 1.0 || uv.y < 0.0 || uv.y > 1.0) {
-		discard;
-	}
-
-    vec4 shadowCoord = ( biasMat * ubo.depthBiasMVP) * (ubo.inverseView * vec4(wolrdPosition, 1.0));
-
-    // calculate reflectance at normal incidence; if dia-electric (like plastic) use F0 
-    // of 0.04 and if it's a metal, use the albedo color as F0 (metallic workflow)    
-    vec3 F0 = vec3(0.04); 
-    F0 = mix(albedo, albedo, metallic);
-    
-    // reflectance equation
-    vec3 Lo = vec3(0.0);
-    for(int i = 0; i < ubo.numLights; i++)
-    {
-        // per-light calculations
-        PointLight light = ubo.pointLights[i];
-        vec3 lightPosition = light.position.xyz;
-
-        // calculate per-light radiance
-        vec3 L = normalize(lightPosition - wolrdPosition);
+ vec3 pbr(vec3 wolrdPosition,vec3 L,vec3 lightcolor, float attenuation ,vec3 V,vec3 N,vec3 albedo,float roughness,float metallic,float ao,float shadow, vec3 F0)
+ {
+    // calculate per-light radiance
         vec3 H = normalize(V + L);
-        float distance = length(lightPosition - wolrdPosition);
-        float attenuation = 1.0 / (light.terms.x * (distance * distance)) + (light.terms.y * distance) + (light.terms.z);
-        vec3 radiance = light.color.xyz * light.color.w * attenuation;
+        
+        vec3 radiance = lightcolor * attenuation;
 
         // Cook-Torrance BRDF
         float NDF = DistributionGGX(N, H, roughness);   
@@ -205,41 +182,72 @@ void main()
         float NdotL = max(dot(N, L), 0.0);        
 
         // add to outgoing radiance Lo
-        Lo += (kD * albedo / PI + specular) * radiance * NdotL;  // note that we already multiplied the BRDF by the Fresnel (kS) so we won't multiply by kS again
+        return ((kD * albedo / PI + specular) * radiance * NdotL) * shadow * ao;  // note that we already multiplied the BRDF by the Fresnel (kS) so we won't multiply by kS again
+ }
+
+// MAIN
+void main()
+{
+    
+    vec3 viewPosition = ubo.inverseView[3].xyz;
+    vec3 wolrdPosition = texture(positionSampler, uv).rgb;
+    
+    vec3 V = normalize( - wolrdPosition);
+    vec3 N = normalize(texture(normalSampler, uv).rgb);
+
+    vec3 albedo = pow(texture(albedoSampler, uv).rgb, vec3(2.2));
+    float roughness = texture(materialPropertySampler, uv).r;
+    float metallic  = texture(materialPropertySampler, uv).g;
+    float ao        = texture(materialPropertySampler, uv).b;
+    ao              = 1.0 ; // for now
+    float ssao      = texture(ssaoBlurSampler, uv).r;
+
+    // Discard fragments at texture border
+	if (uv.x < 0.0 || uv.x > 1.0 || uv.y < 0.0 || uv.y > 1.0) {
+		discard;
+	}
+
+    vec4 shadowCoord = ( biasMat * ubo.depthBiasMVP) * (ubo.inverseView * vec4(wolrdPosition, 1.0));
+    float shadow = (enablePCF == 1) ? filterPCF(shadowCoord / shadowCoord.w) : textureProj(shadowCoord / shadowCoord.w, vec2(0.0));
+
+    // calculate reflectance at normal incidence; if dia-electric (like plastic) use F0 
+    // of 0.04 and if it's a metal, use the albedo color as F0 (metallic workflow)    
+    vec3 F0 = vec3(0.04); 
+    F0 = mix(albedo, albedo, metallic);
+    
+    // reflectance equation
+    vec3 Lo = vec3(0.0);
+    for(int i = 0; i < ubo.numLights; i++)
+    {
+        // per-light calculations
+        PointLight light = ubo.pointLights[i];
+        vec3 lightPosition = light.position.xyz;
+        vec3 lightcolor = light.color.xyz * light.color.w;
+
+        float distance = length(lightPosition - wolrdPosition);
+        float attenuation = 1.0 / (light.terms.x * (distance * distance)) + (light.terms.y * distance) + (light.terms.z);
+
+        vec3 L = normalize(lightPosition - wolrdPosition);
+        Lo += pbr(wolrdPosition,L,lightcolor,attenuation,V,N,albedo,roughness,metallic,ao,1.0,F0);
     }
 
     // directional light 
+
     vec3 L = normalize(-vec3(ubo.directionalLight.direction));
-    vec3 H = normalize(V + L);
-    vec3 radiance = ubo.directionalLight.color.xyz * ubo.directionalLight.color.w;
-
-    // Cook-Torrance BRDF
-    float NDF = DistributionGGX(N, H, roughness);   
-    float G   = GeometrySmith(N, V, L, roughness);      
-    vec3 F    = fresnelSchlick(max(dot(H, V), 0.0), F0);
-           
-    vec3 numerator    = NDF * G * F; 
-    float denominator = 4.0 * max(dot(N, V), 0.0) * max(dot(N, L), 0.0) + 0.0001; // + 0.0001 to prevent divide by zero
-    vec3 specular = numerator / denominator;
-
-    vec3 kS = F;
-    vec3 kD = vec3(1.0) - kS;
-    kD *= 1.0 - metallic;	  
-
-    float NdotL = max(dot(N, L), 0.0);   
-    // add to outgoing radiance Lo
-    float shadow = (enablePCF == 1) ? filterPCF(shadowCoord / shadowCoord.w) : textureProj(shadowCoord / shadowCoord.w, vec2(0.0));
-    Lo += ((kD * albedo / PI + specular) * radiance * NdotL) * shadow;
-
+    Lo += pbr(wolrdPosition,L,ubo.directionalLight.color.xyz * ubo.directionalLight.color.w,1.0,V,N,albedo,roughness,metallic,ao,shadow,F0);
  
-    vec3 ambient = (ubo.ambientLightColor.xyz * ubo.ambientLightColor.w) * albedo * ao;
-    
+    // ambient
+    vec3 ambient = (ubo.ambientLightColor.xyz * ubo.ambientLightColor.w) * albedo;
     vec3 color = ambient + Lo;
      
-    // HDR tonemapping    
-    color = color / (color + vec3(1.0)); 
-    // gamma correction
-    //color = pow(color, vec3(1.0/2.2)); 
+
+    // Tone mapping
+	color = Uncharted2Tonemap(color * EXPOSURE);
+	color = color * (1.0f / Uncharted2Tonemap(vec3(11.2f)));	
+	// Gamma correction
+	color = pow(color, vec3(1.0f / GAMMA));
+
+    // apply ssao
     outColor.rgb = vec3(clamp(ssao.r, 0.0, SSAO_CLAMP)); // ugly :(
     outColor.rgb *= color;
 }
