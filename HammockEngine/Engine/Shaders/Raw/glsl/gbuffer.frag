@@ -31,8 +31,8 @@ layout (push_constant) uniform Push
 } push;
 
 
-layout (constant_id = 0) const bool ALPHA_MASK = false;
-layout (constant_id = 1) const float ALPHA_MASK_CUTOFF = 0.0f;
+layout (constant_id = 0) const bool ALPHA_MASK = true;
+layout (constant_id = 1) const float ALPHA_MASK_CUTOFF = 1.0f;
 layout (constant_id = 2) const float nearPlane = 0.1;
 layout (constant_id = 3) const float farPlane = 64.0;
 

@@ -3,7 +3,7 @@
 # Hammock Engine 🔥
 Custom c++17 game engine using Vulkan - the next generation graphics API.
 
-# Features 👈
+# Features 🚀
 The following points are features currently implemented:
 - [x] Wavefront OBJ Model loading and MTL material support
 - [x] Collision detection using AABB
@@ -14,7 +14,7 @@ The following points are features currently implemented:
 - [x] Shadow mapping (still improving, currently only singular directional/spot source)
 - [x] SSAO
 
-# TODOS 🤞
+# TODOS ⏱
 - [ ] Indirect drawing 
 - [ ] Asset system and audio support
 - [ ] Reflections and Cubemaps
@@ -34,6 +34,7 @@ The following NuGet packages are used:
 
 ![Sponza](https://raw.githubusercontent.com/elliahu/HammockEngine/master/Img/sponza.png)
 ![Sponza2](https://raw.githubusercontent.com/elliahu/HammockEngine/master/Img/sponza2.png)
+![Sponza3](https://raw.githubusercontent.com/elliahu/HammockEngine/master/Img/sponza3.png)
 ![glTF 2.0](https://raw.githubusercontent.com/elliahu/HammockEngine/master/Img/pbr2.png)
 ![Lighting and PBR](https://raw.githubusercontent.com/elliahu/HammockEngine/master/Img/lighting.png)
 ### Screen space ambient occlusion
