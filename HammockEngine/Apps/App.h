@@ -59,7 +59,7 @@ namespace Hmck
 		void loadGameObjects();
 
 		HmckWindow hmckWindow{ WINDOW_WIDTH, WINDOW_HEIGHT, "Hammock Engine" };
-		HmckDevice hmckDevice{ hmckWindow };
+		HmckDevice hmckDevice{ hmckWindow }; // TODO this is wrong, device should not be dependent on window -> should be otherway around
 		HmckRenderer hmckRenderer{ hmckWindow, hmckDevice };
 
 		std::unique_ptr<HmckDescriptorPool> globalPool{};

@@ -33,7 +33,7 @@ void Hmck::KeyboardMovementController::moveInPlaneXZ(HmckWindow& window, float d
 		double offsetY = mouseMotionStartY - y;
 
 		gameObject.transformComponent.rotation.y += glm::clamp(glm::radians((float)offsetX), -360.0f, 360.0f);
-		gameObject.transformComponent.rotation.x += glm::clamp(glm::radians((float)offsetY), -89.0f, 89.0f);
+		gameObject.transformComponent.rotation.x -= glm::clamp(glm::radians((float)offsetY), -89.0f, 89.0f);
 
 		mouseMotionStartX = x;
 		mouseMotionStartY = y;
@@ -51,7 +51,7 @@ void Hmck::KeyboardMovementController::moveInPlaneXZ(HmckWindow& window, float d
 	float yaw = gameObject.transformComponent.rotation.y;
 	const glm::vec3 forwardDir{ sin(yaw), 0.0f, cos(yaw) };
 	const glm::vec3 rightDir{ forwardDir.z, 0.0f, -forwardDir.x };
-	const glm::vec3 upDir{ 0.0f , -1.f, 0.0f };
+	const glm::vec3 upDir{ 0.0f , 1.f, 0.0f };
 
 	glm::vec3 moveDir{ 0.0f };
 	if (window.getInputManager().isKeyboardKeyDown(HMCK_KEY_W)) moveDir += forwardDir;

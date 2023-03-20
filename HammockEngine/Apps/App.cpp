@@ -6,7 +6,7 @@ Hmck::App::App()
     globalPool = HmckDescriptorPool::Builder(hmckDevice)
         .setMaxSets(100)
         .addPoolSize(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, HmckSwapChain::MAX_FRAMES_IN_FLIGHT)
-        .addPoolSize(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 100)
+        .addPoolSize(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1000)
         .build();
 
 	loadGameObjects();
@@ -184,7 +184,7 @@ void Hmck::App::run()
 			deferredRenderSystem.render(frameInfo);
 
             // TODO doesn't work because of the depth test failing 
-            //lightSystem.render(frameInfo);
+            lightSystem.render(frameInfo);
         
             // ui
             userInterfaceSystem.beginUserInterface();
@@ -224,39 +224,47 @@ void Hmck::App::loadGameObjects()
         .build();
 
     // sphere
-    /*std::shared_ptr<HmckMesh> sphereModel = HmckMesh::createMeshFromObjFile(hmckDevice, std::string(MODELS_DIR) + "sphere.obj");
+    /*std::shared_ptr<HmckMesh> sphereModel = HmckMesh::createMeshFromObjFile(hmckDevice, std::string(MODELS_DIR) + "smooth_vase.obj");
     auto sphere = HmckGameObject::createGameObject();
-    sphere.transformComponent.translation = { 1.5f, 0.f, 0.f };
-    sphere.transformComponent.scale = glm::vec3(.25f);
+    sphere.transformComponent.translation = { 0.0f, 0.f, 0.f };
+    //sphere.transformComponent.scale = glm::vec3(.25f);
     sphere.setName("Sphere");
     sphere.setObjMesh(sphereModel);
     sphere.setMtlMaterial(floorMaterial);
     sphere.bindMtlDescriptorSet(globalPool, materialLayout);
     gameObjects.emplace(sphere.getId(), std::move(sphere));*/
 
-    /*auto helmet = HmckGameObject::createFromGLTF(std::string(MODELS_DIR) + "helmet/helmet.gltf", hmckDevice);
-    helmet.setName("Flight Helmet");
-    gameObjects.emplace(helmet.getId(), std::move(helmet));*/
+    HmckGLTF::Config config{
+        true
+    };
 
-    auto blocks = HmckGameObject::createFromGLTF(std::string(MODELS_DIR) + "blocks/blocks.gltf", hmckDevice);
+    //auto helmet = HmckGameObject::createFromGLTF(std::string(MODELS_DIR) + "helmet/helmet.glb", hmckDevice, config);
+    //helmet.setName("Flight Helmet");
+    //gameObjects.emplace(helmet.getId(), std::move(helmet));
+
+    /*auto blocks = HmckGameObject::createFromGLTF(std::string(MODELS_DIR) + "blocks/blocks.gltf", hmckDevice);
     blocks.setName("Blocks");
     blocks.transformComponent.translation = { 1.280f, -0.840f, 2.350f };
     blocks.transformComponent.scale = glm::vec3(0.3f);
-    gameObjects.emplace(blocks.getId(), std::move(blocks));
+    gameObjects.emplace(blocks.getId(), std::move(blocks));*/
 
-    auto obj = HmckGameObject::createFromGLTF(std::string(MODELS_DIR) + "room/room.gltf",hmckDevice);
+    /*auto obj = HmckGameObject::createFromGLTF(std::string(MODELS_DIR) + "room/room.gltf",hmckDevice);
     obj.transformComponent.translation.y = -2.190f;
     obj.setName("Room");
-    gameObjects.emplace(obj.getId(), std::move(obj));
+    gameObjects.emplace(obj.getId(), std::move(obj));*/
 
+    auto sponza = HmckGameObject::createFromGLTF(std::string(MODELS_DIR) + "sponza/sponza.glb", hmckDevice, config);
+    sponza.transformComponent.translation.y = - .25f;
+    sponza.setName("Sponza");
+    gameObjects.emplace(sponza.getId(), std::move(sponza));
 
     // Point lights
     std::vector<glm::vec3> lightColors{
-         //{1.f, .1f, .1f},
-         //{.1f, .1f, 1.f},
-         //{.1f, 1.f, .1f},
-         //{1.f, 1.f, .1f},
-         //{.1f, 1.f, 1.f},
+         {1.f, .1f, .1f},
+         {.1f, .1f, 1.f},
+         {.1f, 1.f, .1f},
+         {1.f, 1.f, .1f},
+         {.1f, 1.f, 1.f},
          {1.f, 1.f, 1.f}, 
     };
     for (int i = 0; i < lightColors.size(); i++)
@@ -269,13 +277,13 @@ void Hmck::App::loadGameObjects()
             (i * glm::two_pi<float>()) / lightColors.size(),
             { 0.f, -1.f, 0.f }
         );
-        pointLight.transformComponent.translation = glm::vec3(rotateLight * glm::vec4(-1.f, -1.f, -1.f, 1.f));
+        pointLight.transformComponent.translation = glm::vec3(rotateLight * glm::vec4(-1.f, 1.f, -1.f, 1.f));
         gameObjects.emplace(pointLight.getId(), std::move(pointLight));
     }
     
     // Directional light
     auto directionalLight = HmckGameObject::createDirectionalLight();
-    directionalLight.transformComponent.translation = { -2.f, -2.f, -2.f };
+    directionalLight.transformComponent.translation = { 15.6f, 32.71f, -20.15f };
     directionalLight.setName("Directional light");
     gameObjects.emplace(directionalLight.getId(), std::move(directionalLight));
 

@@ -11,8 +11,8 @@ namespace gltf = tinygltf;
 Hmck::HmckGLTF::HmckGLTF(HmckDevice& device): device{device}
 {
 	descriptorPool = HmckDescriptorPool::Builder(device)
-		.setMaxSets(100)
-		.addPoolSize(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 30) // 30 should be good
+		.setMaxSets(1000)
+		.addPoolSize(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1000)
 		.build();
 
 	descriptorSetLayout = HmckDescriptorSetLayout::Builder(device)

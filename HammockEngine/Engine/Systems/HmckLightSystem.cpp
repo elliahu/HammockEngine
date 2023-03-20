@@ -150,24 +150,26 @@ void Hmck::HmckLightSystem::update(HmckFrameInfo& frameInfo, HmckGlobalUbo& ubo)
 		if (obj.directionalLightComponent != nullptr)
 		{
 			// directional light
-
 			assert(dirLightIdx < 1 && "Directional light limit exeeded. There can only be one directional light");
 
-			glm::mat3 view = glm::mat3(ubo.view);
 
 			ubo.directionalLight.color = glm::vec4(obj.colorComponent, obj.directionalLightComponent->lightIntensity);
 			ubo.directionalLight.direction = glm::vec4(
-				 glm::normalize(obj.directionalLightComponent->target - obj.transformComponent.translation),
+				 glm::normalize((glm::mat3(ubo.view) * obj.directionalLightComponent->target) - (glm::mat3(ubo.view) * obj.transformComponent.translation)),
 				obj.directionalLightComponent->fov);
 
 			// TODO make this not ubo as it is not used in all systems
-			glm::mat4 depthProjectionMatrix = glm::perspective(
+			glm::mat4 depthPerpectiveProjectionMatrix = glm::perspective(
 				obj.directionalLightComponent->fov, 1.0f, 
 				obj.directionalLightComponent->_near, 
 				obj.directionalLightComponent->_far);
+			glm::mat4 depthOrthogonalProjectionMatrix = glm::ortho(
+				-20.f, +20.0f,
+				-20.f, +20.f,
+				obj.directionalLightComponent->_near, obj.directionalLightComponent->_far);
 			glm::mat4 depthViewMatrix = glm::lookAt(obj.transformComponent.translation, obj.directionalLightComponent->target, glm::vec3(0, 1, 0));
 			glm::mat4 depthModelMatrix = glm::mat4(1.0f);
-			ubo.depthBiasMVP = depthProjectionMatrix * depthViewMatrix * depthModelMatrix;
+			ubo.depthBiasMVP = depthOrthogonalProjectionMatrix * depthViewMatrix * depthModelMatrix;
 
 			dirLightIdx += 1;
 		}

@@ -32,7 +32,8 @@ struct DirectionalLight
     vec4 color;
 };
 
-#define SHADOW_FACTOR 0.25
+#define SHADOW_FACTOR 0.0
+#define SSAO_CLAMP 0.7
 
 layout (set = 0, binding = 0) uniform GlobalUbo
 {
@@ -239,6 +240,6 @@ void main()
     color = color / (color + vec3(1.0)); 
     // gamma correction
     //color = pow(color, vec3(1.0/2.2)); 
-    outColor.rgb = vec3(clamp(ssao.r, 0.0, 0.62)); // ugly :(
+    outColor.rgb = vec3(clamp(ssao.r, 0.0, SSAO_CLAMP)); // ugly :(
     outColor.rgb *= color;
 }

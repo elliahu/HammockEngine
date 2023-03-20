@@ -17,7 +17,7 @@
 #include <cassert>
 
 // black clear color
-#define HMCK_CLEAR_COLOR { 1.f,1.f,1.f,1.f }
+#define HMCK_CLEAR_COLOR { 0.f,0.f,0.f,1.f }
 
 #define SHADOW_RES_WIDTH 2048
 #define SHADOW_RES_HEIGHT 2048
