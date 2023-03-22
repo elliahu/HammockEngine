@@ -38,17 +38,4 @@ void main()
     mat3 normalMatrix = transpose(inverse(mat3(ubo.view * push.modelMatrix)));
 	_normal = normalMatrix * normalize(normal);	
 	_tangent = mat4(normalMatrix) * normalize(tangent);
-
-
-	/*
-    gl_Position = ubo.projection * ubo.view * push.modelMatrix * vec4(position, 1.0);
-	
-	_uv = uv;
-
-	// Vertex position in world space
-	_position = vec3(push.modelMatrix * vec4(position, 1.0));
-
-	// Normal in world space
-	_normal = mat3(push.normalMatrix) * normalize(normal);	
-	_tangent = push.normalMatrix * normalize(tangent);*/
 }

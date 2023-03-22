@@ -64,7 +64,7 @@ namespace Hmck
 			glm::vec4 baseColorFactor = glm::vec4(1.0f);
 			uint32_t baseColorTextureIndex;
 			uint32_t normalTextureIndex;
-			uint32_t metallicRoughnessTexture;
+			uint32_t metallicRoughnessTextureIndex;
 			uint32_t occlusionTexture;
 			std::string alphaMode = "OPAQUE";
 			float alphaCutOff;
@@ -88,7 +88,7 @@ namespace Hmck
 			bool visible = true;
 
 			~Node() {
-				// endures that before parent node is deleted, all of its children are deleted as well
+				// ensures that before parent node is deleted, all of its children are deleted as well
 				for (auto& child : children) {
 					child = nullptr;
 				}

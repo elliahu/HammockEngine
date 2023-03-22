@@ -147,7 +147,7 @@ void Hmck::HmckGLTF::prepareDescriptors()
 		HmckDescriptorWriter(*descriptorSetLayout, *descriptorPool)
 			.writeImage(0, &images[textures[material.baseColorTextureIndex].imageIndex].texture.descriptor)
 			.writeImage(1, &images[textures[material.normalTextureIndex].imageIndex].texture.descriptor)
-			.writeImage(2, &images[textures[material.metallicRoughnessTexture].imageIndex].texture.descriptor)
+			.writeImage(2, &images[textures[material.metallicRoughnessTextureIndex].imageIndex].texture.descriptor)
 			.writeImage(3, &images[textures[material.occlusionTexture].imageIndex].texture.descriptor)
 			.build(material.descriptorSet);
 	}
@@ -210,7 +210,7 @@ void Hmck::HmckGLTF::loadMaterials(gltf::Model& input)
 		// Get rough/metal texture index
 		if (glTFMaterial.values.find("metallicRoughnessTexture") != glTFMaterial.values.end()) 
 		{
-			materials[i].metallicRoughnessTexture = glTFMaterial.values["metallicRoughnessTexture"].TextureIndex();
+			materials[i].metallicRoughnessTextureIndex = glTFMaterial.values["metallicRoughnessTexture"].TextureIndex();
 		}
 		// Get occlusion texture index
 		if (glTFMaterial.additionalValues.find("occlusionTexture") != glTFMaterial.additionalValues.end())

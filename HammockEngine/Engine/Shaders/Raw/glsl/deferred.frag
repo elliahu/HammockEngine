@@ -33,9 +33,9 @@ struct DirectionalLight
 };
 
 #define SHADOW_FACTOR 0.0
-#define SSAO_CLAMP 0.85
+#define SSAO_CLAMP 0.65
 #define EXPOSURE 4.5
-#define GAMMA 1.0
+#define GAMMA 1.15
 
 layout (set = 0, binding = 0) uniform GlobalUbo
 {
