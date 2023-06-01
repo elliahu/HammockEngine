@@ -5,7 +5,6 @@ Custom c++20 game engine using Vulkan - the next generation graphics API.
 
 # Features 🚀
 The following points are features currently implemented:
-- [x] Wavefront OBJ Model loading and MTL material support
 - [x] Collision detection using AABB
 - [x] Basic UI system
 - [x] PBR (still improving, mainly descriptor binding)
