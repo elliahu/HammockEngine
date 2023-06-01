@@ -75,11 +75,11 @@ namespace Hmck {
 
         VkApplicationInfo appInfo = {};
         appInfo.sType = VK_STRUCTURE_TYPE_APPLICATION_INFO;
-        appInfo.pApplicationName = "LittleVulkanEngine App";
+        appInfo.pApplicationName = "Hammock Engine App";
         appInfo.applicationVersion = VK_MAKE_VERSION(1, 0, 0);
-        appInfo.pEngineName = "No Engine";
+        appInfo.pEngineName = "Hammock Engine";
         appInfo.engineVersion = VK_MAKE_VERSION(1, 0, 0);
-        appInfo.apiVersion = VK_API_VERSION_1_0;
+        appInfo.apiVersion = VK_API_VERSION_1_3;
 
         VkInstanceCreateInfo createInfo = {};
         createInfo.sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;
@@ -154,6 +154,14 @@ namespace Hmck {
         deviceFeatures.samplerAnisotropy = VK_TRUE;
         deviceFeatures.fillModeNonSolid = VK_TRUE; // to be able to render lines and points only
 
+        VkPhysicalDeviceDescriptorIndexingFeatures descriptorIndexingFeatures{};
+        descriptorIndexingFeatures.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DESCRIPTOR_INDEXING_FEATURES;
+        // Enable non-uniform indexing
+        descriptorIndexingFeatures.shaderSampledImageArrayNonUniformIndexing = VK_TRUE;
+        descriptorIndexingFeatures.runtimeDescriptorArray = VK_TRUE;
+        descriptorIndexingFeatures.descriptorBindingVariableDescriptorCount = VK_TRUE;
+        descriptorIndexingFeatures.descriptorBindingPartiallyBound = VK_TRUE;
+
         VkDeviceCreateInfo createInfo = {};
         createInfo.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
 
@@ -163,6 +171,8 @@ namespace Hmck {
         createInfo.pEnabledFeatures = &deviceFeatures;
         createInfo.enabledExtensionCount = static_cast<uint32_t>(deviceExtensions.size());
         createInfo.ppEnabledExtensionNames = deviceExtensions.data();
+
+        createInfo.pNext = &descriptorIndexingFeatures;
 
         // might not really be necessary anymore because device specific validation layers
         // have been deprecated
