@@ -1,7 +1,4 @@
 #pragma once
-
-#include "HmckMesh.h"
-#include "HmckMaterial.h"
 #include "HmckGLTF.h"
 
 #include <glm/gtc/matrix_transform.hpp>
@@ -49,20 +46,8 @@ namespace Hmck
 	};
 
 	/*
-		 WavefrontObjComponent
-		 Represents .obj mesh and .mtl material of object
-		 Cannot be used when HmckGLTFComponent is used
-	*/
-	struct HmckWavefrontObjComponent
-	{
-		std::shared_ptr<HmckMaterial> material;
-		std::shared_ptr<HmckMesh> mesh;
-	};
-
-	/*
 		glTFComponent
 		This component represents all the data loaded from the source glTF 2.0 file
-		Cannot be used when HmckWavefrontObjComponent is used
 	*/
 	struct HmckGLTFComponent
 	{
@@ -150,14 +135,6 @@ namespace Hmck
 			HmckBoundingBoxComponent::HmckBoundingBoxAxis x,
 			HmckBoundingBoxComponent::HmckBoundingBoxAxis y,
 			HmckBoundingBoxComponent::HmckBoundingBoxAxis z);
-		void fitBoundingBox(HmckMesh::MeshInfo& modelInfo);
-
-		void setMtlMaterial(std::shared_ptr<HmckMaterial>& material);
-		void setObjMesh(std::shared_ptr<HmckMesh>& model);
-		
-		void bindMtlDescriptorSet(
-			std::unique_ptr<HmckDescriptorPool>& pool, 
-			std::unique_ptr<HmckDescriptorSetLayout>& setLayout);
 
 		HmckGameObject(const HmckGameObject&) = delete;
 		HmckGameObject& operator =(const HmckGameObject&) = delete;
@@ -181,8 +158,6 @@ namespace Hmck
 		std::unique_ptr<HmckBoundingBoxComponent> boundingBoxComponent = nullptr;
 
 		std::unique_ptr<HmckDirectionalLightComponent> directionalLightComponent = nullptr;
-
-		std::unique_ptr<HmckWavefrontObjComponent> wavefrontObjComponent = nullptr;
 
 		std::unique_ptr<HmckGLTFComponent> glTFComponent = nullptr;
 

@@ -7,7 +7,6 @@
 #include "../HmckFrameInfo.h"
 #include "../HmckDescriptors.h"
 #include "../HmckSwapChain.h"
-#include "../HmckMesh.h"
 #include "HmckIRenderSystem.h"
 
 #define GLM_FORCE_RADIANS

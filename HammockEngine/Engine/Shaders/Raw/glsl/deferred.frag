@@ -33,9 +33,9 @@ struct DirectionalLight
 };
 
 #define SHADOW_FACTOR 0.0
-#define SSAO_CLAMP 0.65
+#define SSAO_CLAMP .99
 #define EXPOSURE 4.5
-#define GAMMA 1.15
+#define GAMMA 2.2
 
 layout (set = 0, binding = 0) uniform GlobalUbo
 {
@@ -248,6 +248,6 @@ void main()
 	color = pow(color, vec3(1.0f / GAMMA));
 
     // apply ssao
-    outColor.rgb = vec3(clamp(ssao.r, 0.0, SSAO_CLAMP)); // ugly :(
+    outColor.rgb = ssao.rrr;
     outColor.rgb *= color;
 }

@@ -379,7 +379,7 @@ namespace Hmck {
     VkSurfaceFormatKHR HmckSwapChain::chooseSwapSurfaceFormat(
         const std::vector<VkSurfaceFormatKHR>& availableFormats) {
         for (const auto& availableFormat : availableFormats) {
-            if (availableFormat.format == VK_FORMAT_B8G8R8A8_SRGB &&
+            if (availableFormat.format == VK_FORMAT_B8G8R8A8_UNORM &&
                 availableFormat.colorSpace == VK_COLOR_SPACE_SRGB_NONLINEAR_KHR) {
                 return availableFormat;
             }
@@ -394,7 +394,7 @@ namespace Hmck {
         // available present modes
         // https://registry.khronos.org/vulkan/specs/1.3-extensions/man/html/VkPresentModeKHR.html
         for (const auto& availablePresentMode : availablePresentModes) {
-            break; // for now, to fall back to V-Sync for testing
+            //break; // for now, to fall back to V-Sync for testing
             // Top option - Mailbox
             // Lowers imput latency but GPU is 100% saturated = high power consumption
             // not good for mobile

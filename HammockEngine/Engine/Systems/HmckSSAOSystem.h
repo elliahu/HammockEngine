@@ -5,6 +5,7 @@
 
 #include <HmckIRenderSystem.h>
 #include "../HmckDescriptors.h"
+#include "../HmckUtils.h"
 
 #define SSAO_KERNEL_SIZE 64
 #define SSAO_RADIUS 0.3f

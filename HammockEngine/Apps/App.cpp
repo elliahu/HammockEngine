@@ -206,13 +206,6 @@ void Hmck::App::run()
 
 void Hmck::App::loadGameObjects()
 {
-    // materials
-    HmckCreateMaterialInfo floorMaterialIfno{};
-    floorMaterialIfno.color = std::string(MATERIALS_DIR) + "Wood06/Wood060_1K_Color.jpg";
-    floorMaterialIfno.normal = std::string(MATERIALS_DIR) + "Wood06/Wood060_1K_NormalDX.jpg";
-    floorMaterialIfno.occlusionRoughnessMetalness = std::string(MATERIALS_DIR) + "Wood06/Wood060_1K_Roughness.jpg";
-    std::shared_ptr<HmckMaterial> floorMaterial = HmckMaterial::createMaterial(hmckDevice, floorMaterialIfno);
-
     // layouts
     // TODO think about using array of combined image samplers
     // TODO move this to Gbuffer system as it is the only system that uses this, no need for this to be in App
@@ -223,35 +216,15 @@ void Hmck::App::loadGameObjects()
         .addBinding(3, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT) // occlusion
         .build();
 
-    // sphere
-    /*std::shared_ptr<HmckMesh> sphereModel = HmckMesh::createMeshFromObjFile(hmckDevice, std::string(MODELS_DIR) + "smooth_vase.obj");
-    auto sphere = HmckGameObject::createGameObject();
-    sphere.transformComponent.translation = { 0.0f, 0.f, 0.f };
-    //sphere.transformComponent.scale = glm::vec3(.25f);
-    sphere.setName("Sphere");
-    sphere.setObjMesh(sphereModel);
-    sphere.setMtlMaterial(floorMaterial);
-    sphere.bindMtlDescriptorSet(globalPool, materialLayout);
-    gameObjects.emplace(sphere.getId(), std::move(sphere));*/
 
     HmckGLTF::Config config{
-        true
+        .binary = true
     };
 
     //auto helmet = HmckGameObject::createFromGLTF(std::string(MODELS_DIR) + "helmet/helmet.glb", hmckDevice, config);
     //helmet.setName("Flight Helmet");
     //gameObjects.emplace(helmet.getId(), std::move(helmet));
 
-    /*auto blocks = HmckGameObject::createFromGLTF(std::string(MODELS_DIR) + "blocks/blocks.gltf", hmckDevice);
-    blocks.setName("Blocks");
-    blocks.transformComponent.translation = { 1.280f, -0.840f, 2.350f };
-    blocks.transformComponent.scale = glm::vec3(0.3f);
-    gameObjects.emplace(blocks.getId(), std::move(blocks));*/
-
-    /*auto obj = HmckGameObject::createFromGLTF(std::string(MODELS_DIR) + "room/room.gltf",hmckDevice);
-    obj.transformComponent.translation.y = -2.190f;
-    obj.setName("Room");
-    gameObjects.emplace(obj.getId(), std::move(obj));*/
 
     auto sponza = HmckGameObject::createFromGLTF(std::string(MODELS_DIR) + "sponza/sponza.glb", hmckDevice, config);
     sponza.transformComponent.translation.y = - .25f;

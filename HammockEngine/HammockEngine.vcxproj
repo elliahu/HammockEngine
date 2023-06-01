@@ -36,8 +36,6 @@
     <ClCompile Include="Engine\HmckDevice.cpp" />
     <ClCompile Include="Engine\HmckGameObject.cpp" />
     <ClCompile Include="Engine\HmckGLTF.cpp" />
-    <ClCompile Include="Engine\HmckMaterial.cpp" />
-    <ClCompile Include="Engine\HmckMesh.cpp" />
     <ClCompile Include="Engine\HmckPipeline.cpp" />
     <ClCompile Include="Engine\HmckRenderer.cpp" />
     <ClCompile Include="Engine\HmckTexture.cpp" />
@@ -71,8 +69,6 @@
     <ClInclude Include="Engine\HmckDevice.h" />
     <ClInclude Include="Engine\HmckFrameInfo.h" />
     <ClInclude Include="Engine\HmckGameObject.h" />
-    <ClInclude Include="Engine\HmckMaterial.h" />
-    <ClInclude Include="Engine\HmckMesh.h" />
     <ClInclude Include="Engine\HmckPipeline.h" />
     <ClInclude Include="Engine\HmckRenderer.h" />
     <ClInclude Include="Engine\HmckTexture.h" />
@@ -238,7 +234,7 @@
       <PreprocessorDefinitions>_DEBUG;_CONSOLE;_CRT_SECURE_NO_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <AdditionalIncludeDirectories>$(VULKAN_SDK)\Include;$(ProjectDir)External;$(ProjectDir);$(ProjectDir)Engine;$(ProjectDir)Engine\Systems;$(ProjectDir)Engine\Systems\ImGUI;$(ProjectDir)Engine\Systems\ImGUI\backends;$(ProjectDir)Engine\Systems\ImGUI\misc\cpp</AdditionalIncludeDirectories>
-      <LanguageStandard>stdcpp17</LanguageStandard>
+      <LanguageStandard>stdcpp20</LanguageStandard>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>

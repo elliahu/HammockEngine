@@ -111,15 +111,10 @@ void Hmck::HmckGLTF::drawNode(VkCommandBuffer commandBuffer, std::shared_ptr<Nod
 		}
 		nodeMatrix = objectTransform * nodeMatrix;
 		// Pass the final matrix to the vertex shader using push constants
-		struct MatrixPushConstantData
-		{
-			glm::mat4 model;
-			glm::mat4 normal;
-		};
 
 		MatrixPushConstantData pushData{};
-		pushData.model = nodeMatrix;
-		pushData.normal = glm::transpose(glm::inverse(nodeMatrix));
+		pushData.modelMatrix = nodeMatrix;
+		pushData.normalMatrix = glm::transpose(glm::inverse(nodeMatrix));
 		vkCmdPushConstants(commandBuffer, pipelineLayout, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(MatrixPushConstantData), &pushData);
 
 		for (Primitive& primitive : node->mesh.primitives) {
@@ -151,6 +146,28 @@ void Hmck::HmckGLTF::prepareDescriptors()
 			.writeImage(3, &images[textures[material.occlusionTexture].imageIndex].texture.descriptor)
 			.build(material.descriptorSet);
 	}
+}
+
+std::vector<VkVertexInputBindingDescription> Hmck::HmckGLTF::getBindingDescriptions()
+{
+	std::vector<VkVertexInputBindingDescription> bindingDescriptions(1);
+	bindingDescriptions[0].binding = 0;
+	bindingDescriptions[0].stride = sizeof(Vertex);
+	bindingDescriptions[0].inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
+	return bindingDescriptions;
+}
+
+std::vector<VkVertexInputAttributeDescription> Hmck::HmckGLTF::getAttributeDescriptions()
+{
+	return
+	{
+		// order is location, binding, format, offset
+		{0, 0, VK_FORMAT_R32G32B32_SFLOAT, offsetof(Vertex, position)},
+		{1, 0, VK_FORMAT_R32G32B32_SFLOAT, offsetof(Vertex, color)},
+		{2, 0, VK_FORMAT_R32G32B32_SFLOAT, offsetof(Vertex, normal)},
+		{3, 0, VK_FORMAT_R32G32_SFLOAT, offsetof(Vertex, uv)},
+		{4, 0, VK_FORMAT_R32G32B32_SFLOAT, offsetof(Vertex, tangent)}
+	};
 }
 
 void Hmck::HmckGLTF::loadImages(gltf::Model& input)

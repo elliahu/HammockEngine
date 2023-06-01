@@ -216,9 +216,8 @@ void Hmck::HmckUISystem::init()
 }
 
 void Hmck::HmckUISystem::setupStyle()
-{
+{  
 	ImGuiStyle& style = ImGui::GetStyle();
-
 	// Setup ImGUI style
 
 	// Rounding
@@ -349,13 +348,6 @@ void Hmck::HmckUISystem::gameObjectComponets(HmckGameObject& gameObject)
 			&gameObject.colorComponent.z,
 		};
 		ImGui::ColorEdit3("Color", color_hsv[0], ImGuiColorEditFlags_Float | ImGuiColorEditFlags_DisplayRGB);
-	}
-	if (gameObject.wavefrontObjComponent != nullptr) // Model
-	{
-		if (ImGui::CollapsingHeader("Wavefront OBJ"))
-		{
-			ImGui::Text("Has model");
-		}
 	}
 	if (gameObject.boundingBoxComponent != nullptr) // Bounding box
 	{

@@ -1,7 +1,7 @@
 ![Hammock Engine Logo](https://raw.githubusercontent.com/elliahu/HammockEngine/master/Img/hammock-engine-logo.png)
 
 # Hammock Engine 🔥
-Custom c++17 game engine using Vulkan - the next generation graphics API.
+Custom c++20 game engine using Vulkan - the next generation graphics API.
 
 # Features 🚀
 The following points are features currently implemented:

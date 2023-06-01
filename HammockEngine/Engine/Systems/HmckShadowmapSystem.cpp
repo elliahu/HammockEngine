@@ -39,42 +39,9 @@ void Hmck::HmckShadowmapSystem::render(HmckFrameInfo& frameInfo)
 	for (auto& kv : frameInfo.gameObjects)
 	{
 		auto& obj = kv.second;
-		if (obj.wavefrontObjComponent == nullptr && obj.glTFComponent == nullptr) continue;
+		if (obj.glTFComponent == nullptr) continue;
 
-		if (obj.wavefrontObjComponent != nullptr)
-		{
-			HmckMeshPushConstantData push{};
-			push.modelMatrix = obj.transformComponent.mat4();
-			push.normalMatrix = obj.transformComponent.normalMatrix();
-
-			// push data using push constant
-			vkCmdPushConstants(
-				frameInfo.commandBuffer,
-				pipelineLayout,
-				VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT,
-				0,
-				sizeof(HmckMeshPushConstantData),
-				&push
-			);
-
-			// bind MTL materials
-			vkCmdBindDescriptorSets(
-				frameInfo.commandBuffer,
-				VK_PIPELINE_BIND_POINT_GRAPHICS,
-				pipelineLayout,
-				1, 1,
-				&obj.descriptorSetComponent->set,
-				0,
-				nullptr
-			);
-
-			obj.wavefrontObjComponent->mesh->bind(frameInfo.commandBuffer);
-			obj.wavefrontObjComponent->mesh->draw(frameInfo.commandBuffer);
-		}
-		else if (obj.glTFComponent != nullptr)
-		{
-			obj.glTFComponent->glTF->draw(frameInfo.commandBuffer, pipelineLayout, obj.transformComponent.mat4());
-		}
+		obj.glTFComponent->glTF->draw(frameInfo.commandBuffer, pipelineLayout, obj.transformComponent.mat4());
 	}
 }
 
@@ -83,7 +50,7 @@ void Hmck::HmckShadowmapSystem::createPipelineLayout(std::vector<VkDescriptorSet
 	VkPushConstantRange pushConstantRange{};
 	pushConstantRange.stageFlags = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT;
 	pushConstantRange.offset = 0;
-	pushConstantRange.size = sizeof(HmckMeshPushConstantData);
+	pushConstantRange.size = sizeof(MatrixPushConstantData);
 
 	VkPipelineLayoutCreateInfo pipelineLayoutInfo{};
 	pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;

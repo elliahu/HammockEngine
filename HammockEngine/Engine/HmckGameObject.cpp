@@ -120,44 +120,5 @@ void Hmck::HmckGameObject::fitBoundingBox(HmckBoundingBoxComponent::HmckBounding
 	this->boundingBoxComponent->z = z;
 }
 
-void Hmck::HmckGameObject::fitBoundingBox(HmckMesh::MeshInfo& modelInfo)
-{
-	fitBoundingBox(
-		{ modelInfo.x.min * transformComponent.scale.x, modelInfo.x.max * transformComponent.scale.x },
-		{ modelInfo.y.min * transformComponent.scale.y, modelInfo.y.max * transformComponent.scale.y },
-		{ modelInfo.z.min * transformComponent.scale.z, modelInfo.z.max * transformComponent.scale.z });
-}
-
-void Hmck::HmckGameObject::setMtlMaterial(std::shared_ptr<HmckMaterial>& material)
-{
-	assert(glTFComponent == nullptr && "Cannot use Wavefront OBJ, glTF is used.");
-	if (this->wavefrontObjComponent == nullptr) {
-		this->wavefrontObjComponent = std::make_unique<HmckWavefrontObjComponent>();
-	}
-	this->wavefrontObjComponent->material = material;
-}
-
-void Hmck::HmckGameObject::setObjMesh(std::shared_ptr<HmckMesh>& model)
-{
-	assert(glTFComponent == nullptr && "Cannot use Wavefront OBJ, glTF is used.");
-	if (this->wavefrontObjComponent == nullptr) {
-		this->wavefrontObjComponent = std::make_unique<HmckWavefrontObjComponent>();
-	}
-	this->wavefrontObjComponent->mesh = model;
-}
-
-void Hmck::HmckGameObject::bindMtlDescriptorSet(
-	std::unique_ptr<HmckDescriptorPool>& pool,
-	std::unique_ptr<HmckDescriptorSetLayout>& setLayout)
-{
-	descriptorSetComponent = std::make_unique<HmckDescriptorSetComponent>();
-
-	auto descriptorWriter = HmckDescriptorWriter(*setLayout, *pool);
-	descriptorWriter.writeImage(0, &wavefrontObjComponent->material->color->descriptor);
-	descriptorWriter.writeImage(1, &wavefrontObjComponent->material->normal->descriptor);
-	descriptorWriter.writeImage(2, &wavefrontObjComponent->material->occlusionRoughnessMetalness->descriptor);
-	descriptorWriter.writeImage(3, &wavefrontObjComponent->material->occlusionRoughnessMetalness->descriptor);
-	descriptorWriter.build(descriptorSetComponent->set);
-}
 
 

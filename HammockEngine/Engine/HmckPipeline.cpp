@@ -86,8 +86,8 @@ void Hmck::HmckPipeline::defaultHmckPipelineConfigInfo(HmckPipelineConfigInfo& c
         static_cast<uint32_t>(configInfo.dynamicStateEnables.size());
     configInfo.dynamicStateInfo.flags = 0;
 
-    configInfo.bindingDescriptions = HmckMesh::Vertex::getBindingDescriptions();
-    configInfo.attributeDescriptions = HmckMesh::Vertex::getAttributeDescriptions();
+    configInfo.bindingDescriptions = HmckGLTF::getBindingDescriptions();
+    configInfo.attributeDescriptions = HmckGLTF::getAttributeDescriptions();
 }
 
 void Hmck::HmckPipeline::bind(VkCommandBuffer commandBuffer)

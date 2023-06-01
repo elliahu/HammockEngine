@@ -48,7 +48,7 @@ void main()
 	// Calculate occlusion value
 	float occlusion = 0.0f;
 	// remove banding
-	const float bias = 0.025f;
+	const float bias = 0.0025f;
 	for(int i = 0; i < SSAO_KERNEL_SIZE; i++)
 	{		
 		vec3 samplePos = TBN * uboSSAOKernel.samples[i].xyz; 
@@ -60,7 +60,7 @@ void main()
 		offset.xyz /= offset.w; 
 		offset.xyz = offset.xyz * 0.5f + 0.5f; 
 
-		float sampleDepth = texture(samplerPositionDepth, offset.xy).w; 
+		float sampleDepth = texture(samplerPositionDepth, offset.xy).z; 
 
 		float rangeCheck = smoothstep(0.0f, 1.0f, SSAO_RADIUS / abs(fragPos.z - sampleDepth));
 		occlusion += (sampleDepth >= samplePos.z + bias ? 1.0f : 0.0f) * rangeCheck;           

@@ -13,6 +13,16 @@
 namespace gltf = tinygltf;
 namespace Hmck
 {
+	// scalar float: N = 4 Bytes
+	// vec2: 2N = 8 Bytes
+	// vec3 (or vec4): 4N = 16 Bytes
+	// taken from 15.6.4 Offset and Stride Assignment
+	struct MatrixPushConstantData {
+		glm::mat4 modelMatrix{ 1.f };
+		glm::mat4 normalMatrix{ 1.f };
+	};
+
+
 	class HmckGLTF
 	{
 	public:
@@ -98,6 +108,9 @@ namespace Hmck
 		void load(std::string filepath, Config& info);
 		void draw(VkCommandBuffer commandBuffer, VkPipelineLayout pipelineLayout, glm::mat4 transform);
 		void drawNode(VkCommandBuffer commandBuffer, std::shared_ptr<Node>& node, VkPipelineLayout pipelineLayout, glm::mat4 objectTransform);
+
+		static std::vector<VkVertexInputBindingDescription> getBindingDescriptions();
+		static std::vector<VkVertexInputAttributeDescription> getAttributeDescriptions();
 
 		void prepareDescriptors();
 		// TODO create per-material pipelines
