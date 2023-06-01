@@ -69,5 +69,7 @@ namespace Hmck
 		VkShaderModule vertShaderModule;
 		VkShaderModule fragShaderModule;
 	};
+
+
 }
 

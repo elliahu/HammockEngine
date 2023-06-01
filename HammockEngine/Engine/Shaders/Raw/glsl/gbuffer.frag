@@ -1,4 +1,5 @@
 #version 450
+#extension GL_EXT_nonuniform_qualifier : enable
 // inputs
 layout (location = 0) in vec3 normal;
 layout (location = 1) in vec2 uv;
@@ -16,6 +17,8 @@ layout(set = 1, binding = 0) uniform sampler2D albedoSampler;
 layout(set = 1, binding = 1) uniform sampler2D normSampler;
 layout(set = 1, binding = 2) uniform sampler2D roughMetalSampler;
 layout(set = 1, binding = 3) uniform sampler2D occlusionSampler;
+
+layout(set = 2, binding = 0) uniform sampler2D textures[];
 
 layout (set = 0, binding = 0) uniform GlobalUbo
 {

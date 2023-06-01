@@ -18,12 +18,14 @@ namespace Hmck
 
 		virtual void render(HmckFrameInfo& frameInfo) = 0;
 
+		VkPipelineLayout getPipelineLayout() { return pipelineLayout; }
+		std::unique_ptr<HmckPipeline> pipeline;
+
 	protected:
 		virtual void createPipelineLayout(std::vector<VkDescriptorSetLayout>& setLayouts) = 0;
 		virtual void createPipeline(VkRenderPass renderPass) = 0;
 
 		HmckDevice& hmckDevice;
-		std::unique_ptr<HmckPipeline> pipeline;
 		VkPipelineLayout pipelineLayout = nullptr;
 	};
 }

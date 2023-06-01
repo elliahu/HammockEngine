@@ -17,6 +17,7 @@
 #include "HmckCollisionDetectionSystem.h"
 #include "Utils/HmckLogger.h"
 #include "HmckGLTF.h"
+#include "HmckBindless.h"
 
 #define GLM_FORCE_RADIANS
 #define GLM_FORCE_DEPTH_ZERO_TO_ONE

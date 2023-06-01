@@ -20,6 +20,11 @@ namespace Hmck
 		(hashCombine(seed, rest), ...);
 	};
 
+	inline void checkResult(VkResult result)
+	{
+		assert(result == VK_SUCCESS && "Failed to check result. Result is not VK_SUCCESS!");
+	}
+
 	namespace Init 
 	{
 		inline VkImageCreateInfo imageCreateInfo()
@@ -130,6 +135,25 @@ namespace Hmck
 			return !f.fail();
 		}
 
+		inline std::vector<char> readFile(const std::string& filePath)
+		{
+			std::ifstream file{ filePath, std::ios::ate | std::ios::binary };
+
+			if (!file.is_open())
+			{
+				throw std::runtime_error("failed to open file: " + filePath);
+			}
+
+			size_t fileSize = static_cast<size_t>(file.tellg());
+			std::vector<char> buffer(fileSize);
+
+			file.seekg(0);
+			file.read(buffer.data(), fileSize);
+
+			file.close();
+			return buffer;
+		}
+
 	} // namespace Filesystem
 
 	namespace Math
@@ -165,6 +189,10 @@ namespace Hmck
 				glm::length(transform[1]),
 				glm::length(transform[2])
 			};
+		}
+
+		inline uint32_t padSizeToMinAlignment(uint32_t originalSize, uint32_t minAlignment) {
+			return (originalSize + minAlignment - 1) & ~(minAlignment - 1);
 		}
 	}
 

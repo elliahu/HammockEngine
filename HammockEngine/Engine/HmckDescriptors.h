@@ -77,10 +77,11 @@ namespace Hmck {
         void freeDescriptors(std::vector<VkDescriptorSet>& descriptors) const;
 
         void resetPool();
+        VkDescriptorPool descriptorPool;
 
     private:
         HmckDevice& hmckDevice;
-        VkDescriptorPool descriptorPool;
+        
 
         friend class HmckDescriptorWriter;
     };

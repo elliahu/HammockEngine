@@ -13,7 +13,7 @@ Hmck::HmckGbufferRenderSystem::~HmckGbufferRenderSystem()
 
 void Hmck::HmckGbufferRenderSystem::render(HmckFrameInfo& frameInfo)
 {
-	pipeline->bind(frameInfo.commandBuffer);
+	//pipeline->bind(frameInfo.commandBuffer);
 
 	// bind global descriptor set (UBO)
 	vkCmdBindDescriptorSets(

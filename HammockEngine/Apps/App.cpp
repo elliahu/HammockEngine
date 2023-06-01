@@ -4,6 +4,7 @@ Hmck::App::App()
 {
     // TODO change this so that material sets are allocated dynamicly or from different pool object
     globalPool = HmckDescriptorPool::Builder(hmckDevice)
+        .setPoolFlags(VK_DESCRIPTOR_POOL_CREATE_UPDATE_AFTER_BIND_BIT)
         .setMaxSets(100)
         .addPoolSize(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, HmckSwapChain::MAX_FRAMES_IN_FLIGHT)
         .addPoolSize(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1000)
@@ -41,8 +42,15 @@ void Hmck::App::run()
             .build(globalDescriptorSets[i]);
     }
 
-    // systems and layouts
 
+    HmckBindless bindless{ hmckDevice };
+    HmckTexture2D testTexture{};
+    std::string path = "../../Resources/Materials/Wood06/Wood060_1K_Color.jpg";
+    testTexture.loadFromFile(path, hmckDevice, VK_FORMAT_R8G8B8A8_SRGB);
+    testTexture.createSampler(hmckDevice);
+    TextureHandle handle = bindless.addTexture(hmckDevice, testTexture);
+
+    // systems and layouts
     std::vector<VkDescriptorSetLayout> globalSetLayouts{
         globalSetLayout->getDescriptorSetLayout(),
     };
@@ -50,7 +58,8 @@ void Hmck::App::run()
     // TODO make HmckGbufferRenderSystem own material set layout 
     std::vector<VkDescriptorSetLayout> gbufferSetLayouts{
         globalSetLayout->getDescriptorSetLayout(),
-        materialLayout->getDescriptorSetLayout()
+        materialLayout->getDescriptorSetLayout(),
+        bindless.bindlessLayout
     };
 
     HmckShadowmapSystem shadowmapRenderSystem{
@@ -168,6 +177,9 @@ void Hmck::App::run()
             hmckRenderer.endRenderPass(commandBuffer);
 
             hmckRenderer.beginGbufferRenderPass(commandBuffer);
+            gbufferRenderSystem.pipeline->bind(commandBuffer);
+            vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, gbufferRenderSystem.getPipelineLayout(), 2,
+                1, &bindless.bindlessDescriptorSet, 0, nullptr);
             gbufferRenderSystem.render(frameInfo);
             hmckRenderer.endRenderPass(commandBuffer);
 

@@ -30,6 +30,7 @@
   <ItemGroup>
     <ClCompile Include="Apps\App.cpp" />
     <ClCompile Include="Engine\Controllers\KeyboardMovementController.cpp" />
+    <ClCompile Include="Engine\HmckBindless.cpp" />
     <ClCompile Include="Engine\HmckBuffer.cpp" />
     <ClCompile Include="Engine\HmckCamera.cpp" />
     <ClCompile Include="Engine\HmckDescriptors.cpp" />
@@ -71,6 +72,7 @@
     <ClInclude Include="Engine\HmckGameObject.h" />
     <ClInclude Include="Engine\HmckPipeline.h" />
     <ClInclude Include="Engine\HmckRenderer.h" />
+    <ClInclude Include="Engine\HmckBindless.h" />
     <ClInclude Include="Engine\HmckTexture.h" />
     <ClInclude Include="Engine\Platform\HmckWindow.h" />
     <ClInclude Include="Engine\Systems\HmckCollisionDetectionSystem.h" />
