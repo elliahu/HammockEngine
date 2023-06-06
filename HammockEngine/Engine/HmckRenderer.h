@@ -40,22 +40,12 @@ namespace Hmck
 		HmckRenderer& operator=(const HmckRenderer&) = delete;
 
 		VkRenderPass getSwapChainRenderPass() const { return hmckSwapChain->getRenderPass(); }
-		VkRenderPass getOffscreenRenderPass() const { return shadowmapFramebuffer->renderPass; }
 		VkRenderPass getGbufferRenderPass() const { return gbufferFramebuffer->renderPass; }
 		VkRenderPass getSSAORenderPass() const { return ssaoFramebuffer->renderPass; }
 		VkRenderPass getSSAOBlurRenderPass() const { return ssaoBlurFramebuffer->renderPass; }
 		float getAspectRatio() const { return hmckSwapChain->extentAspectRatio(); }
 		bool isFrameInProgress() const { return isFrameStarted; }
 
-		VkDescriptorImageInfo getShadowmapDescriptorImageInfo() 
-		{  
-			VkDescriptorImageInfo descriptorImageInfo{};
-			descriptorImageInfo.imageLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL;
-			descriptorImageInfo.imageView = shadowmapFramebuffer->attachments[0].view;
-			descriptorImageInfo.sampler = shadowmapFramebuffer->sampler;
-
-			return descriptorImageInfo;
-		}
 
 		VkDescriptorImageInfo getGbufferDescriptorImageInfo(int index)
 		{
@@ -112,7 +102,6 @@ namespace Hmck
 
 		VkCommandBuffer beginFrame();
 		void endFrame();
-		void beginShadowmapRenderPass(VkCommandBuffer commandBuffer);
 		void beginGbufferRenderPass(VkCommandBuffer commandBuffer);
 		void beginSSAORenderPass(VkCommandBuffer commandBuffer);
 		void beginSSAOBlurRenderPass(VkCommandBuffer commandBuffer);
@@ -132,7 +121,6 @@ namespace Hmck
 		void createCommandBuffer();
 		void freeCommandBuffers();
 		void recreateSwapChain();
-		void recreateShadowmapRenderPass();
 		void recreateOmniShadowmapFramebuffer();
 		void recreateGbufferRenderPass();
 		void recreateSSAORenderPasses();
@@ -142,14 +130,9 @@ namespace Hmck
 		HmckDevice& hmckDevice;
 		std::unique_ptr<HmckSwapChain> hmckSwapChain;
 		std::vector<VkCommandBuffer> commandBuffers;
-		std::unique_ptr<HmckFramebuffer> shadowmapFramebuffer;
-		std::unique_ptr<HmckFramebuffer> omniShadowmapFramebuffer;
 		std::unique_ptr<HmckFramebuffer> gbufferFramebuffer;
 		std::unique_ptr<HmckFramebuffer> ssaoFramebuffer;
 		std::unique_ptr<HmckFramebuffer> ssaoBlurFramebuffer;
-
-		HmckTexture shadowCubeMap;
-		std::array<VkImageView, 6> shadowCubeMapFaceImageViews;
 		
 
 		uint32_t currentImageIndex;

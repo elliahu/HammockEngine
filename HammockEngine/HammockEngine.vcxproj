@@ -57,7 +57,6 @@
     <ClCompile Include="External\imgui_widgets.cpp" />
     <ClCompile Include="External\misc\cpp\imgui_stdlib.cpp" />
     <ClCompile Include="Engine\Utils\HmckLogger.cpp" />
-    <ClCompile Include="Engine\Systems\HmckShadowmapSystem.cpp" />
     <ClCompile Include="Engine\Platform\HmckInputHandler.cpp" />
     <ClCompile Include="main.cpp" />
   </ItemGroup>
@@ -94,7 +93,6 @@
     <ClInclude Include="External\imstb_truetype.h" />
     <ClInclude Include="External\misc\cpp\imgui_stdlib.h" />
     <ClInclude Include="Engine\Utils\HmckLogger.h" />
-    <ClInclude Include="Engine\Systems\HmckShadowmapSystem.h" />
     <ClInclude Include="External\json.hpp" />
     <ClInclude Include="External\stb_image.h" />
     <ClInclude Include="External\stb_image_write.h" />

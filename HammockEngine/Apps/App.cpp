@@ -53,12 +53,6 @@ void Hmck::App::run()
         materialLayout->getDescriptorSetLayout()
     };
 
-    HmckShadowmapSystem shadowmapRenderSystem{
-        hmckDevice,
-        hmckRenderer.getOffscreenRenderPass(),
-        gbufferSetLayouts
-    };
-
     HmckGbufferRenderSystem gbufferRenderSystem{
         hmckDevice,
         hmckRenderer.getGbufferRenderPass(),
@@ -214,9 +208,6 @@ void Hmck::App::run()
             uboBuffers[frameIndex]->writeToBuffer(&ubo);
             // RENDER
             // offscreen
-            /*hmckRenderer.beginShadowmapRenderPass(commandBuffer);
-            shadowmapRenderSystem.render(frameInfo);
-            hmckRenderer.endRenderPass(commandBuffer);*/
 
             hmckRenderer.beginRenderPass(
                 sf,
