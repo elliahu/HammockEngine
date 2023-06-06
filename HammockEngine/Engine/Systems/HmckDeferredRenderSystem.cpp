@@ -126,7 +126,7 @@ void Hmck::HmckDeferredRenderSystem::prepareDescriptors()
 		.build();
 }
 
-void Hmck::HmckDeferredRenderSystem::updateShadowmapDescriptorSet(VkDescriptorImageInfo& imageInfo)
+void Hmck::HmckDeferredRenderSystem::updateShadowmapDescriptorSet(VkDescriptorImageInfo imageInfo)
 {
 	auto writer = HmckDescriptorWriter(*shadowmapDescriptorLayout, *descriptorPool)
 		.writeImage(0, &imageInfo)

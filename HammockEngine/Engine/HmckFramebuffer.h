@@ -83,6 +83,18 @@ namespace Hmck
 	*/
 	struct HmckFramebuffer
 	{
+		struct FramebufferCreateInfo
+		{
+			HmckDevice& device;
+			uint32_t width = 0, height = 0;
+			struct FrameBufferSamplerInfo {
+				VkFilter magFilter = VK_FILTER_LINEAR;
+				VkFilter minFilter = VK_FILTER_LINEAR;
+				VkSamplerAddressMode addressMode = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
+			} sampler;
+			std::vector<HmckAttachmentCreateInfo> attachments;
+		};
+
 	public:
 		uint32_t width = 0, height = 0;
 		VkFramebuffer framebuffer = nullptr;
@@ -114,6 +126,20 @@ namespace Hmck
 			vkDestroySampler(hmckDevice.device(), sampler, nullptr);
 			vkDestroyRenderPass(hmckDevice.device(), renderPass, nullptr);
 			vkDestroyFramebuffer(hmckDevice.device(), framebuffer, nullptr);
+		}
+
+		static HmckFramebuffer createFramebuffer(FramebufferCreateInfo createInfo) 
+		{
+			HmckFramebuffer fb{ createInfo.device };
+			fb.width = createInfo.width;
+			fb.height = createInfo.height;
+			checkResult(fb.createSampler(createInfo.sampler.magFilter, createInfo.sampler.minFilter, createInfo.sampler.addressMode));
+			for (HmckAttachmentCreateInfo& at : createInfo.attachments) 
+			{
+				fb.addAttachment(at);
+			}
+			checkResult(fb.createRenderPass());
+			return fb;
 		}
 
 		/**

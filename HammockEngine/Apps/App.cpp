@@ -42,14 +42,6 @@ void Hmck::App::run()
             .build(globalDescriptorSets[i]);
     }
 
-
-    HmckBindless bindless{ hmckDevice };
-    HmckTexture2D testTexture{};
-    std::string path = "../../Resources/Materials/Wood06/Wood060_1K_Color.jpg";
-    testTexture.loadFromFile(path, hmckDevice, VK_FORMAT_R8G8B8A8_SRGB);
-    testTexture.createSampler(hmckDevice);
-    TextureHandle handle = bindless.addTexture(hmckDevice, testTexture);
-
     // systems and layouts
     std::vector<VkDescriptorSetLayout> globalSetLayouts{
         globalSetLayout->getDescriptorSetLayout(),
@@ -58,8 +50,7 @@ void Hmck::App::run()
     // TODO make HmckGbufferRenderSystem own material set layout 
     std::vector<VkDescriptorSetLayout> gbufferSetLayouts{
         globalSetLayout->getDescriptorSetLayout(),
-        materialLayout->getDescriptorSetLayout(),
-        bindless.bindlessLayout
+        materialLayout->getDescriptorSetLayout()
     };
 
     HmckShadowmapSystem shadowmapRenderSystem{
@@ -99,9 +90,6 @@ void Hmck::App::run()
         hmckWindow
     };
 
-    VkDescriptorImageInfo imageInfo = hmckRenderer.getShadowmapDescriptorImageInfo();
-    deferredRenderSystem.updateShadowmapDescriptorSet(imageInfo);
-
     std::array<VkDescriptorImageInfo, 4> imageInfos{
         hmckRenderer.getGbufferDescriptorImageInfo(0),
         hmckRenderer.getGbufferDescriptorImageInfo(1),
@@ -133,6 +121,60 @@ void Hmck::App::run()
     KeyboardMovementController cameraController{};
 
     HmckGlobalUbo ubo{};
+
+
+    HmckFramebuffer sf = HmckFramebuffer::createFramebuffer({
+        .device = hmckDevice,
+        .width = SHADOW_RES_WIDTH, .height = SHADOW_RES_WIDTH,
+        .attachments {
+            {
+                .width = SHADOW_RES_WIDTH,
+                .height = SHADOW_RES_HEIGHT,
+                .layerCount = 1,
+                .format = hmckDevice.findSupportedFormat(
+                    { VK_FORMAT_D32_SFLOAT, VK_FORMAT_D32_SFLOAT_S8_UINT, VK_FORMAT_D24_UNORM_S8_UINT },
+                    VK_IMAGE_TILING_OPTIMAL,
+                    VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT),
+                .usage = VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,
+            }
+        }
+    });
+
+    HmckGraphicsPipeline sp = HmckGraphicsPipeline::createGraphicsPipeline({
+        .debugName = "shadow_pass",
+        .device = hmckDevice,
+        .VS {
+            .byteCode = Hmck::Filesystem::readFile("../../HammockEngine/Engine/Shaders/Compiled/shadowmap.vert.spv"),
+            .entryFunc = "main"
+        },
+        .FS {
+            .byteCode = Hmck::Filesystem::readFile("../../HammockEngine/Engine/Shaders/Compiled/shadowmap.frag.spv"),
+            .entryFunc = "main"
+        },
+        .descriptorSetLayouts = gbufferSetLayouts,
+        .pushConstantRange {
+            .stageFlags = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT,
+            .offset = 0,
+            .size = sizeof(MatrixPushConstantData)
+        },
+        .graphicsState {
+            .depthTest = VK_TRUE,
+            .depthTestCompareOp = VK_COMPARE_OP_LESS_OR_EQUAL,
+            .blendAtaAttachmentStates {},
+            .vertexBufferBindings {
+                .vertexBindingDescriptions = HmckGLTF::getBindingDescriptions(),
+                .vertexAttributeDescriptions = HmckGLTF::getAttributeDescriptions()
+            }
+        },
+        .renderPass = sf.renderPass
+    });
+
+    deferredRenderSystem.updateShadowmapDescriptorSet({
+        .sampler = sf.sampler,
+        .imageView = sf.attachments[0].view,
+        .imageLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL,
+    });
+
 
     auto currentTime = std::chrono::high_resolution_clock::now();
 	while (!hmckWindow.shouldClose())
@@ -172,14 +214,44 @@ void Hmck::App::run()
             uboBuffers[frameIndex]->writeToBuffer(&ubo);
             // RENDER
             // offscreen
-            hmckRenderer.beginShadowmapRenderPass(commandBuffer);
+            /*hmckRenderer.beginShadowmapRenderPass(commandBuffer);
             shadowmapRenderSystem.render(frameInfo);
+            hmckRenderer.endRenderPass(commandBuffer);*/
+
+            hmckRenderer.beginRenderPass(
+                sf,
+                commandBuffer,
+                {
+                    {.depthStencil = { 1.0f, 0 }},
+                });
+            sp.bind(commandBuffer);
+            vkCmdSetDepthBias(
+                frameInfo.commandBuffer,
+                1.25f,
+                0.0f,
+                1.75f);
+
+            vkCmdBindDescriptorSets(
+                frameInfo.commandBuffer,
+                VK_PIPELINE_BIND_POINT_GRAPHICS,
+                sp.graphicsPipelineLayout,
+                0, 1,
+                &frameInfo.globalDescriptorSet,
+                0,
+                nullptr
+            );
+            for (auto& kv : frameInfo.gameObjects)
+            {
+                auto& obj = kv.second;
+                if (obj.glTFComponent == nullptr) continue;
+
+                obj.glTFComponent->glTF->draw(frameInfo.commandBuffer, sp.graphicsPipelineLayout, obj.transformComponent.mat4());
+            }
             hmckRenderer.endRenderPass(commandBuffer);
+
 
             hmckRenderer.beginGbufferRenderPass(commandBuffer);
             gbufferRenderSystem.pipeline->bind(commandBuffer);
-            vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, gbufferRenderSystem.getPipelineLayout(), 2,
-                1, &bindless.bindlessDescriptorSet, 0, nullptr);
             gbufferRenderSystem.render(frameInfo);
             hmckRenderer.endRenderPass(commandBuffer);
 
