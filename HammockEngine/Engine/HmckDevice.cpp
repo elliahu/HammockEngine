@@ -160,6 +160,14 @@ namespace Hmck {
 
 
 
+        VkPhysicalDeviceDescriptorIndexingFeatures descriptorIndexingFeatures{};
+        descriptorIndexingFeatures.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DESCRIPTOR_INDEXING_FEATURES;
+        // Enable non-uniform indexing
+        descriptorIndexingFeatures.shaderSampledImageArrayNonUniformIndexing = VK_TRUE;
+        descriptorIndexingFeatures.runtimeDescriptorArray = VK_TRUE;
+        descriptorIndexingFeatures.descriptorBindingVariableDescriptorCount = VK_TRUE;
+        descriptorIndexingFeatures.descriptorBindingPartiallyBound = VK_TRUE;
+
         VkDeviceCreateInfo createInfo = {};
         createInfo.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
         createInfo.queueCreateInfoCount = static_cast<uint32_t>(queueCreateInfos.size());
@@ -171,6 +179,8 @@ namespace Hmck {
 
         device_features.pNext = &indexing_features;
 
+
+        createInfo.pNext = &descriptorIndexingFeatures;
 
         // might not really be necessary anymore because device specific validation layers
         // have been deprecated
