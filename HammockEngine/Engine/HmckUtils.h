@@ -10,6 +10,11 @@
 #include <fstream>
 #include <iostream>
 #include <string>
+#include <random>
+#include <cmath>
+
+#include "HmckDescriptors.h"
+#include "HmckTexture.h"
 
 namespace Hmck
 {
@@ -196,4 +201,56 @@ namespace Hmck
 		}
 	}
 
+	namespace Rnd 
+	{
+		inline std::unique_ptr<HmckBuffer> createSSAOKernel(HmckDevice& device, uint32_t kernelSize) 
+		{
+			std::default_random_engine rndEngine((unsigned)time(nullptr));
+			std::uniform_real_distribution<float> rndDist(0.0f, 1.0f);
+
+			std::vector<glm::vec4> ssaoKernel{ kernelSize };
+			std::unique_ptr<HmckBuffer> ssaoKernelBuffer{};
+
+			for (uint32_t i = 0; i < kernelSize; ++i)
+			{
+				glm::vec3 sample(rndDist(rndEngine) * 2.0 - 1.0, rndDist(rndEngine) * 2.0 - 1.0, rndDist(rndEngine));
+				sample = glm::normalize(sample);
+				sample *= rndDist(rndEngine);
+				float scale = float(i) / float(kernelSize);
+				scale = Hmck::Math::lerp(0.1f, 1.0f, scale * scale);
+				ssaoKernel[i] = glm::vec4(sample * scale, 0.0f);
+			}
+
+			ssaoKernelBuffer = std::make_unique<HmckBuffer>(
+				device,
+				ssaoKernel.size() * sizeof(glm::vec4),
+				1,
+				VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
+				VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT
+				);
+			ssaoKernelBuffer->map();
+			ssaoKernelBuffer->writeToBuffer(ssaoKernel.data());
+			return ssaoKernelBuffer;
+		}
+
+		inline HmckTexture2D createNoiseTexture(HmckDevice& device, uint32_t noiseDim)
+		{
+			std::default_random_engine rndEngine((unsigned)time(nullptr));
+			std::uniform_real_distribution<float> rndDist(0.0f, 1.0f);
+
+			HmckTexture2D ssaoNoiseTexture{};
+
+			std::vector<glm::vec4> ssaoNoise(noiseDim * noiseDim);
+			for (uint32_t i = 0; i < static_cast<uint32_t>(ssaoNoise.size()); i++)
+			{
+				ssaoNoise[i] = glm::vec4(rndDist(rndEngine) * 2.0f - 1.0f, rndDist(rndEngine) * 2.0f - 1.0f, 0.0f, 0.0f);
+			}
+			// Upload as texture
+			ssaoNoiseTexture.loadFromBuffer((unsigned char*)ssaoNoise.data(), ssaoNoise.size() * sizeof(glm::vec4), noiseDim, noiseDim, device, VK_FORMAT_R32G32B32A32_SFLOAT);
+			ssaoNoiseTexture.createSampler(device, VK_FILTER_NEAREST);
+			ssaoNoiseTexture.updateDescriptor();
+
+			return ssaoNoiseTexture;
+		}
+	}
 } // namespace Hmck

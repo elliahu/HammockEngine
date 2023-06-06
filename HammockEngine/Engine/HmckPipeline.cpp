@@ -263,8 +263,8 @@ Hmck::HmckGraphicsPipeline::HmckGraphicsPipeline(Hmck::HmckGraphicsPipeline::Gra
     pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
     pipelineLayoutInfo.setLayoutCount = static_cast<uint32_t>(createInfo.descriptorSetLayouts.size());
     pipelineLayoutInfo.pSetLayouts = createInfo.descriptorSetLayouts.data();
-    pipelineLayoutInfo.pushConstantRangeCount = 1;
-    pipelineLayoutInfo.pPushConstantRanges = &createInfo.pushConstantRange;
+    pipelineLayoutInfo.pushConstantRangeCount = static_cast<uint32_t>(createInfo.pushConstantRanges.size());
+    pipelineLayoutInfo.pPushConstantRanges = createInfo.pushConstantRanges.data();
 
     if (vkCreatePipelineLayout(createInfo.device.device(), &pipelineLayoutInfo, nullptr, &graphicsPipelineLayout) != VK_SUCCESS)
     {

@@ -53,22 +53,9 @@ void Hmck::App::run()
         materialLayout->getDescriptorSetLayout()
     };
 
-    HmckSSAOSystem ssaoSystem{
-        hmckDevice,
-        hmckRenderer.getSSAORenderPass(),
-        hmckRenderer.getSSAOBlurRenderPass(),
-        globalSetLayouts
-    };
-
 	HmckDeferredRenderSystem deferredRenderSystem{ 
         hmckDevice,
         hmckRenderer.getSwapChainRenderPass(), 
-        globalSetLayouts
-    };
-
-    HmckLightSystem lightSystem{
-        hmckDevice,
-        hmckRenderer.getSwapChainRenderPass(),
         globalSetLayouts
     };
 
@@ -87,6 +74,58 @@ void Hmck::App::run()
     KeyboardMovementController cameraController{};
 
     HmckGlobalUbo ubo{};
+
+    { // set lights
+        //TODO make better system for this
+        int dirLightIdx = 0;
+        int lightIndex = 0;
+        for (auto& kv : gameObjects)
+        {
+            auto& obj = kv.second;
+
+            if (obj.pointLightComponent != nullptr)
+            {
+                assert(lightIndex < MAX_LIGHTS && "Point light limit exeeded");
+
+                // update lights
+                ubo.pointLights[lightIndex].position = ubo.view * glm::vec4(obj.transformComponent.translation, 1.f);
+                ubo.pointLights[lightIndex].color = glm::vec4(obj.colorComponent, obj.pointLightComponent->lightIntensity);
+                ubo.pointLights[lightIndex].lightTerms.x = obj.pointLightComponent->quadraticTerm;
+                ubo.pointLights[lightIndex].lightTerms.y = obj.pointLightComponent->linearTerm;
+                ubo.pointLights[lightIndex].lightTerms.z = obj.pointLightComponent->constantTerm;
+
+                lightIndex += 1;
+            }
+
+            if (obj.directionalLightComponent != nullptr)
+            {
+                // directional light
+                assert(dirLightIdx < 1 && "Directional light limit exeeded. There can only be one directional light");
+
+
+                ubo.directionalLight.color = glm::vec4(obj.colorComponent, obj.directionalLightComponent->lightIntensity);
+                ubo.directionalLight.direction = glm::vec4(
+                    glm::normalize((glm::mat3(ubo.view) * obj.directionalLightComponent->target) - (glm::mat3(ubo.view) * obj.transformComponent.translation)),
+                    obj.directionalLightComponent->fov);
+
+                // TODO make this not ubo as it is not used in all systems
+                glm::mat4 depthPerpectiveProjectionMatrix = glm::perspective(
+                    obj.directionalLightComponent->fov, 1.0f,
+                    obj.directionalLightComponent->_near,
+                    obj.directionalLightComponent->_far);
+                glm::mat4 depthOrthogonalProjectionMatrix = glm::ortho(
+                    -20.f, +20.0f,
+                    -20.f, +20.f,
+                    obj.directionalLightComponent->_near, obj.directionalLightComponent->_far);
+                glm::mat4 depthViewMatrix = glm::lookAt(obj.transformComponent.translation, obj.directionalLightComponent->target, glm::vec3(0, 1, 0));
+                glm::mat4 depthModelMatrix = glm::mat4(1.0f);
+                ubo.depthBiasMVP = depthOrthogonalProjectionMatrix * depthViewMatrix * depthModelMatrix;
+
+                dirLightIdx += 1;
+            }
+        }
+        ubo.numLights = lightIndex;
+    }
 
     auto depthFormat = hmckDevice.findSupportedFormat(
         { VK_FORMAT_D32_SFLOAT, VK_FORMAT_D32_SFLOAT_S8_UINT, VK_FORMAT_D24_UNORM_S8_UINT },
@@ -118,10 +157,12 @@ void Hmck::App::run()
             .entryFunc = "main"
         },
         .descriptorSetLayouts = gbufferSetLayouts,
-        .pushConstantRange {
-            .stageFlags = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT,
-            .offset = 0,
-            .size = sizeof(MatrixPushConstantData)
+        .pushConstantRanges {
+            {
+                .stageFlags = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT,
+                .offset = 0,
+                .size = sizeof(MatrixPushConstantData)
+            }
         },
         .graphicsState {
             .depthTest = VK_TRUE,
@@ -189,10 +230,12 @@ void Hmck::App::run()
             .entryFunc = "main"
         },
         .descriptorSetLayouts = gbufferSetLayouts,
-        .pushConstantRange {
-            .stageFlags = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT,
-            .offset = 0,
-            .size = sizeof(MatrixPushConstantData)
+        .pushConstantRanges {
+            {
+                .stageFlags = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT,
+                .offset = 0,
+                .size = sizeof(MatrixPushConstantData)
+            },
         },
         .graphicsState {
             .depthTest = VK_TRUE,
@@ -211,6 +254,139 @@ void Hmck::App::run()
         .renderPass = gbuffer.renderPass
     });
 
+    HmckFramebuffer ssaoFramebuffer = HmckFramebuffer::createFramebuffer({
+        .device = hmckDevice,
+        .width = WINDOW_WIDTH, .height = WINDOW_HEIGHT,
+        .attachments {
+            {
+                .width = WINDOW_WIDTH, .height = WINDOW_HEIGHT,
+                .layerCount = 1,
+                .format = VK_FORMAT_R8_UNORM,
+                .usage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,
+            }
+        }
+    });
+
+    std::unique_ptr<HmckDescriptorSetLayout> ssaoLayout = HmckDescriptorSetLayout::Builder(hmckDevice)
+        .addBinding(0, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT)
+        .addBinding(1, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT)
+        .addBinding(2, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT)
+        .addBinding(3, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_FRAGMENT_BIT)
+        .addBinding(4, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT)
+        .build();
+
+    HmckGraphicsPipeline ssaoPipeline = HmckGraphicsPipeline::createGraphicsPipeline({
+        .debugName = "ssao_pass",
+        .device = hmckDevice,
+        .VS {
+            .byteCode = Hmck::Filesystem::readFile("../../HammockEngine/Engine/Shaders/Compiled/fullscreen.vert.spv"),
+            .entryFunc = "main"
+        },
+        .FS {
+            .byteCode = Hmck::Filesystem::readFile("../../HammockEngine/Engine/Shaders/Compiled/ssao.frag.spv"),
+            .entryFunc = "main"
+        },
+        .descriptorSetLayouts {
+            globalSetLayout->getDescriptorSetLayout(),
+            ssaoLayout->getDescriptorSetLayout()
+        },
+        .pushConstantRanges {},
+        .graphicsState {
+            .depthTest = VK_TRUE,
+            .depthTestCompareOp = VK_COMPARE_OP_LESS_OR_EQUAL,
+            .blendAtaAttachmentStates {},
+            .vertexBufferBindings {
+                .vertexBindingDescriptions = HmckGLTF::getBindingDescriptions(),
+                .vertexAttributeDescriptions = HmckGLTF::getAttributeDescriptions()
+            }
+        },
+        .renderPass = ssaoFramebuffer.renderPass
+    });
+    // TODO make method for this in Framebuffer class
+    VkDescriptorImageInfo imgInf1 = {
+        .sampler = gbuffer.sampler,
+        .imageView = gbuffer.attachments[0].view,
+        .imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL
+    };
+    VkDescriptorImageInfo imgInf2 = {
+         .sampler = gbuffer.sampler,
+         .imageView = gbuffer.attachments[2].view,
+         .imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL
+    };
+    VkDescriptorImageInfo imgInf3 = {
+         .sampler = gbuffer.sampler,
+         .imageView = gbuffer.attachments[4].view,
+         .imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL
+    };
+
+    VkDescriptorSet ssaoDescriptorSet;
+    std::unique_ptr<HmckBuffer> ssaoKernelBuffer = Rnd::createSSAOKernel(hmckDevice, 64);
+    HmckTexture2D ssaoNoiseTexture = Rnd::createNoiseTexture(hmckDevice, 4);
+    auto bufferInfo = ssaoKernelBuffer->descriptorInfo();
+    auto writer = HmckDescriptorWriter(*ssaoLayout, *globalPool)
+        .writeImage(0, &imgInf1)
+        .writeImage(1, &imgInf2)
+        .writeImage(2, &ssaoNoiseTexture.descriptor)
+        .writeBuffer(3, &bufferInfo)
+        .writeImage(4, &imgInf3)
+        .build(ssaoDescriptorSet);
+
+
+
+    HmckFramebuffer blurFramebuffer = HmckFramebuffer::createFramebuffer({
+        .device = hmckDevice,
+        .width = WINDOW_WIDTH, .height = WINDOW_HEIGHT,
+        .attachments {
+            {
+                .width = WINDOW_WIDTH, .height = WINDOW_HEIGHT,
+                .layerCount = 1,
+                .format = VK_FORMAT_R8_UNORM,
+                .usage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,
+            }
+        }
+    });
+
+    std::unique_ptr<HmckDescriptorSetLayout> ssaoBlurLayout = HmckDescriptorSetLayout::Builder(hmckDevice)
+        .addBinding(0, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT)
+        .build();
+
+    HmckGraphicsPipeline blurPipeline = HmckGraphicsPipeline::createGraphicsPipeline({
+        .debugName = "blur_pass",
+        .device = hmckDevice,
+        .VS {
+            .byteCode = Hmck::Filesystem::readFile("../../HammockEngine/Engine/Shaders/Compiled/fullscreen.vert.spv"),
+            .entryFunc = "main"
+        },
+        .FS {
+            .byteCode = Hmck::Filesystem::readFile("../../HammockEngine/Engine/Shaders/Compiled/blur.frag.spv"),
+            .entryFunc = "main"
+        },
+        .descriptorSetLayouts = {
+            globalSetLayout->getDescriptorSetLayout(),
+            ssaoBlurLayout->getDescriptorSetLayout()
+        },
+        .pushConstantRanges {},
+        .graphicsState {
+            .depthTest = VK_TRUE,
+            .depthTestCompareOp = VK_COMPARE_OP_LESS_OR_EQUAL,
+            .blendAtaAttachmentStates {},
+            .vertexBufferBindings {
+                .vertexBindingDescriptions = HmckGLTF::getBindingDescriptions(),
+                .vertexAttributeDescriptions = HmckGLTF::getAttributeDescriptions()
+            }
+        },
+        .renderPass = blurFramebuffer.renderPass
+    });
+
+    VkDescriptorSet ssaoBlurDescriptorSet;
+    VkDescriptorImageInfo ssaoImageInfo{
+        ssaoFramebuffer.sampler,
+        ssaoFramebuffer.attachments[0].view,
+        VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL
+    };
+    HmckDescriptorWriter(*ssaoBlurLayout, *globalPool)
+        .writeImage(0, &ssaoImageInfo)
+        .build(ssaoBlurDescriptorSet);
 
 
     deferredRenderSystem.updateShadowmapDescriptorSet({
@@ -242,30 +418,15 @@ void Hmck::App::run()
         }
     });
 
-    ssaoSystem.updateSSAODescriptorSet({
-        {
-            .sampler = gbuffer.sampler,
-            .imageView = gbuffer.attachments[0].view,
-            .imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL
-        },
-        {
-            .sampler = gbuffer.sampler,
-            .imageView = gbuffer.attachments[2].view,
-            .imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL
-        },
-        {
-            .sampler = gbuffer.sampler,
-            .imageView = gbuffer.attachments[4].view,
-            .imageLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL
-        },
+    deferredRenderSystem.updateSSAODescriptorSet({
+        .sampler = ssaoFramebuffer.sampler,
+        .imageView = ssaoFramebuffer.attachments[0].view,
+        .imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL
+        }, {
+        .sampler = blurFramebuffer.sampler,
+        .imageView = blurFramebuffer.attachments[0].view,
+        .imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL
     });
-
-    auto ssaoImageInfo = hmckRenderer.getSSAODescriptorImageInfo();
-    ssaoSystem.updateSSAOBlurDescriptorSet(ssaoImageInfo);
-
-    auto ssao = hmckRenderer.getSSAODescriptorImageInfo();
-    auto ssaBlur = hmckRenderer.getSSAOBlurDescriptorImageInfo();
-    deferredRenderSystem.updateSSAODescriptorSet(ssao, ssaBlur);
 
     auto currentTime = std::chrono::high_resolution_clock::now();
 	while (!hmckWindow.shouldClose())
@@ -300,7 +461,7 @@ void Hmck::App::run()
             ubo.projection = camera.getProjection();
             ubo.view = camera.getView();
             ubo.inverseView = camera.getInverseView();
-            lightSystem.update(frameInfo, ubo);
+
 
             uboBuffers[frameIndex]->writeToBuffer(&ubo);
             // RENDER
@@ -369,22 +530,69 @@ void Hmck::App::run()
                 hmckRenderer.endRenderPass(commandBuffer);
             }
 
+            
+            // ssao
+            {
+                hmckRenderer.beginRenderPass(ssaoFramebuffer, commandBuffer, {
+                    {.color = { 0.0f, 0.0f, 0.0f, 1.0f } },
+                    {.depthStencil = { 1.0f, 0 }}
+                    });
+                ssaoPipeline.bind(commandBuffer);
+                vkCmdBindDescriptorSets(
+                    frameInfo.commandBuffer,
+                    VK_PIPELINE_BIND_POINT_GRAPHICS,
+                    ssaoPipeline.graphicsPipelineLayout,
+                    0, 1,
+                    &frameInfo.globalDescriptorSet,
+                    0,
+                    nullptr
+                );
 
-            hmckRenderer.beginSSAORenderPass(commandBuffer);
-            ssaoSystem.ssao(frameInfo);
-            hmckRenderer.endRenderPass(commandBuffer);
+                vkCmdBindDescriptorSets(
+                    frameInfo.commandBuffer,
+                    VK_PIPELINE_BIND_POINT_GRAPHICS,
+                    ssaoPipeline.graphicsPipelineLayout,
+                    1, 1,
+                    &ssaoDescriptorSet,
+                    0,
+                    nullptr
+                );
 
-            hmckRenderer.beginSSAOBlurRenderPass(commandBuffer);
-            ssaoSystem.ssaoBlur(frameInfo);
-            hmckRenderer.endRenderPass(commandBuffer);
+                vkCmdDraw(frameInfo.commandBuffer, 3, 1, 0, 0);
+                hmckRenderer.endRenderPass(commandBuffer);
+
+                // blur
+                hmckRenderer.beginRenderPass(blurFramebuffer, commandBuffer, {
+                    {.color = { 0.0f, 0.0f, 0.0f, 1.0f } },
+                    {.depthStencil = { 1.0f, 0 }}
+                    });
+                blurPipeline.bind(commandBuffer);
+                vkCmdBindDescriptorSets(
+                    frameInfo.commandBuffer,
+                    VK_PIPELINE_BIND_POINT_GRAPHICS,
+                    blurPipeline.graphicsPipelineLayout,
+                    0, 1,
+                    &frameInfo.globalDescriptorSet,
+                    0,
+                    nullptr
+                );
+                vkCmdBindDescriptorSets(
+                    frameInfo.commandBuffer,
+                    VK_PIPELINE_BIND_POINT_GRAPHICS,
+                    blurPipeline.graphicsPipelineLayout,
+                    1, 1,
+                    &ssaoBlurDescriptorSet,
+                    0,
+                    nullptr
+                );
+
+                vkCmdDraw(frameInfo.commandBuffer, 3, 1, 0, 0);
+                hmckRenderer.endRenderPass(commandBuffer);
+            }
 
             // on screen
-			hmckRenderer.beginSwapChainRenderPass(commandBuffer);
-			deferredRenderSystem.render(frameInfo);
-
-            // TODO doesn't work because of the depth test failing 
-            //lightSystem.render(frameInfo);
-        
+            hmckRenderer.beginSwapChainRenderPass(commandBuffer);
+            deferredRenderSystem.render(frameInfo);
             // ui
             userInterfaceSystem.beginUserInterface();
             //userInterfaceSystem.showDemoWindow();

@@ -143,7 +143,7 @@ void Hmck::HmckDeferredRenderSystem::updateGbufferDescriptorSet(std::vector<VkDe
 		.build(gbufferDescriptorSet);
 }
 
-void Hmck::HmckDeferredRenderSystem::updateSSAODescriptorSet(VkDescriptorImageInfo& ssao, VkDescriptorImageInfo& ssaoBlur)
+void Hmck::HmckDeferredRenderSystem::updateSSAODescriptorSet(VkDescriptorImageInfo ssao, VkDescriptorImageInfo ssaoBlur)
 {
 	auto writer = HmckDescriptorWriter(*ssaoDescriptorLayout, *descriptorPool)
 		.writeImage(0, &ssao)

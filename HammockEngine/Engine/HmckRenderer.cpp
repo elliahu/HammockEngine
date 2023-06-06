@@ -3,15 +3,12 @@
 Hmck::HmckRenderer::HmckRenderer(HmckWindow& window, HmckDevice& device) : hmckWindow{window}, hmckDevice{device}
 {
 	recreateSwapChain();
-	recreateSSAORenderPasses();
 	createCommandBuffer();
 }
 
 Hmck::HmckRenderer::~HmckRenderer()
 {
 	freeCommandBuffers();
-	ssaoFramebuffer = nullptr;
-	ssaoBlurFramebuffer = nullptr;
 }
 
 
@@ -217,71 +214,10 @@ void Hmck::HmckRenderer::beginSwapChainRenderPass(VkCommandBuffer commandBuffer)
 	vkCmdSetScissor(commandBuffer, 0, 1, &scissor);
 }
 
-void Hmck::HmckRenderer::beginSSAORenderPass(VkCommandBuffer commandBuffer)
-{
-	std::vector<VkClearValue> clearValues{ 2 };
-	clearValues[0].color = { { 0.0f, 0.0f, 0.0f, 1.0f } };
-	clearValues[1].depthStencil = { 1.0f, 0 };
-
-	beginRenderPass(ssaoFramebuffer, commandBuffer, clearValues);
-}
-
-void Hmck::HmckRenderer::beginSSAOBlurRenderPass(VkCommandBuffer commandBuffer)
-{
-	std::vector<VkClearValue> clearValues{ 2 };
-	clearValues[0].color = { { 0.0f, 0.0f, 0.0f, 1.0f } };
-	clearValues[1].depthStencil = { 1.0f, 0 };
-	beginRenderPass(ssaoBlurFramebuffer, commandBuffer, clearValues);
-}
-
 void Hmck::HmckRenderer::endRenderPass(VkCommandBuffer commandBuffer)
 {
 	assert(isFrameInProgress() && "Cannot call endActiveRenderPass if frame is not in progress");
 	assert(commandBuffer == getCurrentCommandBuffer() && "Cannot end render pass on command buffer from a different frame");
 
 	vkCmdEndRenderPass(commandBuffer);
-}
-
-void Hmck::HmckRenderer::recreateSSAORenderPasses()
-{
-	ssaoFramebuffer = std::make_unique<HmckFramebuffer>(hmckDevice);
-	ssaoBlurFramebuffer = std::make_unique<HmckFramebuffer>(hmckDevice);
-
-	ssaoFramebuffer->width = hmckSwapChain->width() * SSAO_RES_MULTIPLIER;
-	ssaoFramebuffer->height = hmckSwapChain->height() * SSAO_RES_MULTIPLIER;
-	ssaoBlurFramebuffer->width = hmckSwapChain->width();
-	ssaoBlurFramebuffer->height = hmckSwapChain->height();
-
-	// Find a suitable depth format
-	VkFormat validDepthFormat = hmckSwapChain->findDepthFormat();
-
-	// color attachments
-	HmckAttachmentCreateInfo attachmentInfo = {};
-	attachmentInfo.width = ssaoFramebuffer->width;
-	attachmentInfo.height = ssaoFramebuffer->height;
-	attachmentInfo.layerCount = 1;
-	attachmentInfo.usage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT;
-	attachmentInfo.format = VK_FORMAT_R8_UNORM;
-	ssaoFramebuffer->addAttachment(attachmentInfo);
-	attachmentInfo.width = ssaoBlurFramebuffer->width;
-	attachmentInfo.height = ssaoBlurFramebuffer->height;
-	ssaoBlurFramebuffer->addAttachment(attachmentInfo);
-
-	// create samplers
-	if (ssaoFramebuffer->createSampler(VK_FILTER_NEAREST, VK_FILTER_NEAREST, VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE) != VK_SUCCESS) {
-		throw std::runtime_error("Failed to create ssao sampler");
-	}
-
-	if (ssaoBlurFramebuffer->createSampler(VK_FILTER_NEAREST, VK_FILTER_NEAREST, VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE) != VK_SUCCESS) {
-		throw std::runtime_error("Failed to create ssao blur sampler");
-	}
-
-	// create renderpass with framebuffer
-	if (ssaoFramebuffer->createRenderPass() != VK_SUCCESS) {
-		throw std::runtime_error("Failed to create ssao renderpass");
-	}
-
-	if (ssaoBlurFramebuffer->createRenderPass() != VK_SUCCESS) {
-		throw std::runtime_error("Failed to create ssao blur renderpass");
-	}
 }

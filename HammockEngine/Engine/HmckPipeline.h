@@ -103,7 +103,7 @@ namespace Hmck
 			ShaderModuleInfo FS;
 
 			std::vector<VkDescriptorSetLayout> descriptorSetLayouts;
-			VkPushConstantRange pushConstantRange;
+			std::vector <VkPushConstantRange> pushConstantRanges;
 
 			struct GraphicsStateInfo
 			{

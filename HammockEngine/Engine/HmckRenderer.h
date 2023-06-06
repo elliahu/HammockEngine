@@ -40,31 +40,8 @@ namespace Hmck
 		HmckRenderer& operator=(const HmckRenderer&) = delete;
 
 		VkRenderPass getSwapChainRenderPass() const { return hmckSwapChain->getRenderPass(); }
-		VkRenderPass getSSAORenderPass() const { return ssaoFramebuffer->renderPass; }
-		VkRenderPass getSSAOBlurRenderPass() const { return ssaoBlurFramebuffer->renderPass; }
 		float getAspectRatio() const { return hmckSwapChain->extentAspectRatio(); }
 		bool isFrameInProgress() const { return isFrameStarted; }
-
-
-		VkDescriptorImageInfo getSSAODescriptorImageInfo()
-		{
-			VkDescriptorImageInfo descriptorImageInfo{};
-			descriptorImageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-			descriptorImageInfo.imageView = ssaoFramebuffer->attachments[0].view;
-			descriptorImageInfo.sampler = ssaoFramebuffer->sampler;
-
-			return descriptorImageInfo;
-		}
-
-		VkDescriptorImageInfo getSSAOBlurDescriptorImageInfo()
-		{
-			VkDescriptorImageInfo descriptorImageInfo{};
-			descriptorImageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-			descriptorImageInfo.imageView = ssaoBlurFramebuffer->attachments[0].view;
-			descriptorImageInfo.sampler = ssaoBlurFramebuffer->sampler;
-
-			return descriptorImageInfo;
-		}
 
 
 		VkCommandBuffer getCurrentCommandBuffer() const
@@ -81,8 +58,6 @@ namespace Hmck
 
 		VkCommandBuffer beginFrame();
 		void endFrame();
-		void beginSSAORenderPass(VkCommandBuffer commandBuffer);
-		void beginSSAOBlurRenderPass(VkCommandBuffer commandBuffer);
 		void beginSwapChainRenderPass(VkCommandBuffer commandBuffer);
 		void beginRenderPass(
 			std::unique_ptr<HmckFramebuffer>& framebuffer,
@@ -99,14 +74,11 @@ namespace Hmck
 		void createCommandBuffer();
 		void freeCommandBuffers();
 		void recreateSwapChain();
-		void recreateSSAORenderPasses();
 
 		HmckWindow& hmckWindow;
 		HmckDevice& hmckDevice;
 		std::unique_ptr<HmckSwapChain> hmckSwapChain;
 		std::vector<VkCommandBuffer> commandBuffers;
-		std::unique_ptr<HmckFramebuffer> ssaoFramebuffer;
-		std::unique_ptr<HmckFramebuffer> ssaoBlurFramebuffer;
 		
 
 		uint32_t currentImageIndex;

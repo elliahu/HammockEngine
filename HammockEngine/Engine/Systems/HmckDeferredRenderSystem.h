@@ -53,8 +53,8 @@ namespace Hmck
 		void updateShadowmapDescriptorSet(VkDescriptorImageInfo imageInfo);
 		void updateGbufferDescriptorSet(std::vector<VkDescriptorImageInfo> imageInfos);
 		void updateSSAODescriptorSet(
-			VkDescriptorImageInfo& ssao,
-			VkDescriptorImageInfo& ssaoBlur);
+			VkDescriptorImageInfo ssao,
+			VkDescriptorImageInfo ssaoBlur);
 
 		void render(HmckFrameInfo& frameInfo);
 
