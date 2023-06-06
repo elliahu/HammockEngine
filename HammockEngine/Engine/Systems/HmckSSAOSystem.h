@@ -27,7 +27,7 @@ namespace Hmck
 		void ssao(HmckFrameInfo& frameInfo);
 		void ssaoBlur(HmckFrameInfo& frameInfo);
 
-		void updateSSAODescriptorSet(std::array<VkDescriptorImageInfo, 3> imageInfos);
+		void updateSSAODescriptorSet(std::vector<VkDescriptorImageInfo> imageInfos);
 		void updateSSAOBlurDescriptorSet(VkDescriptorImageInfo& imageInfo);
 
 	private:

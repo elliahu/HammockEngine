@@ -7,7 +7,6 @@
 #include "Systems/HmckLightSystem.h"
 #include "Systems/HmckDeferredRenderSystem.h"
 #include "Systems/HmckUISystem.h"
-#include "Systems/HmckGbufferRenderSystem.h"
 #include "Systems/HmckSSAOSystem.h"
 #include "HmckCamera.h"
 #include "Controllers/KeyboardMovementController.h"

@@ -40,32 +40,11 @@ namespace Hmck
 		HmckRenderer& operator=(const HmckRenderer&) = delete;
 
 		VkRenderPass getSwapChainRenderPass() const { return hmckSwapChain->getRenderPass(); }
-		VkRenderPass getGbufferRenderPass() const { return gbufferFramebuffer->renderPass; }
 		VkRenderPass getSSAORenderPass() const { return ssaoFramebuffer->renderPass; }
 		VkRenderPass getSSAOBlurRenderPass() const { return ssaoBlurFramebuffer->renderPass; }
 		float getAspectRatio() const { return hmckSwapChain->extentAspectRatio(); }
 		bool isFrameInProgress() const { return isFrameStarted; }
 
-
-		VkDescriptorImageInfo getGbufferDescriptorImageInfo(int index)
-		{
-			VkDescriptorImageInfo descriptorImageInfo{};
-			descriptorImageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-			descriptorImageInfo.imageView = gbufferFramebuffer->attachments[index].view;
-			descriptorImageInfo.sampler = gbufferFramebuffer->sampler;
-
-			return descriptorImageInfo;
-		}
-
-		VkDescriptorImageInfo getGbufferDepthDescriptorImageInfo()
-		{
-			VkDescriptorImageInfo descriptorImageInfo{};
-			descriptorImageInfo.imageLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL;
-			descriptorImageInfo.imageView = gbufferFramebuffer->attachments[4].view;
-			descriptorImageInfo.sampler = gbufferFramebuffer->sampler;
-
-			return descriptorImageInfo;
-		}
 
 		VkDescriptorImageInfo getSSAODescriptorImageInfo()
 		{
@@ -102,7 +81,6 @@ namespace Hmck
 
 		VkCommandBuffer beginFrame();
 		void endFrame();
-		void beginGbufferRenderPass(VkCommandBuffer commandBuffer);
 		void beginSSAORenderPass(VkCommandBuffer commandBuffer);
 		void beginSSAOBlurRenderPass(VkCommandBuffer commandBuffer);
 		void beginSwapChainRenderPass(VkCommandBuffer commandBuffer);
@@ -121,16 +99,12 @@ namespace Hmck
 		void createCommandBuffer();
 		void freeCommandBuffers();
 		void recreateSwapChain();
-		void recreateOmniShadowmapFramebuffer();
-		void recreateGbufferRenderPass();
 		void recreateSSAORenderPasses();
-		void createShadowCubeMap();
 
 		HmckWindow& hmckWindow;
 		HmckDevice& hmckDevice;
 		std::unique_ptr<HmckSwapChain> hmckSwapChain;
 		std::vector<VkCommandBuffer> commandBuffers;
-		std::unique_ptr<HmckFramebuffer> gbufferFramebuffer;
 		std::unique_ptr<HmckFramebuffer> ssaoFramebuffer;
 		std::unique_ptr<HmckFramebuffer> ssaoBlurFramebuffer;
 		

@@ -133,7 +133,7 @@ void Hmck::HmckDeferredRenderSystem::updateShadowmapDescriptorSet(VkDescriptorIm
 		.build(shadowmapDescriptorSet);
 }
 
-void Hmck::HmckDeferredRenderSystem::updateGbufferDescriptorSet(std::array<VkDescriptorImageInfo, 4> imageInfos)
+void Hmck::HmckDeferredRenderSystem::updateGbufferDescriptorSet(std::vector<VkDescriptorImageInfo> imageInfos)
 {
 	auto writer = HmckDescriptorWriter(*gbufferDescriptorLayout, *descriptorPool)
 		.writeImage(0, &imageInfos[0]) // position

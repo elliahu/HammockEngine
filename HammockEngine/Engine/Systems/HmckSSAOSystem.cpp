@@ -73,7 +73,7 @@ void Hmck::HmckSSAOSystem::ssaoBlur(HmckFrameInfo& frameInfo)
 	vkCmdDraw(frameInfo.commandBuffer, 3, 1, 0, 0);
 }
 
-void Hmck::HmckSSAOSystem::updateSSAODescriptorSet(std::array<VkDescriptorImageInfo, 3> imageInfos)
+void Hmck::HmckSSAOSystem::updateSSAODescriptorSet(std::vector<VkDescriptorImageInfo> imageInfos)
 {
 	auto bufferInfo = ssaoKernelBuffer->descriptorInfo();
 	auto writer = HmckDescriptorWriter(*ssaoLayout, *descriptorPool)

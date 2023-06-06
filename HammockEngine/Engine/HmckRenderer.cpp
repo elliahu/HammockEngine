@@ -3,7 +3,6 @@
 Hmck::HmckRenderer::HmckRenderer(HmckWindow& window, HmckDevice& device) : hmckWindow{window}, hmckDevice{device}
 {
 	recreateSwapChain();
-	recreateGbufferRenderPass();
 	recreateSSAORenderPasses();
 	createCommandBuffer();
 }
@@ -11,7 +10,6 @@ Hmck::HmckRenderer::HmckRenderer(HmckWindow& window, HmckDevice& device) : hmckW
 Hmck::HmckRenderer::~HmckRenderer()
 {
 	freeCommandBuffers();
-	gbufferFramebuffer = nullptr;
 	ssaoFramebuffer = nullptr;
 	ssaoBlurFramebuffer = nullptr;
 }
@@ -219,19 +217,6 @@ void Hmck::HmckRenderer::beginSwapChainRenderPass(VkCommandBuffer commandBuffer)
 	vkCmdSetScissor(commandBuffer, 0, 1, &scissor);
 }
 
-
-void Hmck::HmckRenderer::beginGbufferRenderPass(VkCommandBuffer commandBuffer)
-{
-	std::vector<VkClearValue> clearValues{ 5 };
-	clearValues[0].color = { { 0.0f, 0.0f, 0.0f, 0.0f } };
-	clearValues[1].color = { { 0.0f, 0.0f, 0.0f, 0.0f } };
-	clearValues[2].color = { { 0.0f, 0.0f, 0.0f, 0.0f } };
-	clearValues[3].color = { { 0.0f, 0.0f, 0.0f, 0.0f } };
-	clearValues[4].depthStencil = { 1.0f, 0 };
-
-	beginRenderPass(gbufferFramebuffer, commandBuffer, clearValues);
-}
-
 void Hmck::HmckRenderer::beginSSAORenderPass(VkCommandBuffer commandBuffer)
 {
 	std::vector<VkClearValue> clearValues{ 2 };
@@ -255,57 +240,6 @@ void Hmck::HmckRenderer::endRenderPass(VkCommandBuffer commandBuffer)
 	assert(commandBuffer == getCurrentCommandBuffer() && "Cannot end render pass on command buffer from a different frame");
 
 	vkCmdEndRenderPass(commandBuffer);
-}
-
-
-void Hmck::HmckRenderer::recreateGbufferRenderPass()
-{
-	gbufferFramebuffer = std::make_unique<HmckFramebuffer>(hmckDevice);
-
-	gbufferFramebuffer->width = hmckSwapChain->width();
-	gbufferFramebuffer->height = hmckSwapChain->height();
-
-	// Find a suitable depth format
-	VkFormat depthFormat = hmckSwapChain->findDepthFormat();
-
-	// Five attachments (4 color, 1 depth)
-	HmckAttachmentCreateInfo attachmentInfo = {};
-	attachmentInfo.width = gbufferFramebuffer->width;
-	attachmentInfo.height = gbufferFramebuffer->height;
-	attachmentInfo.layerCount = 1;
-	attachmentInfo.usage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT;
-
-	// Color attachments
-	// Attachment 0: position
-	attachmentInfo.format = VK_FORMAT_R16G16B16A16_SFLOAT;
-	gbufferFramebuffer->addAttachment(attachmentInfo);
-
-	// Attachment 1: albedo (color)
-	attachmentInfo.format = VK_FORMAT_R8G8B8A8_UNORM;
-	gbufferFramebuffer->addAttachment(attachmentInfo);
-
-	// Attachment 2: normal
-	attachmentInfo.format = VK_FORMAT_R16G16B16A16_SFLOAT;
-	gbufferFramebuffer->addAttachment(attachmentInfo);
-
-	// Attachment 3: x: roughness, y: metalness, z: ambient occlusion
-	attachmentInfo.format = VK_FORMAT_R16G16B16A16_SFLOAT;
-	gbufferFramebuffer->addAttachment(attachmentInfo);
-
-	// Attachment 4: Depth attachment
-	attachmentInfo.format = depthFormat;
-	attachmentInfo.usage = VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT;
-	gbufferFramebuffer->addAttachment(attachmentInfo);
-
-	// Create sampler to sample from color attachments
-	if (gbufferFramebuffer->createSampler(VK_FILTER_NEAREST, VK_FILTER_NEAREST, VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE) != VK_SUCCESS) {
-		throw std::runtime_error("Failed to create depth sampler");
-	}
-
-	// create renderpass with framebuffer
-	if (gbufferFramebuffer->createRenderPass() != VK_SUCCESS) {
-		throw std::runtime_error("Failed to create offscreen renderpass");
-	}
 }
 
 void Hmck::HmckRenderer::recreateSSAORenderPasses()
