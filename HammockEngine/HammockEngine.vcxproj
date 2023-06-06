@@ -42,7 +42,6 @@
     <ClCompile Include="Engine\HmckTexture.cpp" />
     <ClCompile Include="Engine\Platform\HmckWindow.cpp" />
     <ClCompile Include="Engine\Systems\HmckCollisionDetectionSystem.cpp" />
-    <ClCompile Include="Engine\Systems\HmckDeferredRenderSystem.cpp" />
     <ClCompile Include="Engine\HmckSwapChain.cpp" />
     <ClCompile Include="Engine\Systems\HmckUISystem.cpp" />
     <ClCompile Include="External\backends\imgui_impl_glfw.cpp" />
@@ -73,7 +72,6 @@
     <ClInclude Include="Engine\Platform\HmckWindow.h" />
     <ClInclude Include="Engine\Systems\HmckCollisionDetectionSystem.h" />
     <ClInclude Include="Engine\Systems\HmckIRenderSystem.h" />
-    <ClInclude Include="Engine\Systems\HmckDeferredRenderSystem.h" />
     <ClInclude Include="Engine\HmckSwapChain.h" />
     <ClInclude Include="Engine\HmckUtils.h" />
     <ClInclude Include="Engine\Systems\HmckUISystem.h" />

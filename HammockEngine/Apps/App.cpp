@@ -53,12 +53,6 @@ void Hmck::App::run()
         materialLayout->getDescriptorSetLayout()
     };
 
-	HmckDeferredRenderSystem deferredRenderSystem{ 
-        hmckDevice,
-        hmckRenderer.getSwapChainRenderPass(), 
-        globalSetLayouts
-    };
-
     HmckUISystem userInterfaceSystem{
         hmckDevice,
         hmckRenderer.getSwapChainRenderPass(),
@@ -254,12 +248,13 @@ void Hmck::App::run()
         .renderPass = gbuffer.renderPass
     });
 
+    const float ssao_mult = 0.5f;
     HmckFramebuffer ssaoFramebuffer = HmckFramebuffer::createFramebuffer({
         .device = hmckDevice,
-        .width = WINDOW_WIDTH, .height = WINDOW_HEIGHT,
+        .width = 1280 , .height = 720,
         .attachments {
             {
-                .width = WINDOW_WIDTH, .height = WINDOW_HEIGHT,
+                .width = 1280, .height = 720,
                 .layerCount = 1,
                 .format = VK_FORMAT_R8_UNORM,
                 .usage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,
@@ -321,9 +316,9 @@ void Hmck::App::run()
 
     VkDescriptorSet ssaoDescriptorSet;
     std::unique_ptr<HmckBuffer> ssaoKernelBuffer = Rnd::createSSAOKernel(hmckDevice, 64);
-    HmckTexture2D ssaoNoiseTexture = Rnd::createNoiseTexture(hmckDevice, 4);
+    HmckTexture2D ssaoNoiseTexture = Rnd::createNoiseTexture(hmckDevice, 4); // TODO memory leak on device destruction
     auto bufferInfo = ssaoKernelBuffer->descriptorInfo();
-    auto writer = HmckDescriptorWriter(*ssaoLayout, *globalPool)
+    HmckDescriptorWriter(*ssaoLayout, *globalPool)
         .writeImage(0, &imgInf1)
         .writeImage(1, &imgInf2)
         .writeImage(2, &ssaoNoiseTexture.descriptor)
@@ -388,45 +383,101 @@ void Hmck::App::run()
         .writeImage(0, &ssaoImageInfo)
         .build(ssaoBlurDescriptorSet);
 
+    std::unique_ptr<HmckDescriptorSetLayout> shadowmapDescriptorLayout = HmckDescriptorSetLayout::Builder(hmckDevice)
+        .addBinding(0, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT)
+        .build();
+    std::unique_ptr<HmckDescriptorSetLayout> gbufferDescriptorLayout = HmckDescriptorSetLayout::Builder(hmckDevice)
+        .addBinding(0, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT) // position
+        .addBinding(1, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT) // albedo
+        .addBinding(2, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT) // normal
+        .addBinding(3, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT) // material (roughness, metalness, ao)
+        .build();
+    std::unique_ptr<HmckDescriptorSetLayout> ssaoDescriptorLayout = HmckDescriptorSetLayout::Builder(hmckDevice)
+        .addBinding(0, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT) // ssao
+        .addBinding(1, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT) // ssao blur
+        .build();
 
-    deferredRenderSystem.updateShadowmapDescriptorSet({
+    HmckGraphicsPipeline deferredPipeline = HmckGraphicsPipeline::createGraphicsPipeline({
+        .debugName = "deferred_pass",
+        .device = hmckDevice,
+        .VS {
+            .byteCode = Hmck::Filesystem::readFile("../../HammockEngine/Engine/Shaders/Compiled/fullscreen.vert.spv"),
+            .entryFunc = "main"
+        },
+        .FS {
+            .byteCode = Hmck::Filesystem::readFile("../../HammockEngine/Engine/Shaders/Compiled/deferred.frag.spv"),
+            .entryFunc = "main"
+        },
+        .descriptorSetLayouts = {
+            globalSetLayout->getDescriptorSetLayout(),
+            gbufferDescriptorLayout->getDescriptorSetLayout(),
+            shadowmapDescriptorLayout->getDescriptorSetLayout(),
+            ssaoDescriptorLayout->getDescriptorSetLayout()
+        },
+        .pushConstantRanges {},
+        .graphicsState {
+            .depthTest = VK_TRUE,
+            .depthTestCompareOp = VK_COMPARE_OP_LESS_OR_EQUAL,
+            .blendAtaAttachmentStates {},
+            .vertexBufferBindings {
+                .vertexBindingDescriptions = HmckGLTF::getBindingDescriptions(),
+                .vertexAttributeDescriptions = HmckGLTF::getAttributeDescriptions()
+            }
+        },
+        .renderPass = hmckRenderer.getSwapChainRenderPass()
+    });
+
+    VkDescriptorSet d_shadowmapDescriptorSet;
+    VkDescriptorImageInfo d_img_sh = {
         .sampler = shadowmapFramebuffer.sampler,
         .imageView = shadowmapFramebuffer.attachments[0].view,
         .imageLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL,
-    });
-
-    deferredRenderSystem.updateGbufferDescriptorSet({
-        {
-            .sampler = gbuffer.sampler,
-            .imageView = gbuffer.attachments[0].view,
-            .imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL
-        },
-        {
-            .sampler = gbuffer.sampler,
-            .imageView = gbuffer.attachments[1].view,
-            .imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL
-        },
-        {
-           .sampler = gbuffer.sampler,
-            .imageView = gbuffer.attachments[2].view,
-            .imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL
-        },
-        {
-            .sampler = gbuffer.sampler,
-            .imageView = gbuffer.attachments[3].view,
-            .imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL
-        }
-    });
-
-    deferredRenderSystem.updateSSAODescriptorSet({
+    };
+    HmckDescriptorWriter(*shadowmapDescriptorLayout, *globalPool)
+        .writeImage(0, &d_img_sh)
+        .build(d_shadowmapDescriptorSet);
+    VkDescriptorSet d_gbufferDescriptorSet;
+    VkDescriptorImageInfo d_img_gb1{
+        .sampler = gbuffer.sampler,
+        .imageView = gbuffer.attachments[0].view,
+        .imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL
+    };
+    VkDescriptorImageInfo d_img_gb2{
+         .sampler = gbuffer.sampler,
+         .imageView = gbuffer.attachments[1].view,
+         .imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL
+    };
+    VkDescriptorImageInfo d_img_gb3{
+         .sampler = gbuffer.sampler,
+         .imageView = gbuffer.attachments[2].view,
+         .imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL
+    };
+    VkDescriptorImageInfo d_img_gb4{
+         .sampler = gbuffer.sampler,
+         .imageView = gbuffer.attachments[3].view,
+         .imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL
+    };
+    HmckDescriptorWriter(*gbufferDescriptorLayout, *globalPool)
+        .writeImage(0, &d_img_gb1) // position
+        .writeImage(1, &d_img_gb2) // albedo
+        .writeImage(2, &d_img_gb3) // normal
+        .writeImage(3, &d_img_gb4) // // material (roughness, metalness, ao)
+        .build(d_gbufferDescriptorSet);
+    VkDescriptorSet d_ssaoDescriptorSet;
+    VkDescriptorImageInfo d_image_ssao{
         .sampler = ssaoFramebuffer.sampler,
         .imageView = ssaoFramebuffer.attachments[0].view,
         .imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL
-        }, {
+    };
+    VkDescriptorImageInfo d_image_blur{
         .sampler = blurFramebuffer.sampler,
         .imageView = blurFramebuffer.attachments[0].view,
         .imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL
-    });
+    };
+    HmckDescriptorWriter(*ssaoDescriptorLayout, *globalPool)
+        .writeImage(0, &d_image_ssao)
+        .writeImage(1, &d_image_blur)
+        .build(d_ssaoDescriptorSet);
 
     auto currentTime = std::chrono::high_resolution_clock::now();
 	while (!hmckWindow.shouldClose())
@@ -592,16 +643,67 @@ void Hmck::App::run()
 
             // on screen
             hmckRenderer.beginSwapChainRenderPass(commandBuffer);
-            deferredRenderSystem.render(frameInfo);
+            // deferred
+            {
+                deferredPipeline.bind(commandBuffer);
+                // ubo
+                vkCmdBindDescriptorSets(
+                    frameInfo.commandBuffer,
+                    VK_PIPELINE_BIND_POINT_GRAPHICS,
+                    deferredPipeline.graphicsPipelineLayout,
+                    0, 1,
+                    &frameInfo.globalDescriptorSet,
+                    0,
+                    nullptr
+                );
+
+                // gbuffer
+                vkCmdBindDescriptorSets(
+                    frameInfo.commandBuffer,
+                    VK_PIPELINE_BIND_POINT_GRAPHICS,
+                    deferredPipeline.graphicsPipelineLayout, 
+                    1, 1,
+                    &d_gbufferDescriptorSet,
+                    0,
+                    nullptr
+                );
+
+                // shadowmap
+                vkCmdBindDescriptorSets(
+                    frameInfo.commandBuffer,
+                    VK_PIPELINE_BIND_POINT_GRAPHICS,
+                    deferredPipeline.graphicsPipelineLayout, 
+                    2, 1,
+                    &d_shadowmapDescriptorSet,
+                    0,
+                    nullptr
+                );
+
+                // ssao
+                vkCmdBindDescriptorSets(
+                    frameInfo.commandBuffer,
+                    VK_PIPELINE_BIND_POINT_GRAPHICS,
+                    deferredPipeline.graphicsPipelineLayout, 
+                    3, 1,
+                    &d_ssaoDescriptorSet,
+                    0,
+                    nullptr
+                );
+
+                vkCmdDraw(frameInfo.commandBuffer, 3, 1, 0, 0);
+            }
+
             // ui
-            userInterfaceSystem.beginUserInterface();
-            //userInterfaceSystem.showDemoWindow();
-            userInterfaceSystem.showDebugStats(viewerObject);
-            userInterfaceSystem.showWindowControls();
-            userInterfaceSystem.showGameObjectsInspector(gameObjects);
-            userInterfaceSystem.showGlobalSettings(ubo);
-            userInterfaceSystem.endUserInterface(commandBuffer);
-            
+            {
+                userInterfaceSystem.beginUserInterface();
+                //userInterfaceSystem.showDemoWindow();
+                userInterfaceSystem.showDebugStats(viewerObject);
+                userInterfaceSystem.showWindowControls();
+                userInterfaceSystem.showGameObjectsInspector(gameObjects);
+                userInterfaceSystem.showGlobalSettings(ubo);
+                userInterfaceSystem.endUserInterface(commandBuffer);
+            }
+       
 			hmckRenderer.endRenderPass(commandBuffer);
 			hmckRenderer.endFrame();
 		}

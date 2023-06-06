@@ -36,9 +36,6 @@
     <ClCompile Include="Engine\HmckRenderer.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="Engine\Systems\HmckDeferredRenderSystem.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="Engine\HmckCamera.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -120,9 +117,6 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="Engine\HmckRenderer.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="Engine\Systems\HmckDeferredRenderSystem.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="Engine\HmckCamera.h">

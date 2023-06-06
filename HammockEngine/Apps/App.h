@@ -4,7 +4,6 @@
 #include "HmckDevice.h"
 #include "HmckGameObject.h"
 #include "HmckRenderer.h"
-#include "Systems/HmckDeferredRenderSystem.h"
 #include "Systems/HmckUISystem.h"
 #include "HmckCamera.h"
 #include "Controllers/KeyboardMovementController.h"

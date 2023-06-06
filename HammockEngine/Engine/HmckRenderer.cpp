@@ -192,7 +192,7 @@ void Hmck::HmckRenderer::beginSwapChainRenderPass(VkCommandBuffer commandBuffer)
 	renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
 	renderPassInfo.renderPass = hmckSwapChain->getRenderPass();
 	renderPassInfo.framebuffer = hmckSwapChain->getFrameBuffer(currentImageIndex);
-
+	
 	renderPassInfo.renderArea.offset = { 0, 0 };
 	renderPassInfo.renderArea.extent = hmckSwapChain->getSwapChainExtent();
 
