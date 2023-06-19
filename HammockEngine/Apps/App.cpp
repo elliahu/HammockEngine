@@ -6,14 +6,21 @@ Hmck::App::App()
     globalPool = HmckDescriptorPool::Builder(hmckDevice)
         .setPoolFlags(VK_DESCRIPTOR_POOL_CREATE_UPDATE_AFTER_BIND_BIT)
         .setMaxSets(100)
-        .addPoolSize(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, HmckSwapChain::MAX_FRAMES_IN_FLIGHT)
-        .addPoolSize(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1000)
+        .addPoolSize(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 2000)
+        .addPoolSize(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, 2000)
+        .addPoolSize(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 2000)
         .build();
 
 	loadGameObjects();
 
     globalSetLayout = HmckDescriptorSetLayout::Builder(hmckDevice)
         .addBinding(0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_ALL_GRAPHICS)
+        .build();
+
+    bindlessLayout = HmckDescriptorSetLayout::Builder(hmckDevice)
+        .addBinding(0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_ALL, 1000)
+        .addBinding(1, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_SHADER_STAGE_ALL, 1000)
+        .addBinding(2, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_ALL, 1000)
         .build();
 }
 
@@ -42,17 +49,6 @@ void Hmck::App::run()
             .build(globalDescriptorSets[i]);
     }
 
-    // systems and layouts
-    std::vector<VkDescriptorSetLayout> globalSetLayouts{
-        globalSetLayout->getDescriptorSetLayout(),
-    };
-
-    // TODO make HmckGbufferRenderSystem own material set layout 
-    std::vector<VkDescriptorSetLayout> gbufferSetLayouts{
-        globalSetLayout->getDescriptorSetLayout(),
-        materialLayout->getDescriptorSetLayout()
-    };
-
     HmckUISystem userInterfaceSystem{
         hmckDevice,
         hmckRenderer.getSwapChainRenderPass(),
@@ -68,58 +64,6 @@ void Hmck::App::run()
     KeyboardMovementController cameraController{};
 
     HmckGlobalUbo ubo{};
-
-    { // set lights
-        //TODO make better system for this
-        int dirLightIdx = 0;
-        int lightIndex = 0;
-        for (auto& kv : gameObjects)
-        {
-            auto& obj = kv.second;
-
-            if (obj.pointLightComponent != nullptr)
-            {
-                assert(lightIndex < MAX_LIGHTS && "Point light limit exeeded");
-
-                // update lights
-                ubo.pointLights[lightIndex].position = ubo.view * glm::vec4(obj.transformComponent.translation, 1.f);
-                ubo.pointLights[lightIndex].color = glm::vec4(obj.colorComponent, obj.pointLightComponent->lightIntensity);
-                ubo.pointLights[lightIndex].lightTerms.x = obj.pointLightComponent->quadraticTerm;
-                ubo.pointLights[lightIndex].lightTerms.y = obj.pointLightComponent->linearTerm;
-                ubo.pointLights[lightIndex].lightTerms.z = obj.pointLightComponent->constantTerm;
-
-                lightIndex += 1;
-            }
-
-            if (obj.directionalLightComponent != nullptr)
-            {
-                // directional light
-                assert(dirLightIdx < 1 && "Directional light limit exeeded. There can only be one directional light");
-
-
-                ubo.directionalLight.color = glm::vec4(obj.colorComponent, obj.directionalLightComponent->lightIntensity);
-                ubo.directionalLight.direction = glm::vec4(
-                    glm::normalize((glm::mat3(ubo.view) * obj.directionalLightComponent->target) - (glm::mat3(ubo.view) * obj.transformComponent.translation)),
-                    obj.directionalLightComponent->fov);
-
-                // TODO make this not ubo as it is not used in all systems
-                glm::mat4 depthPerpectiveProjectionMatrix = glm::perspective(
-                    obj.directionalLightComponent->fov, 1.0f,
-                    obj.directionalLightComponent->_near,
-                    obj.directionalLightComponent->_far);
-                glm::mat4 depthOrthogonalProjectionMatrix = glm::ortho(
-                    -20.f, +20.0f,
-                    -20.f, +20.f,
-                    obj.directionalLightComponent->_near, obj.directionalLightComponent->_far);
-                glm::mat4 depthViewMatrix = glm::lookAt(obj.transformComponent.translation, obj.directionalLightComponent->target, glm::vec3(0, 1, 0));
-                glm::mat4 depthModelMatrix = glm::mat4(1.0f);
-                ubo.depthBiasMVP = depthOrthogonalProjectionMatrix * depthViewMatrix * depthModelMatrix;
-
-                dirLightIdx += 1;
-            }
-        }
-        ubo.numLights = lightIndex;
-    }
 
     auto depthFormat = hmckDevice.findSupportedFormat(
         { VK_FORMAT_D32_SFLOAT, VK_FORMAT_D32_SFLOAT_S8_UINT, VK_FORMAT_D24_UNORM_S8_UINT },
@@ -150,7 +94,10 @@ void Hmck::App::run()
             .byteCode = Hmck::Filesystem::readFile("../../HammockEngine/Engine/Shaders/Compiled/shadowmap.frag.spv"),
             .entryFunc = "main"
         },
-        .descriptorSetLayouts = gbufferSetLayouts,
+        .descriptorSetLayouts = {
+            globalSetLayout->getDescriptorSetLayout(),
+            materialLayout->getDescriptorSetLayout()
+        },
         .pushConstantRanges {
             {
                 .stageFlags = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT,
@@ -223,7 +170,10 @@ void Hmck::App::run()
             .byteCode = Hmck::Filesystem::readFile("../../HammockEngine/Engine/Shaders/Compiled/gbuffer.frag.spv"),
             .entryFunc = "main"
         },
-        .descriptorSetLayouts = gbufferSetLayouts,
+        .descriptorSetLayouts = {
+            globalSetLayout->getDescriptorSetLayout(),
+            materialLayout->getDescriptorSetLayout()
+        },
         .pushConstantRanges {
             {
                 .stageFlags = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT,
@@ -513,8 +463,61 @@ void Hmck::App::run()
             ubo.view = camera.getView();
             ubo.inverseView = camera.getInverseView();
 
+            // Update lights
+            {
+                //TODO make better system for this
+                int dirLightIdx = 0;
+                int lightIndex = 0;
+                for (auto& kv : gameObjects)
+                {
+                    auto& obj = kv.second;
+
+                    if (obj.pointLightComponent != nullptr)
+                    {
+                        assert(lightIndex < MAX_LIGHTS && "Point light limit exeeded");
+
+                        // update lights
+                        ubo.pointLights[lightIndex].position = ubo.view * glm::vec4(obj.transformComponent.translation, 1.f);
+                        ubo.pointLights[lightIndex].color = glm::vec4(obj.colorComponent, obj.pointLightComponent->lightIntensity);
+                        ubo.pointLights[lightIndex].lightTerms.x = obj.pointLightComponent->quadraticTerm;
+                        ubo.pointLights[lightIndex].lightTerms.y = obj.pointLightComponent->linearTerm;
+                        ubo.pointLights[lightIndex].lightTerms.z = obj.pointLightComponent->constantTerm;
+
+                        lightIndex += 1;
+                    }
+
+                    if (obj.directionalLightComponent != nullptr)
+                    {
+                        // directional light
+                        assert(dirLightIdx < 1 && "Directional light limit exeeded. There can only be one directional light");
+
+
+                        ubo.directionalLight.color = glm::vec4(obj.colorComponent, obj.directionalLightComponent->lightIntensity);
+                        ubo.directionalLight.direction = glm::vec4(
+                            glm::normalize((glm::mat3(ubo.view) * obj.directionalLightComponent->target) - (glm::mat3(ubo.view) * obj.transformComponent.translation)),
+                            obj.directionalLightComponent->fov);
+
+                        // TODO make this not ubo as it is not used in all systems
+                        glm::mat4 depthPerpectiveProjectionMatrix = glm::perspective(
+                            obj.directionalLightComponent->fov, 1.0f,
+                            obj.directionalLightComponent->_near,
+                            obj.directionalLightComponent->_far);
+                        glm::mat4 depthOrthogonalProjectionMatrix = glm::ortho(
+                            -20.f, +20.0f,
+                            -20.f, +20.f,
+                            obj.directionalLightComponent->_near, obj.directionalLightComponent->_far);
+                        glm::mat4 depthViewMatrix = glm::lookAt(obj.transformComponent.translation, obj.directionalLightComponent->target, glm::vec3(0, 1, 0));
+                        glm::mat4 depthModelMatrix = glm::mat4(1.0f);
+                        ubo.depthBiasMVP = depthOrthogonalProjectionMatrix * depthViewMatrix * depthModelMatrix;
+
+                        dirLightIdx += 1;
+                    }
+                }
+                ubo.numLights = lightIndex;
+            }
 
             uboBuffers[frameIndex]->writeToBuffer(&ubo);
+
             // RENDER
             // OFFSCREEN RENDER
             // shadowmap
@@ -711,6 +714,9 @@ void Hmck::App::run()
 	}
 
 	vkDeviceWaitIdle(hmckDevice.device());
+
+    // clean used resources that cannot clean themselves
+    ssaoNoiseTexture.destroy(hmckDevice);
 }
 
 void Hmck::App::loadGameObjects()
@@ -726,9 +732,7 @@ void Hmck::App::loadGameObjects()
         .build();
 
 
-    HmckGLTF::Config config{
-        .binary = true
-    };
+    HmckGLTF::Config config{ .binary = true };
 
     //auto helmet = HmckGameObject::createFromGLTF(std::string(MODELS_DIR) + "helmet/helmet.glb", hmckDevice, config);
     //helmet.setName("Flight Helmet");

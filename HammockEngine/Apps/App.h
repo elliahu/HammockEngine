@@ -12,7 +12,6 @@
 #include "HmckCollisionDetectionSystem.h"
 #include "Utils/HmckLogger.h"
 #include "HmckGLTF.h"
-#include "HmckBindless.h"
 
 #define GLM_FORCE_RADIANS
 #define GLM_FORCE_DEPTH_ZERO_TO_ONE
@@ -60,6 +59,8 @@ namespace Hmck
 		std::unique_ptr<HmckDescriptorPool> globalPool{};
 		std::unique_ptr<HmckDescriptorSetLayout> globalSetLayout{};
 		std::unique_ptr<HmckDescriptorSetLayout> materialLayout{};
+		std::unique_ptr<HmckDescriptorSetLayout> bindlessLayout{};
+
 		HmckGameObject::Map gameObjects;
 	};
 

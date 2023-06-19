@@ -64,6 +64,15 @@ namespace Hmck
 			return(hasDepth() || hasStencil());
 		}
 
+		VkDescriptorImageInfo getDescriptorImageInfo(VkSampler sampler, VkImageLayout layout)
+		{
+			return {
+				.sampler = sampler,
+				.imageView = view,
+				.imageLayout = layout
+			};
+		}
+
 	};
 
 	/**
@@ -128,6 +137,11 @@ namespace Hmck
 			vkDestroyFramebuffer(hmckDevice.device(), framebuffer, nullptr);
 		}
 
+		/**
+		* Create framebuffer with renderpass and attachments using configuration struct
+		* @param createInfo Configuration struct
+		* @return created Framebuffer
+		*/
 		static HmckFramebuffer createFramebuffer(FramebufferCreateInfo createInfo) 
 		{
 			HmckFramebuffer fb{ createInfo.device };
