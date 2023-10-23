@@ -53,4 +53,16 @@ namespace Hmck
 		void createSampler(HmckDevice& hmckDevice, VkFilter filter = VK_FILTER_LINEAR);
 		void destroy(HmckDevice& hmckDevice);
 	};
+
+	class HmckTextureCubeMap : public HmckTexture
+	{
+	public:
+		void loadFromFile(
+			std::string filename,
+			VkFormat format,
+			HmckDevice& device,
+			VkQueue copyQueue,
+			VkImageUsageFlags imageUsageFlags = VK_IMAGE_USAGE_SAMPLED_BIT,
+			VkImageLayout imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+	};
 }

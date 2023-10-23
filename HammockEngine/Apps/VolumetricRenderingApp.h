@@ -1,5 +1,4 @@
 #pragma once
-
 #include "Platform/HmckWindow.h"
 #include "HmckDevice.h"
 #include "HmckGameObject.h"
@@ -24,6 +23,7 @@
 #include <stdexcept>
 #include <chrono>
 
+
 #ifndef MODELS_DIR
 #define MODELS_DIR "../../Resources/Models/"
 #endif // !MODELS_DIR
@@ -32,27 +32,40 @@
 #define MATERIALS_DIR "../../Resources/Materials/"
 #endif // !MATERIALS_DIR
 
-
-
-namespace Hmck
+namespace Hmck 
 {
-	class App: public IApp
+	class VolumetricRenderingApp : public IApp
 	{
+		// There is so much code in this class 
+		// TODO make more abstraction layers over the IApp
+
 	public:
 
-		App();
+		struct PerFrameData
+		{
+			glm::mat4 projection{ 1.f };
+			glm::mat4 view{ 1.f };
+			glm::mat4 inverseView{ 1.f };
+		};
 
+		struct PushConstantData
+		{
+			glm::mat4 model{1.f};
+			glm::mat4 normal{1.f};
+		};
+
+		VolumetricRenderingApp();
+
+		// Inherited via IApp
 		virtual void run() override;
-
-	private:
 		virtual void load() override;
 
-		std::unique_ptr<HmckDescriptorPool> globalPool{};
-		std::unique_ptr<HmckDescriptorSetLayout> globalSetLayout{};
+		std::unique_ptr<HmckDescriptorPool> descriptorPool{};
+		std::unique_ptr<HmckDescriptorSetLayout> descriptorSetLayout{};
 		std::unique_ptr<HmckDescriptorSetLayout> materialLayout{};
-		std::unique_ptr<HmckDescriptorSetLayout> bindlessLayout{};
 
 		HmckGameObject::Map gameObjects;
 	};
 
 }
+

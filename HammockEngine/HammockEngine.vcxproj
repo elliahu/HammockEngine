@@ -54,9 +54,11 @@
     <ClCompile Include="Engine\Utils\HmckLogger.cpp" />
     <ClCompile Include="Engine\Platform\HmckInputHandler.cpp" />
     <ClCompile Include="main.cpp" />
+    <ClCompile Include="Apps\VolumetricRenderingApp.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Apps\App.h" />
+    <ClInclude Include="Apps\IApp.h" />
     <ClInclude Include="Engine\Controllers\KeyboardMovementController.h" />
     <ClInclude Include="Engine\HmckBuffer.h" />
     <ClInclude Include="Engine\HmckCamera.h" />
@@ -91,6 +93,7 @@
     <ClInclude Include="Engine\Platform\HmckInputHandler.h" />
     <ClInclude Include="Engine\HmckFramebuffer.h" />
     <ClInclude Include="Engine\HmckGLTF.h" />
+    <ClInclude Include="Apps\VolumetricRenderingApp.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include="build_shaders_glsl.py" />
@@ -105,6 +108,8 @@
     <None Include="Engine\Shaders\Raw\glsl\deferred.frag" />
     <None Include="Engine\Shaders\Raw\glsl\fullscreen.vert" />
     <None Include="Engine\Shaders\Raw\glsl\ssao.frag" />
+    <None Include="Engine\Shaders\Raw\glsl\volumetric.frag" />
+    <None Include="Engine\Shaders\Raw\glsl\volumetric.vert" />
     <None Include="packages.config" />
   </ItemGroup>
   <PropertyGroup Label="Globals">

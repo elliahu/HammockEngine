@@ -213,3 +213,8 @@ void Hmck::HmckTexture::updateDescriptor()
 	descriptor.imageView = view;
 	descriptor.imageLayout = layout;
 }
+
+void Hmck::HmckTextureCubeMap::loadFromFile(std::string filename, VkFormat format, HmckDevice& device, VkQueue copyQueue, VkImageUsageFlags imageUsageFlags, VkImageLayout imageLayout)
+{
+	// TODO create texture cubemap loading
+}

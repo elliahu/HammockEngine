@@ -96,6 +96,9 @@
     <ClCompile Include="Engine\HmckGLTF.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="Apps\VolumetricRenderingApp.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Apps\App.h">
@@ -203,6 +206,12 @@
     <ClInclude Include="External\json.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="Apps\VolumetricRenderingApp.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Apps\IApp.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="Engine\Shaders\Raw\glsl\point_light.frag" />
@@ -218,5 +227,7 @@
     <None Include="build_shaders_hlsl.py" />
     <None Include="Engine\Shaders\Raw\glsl\blur.frag" />
     <None Include="Engine\Shaders\Raw\glsl\ssao.frag" />
+    <None Include="Engine\Shaders\Raw\glsl\volumetric.vert" />
+    <None Include="Engine\Shaders\Raw\glsl\volumetric.frag" />
   </ItemGroup>
 </Project>

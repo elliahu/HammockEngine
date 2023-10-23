@@ -36,6 +36,8 @@ namespace Hmck
 		HmckDevice& hmckDevice, std::unordered_map<uint32_t, VkDescriptorSetLayoutBinding> bindings)
 		: hmckDevice{ hmckDevice }, bindings{ bindings }
 	{
+
+
 		std::vector<VkDescriptorSetLayoutBinding> setLayoutBindings{};
 		for (auto kv : bindings)
 		{

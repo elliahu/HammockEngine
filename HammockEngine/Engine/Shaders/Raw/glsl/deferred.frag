@@ -250,4 +250,6 @@ void main()
     // apply ssao
     outColor.rgb = ssao.rrr;
     outColor.rgb *= color;
+    
+    //outColor.rgb = color;
 }

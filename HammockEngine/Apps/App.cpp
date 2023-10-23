@@ -11,7 +11,17 @@ Hmck::App::App()
         .addPoolSize(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 2000)
         .build();
 
-	loadGameObjects();
+	load();
+
+    // layouts
+    // TODO think about using array of combined image samplers
+    // TODO move this to Gbuffer system as it is the only system that uses this, no need for this to be in App
+    materialLayout = HmckDescriptorSetLayout::Builder(hmckDevice)
+        .addBinding(0, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT) // albedo
+        .addBinding(1, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT) // normal
+        .addBinding(2, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT) // roughnessMetalic
+        .addBinding(3, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT) // occlusion
+        .build();
 
     globalSetLayout = HmckDescriptorSetLayout::Builder(hmckDevice)
         .addBinding(0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_ALL_GRAPHICS)
@@ -443,7 +453,7 @@ void Hmck::App::run()
         camera.setViewYXZ(viewerObject.transformComponent.translation, viewerObject.transformComponent.rotation);
 
         float aspect = hmckRenderer.getAspectRatio();
-        camera.setPerspectiveProjection(glm::radians(50.0f), aspect, 0.1f,  64.f );
+        camera.setPerspectiveProjection(glm::radians(50.0f), aspect, 0.1f,  1000.f );
 
         // start a new frame
 		if (auto commandBuffer = hmckRenderer.beginFrame())
@@ -719,39 +729,34 @@ void Hmck::App::run()
     ssaoNoiseTexture.destroy(hmckDevice);
 }
 
-void Hmck::App::loadGameObjects()
+void Hmck::App::load()
 {
-    // layouts
-    // TODO think about using array of combined image samplers
-    // TODO move this to Gbuffer system as it is the only system that uses this, no need for this to be in App
-    materialLayout = HmckDescriptorSetLayout::Builder(hmckDevice)
-        .addBinding(0, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT) // albedo
-        .addBinding(1, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT) // normal
-        .addBinding(2, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT) // roughnessMetalic
-        .addBinding(3, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT) // occlusion
-        .build();
-
-
-    HmckGLTF::Config config{ .binary = true };
-
-    //auto helmet = HmckGameObject::createFromGLTF(std::string(MODELS_DIR) + "helmet/helmet.glb", hmckDevice, config);
+    //auto helmet = HmckGameObject::createFromGLTF(std::string(MODELS_DIR) + "helmet/helmet.glb", hmckDevice,{ .binary = true });
     //helmet.setName("Flight Helmet");
     //gameObjects.emplace(helmet.getId(), std::move(helmet));
 
+    //auto wall = HmckGameObject::createFromGLTF(std::string(MODELS_DIR) + "wall/wall.glb", hmckDevice,{ .binary = true });
+    //wall.setName("Wall");
+    //gameObjects.emplace(wall.getId(), std::move(wall));
 
-    auto sponza = HmckGameObject::createFromGLTF(std::string(MODELS_DIR) + "sponza/sponza.glb", hmckDevice, config);
+
+    auto sponza = HmckGameObject::createFromGLTF(std::string(MODELS_DIR) + "sponza/sponza.glb", hmckDevice, { .binary = true });
     sponza.transformComponent.translation.y = - .25f;
     sponza.setName("Sponza");
     gameObjects.emplace(sponza.getId(), std::move(sponza));
 
+    //auto bistro = HmckGameObject::createFromGLTF(std::string(MODELS_DIR) + "Bistro/BistroInterior/BistroInterior.gltf", hmckDevice, { .binary = false });
+    //bistro.setName("Bistro"); // TODO put this in config
+    //gameObjects.emplace(bistro.getId(), std::move(bistro));
+
     // Point lights
     std::vector<glm::vec3> lightColors{
-         {1.f, .1f, .1f},
-         {.1f, .1f, 1.f},
-         {.1f, 1.f, .1f},
-         {1.f, 1.f, .1f},
-         {.1f, 1.f, 1.f},
-         {1.f, 1.f, 1.f}, 
+         //{1.f, .1f, .1f},
+         //{.1f, .1f, 1.f},
+         //{.1f, 1.f, .1f},
+         //{1.f, 1.f, .1f},
+         //{.1f, 1.f, 1.f},
+         //{1.f, 1.f, 1.f}, 
     };
     for (int i = 0; i < lightColors.size(); i++)
     {
