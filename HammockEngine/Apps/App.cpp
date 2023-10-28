@@ -740,14 +740,14 @@ void Hmck::App::load()
     //gameObjects.emplace(wall.getId(), std::move(wall));
 
 
-    auto sponza = HmckGameObject::createFromGLTF(std::string(MODELS_DIR) + "sponza/sponza.glb", hmckDevice, { .binary = true });
-    sponza.transformComponent.translation.y = - .25f;
-    sponza.setName("Sponza");
-    gameObjects.emplace(sponza.getId(), std::move(sponza));
+    //auto sponza = HmckGameObject::createFromGLTF(std::string(MODELS_DIR) + "sponza/sponza.glb", hmckDevice, { .binary = true });
+    //sponza.transformComponent.translation.y = - .25f;
+    //sponza.setName("Sponza");
+    //gameObjects.emplace(sponza.getId(), std::move(sponza));
 
-    //auto bistro = HmckGameObject::createFromGLTF(std::string(MODELS_DIR) + "Bistro/BistroInterior/BistroInterior.gltf", hmckDevice, { .binary = false });
-    //bistro.setName("Bistro"); // TODO put this in config
-    //gameObjects.emplace(bistro.getId(), std::move(bistro));
+    auto bistro = HmckGameObject::createFromGLTF(std::string(MODELS_DIR) + "Bistro/BistroExterior.glb", hmckDevice, { .binary = true });
+    bistro.setName("Bistro"); // TODO put this in config
+    gameObjects.emplace(bistro.getId(), std::move(bistro));
 
     // Point lights
     std::vector<glm::vec3> lightColors{

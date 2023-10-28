@@ -12,7 +12,7 @@ layout (location = 0) out vec3 _normal;
 layout (location = 1) out vec2 _uv;
 layout (location = 2) out vec3 _position;
 layout (location = 3) out vec4 _tangent;
-layout (location = 4) out vec3 _color;
+layout (location = 4) out vec3 _camera;
 
 
 layout (set = 0, binding = 0) uniform ShaderData
@@ -39,7 +39,6 @@ void main()
     // vertex pos in viewspace
 	_position = vec3(data.view * push.modelMatrix * vec4(position, 1.0));
 
-    _color = color;
 
 	_normal = mat3(push.normalMatrix) * normalize(normal);	
 	_tangent = mat4(push.normalMatrix) * normalize(tangent);

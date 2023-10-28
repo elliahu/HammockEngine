@@ -75,6 +75,7 @@
     <ClInclude Include="Engine\HmckSwapChain.h" />
     <ClInclude Include="Engine\HmckUtils.h" />
     <ClInclude Include="Engine\Systems\HmckUISystem.h" />
+    <ClInclude Include="Engine\HmckThreadPool.h" />
     <ClInclude Include="External\backends\imgui_impl_glfw.h" />
     <ClInclude Include="External\backends\imgui_impl_vulkan.h" />
     <ClInclude Include="External\imconfig.h" />
@@ -230,6 +231,7 @@
       <ConformanceMode>true</ConformanceMode>
       <AdditionalIncludeDirectories>$(VULKAN_SDK)\Include;$(ProjectDir)External;$(ProjectDir);$(ProjectDir)Engine;$(ProjectDir)Engine\Systems;$(ProjectDir)Engine\Systems\ImGUI;$(ProjectDir)Engine\Systems\ImGUI\backends;$(ProjectDir)Engine\Systems\ImGUI\misc\cpp</AdditionalIncludeDirectories>
       <LanguageStandard>stdcpp20</LanguageStandard>
+      <DisableSpecificWarnings>4996</DisableSpecificWarnings>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -256,14 +258,15 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>$(SolutionDir)External\glm;$(VULKAN_SDK)\Include;$(SolutionDir)External\glfw-3.3.8.bin.WIN64\include;$(SolutionDir)External\tiny_object_loader;$(ProjectDir);$(ProjectDir)Engine;$(ProjectDir)Engine\Systems;$(ProjectDir)Engine\Systems\ImGUI;$(ProjectDir)Engine\Systems\ImGUI\backends;$(ProjectDir)Engine\Systems\ImGUI\misc\cpp</AdditionalIncludeDirectories>
-      <LanguageStandard>stdcpp17</LanguageStandard>
+      <AdditionalIncludeDirectories>$(VULKAN_SDK)\Include;$(ProjectDir)External;$(ProjectDir);$(ProjectDir)Engine;$(ProjectDir)Engine\Systems;$(ProjectDir)Engine\Systems\ImGUI;$(ProjectDir)Engine\Systems\ImGUI\backends;$(ProjectDir)Engine\Systems\ImGUI\misc\cpp</AdditionalIncludeDirectories>
+      <LanguageStandard>stdcpp20</LanguageStandard>
+      <DisableSpecificWarnings>4996</DisableSpecificWarnings>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalLibraryDirectories>$(SolutionDir)External\glfw-3.3.8.bin.WIN64\lib-vc2022;$(VULKAN_SDK)\Lib</AdditionalLibraryDirectories>
-      <AdditionalDependencies>vulkan-1.lib;glfw3.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>$(VULKAN_SDK)\Lib</AdditionalLibraryDirectories>
+      <AdditionalDependencies>vulkan-1.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
     <PostBuildEvent>
       <Command>
@@ -286,16 +289,17 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>$(SolutionDir)External\glm;$(VULKAN_SDK)\Include;$(SolutionDir)External\glfw-3.3.8.bin.WIN64\include;$(SolutionDir)External\tiny_object_loader;$(ProjectDir);$(ProjectDir)Engine;$(ProjectDir)Engine\Systems;$(ProjectDir)Engine\Systems\ImGUI;$(ProjectDir)Engine\Systems\ImGUI\backends;$(ProjectDir)Engine\Systems\ImGUI\misc\cpp</AdditionalIncludeDirectories>
-      <LanguageStandard>stdcpp17</LanguageStandard>
+      <AdditionalIncludeDirectories>$(VULKAN_SDK)\Include;$(ProjectDir)External;$(ProjectDir);$(ProjectDir)Engine;$(ProjectDir)Engine\Systems;$(ProjectDir)Engine\Systems\ImGUI;$(ProjectDir)Engine\Systems\ImGUI\backends;$(ProjectDir)Engine\Systems\ImGUI\misc\cpp</AdditionalIncludeDirectories>
+      <LanguageStandard>stdcpp20</LanguageStandard>
+      <DisableSpecificWarnings>4996</DisableSpecificWarnings>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalLibraryDirectories>$(SolutionDir)External\glfw-3.3.8.bin.WIN64\lib-vc2022;$(VULKAN_SDK)\Lib</AdditionalLibraryDirectories>
-      <AdditionalDependencies>vulkan-1.lib;glfw3.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>$(VULKAN_SDK)\Lib</AdditionalLibraryDirectories>
+      <AdditionalDependencies>vulkan-1.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
     <PostBuildEvent>
       <Command>
