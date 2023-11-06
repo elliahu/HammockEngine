@@ -1,20 +1,20 @@
 #include "HmckRenderer.h"
 
-Hmck::HmckRenderer::HmckRenderer(HmckWindow& window, HmckDevice& device) : hmckWindow{window}, hmckDevice{device}
+Hmck::Renderer::Renderer(Window& window, Device& device) : hmckWindow{window}, hmckDevice{device}
 {
 	recreateSwapChain();
 	createCommandBuffer();
 }
 
-Hmck::HmckRenderer::~HmckRenderer()
+Hmck::Renderer::~Renderer()
 {
 	freeCommandBuffers();
 }
 
 
-void Hmck::HmckRenderer::createCommandBuffer()
+void Hmck::Renderer::createCommandBuffer()
 {
-	commandBuffers.resize(HmckSwapChain::MAX_FRAMES_IN_FLIGHT);
+	commandBuffers.resize(SwapChain::MAX_FRAMES_IN_FLIGHT);
 
 	VkCommandBufferAllocateInfo allocInfo{};
 	allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
@@ -29,7 +29,7 @@ void Hmck::HmckRenderer::createCommandBuffer()
 }
 
 
-void Hmck::HmckRenderer::freeCommandBuffers()
+void Hmck::Renderer::freeCommandBuffers()
 {
 	vkFreeCommandBuffers(
 		hmckDevice.device(),
@@ -41,7 +41,7 @@ void Hmck::HmckRenderer::freeCommandBuffers()
 
 
 
-void Hmck::HmckRenderer::recreateSwapChain()
+void Hmck::Renderer::recreateSwapChain()
 {
 	auto extent = hmckWindow.getExtent();
 	while (extent.width == 0 || extent.height == 0)
@@ -53,11 +53,11 @@ void Hmck::HmckRenderer::recreateSwapChain()
 
 	if (hmckSwapChain == nullptr)
 	{
-		hmckSwapChain = std::make_unique<HmckSwapChain>(hmckDevice, extent);
+		hmckSwapChain = std::make_unique<SwapChain>(hmckDevice, extent);
 	}
 	else {
-		std::shared_ptr<HmckSwapChain> oldSwapChain = std::move(hmckSwapChain);
-		hmckSwapChain = std::make_unique<HmckSwapChain>(hmckDevice, extent, oldSwapChain);
+		std::shared_ptr<SwapChain> oldSwapChain = std::move(hmckSwapChain);
+		hmckSwapChain = std::make_unique<SwapChain>(hmckDevice, extent, oldSwapChain);
 
 		if (!oldSwapChain->compareSwapFormats(*hmckSwapChain.get()))
 		{
@@ -68,7 +68,7 @@ void Hmck::HmckRenderer::recreateSwapChain()
 	//
 }
 
-VkCommandBuffer Hmck::HmckRenderer::beginFrame()
+VkCommandBuffer Hmck::Renderer::beginFrame()
 {
 	assert(!isFrameStarted && "Cannot call beginFrame while already in progress");
 
@@ -98,7 +98,7 @@ VkCommandBuffer Hmck::HmckRenderer::beginFrame()
 	return commandBuffer;
 }
 
-void Hmck::HmckRenderer::endFrame()
+void Hmck::Renderer::endFrame()
 {
 	assert(isFrameStarted && "Cannot call endFrame while frame is not in progress");
 	auto commandBuffer = getCurrentCommandBuffer();
@@ -123,12 +123,12 @@ void Hmck::HmckRenderer::endFrame()
 
 	isFrameStarted = false;
 
-	currentFrameIndex = (currentFrameIndex + 1) % HmckSwapChain::MAX_FRAMES_IN_FLIGHT;
+	currentFrameIndex = (currentFrameIndex + 1) % SwapChain::MAX_FRAMES_IN_FLIGHT;
 }
 
 
-void Hmck::HmckRenderer::beginRenderPass(
-	std::unique_ptr<HmckFramebuffer>& framebuffer,
+void Hmck::Renderer::beginRenderPass(
+	std::unique_ptr<Framebuffer>& framebuffer,
 	VkCommandBuffer commandBuffer, 
 	std::vector<VkClearValue> clearValues)
 {
@@ -157,7 +157,7 @@ void Hmck::HmckRenderer::beginRenderPass(
 	vkCmdSetScissor(commandBuffer, 0, 1, &scissor);
 }
 
-void Hmck::HmckRenderer::beginRenderPass(HmckFramebuffer& framebuffer, VkCommandBuffer commandBuffer, std::vector<VkClearValue> clearValues)
+void Hmck::Renderer::beginRenderPass(Framebuffer& framebuffer, VkCommandBuffer commandBuffer, std::vector<VkClearValue> clearValues)
 {
 	assert(isFrameInProgress() && "Cannot call beginRenderPass if frame is not in progress");
 	assert(commandBuffer == getCurrentCommandBuffer() && "Cannot begin render pass on command buffer from a different frame");
@@ -183,7 +183,7 @@ void Hmck::HmckRenderer::beginRenderPass(HmckFramebuffer& framebuffer, VkCommand
 	vkCmdSetScissor(commandBuffer, 0, 1, &scissor);
 }
 
-void Hmck::HmckRenderer::beginSwapChainRenderPass(VkCommandBuffer commandBuffer)
+void Hmck::Renderer::beginSwapChainRenderPass(VkCommandBuffer commandBuffer)
 {
 	assert(isFrameInProgress() && "Cannot call beginSwapChainRenderPass if frame is not in progress");
 	assert(commandBuffer == getCurrentCommandBuffer() && "Cannot begin render pass on command buffer from a different frame");
@@ -214,7 +214,7 @@ void Hmck::HmckRenderer::beginSwapChainRenderPass(VkCommandBuffer commandBuffer)
 	vkCmdSetScissor(commandBuffer, 0, 1, &scissor);
 }
 
-void Hmck::HmckRenderer::endRenderPass(VkCommandBuffer commandBuffer)
+void Hmck::Renderer::endRenderPass(VkCommandBuffer commandBuffer)
 {
 	assert(isFrameInProgress() && "Cannot call endActiveRenderPass if frame is not in progress");
 	assert(commandBuffer == getCurrentCommandBuffer() && "Cannot end render pass on command buffer from a different frame");

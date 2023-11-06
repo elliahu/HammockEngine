@@ -203,13 +203,13 @@ namespace Hmck
 
 	namespace Rnd 
 	{
-		inline std::unique_ptr<HmckBuffer> createSSAOKernel(HmckDevice& device, uint32_t kernelSize) 
+		inline std::unique_ptr<Buffer> createSSAOKernel(Device& device, uint32_t kernelSize) 
 		{
 			std::default_random_engine rndEngine((unsigned)time(nullptr));
 			std::uniform_real_distribution<float> rndDist(0.0f, 1.0f);
 
 			std::vector<glm::vec4> ssaoKernel{ kernelSize };
-			std::unique_ptr<HmckBuffer> ssaoKernelBuffer{};
+			std::unique_ptr<Buffer> ssaoKernelBuffer{};
 
 			for (uint32_t i = 0; i < kernelSize; ++i)
 			{
@@ -221,7 +221,7 @@ namespace Hmck
 				ssaoKernel[i] = glm::vec4(sample * scale, 0.0f);
 			}
 
-			ssaoKernelBuffer = std::make_unique<HmckBuffer>(
+			ssaoKernelBuffer = std::make_unique<Buffer>(
 				device,
 				ssaoKernel.size() * sizeof(glm::vec4),
 				1,
@@ -233,12 +233,12 @@ namespace Hmck
 			return ssaoKernelBuffer;
 		}
 
-		inline HmckTexture2D createNoiseTexture(HmckDevice& device, uint32_t noiseDim)
+		inline Texture2D createNoiseTexture(Device& device, uint32_t noiseDim)
 		{
 			std::default_random_engine rndEngine((unsigned)time(nullptr));
 			std::uniform_real_distribution<float> rndDist(0.0f, 1.0f);
 
-			HmckTexture2D ssaoNoiseTexture{};
+			Texture2D ssaoNoiseTexture{};
 
 			std::vector<glm::vec4> ssaoNoise(noiseDim * noiseDim);
 			for (uint32_t i = 0; i < static_cast<uint32_t>(ssaoNoise.size()); i++)

@@ -23,7 +23,7 @@ namespace Hmck {
 		bool isComplete() { return graphicsFamilyHasValue && presentFamilyHasValue; }
 	};
 
-	class HmckDevice {
+	class Device {
 	public:
 #ifdef NDEBUG
 		const bool enableValidationLayers = false;
@@ -31,14 +31,14 @@ namespace Hmck {
 		const bool enableValidationLayers = true;
 #endif
 
-		HmckDevice(HmckWindow& window);
-		~HmckDevice();
+		Device(Window& window);
+		~Device();
 
 		// Not copyable or movable
-		HmckDevice(const HmckDevice&) = delete;
-		HmckDevice& operator=(const HmckDevice&) = delete;
-		HmckDevice(HmckDevice&&) = delete;
-		HmckDevice& operator=(HmckDevice&&) = delete;
+		Device(const Device&) = delete;
+		Device& operator=(const Device&) = delete;
+		Device(Device&&) = delete;
+		Device& operator=(Device&&) = delete;
 
 		VkCommandPool getCommandPool() { return commandPool; }
 		VkDevice device() { return device_; }
@@ -102,7 +102,7 @@ namespace Hmck {
 		VkInstance instance;
 		VkDebugUtilsMessengerEXT debugMessenger;
 		VkPhysicalDevice physicalDevice = VK_NULL_HANDLE;
-		HmckWindow& window;
+		Window& window;
 		VkCommandPool commandPool;
 
 		VkDevice device_;

@@ -23,8 +23,8 @@ namespace Hmck
 		
 		virtual void load() = 0;
 
-		HmckWindow hmckWindow{ WINDOW_WIDTH, WINDOW_HEIGHT, "Hammock Engine" };
-		HmckDevice hmckDevice{ hmckWindow }; // TODO this is wrong, device should not be dependent on window -> should be otherway around
-		HmckRenderer hmckRenderer{ hmckWindow, hmckDevice };
+		Window hmckWindow{ WINDOW_WIDTH, WINDOW_HEIGHT, "Hammock Engine" };
+		Device hmckDevice{ hmckWindow }; // TODO this is wrong, device should not be dependent on window -> should be otherway around
+		Renderer hmckRenderer{ hmckWindow, hmckDevice };
 	};
 }

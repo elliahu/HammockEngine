@@ -1,34 +1,34 @@
 #include "HmckLogger.h"
 #pragma once
 
-Hmck::HmckLogger::HmckLogger(){}
+Hmck::Logger::Logger(){}
 
-Hmck::HmckLogger::~HmckLogger(){}
+Hmck::Logger::~Logger(){}
 
-Hmck::HmckLogLevel Hmck::HmckLogger::hmckMinLogLevel = Hmck::HMCK_LOG_LEVEL_DEBUG;
+Hmck::Logger::LogLevel Hmck::Logger::hmckMinLogLevel = Hmck::Logger::HMCK_LOG_LEVEL_DEBUG;
 
-void Hmck::HmckLogger::log(HmckLogLevel level, std::string message)
+void Hmck::Logger::log(LogLevel level, std::string message)
 {
     if(level >= hmckMinLogLevel)
         std::cout << createLogMessage(level, message) << std::endl;
 }
 
-void Hmck::HmckLogger::debug(std::string message)
+void Hmck::Logger::debug(std::string message)
 {
-    log(HmckLogLevel::HMCK_LOG_LEVEL_DEBUG, message);
+    log(LogLevel::HMCK_LOG_LEVEL_DEBUG, message);
 }
 
-void Hmck::HmckLogger::warn(std::string message)
+void Hmck::Logger::warn(std::string message)
 {
-    log(HmckLogLevel::HMCK_LOG_LEVEL_WARN, message);
+    log(LogLevel::HMCK_LOG_LEVEL_WARN, message);
 }
 
-void Hmck::HmckLogger::error(std::string message)
+void Hmck::Logger::error(std::string message)
 {
-    log(HmckLogLevel::HMCK_LOG_LEVEL_ERROR, message);
+    log(LogLevel::HMCK_LOG_LEVEL_ERROR, message);
 }
 
-std::string Hmck::HmckLogger::createLogMessage(HmckLogLevel level, std::string message)
+std::string Hmck::Logger::createLogMessage(LogLevel level, std::string message)
 {
     std::time_t t = std::time(nullptr);
     std::stringstream ss;
@@ -39,13 +39,13 @@ std::string Hmck::HmckLogger::createLogMessage(HmckLogLevel level, std::string m
 
     switch (level)
     {
-    case Hmck::HMCK_LOG_LEVEL_DEBUG:
+    case Hmck::Logger::HMCK_LOG_LEVEL_DEBUG:
         lvl = "DEBUG";
         break;
-    case Hmck::HMCK_LOG_LEVEL_WARN:
+    case Hmck::Logger::HMCK_LOG_LEVEL_WARN:
         lvl = "WARN";
         break;
-    case Hmck::HMCK_LOG_LEVEL_ERROR:
+    case Hmck::Logger::HMCK_LOG_LEVEL_ERROR:
         lvl = "ERROR";
         break;
     default:

@@ -9,11 +9,11 @@
 
 namespace Hmck {
 
-    class HmckDescriptorSetLayout {
+    class DescriptorSetLayout {
     public:
         class Builder {
         public:
-            Builder(HmckDevice& hmckDevice) : hmckDevice{ hmckDevice } {}
+            Builder(Device& hmckDevice) : hmckDevice{ hmckDevice } {}
 
             Builder& addBinding(
                 uint32_t binding,
@@ -21,55 +21,55 @@ namespace Hmck {
                 VkShaderStageFlags stageFlags,
                 uint32_t count = 1
             );
-            std::unique_ptr<HmckDescriptorSetLayout> build() const;
+            std::unique_ptr<DescriptorSetLayout> build() const;
 
         private:
-            HmckDevice& hmckDevice;
+            Device& hmckDevice;
             std::unordered_map<uint32_t, VkDescriptorSetLayoutBinding> bindings{};
         };
 
-        HmckDescriptorSetLayout(
-            HmckDevice& hmckDevice, std::unordered_map<uint32_t, VkDescriptorSetLayoutBinding> bindings);
-        ~HmckDescriptorSetLayout();
-        HmckDescriptorSetLayout(const HmckDescriptorSetLayout&) = delete;
-        HmckDescriptorSetLayout& operator=(const HmckDescriptorSetLayout&) = delete;
+        DescriptorSetLayout(
+            Device& hmckDevice, std::unordered_map<uint32_t, VkDescriptorSetLayoutBinding> bindings);
+        ~DescriptorSetLayout();
+        DescriptorSetLayout(const DescriptorSetLayout&) = delete;
+        DescriptorSetLayout& operator=(const DescriptorSetLayout&) = delete;
 
         VkDescriptorSetLayout getDescriptorSetLayout() const { return descriptorSetLayout; }
 
     private:
-        HmckDevice& hmckDevice;
+        Device& hmckDevice;
         VkDescriptorSetLayout descriptorSetLayout;
         std::unordered_map<uint32_t, VkDescriptorSetLayoutBinding> bindings;
 
-        friend class HmckDescriptorWriter;
+        friend class DescriptorWriter;
     };
 
-    class HmckDescriptorPool {
+    class DescriptorPool {
     public:
         class Builder {
         public:
-            Builder(HmckDevice& hmckDevice) : hmckDevice{ hmckDevice } {}
+            Builder(Device& hmckDevice) : hmckDevice{ hmckDevice } {}
 
             Builder& addPoolSize(VkDescriptorType descriptorType, uint32_t count);
             Builder& setPoolFlags(VkDescriptorPoolCreateFlags flags);
             Builder& setMaxSets(uint32_t count);
-            std::unique_ptr<HmckDescriptorPool> build() const;
+            std::unique_ptr<DescriptorPool> build() const;
 
         private:
-            HmckDevice& hmckDevice;
+            Device& hmckDevice;
             std::vector<VkDescriptorPoolSize> poolSizes{};
             uint32_t maxSets = 1000;
             VkDescriptorPoolCreateFlags poolFlags = 0;
         };
 
-        HmckDescriptorPool(
-            HmckDevice& hmckDevice,
+        DescriptorPool(
+            Device& hmckDevice,
             uint32_t maxSets,
             VkDescriptorPoolCreateFlags poolFlags,
             const std::vector<VkDescriptorPoolSize>& poolSizes);
-        ~HmckDescriptorPool();
-        HmckDescriptorPool(const HmckDescriptorPool&) = delete;
-        HmckDescriptorPool& operator=(const HmckDescriptorPool&) = delete;
+        ~DescriptorPool();
+        DescriptorPool(const DescriptorPool&) = delete;
+        DescriptorPool& operator=(const DescriptorPool&) = delete;
 
         bool allocateDescriptor(
             const VkDescriptorSetLayout descriptorSetLayout, VkDescriptorSet& descriptor) const;
@@ -80,25 +80,25 @@ namespace Hmck {
         VkDescriptorPool descriptorPool;
 
     private:
-        HmckDevice& hmckDevice;
+        Device& hmckDevice;
         
 
-        friend class HmckDescriptorWriter;
+        friend class DescriptorWriter;
     };
 
-    class HmckDescriptorWriter {
+    class DescriptorWriter {
     public:
-        HmckDescriptorWriter(HmckDescriptorSetLayout& setLayout, HmckDescriptorPool& pool);
+        DescriptorWriter(DescriptorSetLayout& setLayout, DescriptorPool& pool);
 
-        HmckDescriptorWriter& writeBuffer(uint32_t binding, VkDescriptorBufferInfo* bufferInfo);
-        HmckDescriptorWriter& writeImage(uint32_t binding, VkDescriptorImageInfo* imageInfo);
+        DescriptorWriter& writeBuffer(uint32_t binding, VkDescriptorBufferInfo* bufferInfo);
+        DescriptorWriter& writeImage(uint32_t binding, VkDescriptorImageInfo* imageInfo);
 
         bool build(VkDescriptorSet& set);
         void overwrite(VkDescriptorSet& set);
 
     private:
-        HmckDescriptorSetLayout& setLayout;
-        HmckDescriptorPool& pool;
+        DescriptorSetLayout& setLayout;
+        DescriptorPool& pool;
         std::vector<VkWriteDescriptorSet> writes;
     };
 

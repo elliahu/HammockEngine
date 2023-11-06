@@ -2,7 +2,7 @@
 
 Hmck::VolumetricRenderingApp::VolumetricRenderingApp()
 {
-    descriptorPool = HmckDescriptorPool::Builder(hmckDevice)
+    descriptorPool = DescriptorPool::Builder(hmckDevice)
         .setPoolFlags(VK_DESCRIPTOR_POOL_CREATE_UPDATE_AFTER_BIND_BIT)
         .setMaxSets(100)
         .addPoolSize(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 2000)
@@ -12,11 +12,11 @@ Hmck::VolumetricRenderingApp::VolumetricRenderingApp()
 
     load();
 
-    descriptorSetLayout = HmckDescriptorSetLayout::Builder(hmckDevice)
+    descriptorSetLayout = DescriptorSetLayout::Builder(hmckDevice)
         .addBinding(0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_ALL_GRAPHICS)
         .build();
 
-    materialLayout = HmckDescriptorSetLayout::Builder(hmckDevice)
+    materialLayout = DescriptorSetLayout::Builder(hmckDevice)
         .addBinding(0, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT) // albedo
         .addBinding(1, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT) // normal
         .addBinding(2, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT) // roughnessMetalic
@@ -26,12 +26,12 @@ Hmck::VolumetricRenderingApp::VolumetricRenderingApp()
 
 void Hmck::VolumetricRenderingApp::run()
 {
-    std::vector<std::unique_ptr<HmckBuffer>> uboBuffers{ HmckSwapChain::MAX_FRAMES_IN_FLIGHT };
+    std::vector<std::unique_ptr<Buffer>> uboBuffers{ SwapChain::MAX_FRAMES_IN_FLIGHT };
     for (int i = 0; i < uboBuffers.size(); i++)
     {
-        uboBuffers[i] = std::make_unique<HmckBuffer>(
+        uboBuffers[i] = std::make_unique<Buffer>(
             hmckDevice,
-            sizeof(HmckGlobalUbo),
+            sizeof(GlobalUbo),
             1,
             VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
             VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT
@@ -39,19 +39,19 @@ void Hmck::VolumetricRenderingApp::run()
         uboBuffers[i]->map();
     }
 
-    std::vector<VkDescriptorSet> globalDescriptorSets(HmckSwapChain::MAX_FRAMES_IN_FLIGHT);
+    std::vector<VkDescriptorSet> globalDescriptorSets(SwapChain::MAX_FRAMES_IN_FLIGHT);
     for (int i = 0; i < globalDescriptorSets.size(); i++)
     {
         auto bufferInfo = uboBuffers[i]->descriptorInfo();
-        HmckDescriptorWriter(*descriptorSetLayout, *descriptorPool)
+        DescriptorWriter(*descriptorSetLayout, *descriptorPool)
             .writeBuffer(0, &bufferInfo)
             .build(globalDescriptorSets[i]);
     }
 
     // camera and movement
-    HmckCamera camera{};
+    Camera camera{};
     camera.setViewTarget(glm::vec3(-1.f, -2.f, 2.f), glm::vec3(0.f, 0.f, 2.5f));
-    auto viewerObject = HmckGameObject::createGameObject();
+    auto viewerObject = GameObject::createGameObject();
     viewerObject.transformComponent.translation.z = -2.5f;
     KeyboardMovementController cameraController{};
 
@@ -61,7 +61,7 @@ void Hmck::VolumetricRenderingApp::run()
         VK_IMAGE_TILING_OPTIMAL,
         VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT);
 
-    HmckGraphicsPipeline standardPipeline = HmckGraphicsPipeline::createGraphicsPipeline({
+    GraphicsPipeline standardPipeline = GraphicsPipeline::createGraphicsPipeline({
         .debugName = "standard_forward_pass",
         .device = hmckDevice,
         .VS {
@@ -88,8 +88,8 @@ void Hmck::VolumetricRenderingApp::run()
             .depthTestCompareOp = VK_COMPARE_OP_LESS_OR_EQUAL,
             .blendAtaAttachmentStates {},
             .vertexBufferBindings {
-                .vertexBindingDescriptions = HmckGLTF::getBindingDescriptions(),
-                .vertexAttributeDescriptions = HmckGLTF::getAttributeDescriptions()
+                .vertexBindingDescriptions = Gltf::getBindingDescriptions(),
+                .vertexAttributeDescriptions = Gltf::getAttributeDescriptions()
             }
         },
         .renderPass = hmckRenderer.getSwapChainRenderPass()
@@ -166,7 +166,7 @@ void Hmck::VolumetricRenderingApp::run()
 
 void Hmck::VolumetricRenderingApp::load()
 {
-    auto helmet = HmckGameObject::createFromGLTF(std::string(MODELS_DIR) + "helmet/helmet.glb", hmckDevice,{ .binary = true });
+    auto helmet = GameObject::createFromGLTF(std::string(MODELS_DIR) + "helmet/helmet.glb", hmckDevice,{ .binary = true });
     helmet.setName("Flight Helmet");
     gameObjects.emplace(helmet.getId(), std::move(helmet));
 }

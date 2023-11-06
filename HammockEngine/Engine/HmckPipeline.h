@@ -10,11 +10,11 @@
 
 namespace Hmck 
 {
-	struct HmckPipelineConfigInfo
+	struct PipelineConfigInfo
 	{
-		HmckPipelineConfigInfo() = default;
-		HmckPipelineConfigInfo(const HmckPipelineConfigInfo&) = delete;
-		HmckPipelineConfigInfo& operator=(const HmckPipelineConfigInfo&) = delete;
+		PipelineConfigInfo() = default;
+		PipelineConfigInfo(const PipelineConfigInfo&) = delete;
+		PipelineConfigInfo& operator=(const PipelineConfigInfo&) = delete;
 
 		std::vector<VkVertexInputBindingDescription> bindingDescriptions{};
 		std::vector<VkVertexInputAttributeDescription> attributeDescriptions{};
@@ -33,24 +33,24 @@ namespace Hmck
 	};
 
 
-	class HmckPipeline
+	class Pipeline
 	{
 	public:
-		HmckPipeline(
-			HmckDevice& device, 
+		Pipeline(
+			Device& device, 
 			const std::string& vertexShaderFilePath, 
 			const std::string& fragmentShaderFilePath, 
-			const HmckPipelineConfigInfo& configInfo);
-		~HmckPipeline();
+			const PipelineConfigInfo& configInfo);
+		~Pipeline();
 
-		HmckPipeline(const HmckPipeline&) = delete;
-		HmckPipeline& operator =(const HmckPipeline&) = delete;
+		Pipeline(const Pipeline&) = delete;
+		Pipeline& operator =(const Pipeline&) = delete;
 
-		static void defaultHmckPipelineConfigInfo(HmckPipelineConfigInfo& configInfo);
-		static void enableAlphaBlending(HmckPipelineConfigInfo& configInfo);
-		static void enablePolygonModeLine(HmckPipelineConfigInfo& configInfo);
-		static void enableGbuffer(HmckPipelineConfigInfo& configInfo, std::array<VkPipelineColorBlendAttachmentState, 4> blendAttachmentStates);
-		static void disableDepthTest(HmckPipelineConfigInfo& configInfo);
+		static void defaultHmckPipelineConfigInfo(PipelineConfigInfo& configInfo);
+		static void enableAlphaBlending(PipelineConfigInfo& configInfo);
+		static void enablePolygonModeLine(PipelineConfigInfo& configInfo);
+		static void enableGbuffer(PipelineConfigInfo& configInfo, std::array<VkPipelineColorBlendAttachmentState, 4> blendAttachmentStates);
+		static void disableDepthTest(PipelineConfigInfo& configInfo);
 
 		void bind(VkCommandBuffer commandBuffer);
 
@@ -59,17 +59,17 @@ namespace Hmck
 
 		void createGraphicsPipeline(const std::string& vertexShaderFilePath, 
 			const std::string& fragmentShaderFilePath, 
-			const HmckPipelineConfigInfo& configInfo);
+			const PipelineConfigInfo& configInfo);
 		
 		void createShaderModule(const std::vector<char>& code, VkShaderModule* shaderModule);
 		
-		HmckDevice& hmckDevice; // TODO potentionaly memmory unsafe
+		Device& hmckDevice; // TODO potentionaly memmory unsafe
 		VkPipeline graphicsPipeline;
 		VkShaderModule vertShaderModule;
 		VkShaderModule fragShaderModule;
 	};
 
-	class HmckGraphicsPipeline
+	class GraphicsPipeline
 	{
 		struct GraphicsPipelineConfig
 		{
@@ -91,7 +91,7 @@ namespace Hmck
 		struct GraphicsPipelineCreateInfo
 		{
 			std::string debugName;
-			HmckDevice& device; 
+			Device& device; 
 
 			struct ShaderModuleInfo
 			{
@@ -124,21 +124,21 @@ namespace Hmck
 
 	public:
 
-		static HmckGraphicsPipeline createGraphicsPipeline(GraphicsPipelineCreateInfo createInfo);
+		static GraphicsPipeline createGraphicsPipeline(GraphicsPipelineCreateInfo createInfo);
 		void bind(VkCommandBuffer commandBuffer);
 
-		~HmckGraphicsPipeline();
+		~GraphicsPipeline();
 
-		HmckGraphicsPipeline(const HmckGraphicsPipeline&) = delete;
-		HmckGraphicsPipeline& operator =(const HmckGraphicsPipeline&) = delete;
+		GraphicsPipeline(const GraphicsPipeline&) = delete;
+		GraphicsPipeline& operator =(const GraphicsPipeline&) = delete;
 
 		VkPipelineLayout graphicsPipelineLayout;
 
 	private:
-		HmckGraphicsPipeline(GraphicsPipelineCreateInfo& createInfo);
+		GraphicsPipeline(GraphicsPipelineCreateInfo& createInfo);
 		void defaultRenderPipelineConfig(GraphicsPipelineConfig& configInfo);
 		void createShaderModule(const std::vector<char>& code, VkShaderModule* shaderModule);
-		HmckDevice& device;
+		Device& device;
 		VkPipeline graphicsPipeline;
 		VkShaderModule vertShaderModule;
 		VkShaderModule fragShaderModule;

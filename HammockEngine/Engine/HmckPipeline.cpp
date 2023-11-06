@@ -1,22 +1,22 @@
 #include "HmckPipeline.h"
 
-Hmck::HmckPipeline::HmckPipeline(
-    HmckDevice& device, 
+Hmck::Pipeline::Pipeline(
+    Device& device, 
     const std::string& vertexShaderFilePath, 
     const std::string& fragmentShaderFilePath, 
-    const HmckPipelineConfigInfo& configInfo): hmckDevice{device}
+    const PipelineConfigInfo& configInfo): hmckDevice{device}
 {
     createGraphicsPipeline(vertexShaderFilePath, fragmentShaderFilePath, configInfo);
 }
 
-Hmck::HmckPipeline::~HmckPipeline()
+Hmck::Pipeline::~Pipeline()
 {
     vkDestroyShaderModule(hmckDevice.device(), vertShaderModule, nullptr);
     vkDestroyShaderModule(hmckDevice.device(), fragShaderModule, nullptr);
     vkDestroyPipeline(hmckDevice.device(), graphicsPipeline, nullptr);
 }
 
-void Hmck::HmckPipeline::defaultHmckPipelineConfigInfo(HmckPipelineConfigInfo& configInfo)
+void Hmck::Pipeline::defaultHmckPipelineConfigInfo(PipelineConfigInfo& configInfo)
 {
     configInfo.inputAssemblyInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO;
     configInfo.inputAssemblyInfo.topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
@@ -84,16 +84,16 @@ void Hmck::HmckPipeline::defaultHmckPipelineConfigInfo(HmckPipelineConfigInfo& c
         static_cast<uint32_t>(configInfo.dynamicStateEnables.size());
     configInfo.dynamicStateInfo.flags = 0;
 
-    configInfo.bindingDescriptions = HmckGLTF::getBindingDescriptions();
-    configInfo.attributeDescriptions = HmckGLTF::getAttributeDescriptions();
+    configInfo.bindingDescriptions = Gltf::getBindingDescriptions();
+    configInfo.attributeDescriptions = Gltf::getAttributeDescriptions();
 }
 
-void Hmck::HmckPipeline::bind(VkCommandBuffer commandBuffer)
+void Hmck::Pipeline::bind(VkCommandBuffer commandBuffer)
 {
     vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, graphicsPipeline);
 }
 
-std::vector<char> Hmck::HmckPipeline::readFile(const std::string& filePath)
+std::vector<char> Hmck::Pipeline::readFile(const std::string& filePath)
 {
     std::ifstream file{ filePath, std::ios::ate | std::ios::binary };
 
@@ -112,10 +112,10 @@ std::vector<char> Hmck::HmckPipeline::readFile(const std::string& filePath)
     return buffer;
 }
 
-void Hmck::HmckPipeline::createGraphicsPipeline(
+void Hmck::Pipeline::createGraphicsPipeline(
     const std::string& vertexShaderFilePath,
     const std::string& fragmentShaderFilePath,
-    const HmckPipelineConfigInfo& configInfo)
+    const PipelineConfigInfo& configInfo)
 {
     assert(
         configInfo.pipelineLayout != VK_NULL_HANDLE &&
@@ -189,7 +189,7 @@ void Hmck::HmckPipeline::createGraphicsPipeline(
     }
 }
 
-void Hmck::HmckPipeline::createShaderModule(const std::vector<char>& code, VkShaderModule* shaderModule)
+void Hmck::Pipeline::createShaderModule(const std::vector<char>& code, VkShaderModule* shaderModule)
 {
     VkShaderModuleCreateInfo createInfo{};
     createInfo.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
@@ -202,7 +202,7 @@ void Hmck::HmckPipeline::createShaderModule(const std::vector<char>& code, VkSha
 }
 
 
-void Hmck::HmckPipeline::enableAlphaBlending(HmckPipelineConfigInfo& configInfo)
+void Hmck::Pipeline::enableAlphaBlending(PipelineConfigInfo& configInfo)
 {
     configInfo.colorBlendAttachment.blendEnable = VK_TRUE;
     configInfo.colorBlendAttachment.colorWriteMask =
@@ -216,7 +216,7 @@ void Hmck::HmckPipeline::enableAlphaBlending(HmckPipelineConfigInfo& configInfo)
     configInfo.colorBlendAttachment.alphaBlendOp = VK_BLEND_OP_ADD;
 }
 
-void Hmck::HmckPipeline::enablePolygonModeLine(HmckPipelineConfigInfo& configInfo)
+void Hmck::Pipeline::enablePolygonModeLine(PipelineConfigInfo& configInfo)
 {
     configInfo.rasterizationInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO;
     configInfo.rasterizationInfo.depthClampEnable = VK_FALSE;
@@ -228,28 +228,28 @@ void Hmck::HmckPipeline::enablePolygonModeLine(HmckPipelineConfigInfo& configInf
     configInfo.rasterizationInfo.depthBiasEnable = VK_TRUE;
 }
 
-void Hmck::HmckPipeline::enableGbuffer(HmckPipelineConfigInfo& configInfo, std::array<VkPipelineColorBlendAttachmentState, 4> blendAttachmentStates)
+void Hmck::Pipeline::enableGbuffer(PipelineConfigInfo& configInfo, std::array<VkPipelineColorBlendAttachmentState, 4> blendAttachmentStates)
 {
     configInfo.colorBlendInfo.attachmentCount = static_cast<uint32_t>(blendAttachmentStates.size());
     configInfo.colorBlendInfo.pAttachments = blendAttachmentStates.data();
 }
 
-void Hmck::HmckPipeline::disableDepthTest(HmckPipelineConfigInfo& configInfo)
+void Hmck::Pipeline::disableDepthTest(PipelineConfigInfo& configInfo)
 {
     configInfo.depthStencilInfo.depthTestEnable = VK_FALSE;
 }
 
-Hmck::HmckGraphicsPipeline Hmck::HmckGraphicsPipeline::createGraphicsPipeline(GraphicsPipelineCreateInfo createInfo)
+Hmck::GraphicsPipeline Hmck::GraphicsPipeline::createGraphicsPipeline(GraphicsPipelineCreateInfo createInfo)
 {
-    return Hmck::HmckGraphicsPipeline(createInfo);
+    return Hmck::GraphicsPipeline(createInfo);
 }
 
-void Hmck::HmckGraphicsPipeline::bind(VkCommandBuffer commandBuffer)
+void Hmck::GraphicsPipeline::bind(VkCommandBuffer commandBuffer)
 {
     vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, graphicsPipeline);
 }
 
-Hmck::HmckGraphicsPipeline::~HmckGraphicsPipeline()
+Hmck::GraphicsPipeline::~GraphicsPipeline()
 {
     vkDestroyShaderModule(device.device(), vertShaderModule, nullptr);
     vkDestroyShaderModule(device.device(), fragShaderModule, nullptr);
@@ -257,7 +257,7 @@ Hmck::HmckGraphicsPipeline::~HmckGraphicsPipeline()
     vkDestroyPipeline(device.device(), graphicsPipeline, nullptr);
 }
 
-Hmck::HmckGraphicsPipeline::HmckGraphicsPipeline(Hmck::HmckGraphicsPipeline::GraphicsPipelineCreateInfo& createInfo): device{ createInfo.device}
+Hmck::GraphicsPipeline::GraphicsPipeline(Hmck::GraphicsPipeline::GraphicsPipelineCreateInfo& createInfo): device{ createInfo.device}
 {
     VkPipelineLayoutCreateInfo pipelineLayoutInfo{};
     pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
@@ -272,7 +272,7 @@ Hmck::HmckGraphicsPipeline::HmckGraphicsPipeline(Hmck::HmckGraphicsPipeline::Gra
     }
 
     GraphicsPipelineConfig configInfo{};
-    HmckGraphicsPipeline::defaultRenderPipelineConfig(configInfo);
+    GraphicsPipeline::defaultRenderPipelineConfig(configInfo);
     if (createInfo.graphicsState.blendAtaAttachmentStates.size() > 0)
     {
         configInfo.colorBlendInfo.attachmentCount = static_cast<uint32_t>(createInfo.graphicsState.blendAtaAttachmentStates.size());
@@ -339,7 +339,7 @@ Hmck::HmckGraphicsPipeline::HmckGraphicsPipeline(Hmck::HmckGraphicsPipeline::Gra
 }
 
 
-void Hmck::HmckGraphicsPipeline::defaultRenderPipelineConfig(GraphicsPipelineConfig& configInfo)
+void Hmck::GraphicsPipeline::defaultRenderPipelineConfig(GraphicsPipelineConfig& configInfo)
 {
     configInfo.inputAssemblyInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO;
     configInfo.inputAssemblyInfo.topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
@@ -408,7 +408,7 @@ void Hmck::HmckGraphicsPipeline::defaultRenderPipelineConfig(GraphicsPipelineCon
     configInfo.dynamicStateInfo.flags = 0;
 }
 
-void Hmck::HmckGraphicsPipeline::createShaderModule(const std::vector<char>& code, VkShaderModule* shaderModule)
+void Hmck::GraphicsPipeline::createShaderModule(const std::vector<char>& code, VkShaderModule* shaderModule)
 {
     VkShaderModuleCreateInfo createInfo{};
     createInfo.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;

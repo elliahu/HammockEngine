@@ -11,7 +11,7 @@
 
 namespace Hmck
 {
-	class HmckCamera
+	class Camera
 	{
 	public:
 		void setOrthographicProjection(float left, float right, float top, float bottom, float near, float far);

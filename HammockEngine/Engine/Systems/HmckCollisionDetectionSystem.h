@@ -11,12 +11,12 @@
 
 namespace Hmck
 {
-	class HmckCollisionDetectionSystem
+	class CollisionDetectionSystem
 	{
 	public:
-		HmckCollisionDetectionSystem(const HmckCollisionDetectionSystem&) = delete;
-		HmckCollisionDetectionSystem& operator=(const HmckCollisionDetectionSystem&) = delete;
+		CollisionDetectionSystem(const CollisionDetectionSystem&) = delete;
+		CollisionDetectionSystem& operator=(const CollisionDetectionSystem&) = delete;
 		
-		bool intersect(HmckGameObject& obj1, HmckGameObject& obj2);
+		bool intersect(GameObject& obj1, GameObject& obj2);
 	};
 }

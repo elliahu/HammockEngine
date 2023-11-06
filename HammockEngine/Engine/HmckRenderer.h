@@ -3,7 +3,7 @@
 #include "Platform/HmckWindow.h"
 #include "HmckDevice.h"
 #include "HmckSwapChain.h"
-#include "Systems/HmckUISystem.h"
+#include "Systems/HmckUserInterface.h"
 #include "HmckFramebuffer.h"
 
 #define GLM_FORCE_RADIANS
@@ -27,17 +27,17 @@
 
 namespace Hmck
 {
-	class HmckRenderer
+	class Renderer
 	{
 
 	public:
 
-		HmckRenderer(HmckWindow& window, HmckDevice& device);
-		~HmckRenderer();
+		Renderer(Window& window, Device& device);
+		~Renderer();
 
 		// delete copy constructor and copy destructor
-		HmckRenderer(const HmckRenderer&) = delete;
-		HmckRenderer& operator=(const HmckRenderer&) = delete;
+		Renderer(const Renderer&) = delete;
+		Renderer& operator=(const Renderer&) = delete;
 
 		VkRenderPass getSwapChainRenderPass() const { return hmckSwapChain->getRenderPass(); }
 		float getAspectRatio() const { return hmckSwapChain->extentAspectRatio(); }
@@ -60,11 +60,11 @@ namespace Hmck
 		void endFrame();
 		void beginSwapChainRenderPass(VkCommandBuffer commandBuffer);
 		void beginRenderPass(
-			std::unique_ptr<HmckFramebuffer>& framebuffer,
+			std::unique_ptr<Framebuffer>& framebuffer,
 			VkCommandBuffer commandBuffer,
 			std::vector<VkClearValue> clearValues);
 		void beginRenderPass(
-			HmckFramebuffer& framebuffer,
+			Framebuffer& framebuffer,
 			VkCommandBuffer commandBuffer,
 			std::vector<VkClearValue> clearValues);
 		void endRenderPass(VkCommandBuffer commandBuffer);
@@ -75,9 +75,9 @@ namespace Hmck
 		void freeCommandBuffers();
 		void recreateSwapChain();
 
-		HmckWindow& hmckWindow;
-		HmckDevice& hmckDevice;
-		std::unique_ptr<HmckSwapChain> hmckSwapChain;
+		Window& hmckWindow;
+		Device& hmckDevice;
+		std::unique_ptr<SwapChain> hmckSwapChain;
 		std::vector<VkCommandBuffer> commandBuffers;
 		
 

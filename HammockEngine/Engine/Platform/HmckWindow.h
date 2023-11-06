@@ -9,22 +9,22 @@
 
 namespace Hmck
 {
-	enum HmckWindowMode 
+	enum WindowMode 
 	{
 		HMCK_WINDOW_MODE_FULLSCREEN,
 		HMCK_WINDOW_MODE_BORDERLESS,
 		HMCK_WINDOW_MODE_WINDOWED
 	};
 
-	class HmckWindow
+	class Window
 	{
 	public:
-		HmckWindow(int windowWidth, int windowHeight, std::string _windowName);
-		~HmckWindow();
+		Window(int windowWidth, int windowHeight, std::string _windowName);
+		~Window();
 
 		// delete copy constructor and copy destructor
-		HmckWindow(const HmckWindow&) = delete;
-		HmckWindow& operator=(const HmckWindow&) = delete;
+		Window(const Window&) = delete;
+		Window& operator=(const Window&) = delete;
 
 		std::string getWindowName() { return windowName; }
 		bool shouldClose();
@@ -34,10 +34,10 @@ namespace Hmck
 		void resetWindowResizedFlag() { framebufferResized = false; }
 		GLFWwindow* getGLFWwindow() const { return window; }
 		void pollEvents() { glfwPollEvents(); }
-		HmckInputManager& getInputManager() { return inputHandler; }
+		InputManager& getInputManager() { return inputHandler; }
 		void setCursorVisibility(bool visible);
 		void getCursorPosition(double& x, double& y);
-		void setWindowMode(HmckWindowMode mode);
+		void setWindowMode(WindowMode mode);
 		void setWindowResolution(uint32_t resX, uint32_t resY);
 
 	private:
@@ -50,7 +50,7 @@ namespace Hmck
 		bool framebufferResized = false;
 		std::string windowName;
 
-		HmckInputManager inputHandler;
+		InputManager inputHandler;
 
 		void initWindow(int width, int height);
 		static void framebufferResizeCallback(GLFWwindow* window, int width, int height);

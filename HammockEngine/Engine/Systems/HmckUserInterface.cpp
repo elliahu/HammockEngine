@@ -1,12 +1,12 @@
-#include "HmckUISystem.h"
+#include "HmckUserInterface.h"
 
-Hmck::HmckUISystem::HmckUISystem(HmckDevice& device, VkRenderPass renderPass, HmckWindow& window) : hmckDevice{ device }, hmckWindow{ window }, renderPass{renderPass}
+Hmck::UserInterface::UserInterface(Device& device, VkRenderPass renderPass, Window& window) : hmckDevice{ device }, hmckWindow{ window }, renderPass{renderPass}
 {
 	init();
 	setupStyle();
 }
 
-Hmck::HmckUISystem::~HmckUISystem()
+Hmck::UserInterface::~UserInterface()
 {
 	vkDestroyDescriptorPool(hmckDevice.device(), imguiPool, nullptr);
 	ImGui_ImplVulkan_Shutdown();
@@ -14,20 +14,20 @@ Hmck::HmckUISystem::~HmckUISystem()
 	ImGui::DestroyContext();
 }
 
-void Hmck::HmckUISystem::beginUserInterface()
+void Hmck::UserInterface::beginUserInterface()
 {
 	ImGui_ImplVulkan_NewFrame();
 	ImGui_ImplGlfw_NewFrame();
 	ImGui::NewFrame();
 }
 
-void Hmck::HmckUISystem::endUserInterface(VkCommandBuffer commandBuffer)
+void Hmck::UserInterface::endUserInterface(VkCommandBuffer commandBuffer)
 {
 	ImGui::Render();
 	ImGui_ImplVulkan_RenderDrawData(ImGui::GetDrawData(), commandBuffer);
 }
 
-void Hmck::HmckUISystem::showDebugStats(HmckGameObject& camera)
+void Hmck::UserInterface::showDebugStats(GameObject& camera)
 {
 	ImGuiIO& io = ImGui::GetIO();
 	ImGuiWindowFlags window_flags = ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_NoFocusOnAppearing | ImGuiWindowFlags_NoNav;
@@ -51,7 +51,7 @@ void Hmck::HmckUISystem::showDebugStats(HmckGameObject& camera)
 	ImGui::End();
 }
 
-void Hmck::HmckUISystem::showWindowControls()
+void Hmck::UserInterface::showWindowControls()
 {
 	ImGuiWindowFlags window_flags = ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_NoFocusOnAppearing | ImGuiWindowFlags_NoNav;
 	ImGui::SetNextWindowPos({ static_cast<float>(hmckWindow.getExtent().width - 10),10.f}, ImGuiCond_Always, {1.f, 0.f});
@@ -87,7 +87,7 @@ void Hmck::HmckUISystem::showWindowControls()
 	ImGui::End();
 }
 
-void Hmck::HmckUISystem::showGameObjectComponents(HmckGameObject& gameObject, bool* close)
+void Hmck::UserInterface::showGameObjectComponents(GameObject& gameObject, bool* close)
 {
 	beginWindow(gameObject.getName().c_str(), close, ImGuiWindowFlags_AlwaysAutoResize);
 	ImGui::Text("Components attached to GameObject");
@@ -95,7 +95,7 @@ void Hmck::HmckUISystem::showGameObjectComponents(HmckGameObject& gameObject, bo
 	endWindow();
 }
 
-void Hmck::HmckUISystem::showGameObjectsInspector(HmckGameObject::Map& gameObjects)
+void Hmck::UserInterface::showGameObjectsInspector(GameObject::Map& gameObjects)
 {
 	const ImGuiWindowFlags window_flags = ImGuiWindowFlags_AlwaysAutoResize;
 	ImGui::SetNextWindowPos({ 10, 130}, ImGuiCond_Once, {0,0});
@@ -105,7 +105,7 @@ void Hmck::HmckUISystem::showGameObjectsInspector(HmckGameObject::Map& gameObjec
 
 	for (auto& kv : gameObjects)
 	{
-		HmckGameObject& gameObject = kv.second;
+		GameObject& gameObject = kv.second;
 
 		if (ImGui::TreeNode(gameObject.getName().c_str()))
 		{
@@ -117,7 +117,7 @@ void Hmck::HmckUISystem::showGameObjectsInspector(HmckGameObject::Map& gameObjec
 	endWindow();
 }
 
-void Hmck::HmckUISystem::showGlobalSettings(HmckGlobalUbo& ubo)
+void Hmck::UserInterface::showGlobalSettings(GlobalUbo& ubo)
 {
 	const ImGuiWindowFlags window_flags = ImGuiWindowFlags_AlwaysAutoResize;
 	ImGui::SetNextWindowPos({ 10, 800 }, ImGuiCond_Once, { 0,0 });
@@ -138,19 +138,19 @@ void Hmck::HmckUISystem::showGlobalSettings(HmckGlobalUbo& ubo)
 	endWindow();
 }
 
-void Hmck::HmckUISystem::showLog()
+void Hmck::UserInterface::showLog()
 {
 	// TODO
 }
 
-void Hmck::HmckUISystem::forward(int button, bool state)
+void Hmck::UserInterface::forward(int button, bool state)
 {
 	ImGuiIO& io = ImGui::GetIO();
 	io.AddMouseButtonEvent(button, state);
 }
 
 
-void Hmck::HmckUISystem::init()
+void Hmck::UserInterface::init()
 {
 	//1: create descriptor pool for IMGUI
 	// the size of the pool is very oversize, but it's copied from imgui demo itself.
@@ -215,7 +215,7 @@ void Hmck::HmckUISystem::init()
 	// done in the destructor
 }
 
-void Hmck::HmckUISystem::setupStyle()
+void Hmck::UserInterface::setupStyle()
 {  
 	ImGuiStyle& style = ImGui::GetStyle();
 	// Setup ImGUI style
@@ -267,7 +267,7 @@ void Hmck::HmckUISystem::setupStyle()
 	style.Colors[ImGuiCol_ButtonActive] = ImVec4(255 / 255.0f, 255 / 255.0f, 255 / 255.0f, 170 / 255.0f);
 }
 
-VkCommandBuffer Hmck::HmckUISystem::beginSingleTimeCommands()
+VkCommandBuffer Hmck::UserInterface::beginSingleTimeCommands()
 {
 	VkCommandBufferAllocateInfo allocInfo{};
 	allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
@@ -287,7 +287,7 @@ VkCommandBuffer Hmck::HmckUISystem::beginSingleTimeCommands()
 	return commandBuffer;
 }
 
-void Hmck::HmckUISystem::endSingleTimeCommands(VkCommandBuffer commandBuffer)
+void Hmck::UserInterface::endSingleTimeCommands(VkCommandBuffer commandBuffer)
 {
 	vkEndCommandBuffer(commandBuffer);
 
@@ -302,17 +302,17 @@ void Hmck::HmckUISystem::endSingleTimeCommands(VkCommandBuffer commandBuffer)
 	vkFreeCommandBuffers(hmckDevice.device(), hmckDevice.getCommandPool(), 1, &commandBuffer);
 }
 
-void Hmck::HmckUISystem::beginWindow(const char* title, bool* open, ImGuiWindowFlags flags)
+void Hmck::UserInterface::beginWindow(const char* title, bool* open, ImGuiWindowFlags flags)
 {
 	ImGui::Begin(title, open, flags);
 }
 
-void Hmck::HmckUISystem::endWindow()
+void Hmck::UserInterface::endWindow()
 {
 	ImGui::End();
 }
 
-void Hmck::HmckUISystem::gameObjectComponets(HmckGameObject& gameObject)
+void Hmck::UserInterface::gameObjectComponets(GameObject& gameObject)
 {
 	if (ImGui::CollapsingHeader("Transform", ImGuiTreeNodeFlags_DefaultOpen)) // Tranform
 	{

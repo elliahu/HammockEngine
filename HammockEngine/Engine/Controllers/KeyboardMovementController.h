@@ -3,7 +3,7 @@
 #include "HmckGameObject.h"
 #include "Platform/HmckWindow.h"
 #include "Utils/HmckLogger.h"
-#include "Systems/HmckUISystem.h"
+#include "Systems/HmckUserInterface.h"
 
 #include <limits>
 
@@ -13,7 +13,7 @@ namespace Hmck
 	{
 	public:
 
-        void moveInPlaneXZ(HmckWindow& window, float dt, HmckGameObject& gameObject);
+        void moveInPlaneXZ(Window& window, float dt, GameObject& gameObject);
 
         float moveSpeed{ 3.f };
         float lookSpeed{ 1.5f };

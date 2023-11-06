@@ -9,11 +9,11 @@
 namespace Hmck
 {
     // initially based of https://stackoverflow.com/questions/15752659/thread-pooling-in-c11
-    /// @brief Class representing a thread pool, allowing for job submition
-    class HmckThreadPool
+    // @brief Class representing a thread pool, allowing for job submition
+    class ThreadPool
     {
     public:
-        /// @brief Start a threadpool
+        // @brief Start a threadpool
         inline void start()
         {
             const uint32_t num_threads = std::thread::hardware_concurrency();
@@ -23,8 +23,8 @@ namespace Hmck
             }
         }
 
-        /// @brief Submit a job
-        /// @param job instance of a job
+        // @brief Submit a job
+        // @param job instance of a job
         inline void queueJob(const std::function<void()>& job)
         {
             {
@@ -34,7 +34,7 @@ namespace Hmck
             mutex_condition.notify_one();
         }
 
-        /// @brief Stop the threadpool
+        // @brief Stop the threadpool
         inline void stop()
         {
             {
@@ -49,10 +49,10 @@ namespace Hmck
             threads.clear();
         }
 
-        /// @brief  The busy function can be used in a while loop, 
-        ///         such that the main thread can wait the threadpool 
-        ///         to complete all the tasks before calling the threadpool destructor
-        /// @return true if busy else false
+        // @brief  The busy function can be used in a while loop, 
+        //         such that the main thread can wait the threadpool 
+        //         to complete all the tasks before calling the threadpool destructor
+        // @return true if busy else false
         inline bool busy()
         {
             bool poolbusy;

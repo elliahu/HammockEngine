@@ -11,21 +11,21 @@
 namespace Hmck
 {
 	// Renders system interface
-	class HmckIRenderSystem
+	class IRenderSystem
 	{
 	public:
-		HmckIRenderSystem(HmckDevice& device): hmckDevice{device}{}
+		IRenderSystem(Device& device): hmckDevice{device}{}
 
-		virtual void render(HmckFrameInfo& frameInfo) = 0;
+		virtual void render(FrameInfo& frameInfo) = 0;
 
 		VkPipelineLayout getPipelineLayout() { return pipelineLayout; }
-		std::unique_ptr<HmckPipeline> pipeline;
+		std::unique_ptr<Pipeline> pipeline;
 
 	protected:
 		virtual void createPipelineLayout(std::vector<VkDescriptorSetLayout>& setLayouts) = 0;
 		virtual void createPipeline(VkRenderPass renderPass) = 0;
 
-		HmckDevice& hmckDevice;
+		Device& hmckDevice;
 		VkPipelineLayout pipelineLayout = nullptr;
 	};
 }

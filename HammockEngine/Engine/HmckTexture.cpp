@@ -1,7 +1,7 @@
 #include "HmckTexture.h"
 #include <stb_image.h>
 
-void Hmck::HmckTexture2D::destroy(HmckDevice& hmckDevice)
+void Hmck::Texture2D::destroy(Device& hmckDevice)
 {
 	// if image have sampler, destroy it
 	if (sampler != VK_NULL_HANDLE)
@@ -15,9 +15,9 @@ void Hmck::HmckTexture2D::destroy(HmckDevice& hmckDevice)
 	vkFreeMemory(hmckDevice.device(), memory, nullptr);
 }
 
-void Hmck::HmckTexture2D::loadFromFile(
+void Hmck::Texture2D::loadFromFile(
 	std::string& filepath,
-	HmckDevice& hmckDevice,
+	Device& hmckDevice,
 	VkFormat format,
 	VkImageLayout imageLayout
 )
@@ -34,7 +34,7 @@ void Hmck::HmckTexture2D::loadFromFile(
 
 	// create staging buffer and copy image data to the staging buffer
 
-	HmckBuffer stagingBuffer
+	Buffer stagingBuffer
 	{
 		hmckDevice,
 		sizeof(pixels[0]),
@@ -105,9 +105,9 @@ void Hmck::HmckTexture2D::loadFromFile(
 	}
 }
 
-void Hmck::HmckTexture2D::loadFromBuffer(unsigned char* buffer, uint32_t bufferSize, uint32_t width, uint32_t height, HmckDevice& hmckDevice, VkFormat format, VkImageLayout imageLayout)
+void Hmck::Texture2D::loadFromBuffer(unsigned char* buffer, uint32_t bufferSize, uint32_t width, uint32_t height, Device& hmckDevice, VkFormat format, VkImageLayout imageLayout)
 {
-	HmckBuffer stagingBuffer
+	Buffer stagingBuffer
 	{
 		hmckDevice,
 		sizeof(buffer[0]),
@@ -176,7 +176,7 @@ void Hmck::HmckTexture2D::loadFromBuffer(unsigned char* buffer, uint32_t bufferS
 	}
 }
 
-void Hmck::HmckTexture2D::createSampler(HmckDevice& hmckDevice, VkFilter filter)
+void Hmck::Texture2D::createSampler(Device& hmckDevice, VkFilter filter)
 {
 	VkSamplerCreateInfo samplerInfo{};
 	samplerInfo.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
@@ -207,14 +207,14 @@ void Hmck::HmckTexture2D::createSampler(HmckDevice& hmckDevice, VkFilter filter)
 	}
 }
 
-void Hmck::HmckTexture::updateDescriptor()
+void Hmck::Texture::updateDescriptor()
 {
 	descriptor.sampler = sampler;
 	descriptor.imageView = view;
 	descriptor.imageLayout = layout;
 }
 
-void Hmck::HmckTextureCubeMap::loadFromFile(std::string filename, VkFormat format, HmckDevice& device, VkQueue copyQueue, VkImageUsageFlags imageUsageFlags, VkImageLayout imageLayout)
+void Hmck::TextureCubeMap::loadFromFile(std::string filename, VkFormat format, Device& device, VkQueue copyQueue, VkImageUsageFlags imageUsageFlags, VkImageLayout imageLayout)
 {
 	// TODO create texture cubemap loading
 }

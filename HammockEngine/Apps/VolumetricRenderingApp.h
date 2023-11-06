@@ -3,7 +3,7 @@
 #include "HmckDevice.h"
 #include "HmckGameObject.h"
 #include "HmckRenderer.h"
-#include "Systems/HmckUISystem.h"
+#include "Systems/HmckUserInterface.h"
 #include "HmckCamera.h"
 #include "Controllers/KeyboardMovementController.h"
 #include "HmckBuffer.h"
@@ -60,11 +60,11 @@ namespace Hmck
 		virtual void run() override;
 		virtual void load() override;
 
-		std::unique_ptr<HmckDescriptorPool> descriptorPool{};
-		std::unique_ptr<HmckDescriptorSetLayout> descriptorSetLayout{};
-		std::unique_ptr<HmckDescriptorSetLayout> materialLayout{};
+		std::unique_ptr<DescriptorPool> descriptorPool{};
+		std::unique_ptr<DescriptorSetLayout> descriptorSetLayout{};
+		std::unique_ptr<DescriptorSetLayout> materialLayout{};
 
-		HmckGameObject::Map gameObjects;
+		GameObject::Map gameObjects;
 	};
 
 }

@@ -4,19 +4,19 @@
 
 namespace Hmck {
 
-    class HmckBuffer {
+    class Buffer {
     public:
-        HmckBuffer(
-            HmckDevice& device,
+        Buffer(
+            Device& device,
             VkDeviceSize instanceSize,
             uint32_t instanceCount,
             VkBufferUsageFlags usageFlags,
             VkMemoryPropertyFlags memoryPropertyFlags,
             VkDeviceSize minOffsetAlignment = 1);
-        ~HmckBuffer();
+        ~Buffer();
 
-        HmckBuffer(const HmckBuffer&) = delete;
-        HmckBuffer& operator=(const HmckBuffer&) = delete;
+        Buffer(const Buffer&) = delete;
+        Buffer& operator=(const Buffer&) = delete;
 
         VkResult map(VkDeviceSize size = VK_WHOLE_SIZE, VkDeviceSize offset = 0);
         void unmap();
@@ -43,7 +43,7 @@ namespace Hmck {
     private:
         static VkDeviceSize getAlignment(VkDeviceSize instanceSize, VkDeviceSize minOffsetAlignment);
 
-        HmckDevice& hmckDevice;
+        Device& hmckDevice;
         void* mapped = nullptr;
         VkBuffer buffer = VK_NULL_HANDLE;
         VkDeviceMemory memory = VK_NULL_HANDLE;

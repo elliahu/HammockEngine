@@ -7,7 +7,7 @@
 // Matrix corrsponds to Translate * Ry * Rx * Rz * Scale
 // Rotations correspond to Tait-bryan angles of Y(1), X(2), Z(3)
 // https://en.wikipedia.org/wiki/Euler_angles#Rotation_matrix
-glm::mat4 Hmck::HmckTransformComponent::mat4() {
+glm::mat4 Hmck::TransformComponent::mat4() {
 	const float c3 = glm::cos(rotation.z);
 	const float s3 = glm::sin(rotation.z);
 	const float c2 = glm::cos(rotation.x);
@@ -36,7 +36,7 @@ glm::mat4 Hmck::HmckTransformComponent::mat4() {
 		{translation.x, translation.y, translation.z, 1.0f} };
 }
 
-glm::mat3 Hmck::HmckTransformComponent::normalMatrix()
+glm::mat3 Hmck::TransformComponent::normalMatrix()
 {
 	const float c3 = glm::cos(rotation.z);
 	const float s3 = glm::sin(rotation.z);
@@ -64,23 +64,23 @@ glm::mat3 Hmck::HmckTransformComponent::normalMatrix()
 		} };
 }
 
-Hmck::HmckGameObject Hmck::HmckGameObject::createPointLight(float intensity,float radius,glm::vec3 color)
+Hmck::GameObject Hmck::GameObject::createPointLight(float intensity,float radius,glm::vec3 color)
 {
-	HmckGameObject gameObj = HmckGameObject::createGameObject();
+	GameObject gameObj = GameObject::createGameObject();
 	gameObj.colorComponent = color;
 	gameObj.transformComponent.scale.x = radius;
-	gameObj.pointLightComponent = std::make_unique<HmckPointLightComponent>();
+	gameObj.pointLightComponent = std::make_unique<PointLightComponent>();
 	gameObj.pointLightComponent->lightIntensity = intensity;
 	return gameObj;
 }
 
-Hmck::HmckGameObject Hmck::HmckGameObject::createDirectionalLight(
+Hmck::GameObject Hmck::GameObject::createDirectionalLight(
 	glm::vec3 position, glm::vec3 target,
 	glm::vec4 directionalLightColor,
 	float nearClip, float farClip, float fov)
 {
-	HmckGameObject gameObj = HmckGameObject::createGameObject();
-	gameObj.directionalLightComponent = std::make_unique<HmckDirectionalLightComponent>();
+	GameObject gameObj = GameObject::createGameObject();
+	gameObj.directionalLightComponent = std::make_unique<DirectionalLightComponent>();
 	gameObj.directionalLightComponent->lightIntensity = directionalLightColor.w;
 	gameObj.directionalLightComponent->target = target;
 	gameObj.directionalLightComponent->_near = nearClip;
@@ -91,11 +91,11 @@ Hmck::HmckGameObject Hmck::HmckGameObject::createDirectionalLight(
 	return gameObj;
 }
 
-Hmck::HmckGameObject Hmck::HmckGameObject::createFromGLTF(std::string filepath, HmckDevice& device, HmckGLTF::Config config)
+Hmck::GameObject Hmck::GameObject::createFromGLTF(std::string filepath, Device& device, Gltf::Config config)
 {
-	HmckGameObject obj = HmckGameObject::createGameObject();
-	obj.glTFComponent = std::make_unique<HmckGLTFComponent>();
-	auto glTF = std::make_unique<HmckGLTF>(device);
+	GameObject obj = GameObject::createGameObject();
+	obj.glTFComponent = std::make_unique<GltfComponent>();
+	auto glTF = std::make_unique<Gltf>(device);
 	glTF->load(filepath, config);
 	obj.glTFComponent->glTF = std::move(glTF);
 	
@@ -111,10 +111,10 @@ Hmck::HmckGameObject Hmck::HmckGameObject::createFromGLTF(std::string filepath, 
 	return obj;
 }
 
-void Hmck::HmckGameObject::fitBoundingBox(HmckBoundingBoxComponent::HmckBoundingBoxAxis x, HmckBoundingBoxComponent::HmckBoundingBoxAxis y, HmckBoundingBoxComponent::HmckBoundingBoxAxis z)
+void Hmck::GameObject::fitBoundingBox(BoundingBoxComponent::BoundingBoxAxis x, BoundingBoxComponent::BoundingBoxAxis y, BoundingBoxComponent::BoundingBoxAxis z)
 {
 	if (boundingBoxComponent == nullptr)
-		this->boundingBoxComponent = std::make_unique<HmckBoundingBoxComponent>();
+		this->boundingBoxComponent = std::make_unique<BoundingBoxComponent>();
 	this->boundingBoxComponent->x = x;
 	this->boundingBoxComponent->y = y;
 	this->boundingBoxComponent->z = z;

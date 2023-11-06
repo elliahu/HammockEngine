@@ -23,17 +23,17 @@ namespace Hmck
 	};
 
 
-	class HmckGLTF
+	class Gltf
 	{
 	public:
 
-		HmckGLTF(HmckDevice& device);
+		Gltf(Device& device);
 
-		~HmckGLTF();
+		~Gltf();
 
 		// delete copy constructor and copy destructor
-		HmckGLTF(const HmckGLTF&) = delete;
-		HmckGLTF& operator=(const HmckGLTF&) = delete;
+		Gltf(const Gltf&) = delete;
+		Gltf& operator=(const Gltf&) = delete;
 
 		struct Config
 		{
@@ -59,7 +59,7 @@ namespace Hmck
 		{
 			std::string uri;
 			std::string name;
-			HmckTexture2D texture{};
+			Texture2D texture{};
 		};
 
 		struct Texture
@@ -124,10 +124,10 @@ namespace Hmck
 		std::vector<std::shared_ptr<Node>> nodes;
 		std::string path;
 
-		std::unique_ptr<HmckBuffer> vertexBuffer;
+		std::unique_ptr<Buffer> vertexBuffer;
 		uint32_t vertexCount;
 
-		std::unique_ptr<HmckBuffer> indexBuffer;
+		std::unique_ptr<Buffer> indexBuffer;
 		uint32_t indexCount;
 
 	private:
@@ -144,9 +144,9 @@ namespace Hmck
 
 
 		gltf::Model model;
-		std::unique_ptr<HmckDescriptorPool> descriptorPool{};
-		std::unique_ptr<HmckDescriptorSetLayout> descriptorSetLayout;
-		HmckDevice& device;
+		std::unique_ptr<DescriptorPool> descriptorPool{};
+		std::unique_ptr<DescriptorSetLayout> descriptorSetLayout;
+		Device& device;
 	};
 }
 

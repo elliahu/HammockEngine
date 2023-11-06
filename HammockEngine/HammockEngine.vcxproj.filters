@@ -78,7 +78,7 @@
     <ClCompile Include="Engine\Systems\HmckCollisionDetectionSystem.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="Engine\Systems\HmckUISystem.cpp">
+    <ClCompile Include="Engine\Systems\HmckUserInterface.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="Engine\Controllers\KeyboardMovementController.cpp">
@@ -167,7 +167,7 @@
     <ClInclude Include="Engine\Systems\HmckCollisionDetectionSystem.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="Engine\Systems\HmckUISystem.h">
+    <ClInclude Include="Engine\Systems\HmckUserInterface.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="Engine\Controllers\KeyboardMovementController.h">

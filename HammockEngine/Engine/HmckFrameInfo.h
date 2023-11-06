@@ -10,10 +10,10 @@ namespace Hmck
 #define MAX_LIGHTS 10
 
 	/*
-		HmckPointLight struct defines how 
+		PointLight struct defines how 
 		point light is composed in shader
 	*/
-	struct HmckPointLight
+	struct PointLight
 	{
 		glm::vec4 position{}; // ingnore w
 		glm::vec4 color{}; // w is intensity
@@ -24,10 +24,10 @@ namespace Hmck
 	};
 
 	/*
-		HmckDirectionalLight represents single
+		DirectionalLight represents single
 		light source that is infinitely far away (sun)
 	*/
-	struct HmckDirectionalLight
+	struct DirectionalLight
 	{
 		glm::vec4 direction{}; // w is fov
 		glm::vec4 color{}; // w is intensity
@@ -36,28 +36,28 @@ namespace Hmck
 	/*
 		This is the format of the data sent to the UBO
 	*/
-	struct HmckGlobalUbo
+	struct GlobalUbo
 	{
 		glm::mat4 projection{ 1.f };
 		glm::mat4 view{ 1.f };
 		glm::mat4 inverseView{ 1.f };
 		glm::mat4 depthBiasMVP{ 1.f };
 		glm::vec4 ambientLightColor = { 1.f, 1.f, 1.f, 0.005f }; // w is intensity
-		HmckDirectionalLight directionalLight;
-		HmckPointLight pointLights[MAX_LIGHTS];
+		DirectionalLight directionalLight;
+		PointLight pointLights[MAX_LIGHTS];
 		int numLights;
 	};
 
 	/*
 		This information is passed to renderSystem every frame 
 	*/
-	struct HmckFrameInfo
+	struct FrameInfo
 	{
 		int frameIndex;
 		float frameTime;
 		VkCommandBuffer commandBuffer;
-		HmckCamera& camera;
+		Camera& camera;
 		VkDescriptorSet globalDescriptorSet;
-		HmckGameObject::Map& gameObjects;
+		GameObject::Map& gameObjects;
 	};
 }

@@ -11,13 +11,13 @@
 
 namespace Hmck {
 
-    HmckSwapChain::HmckSwapChain(HmckDevice& deviceRef, VkExtent2D extent)
+    SwapChain::SwapChain(Device& deviceRef, VkExtent2D extent)
         : device{ deviceRef }, windowExtent{ extent } {
         init();
     }
 
-    HmckSwapChain::HmckSwapChain(
-        HmckDevice& deviceRef, VkExtent2D extent, std::shared_ptr<HmckSwapChain> previous)
+    SwapChain::SwapChain(
+        Device& deviceRef, VkExtent2D extent, std::shared_ptr<SwapChain> previous)
         : device{ deviceRef }, windowExtent{ extent }, oldSwapChain{previous} {
         init();
 
@@ -25,7 +25,7 @@ namespace Hmck {
         oldSwapChain = nullptr;
     }
 
-    void HmckSwapChain::init()
+    void SwapChain::init()
     {
         createSwapChain();
         createImageViews();
@@ -35,7 +35,7 @@ namespace Hmck {
         createSyncObjects();
     }
 
-    HmckSwapChain::~HmckSwapChain() {
+    SwapChain::~SwapChain() {
         for (auto imageView : swapChainImageViews) {
             vkDestroyImageView(device.device(), imageView, nullptr);
         }
@@ -67,7 +67,7 @@ namespace Hmck {
 
     }
 
-    VkResult HmckSwapChain::acquireNextImage(uint32_t* imageIndex) {
+    VkResult SwapChain::acquireNextImage(uint32_t* imageIndex) {
         vkWaitForFences(
             device.device(),
             1,
@@ -86,7 +86,7 @@ namespace Hmck {
         return result;
     }
 
-    VkResult HmckSwapChain::submitCommandBuffers(
+    VkResult SwapChain::submitCommandBuffers(
         const VkCommandBuffer* buffers, uint32_t* imageIndex) {
         if (imagesInFlight[*imageIndex] != VK_NULL_HANDLE) {
             vkWaitForFences(device.device(), 1, &imagesInFlight[*imageIndex], VK_TRUE, UINT64_MAX);
@@ -134,7 +134,7 @@ namespace Hmck {
         return result;
     }
 
-    void HmckSwapChain::createSwapChain() {
+    void SwapChain::createSwapChain() {
         SwapChainSupportDetails swapChainSupport = device.getSwapChainSupport();
 
         VkSurfaceFormatKHR surfaceFormat = chooseSwapSurfaceFormat(swapChainSupport.formats);
@@ -196,7 +196,7 @@ namespace Hmck {
         swapChainExtent = extent;
     }
 
-    void HmckSwapChain::createImageViews() {
+    void SwapChain::createImageViews() {
         swapChainImageViews.resize(swapChainImages.size());
         for (size_t i = 0; i < swapChainImages.size(); i++) {
             VkImageViewCreateInfo viewInfo{};
@@ -217,7 +217,7 @@ namespace Hmck {
         }
     }
 
-    void HmckSwapChain::createRenderPass() {
+    void SwapChain::createRenderPass() {
         VkAttachmentDescription depthAttachment{};
         depthAttachment.format = findDepthFormat();
         depthAttachment.samples = VK_SAMPLE_COUNT_1_BIT;
@@ -278,7 +278,7 @@ namespace Hmck {
         }
     }
 
-    void HmckSwapChain::createFramebuffers() {
+    void SwapChain::createFramebuffers() {
         swapChainFramebuffers.resize(imageCount());
         for (size_t i = 0; i < imageCount(); i++) {
             std::array<VkImageView, 2> attachments = { swapChainImageViews[i], depthImageViews[i] };
@@ -303,7 +303,7 @@ namespace Hmck {
         }
     }
 
-    void HmckSwapChain::createDepthResources() {
+    void SwapChain::createDepthResources() {
         VkFormat depthFormat = findDepthFormat();
         swapChainDepthFormat = depthFormat;
         VkExtent2D swapChainExtent = getSwapChainExtent();
@@ -352,7 +352,7 @@ namespace Hmck {
         }
     }
 
-    void HmckSwapChain::createSyncObjects() {
+    void SwapChain::createSyncObjects() {
         imageAvailableSemaphores.resize(MAX_FRAMES_IN_FLIGHT);
         renderFinishedSemaphores.resize(MAX_FRAMES_IN_FLIGHT);
         inFlightFences.resize(MAX_FRAMES_IN_FLIGHT);
@@ -376,7 +376,7 @@ namespace Hmck {
         }
     }
 
-    VkSurfaceFormatKHR HmckSwapChain::chooseSwapSurfaceFormat(
+    VkSurfaceFormatKHR SwapChain::chooseSwapSurfaceFormat(
         const std::vector<VkSurfaceFormatKHR>& availableFormats) {
         for (const auto& availableFormat : availableFormats) {
             if (availableFormat.format == VK_FORMAT_B8G8R8A8_UNORM &&
@@ -388,7 +388,7 @@ namespace Hmck {
         return availableFormats[0];
     }
 
-    VkPresentModeKHR HmckSwapChain::chooseSwapPresentMode(
+    VkPresentModeKHR SwapChain::chooseSwapPresentMode(
         const std::vector<VkPresentModeKHR>& availablePresentModes) {
 
         // available present modes
@@ -419,7 +419,7 @@ namespace Hmck {
         return VK_PRESENT_MODE_FIFO_KHR;
     }
 
-    VkExtent2D HmckSwapChain::chooseSwapExtent(const VkSurfaceCapabilitiesKHR& capabilities) {
+    VkExtent2D SwapChain::chooseSwapExtent(const VkSurfaceCapabilitiesKHR& capabilities) {
         if (capabilities.currentExtent.width != std::numeric_limits<uint32_t>::max()) {
             return capabilities.currentExtent;
         }
@@ -436,7 +436,7 @@ namespace Hmck {
         }
     }
 
-    VkFormat HmckSwapChain::findDepthFormat() {
+    VkFormat SwapChain::findDepthFormat() {
         return device.findSupportedFormat(
             { VK_FORMAT_D32_SFLOAT, VK_FORMAT_D32_SFLOAT_S8_UINT, VK_FORMAT_D24_UNORM_S8_UINT },
             VK_IMAGE_TILING_OPTIMAL,

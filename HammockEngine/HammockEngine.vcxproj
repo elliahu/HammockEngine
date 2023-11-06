@@ -42,7 +42,7 @@
     <ClCompile Include="Engine\Platform\HmckWindow.cpp" />
     <ClCompile Include="Engine\Systems\HmckCollisionDetectionSystem.cpp" />
     <ClCompile Include="Engine\HmckSwapChain.cpp" />
-    <ClCompile Include="Engine\Systems\HmckUISystem.cpp" />
+    <ClCompile Include="Engine\Systems\HmckUserInterface.cpp" />
     <ClCompile Include="External\backends\imgui_impl_glfw.cpp" />
     <ClCompile Include="External\backends\imgui_impl_vulkan.cpp" />
     <ClCompile Include="External\imgui.cpp" />
@@ -74,7 +74,7 @@
     <ClInclude Include="Engine\Systems\HmckIRenderSystem.h" />
     <ClInclude Include="Engine\HmckSwapChain.h" />
     <ClInclude Include="Engine\HmckUtils.h" />
-    <ClInclude Include="Engine\Systems\HmckUISystem.h" />
+    <ClInclude Include="Engine\Systems\HmckUserInterface.h" />
     <ClInclude Include="Engine\HmckThreadPool.h" />
     <ClInclude Include="External\backends\imgui_impl_glfw.h" />
     <ClInclude Include="External\backends\imgui_impl_vulkan.h" />

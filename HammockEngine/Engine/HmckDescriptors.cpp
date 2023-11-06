@@ -9,7 +9,7 @@ namespace Hmck
 
 	// *************** Descriptor Set Layout Builder *********************
 
-	HmckDescriptorSetLayout::Builder& HmckDescriptorSetLayout::Builder::addBinding(
+	DescriptorSetLayout::Builder& DescriptorSetLayout::Builder::addBinding(
 		uint32_t binding,
 		VkDescriptorType descriptorType,
 		VkShaderStageFlags stageFlags,
@@ -25,15 +25,15 @@ namespace Hmck
 		return *this;
 	}
 
-	std::unique_ptr<HmckDescriptorSetLayout> HmckDescriptorSetLayout::Builder::build() const
+	std::unique_ptr<DescriptorSetLayout> DescriptorSetLayout::Builder::build() const
 	{
-		return std::make_unique<HmckDescriptorSetLayout>(hmckDevice, bindings);
+		return std::make_unique<DescriptorSetLayout>(hmckDevice, bindings);
 	}
 
 	// *************** Descriptor Set Layout *********************
 
-	HmckDescriptorSetLayout::HmckDescriptorSetLayout(
-		HmckDevice& hmckDevice, std::unordered_map<uint32_t, VkDescriptorSetLayoutBinding> bindings)
+	DescriptorSetLayout::DescriptorSetLayout(
+		Device& hmckDevice, std::unordered_map<uint32_t, VkDescriptorSetLayoutBinding> bindings)
 		: hmckDevice{ hmckDevice }, bindings{ bindings }
 	{
 
@@ -59,41 +59,41 @@ namespace Hmck
 		}
 	}
 
-	HmckDescriptorSetLayout::~HmckDescriptorSetLayout()
+	DescriptorSetLayout::~DescriptorSetLayout()
 	{
 		vkDestroyDescriptorSetLayout(hmckDevice.device(), descriptorSetLayout, nullptr);
 	}
 
 	// *************** Descriptor Pool Builder *********************
 
-	HmckDescriptorPool::Builder& HmckDescriptorPool::Builder::addPoolSize(
+	DescriptorPool::Builder& DescriptorPool::Builder::addPoolSize(
 		VkDescriptorType descriptorType, uint32_t count)
 	{
 		poolSizes.push_back({ descriptorType, count });
 		return *this;
 	}
 
-	HmckDescriptorPool::Builder& HmckDescriptorPool::Builder::setPoolFlags(
+	DescriptorPool::Builder& DescriptorPool::Builder::setPoolFlags(
 		VkDescriptorPoolCreateFlags flags)
 	{
 		poolFlags = flags;
 		return *this;
 	}
-	HmckDescriptorPool::Builder& HmckDescriptorPool::Builder::setMaxSets(uint32_t count)
+	DescriptorPool::Builder& DescriptorPool::Builder::setMaxSets(uint32_t count)
 	{
 		maxSets = count;
 		return *this;
 	}
 
-	std::unique_ptr<HmckDescriptorPool> HmckDescriptorPool::Builder::build() const
+	std::unique_ptr<DescriptorPool> DescriptorPool::Builder::build() const
 	{
-		return std::make_unique<HmckDescriptorPool>(hmckDevice, maxSets, poolFlags, poolSizes);
+		return std::make_unique<DescriptorPool>(hmckDevice, maxSets, poolFlags, poolSizes);
 	}
 
 	// *************** Descriptor Pool *********************
 
-	HmckDescriptorPool::HmckDescriptorPool(
-		HmckDevice& hmckDevice,
+	DescriptorPool::DescriptorPool(
+		Device& hmckDevice,
 		uint32_t maxSets,
 		VkDescriptorPoolCreateFlags poolFlags,
 		const std::vector<VkDescriptorPoolSize>& poolSizes)
@@ -113,12 +113,12 @@ namespace Hmck
 		}
 	}
 
-	HmckDescriptorPool::~HmckDescriptorPool()
+	DescriptorPool::~DescriptorPool()
 	{
 		vkDestroyDescriptorPool(hmckDevice.device(), descriptorPool, nullptr);
 	}
 
-	bool HmckDescriptorPool::allocateDescriptor(
+	bool DescriptorPool::allocateDescriptor(
 		const VkDescriptorSetLayout descriptorSetLayout, VkDescriptorSet& descriptor) const
 	{
 		VkDescriptorSetAllocateInfo allocInfo{};
@@ -136,7 +136,7 @@ namespace Hmck
 		return true;
 	}
 
-	void HmckDescriptorPool::freeDescriptors(std::vector<VkDescriptorSet>& descriptors) const
+	void DescriptorPool::freeDescriptors(std::vector<VkDescriptorSet>& descriptors) const
 	{
 		vkFreeDescriptorSets(
 			hmckDevice.device(),
@@ -145,19 +145,19 @@ namespace Hmck
 			descriptors.data());
 	}
 
-	void HmckDescriptorPool::resetPool()
+	void DescriptorPool::resetPool()
 	{
 		vkResetDescriptorPool(hmckDevice.device(), descriptorPool, 0);
 	}
 
 	// *************** Descriptor Writer *********************
 
-	HmckDescriptorWriter::HmckDescriptorWriter(HmckDescriptorSetLayout& setLayout, HmckDescriptorPool& pool)
+	DescriptorWriter::DescriptorWriter(DescriptorSetLayout& setLayout, DescriptorPool& pool)
 		: setLayout{ setLayout }, pool{ pool }
 	{
 	}
 
-	HmckDescriptorWriter& HmckDescriptorWriter::writeBuffer(
+	DescriptorWriter& DescriptorWriter::writeBuffer(
 		uint32_t binding, VkDescriptorBufferInfo* bufferInfo)
 	{
 		assert(setLayout.bindings.count(binding) == 1 && "Layout does not contain specified binding");
@@ -179,7 +179,7 @@ namespace Hmck
 		return *this;
 	}
 
-	HmckDescriptorWriter& HmckDescriptorWriter::writeImage(
+	DescriptorWriter& DescriptorWriter::writeImage(
 		uint32_t binding, VkDescriptorImageInfo* imageInfo)
 	{
 		assert(setLayout.bindings.count(binding) == 1 && "Layout does not contain specified binding");
@@ -201,7 +201,7 @@ namespace Hmck
 		return *this;
 	}
 
-	bool HmckDescriptorWriter::build(VkDescriptorSet& set)
+	bool DescriptorWriter::build(VkDescriptorSet& set)
 	{
 		bool success = pool.allocateDescriptor(setLayout.getDescriptorSetLayout(), set);
 		if (!success)
@@ -212,7 +212,7 @@ namespace Hmck
 		return true;
 	}
 
-	void HmckDescriptorWriter::overwrite(VkDescriptorSet& set)
+	void DescriptorWriter::overwrite(VkDescriptorSet& set)
 	{
 		for (auto& write : writes)
 		{

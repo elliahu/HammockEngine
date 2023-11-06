@@ -8,14 +8,14 @@
 
 namespace gltf = tinygltf;
 
-Hmck::HmckGLTF::HmckGLTF(HmckDevice& device): device{device}
+Hmck::Gltf::Gltf(Device& device): device{device}
 {
-	descriptorPool = HmckDescriptorPool::Builder(device)
+	descriptorPool = DescriptorPool::Builder(device)
 		.setMaxSets(1000)
 		.addPoolSize(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1000)
 		.build();
 
-	descriptorSetLayout = HmckDescriptorSetLayout::Builder(device)
+	descriptorSetLayout = DescriptorSetLayout::Builder(device)
 		.addBinding(0, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT) // albedo
 		.addBinding(1, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT) // normal
 		.addBinding(2, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT) // roughnessMetalic
@@ -23,7 +23,7 @@ Hmck::HmckGLTF::HmckGLTF(HmckDevice& device): device{device}
 		.build();
 }
 
-Hmck::HmckGLTF::~HmckGLTF()
+Hmck::Gltf::~Gltf()
 {
 	for (unsigned int i = 0; i < images.size(); i++)
 	{
@@ -35,7 +35,7 @@ Hmck::HmckGLTF::~HmckGLTF()
 	}
 }
 
-void Hmck::HmckGLTF::load(std::string filepath, Config& info)
+void Hmck::Gltf::load(std::string filepath, Config& info)
 {
 	gltf::TinyGLTF loader;
 	std::string err;
@@ -82,7 +82,7 @@ void Hmck::HmckGLTF::load(std::string filepath, Config& info)
 	prepareDescriptors();
 }
 
-void Hmck::HmckGLTF::draw(VkCommandBuffer commandBuffer, VkPipelineLayout pipelineLayout, glm::mat4 transform)
+void Hmck::Gltf::draw(VkCommandBuffer commandBuffer, VkPipelineLayout pipelineLayout, glm::mat4 transform)
 {
 	VkDeviceSize offsets[] = { 0 };
 	VkBuffer buffers[] = { vertexBuffer->getBuffer() };
@@ -95,7 +95,7 @@ void Hmck::HmckGLTF::draw(VkCommandBuffer commandBuffer, VkPipelineLayout pipeli
 	}
 }
 
-void Hmck::HmckGLTF::drawNode(VkCommandBuffer commandBuffer, std::shared_ptr<Node>& node, VkPipelineLayout pipelineLayout, glm::mat4 objectTransform)
+void Hmck::Gltf::drawNode(VkCommandBuffer commandBuffer, std::shared_ptr<Node>& node, VkPipelineLayout pipelineLayout, glm::mat4 objectTransform)
 {
 	// don't render invisible nodes
 	if (!node->visible) { return; }
@@ -134,12 +134,12 @@ void Hmck::HmckGLTF::drawNode(VkCommandBuffer commandBuffer, std::shared_ptr<Nod
 	}
 }
 
-void Hmck::HmckGLTF::prepareDescriptors()
+void Hmck::Gltf::prepareDescriptors()
 {
 	for (auto& material : materials)
 	{
 		// create descriptor set
-		HmckDescriptorWriter(*descriptorSetLayout, *descriptorPool)
+		DescriptorWriter(*descriptorSetLayout, *descriptorPool)
 			.writeImage(0, &images[textures[material.baseColorTextureIndex].imageIndex].texture.descriptor)
 			.writeImage(1, &images[textures[material.normalTextureIndex].imageIndex].texture.descriptor)
 			.writeImage(2, &images[textures[material.metallicRoughnessTextureIndex].imageIndex].texture.descriptor)
@@ -148,7 +148,7 @@ void Hmck::HmckGLTF::prepareDescriptors()
 	}
 }
 
-std::vector<VkVertexInputBindingDescription> Hmck::HmckGLTF::getBindingDescriptions()
+std::vector<VkVertexInputBindingDescription> Hmck::Gltf::getBindingDescriptions()
 {
 	std::vector<VkVertexInputBindingDescription> bindingDescriptions(1);
 	bindingDescriptions[0].binding = 0;
@@ -157,7 +157,7 @@ std::vector<VkVertexInputBindingDescription> Hmck::HmckGLTF::getBindingDescripti
 	return bindingDescriptions;
 }
 
-std::vector<VkVertexInputAttributeDescription> Hmck::HmckGLTF::getAttributeDescriptions()
+std::vector<VkVertexInputAttributeDescription> Hmck::Gltf::getAttributeDescriptions()
 {
 	return
 	{
@@ -170,7 +170,7 @@ std::vector<VkVertexInputAttributeDescription> Hmck::HmckGLTF::getAttributeDescr
 	};
 }
 
-void Hmck::HmckGLTF::loadImages(gltf::Model& input)
+void Hmck::Gltf::loadImages(gltf::Model& input)
 {
 	// Images can be stored inside the glTF (which is the case for the sample model), so instead of directly
 	// loading them from disk, we fetch them from the glTF loader and upload the buffers
@@ -203,7 +203,7 @@ void Hmck::HmckGLTF::loadImages(gltf::Model& input)
 }
 
 
-void Hmck::HmckGLTF::loadMaterials(gltf::Model& input)
+void Hmck::Gltf::loadMaterials(gltf::Model& input)
 {
 	materials.resize(input.materials.size());
 	for (size_t i = 0; i < input.materials.size(); i++) 
@@ -241,7 +241,7 @@ void Hmck::HmckGLTF::loadMaterials(gltf::Model& input)
 	}
 }
 
-void Hmck::HmckGLTF::loadTextures(gltf::Model& input)
+void Hmck::Gltf::loadTextures(gltf::Model& input)
 {
 	textures.resize(input.textures.size());
 	for (size_t i = 0; i < input.textures.size(); i++) {
@@ -249,7 +249,7 @@ void Hmck::HmckGLTF::loadTextures(gltf::Model& input)
 	}
 }
 
-void Hmck::HmckGLTF::loadNode(const tinygltf::Node& inputNode, const tinygltf::Model& input, std::shared_ptr<Node> parent)
+void Hmck::Gltf::loadNode(const tinygltf::Node& inputNode, const tinygltf::Model& input, std::shared_ptr<Node> parent)
 {
 	std::shared_ptr<Node> node = std::make_unique<Node>();
 	node->matrix = glm::mat4(1.0f);
@@ -403,7 +403,7 @@ void Hmck::HmckGLTF::loadNode(const tinygltf::Node& inputNode, const tinygltf::M
 	}
 }
 
-void Hmck::HmckGLTF::createVertexBuffer()
+void Hmck::Gltf::createVertexBuffer()
 {
 	// copy data to staging memory on device, then copy from staging to v/i memory
 	vertexCount = static_cast<uint32_t>(vertices.size());
@@ -411,7 +411,7 @@ void Hmck::HmckGLTF::createVertexBuffer()
 	VkDeviceSize bufferSize = sizeof(vertices[0]) * vertexCount;
 	uint32_t vertexSize = sizeof(vertices[0]);
 
-	HmckBuffer stagingBuffer{
+	Buffer stagingBuffer{
 		device,
 		vertexSize,
 		vertexCount,
@@ -423,7 +423,7 @@ void Hmck::HmckGLTF::createVertexBuffer()
 	stagingBuffer.map();
 	stagingBuffer.writeToBuffer((void*)vertices.data());
 
-	vertexBuffer = std::make_unique<HmckBuffer>(
+	vertexBuffer = std::make_unique<Buffer>(
 		device,
 		vertexSize,
 		vertexCount,
@@ -434,14 +434,14 @@ void Hmck::HmckGLTF::createVertexBuffer()
 	device.copyBuffer(stagingBuffer.getBuffer(), vertexBuffer->getBuffer(), bufferSize);
 }
 
-void Hmck::HmckGLTF::createIndexBuffer()
+void Hmck::Gltf::createIndexBuffer()
 {
 	indexCount = static_cast<uint32_t>(indices.size());
 
 	VkDeviceSize bufferSize = sizeof(indices[0]) * indexCount;
 	uint32_t indexSize = sizeof(indices[0]);
 
-	HmckBuffer stagingBuffer{
+	Buffer stagingBuffer{
 		device,
 		indexSize,
 		indexCount,
@@ -452,7 +452,7 @@ void Hmck::HmckGLTF::createIndexBuffer()
 	stagingBuffer.map();
 	stagingBuffer.writeToBuffer((void*)indices.data());
 
-	indexBuffer = std::make_unique<HmckBuffer>(
+	indexBuffer = std::make_unique<Buffer>(
 		device,
 		indexSize,
 		indexCount,

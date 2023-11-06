@@ -23,7 +23,7 @@ namespace Hmck
 	/*
 		TransformComponent
 	*/
-	struct HmckTransformComponent
+	struct TransformComponent
 	{
 		glm::vec3 translation{ 0.0f };
 		glm::vec3 scale{ 1.0f, 1.0f, 1.0f };
@@ -40,7 +40,7 @@ namespace Hmck
 		DescriptorSetComponetn
 		This component is used to store the descriptor set of the enitiy
 	*/
-	struct HmckDescriptorSetComponent
+	struct DescriptorSetComponent
 	{
 		VkDescriptorSet set{};
 	};
@@ -49,9 +49,9 @@ namespace Hmck
 		glTFComponent
 		This component represents all the data loaded from the source glTF 2.0 file
 	*/
-	struct HmckGLTFComponent
+	struct GltfComponent
 	{
-		std::shared_ptr<HmckGLTF> glTF;
+		std::shared_ptr<Gltf> glTF;
 	};
 
 	/*
@@ -60,7 +60,7 @@ namespace Hmck
 		Set this component to make a spot light from the GameObject
 		color property is used to make a colored light
 	*/
-	struct HmckPointLightComponent
+	struct PointLightComponent
 	{
 		float lightIntensity = 1.0f;
 		float quadraticTerm = 1.0f;
@@ -73,7 +73,7 @@ namespace Hmck
 		If this component is set, model should NOT be set
 		Set this component to make a dorectional light from the GameObject
 	*/
-	struct HmckDirectionalLightComponent
+	struct DirectionalLightComponent
 	{
 		float lightIntensity = 1.0f;
 		float fov = 50.0f;
@@ -88,17 +88,17 @@ namespace Hmck
 		Axis-Aligned Bounding Box is used for collision detection
 		TODO make sure to resize when scale changes
 	*/
-	struct HmckBoundingBoxComponent
+	struct BoundingBoxComponent
 	{
-		struct HmckBoundingBoxAxis
+		struct BoundingBoxAxis
 		{
 			float min;
 			float max;
 		};
 
-		HmckBoundingBoxAxis x;
-		HmckBoundingBoxAxis y;
-		HmckBoundingBoxAxis z;
+		BoundingBoxAxis x;
+		BoundingBoxAxis y;
+		BoundingBoxAxis z;
 	};
 
 
@@ -107,39 +107,39 @@ namespace Hmck
 		Class representing a single entity in the game world
 		Uses Entity Component System architecture (sort of)
 	*/
-	class HmckGameObject
+	class GameObject
 	{
 	public:
 		using id_t = unsigned int;
-		using Map = std::unordered_map<id_t, HmckGameObject>;
+		using Map = std::unordered_map<id_t, GameObject>;
 
-		static HmckGameObject createGameObject()
+		static GameObject createGameObject()
 		{
 			static id_t currentId = 0;
-			return HmckGameObject(currentId++);
+			return GameObject(currentId++);
 		}
 
-		static HmckGameObject createPointLight(
+		static GameObject createPointLight(
 			float intensity = 10.f, 
 			float radius = 0.1f, 
 			glm::vec3 color = glm::vec3(1));
 
-		static HmckGameObject createDirectionalLight(
+		static GameObject createDirectionalLight(
 			glm::vec3 position = glm::vec3(10,-10,-10), glm::vec3 target = glm::vec3(0),
 			glm::vec4 directionalLightColor = glm::vec4( 1.0f, 1.0f, 1.0, 1.0f ),
 			float nearClip = 0.1f, float farClip = 100.f, float fov = 60.f);
 
-		static HmckGameObject createFromGLTF(std::string filepath, HmckDevice& device, HmckGLTF::Config config = {});
+		static GameObject createFromGLTF(std::string filepath, Device& device, Gltf::Config config = {});
 
 		void fitBoundingBox(
-			HmckBoundingBoxComponent::HmckBoundingBoxAxis x,
-			HmckBoundingBoxComponent::HmckBoundingBoxAxis y,
-			HmckBoundingBoxComponent::HmckBoundingBoxAxis z);
+			BoundingBoxComponent::BoundingBoxAxis x,
+			BoundingBoxComponent::BoundingBoxAxis y,
+			BoundingBoxComponent::BoundingBoxAxis z);
 
-		HmckGameObject(const HmckGameObject&) = delete;
-		HmckGameObject& operator =(const HmckGameObject&) = delete;
-		HmckGameObject(HmckGameObject&&) = default;
-		HmckGameObject& operator=(HmckGameObject&&) = default;
+		GameObject(const GameObject&) = delete;
+		GameObject& operator =(const GameObject&) = delete;
+		GameObject(GameObject&&) = default;
+		GameObject& operator=(GameObject&&) = default;
 
 
 		const id_t getId() { return id; }
@@ -149,20 +149,20 @@ namespace Hmck
 		// Components
 		glm::vec3 colorComponent{}; 
 
-		HmckTransformComponent transformComponent{}; // every game object has this
+		TransformComponent transformComponent{}; // every game object has this
 
-		std::unique_ptr<HmckDescriptorSetComponent> descriptorSetComponent = nullptr;
+		std::unique_ptr<DescriptorSetComponent> descriptorSetComponent = nullptr;
 
-		std::unique_ptr<HmckPointLightComponent> pointLightComponent = nullptr;
+		std::unique_ptr<PointLightComponent> pointLightComponent = nullptr;
 
-		std::unique_ptr<HmckBoundingBoxComponent> boundingBoxComponent = nullptr;
+		std::unique_ptr<BoundingBoxComponent> boundingBoxComponent = nullptr;
 
-		std::unique_ptr<HmckDirectionalLightComponent> directionalLightComponent = nullptr;
+		std::unique_ptr<DirectionalLightComponent> directionalLightComponent = nullptr;
 
-		std::unique_ptr<HmckGLTFComponent> glTFComponent = nullptr;
+		std::unique_ptr<GltfComponent> glTFComponent = nullptr;
 
 	private:
-		HmckGameObject(id_t objId) : id{ objId } {}
+		GameObject(id_t objId) : id{ objId } {}
 
 		id_t id;
 		std::string name = "GameObject";

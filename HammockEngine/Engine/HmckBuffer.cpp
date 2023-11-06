@@ -22,15 +22,15 @@ namespace Hmck {
      *
      * @return VkResult of the buffer mapping call
      */
-    VkDeviceSize HmckBuffer::getAlignment(VkDeviceSize instanceSize, VkDeviceSize minOffsetAlignment) {
+    VkDeviceSize Buffer::getAlignment(VkDeviceSize instanceSize, VkDeviceSize minOffsetAlignment) {
         if (minOffsetAlignment > 0) {
             return (instanceSize + minOffsetAlignment - 1) & ~(minOffsetAlignment - 1);
         }
         return instanceSize;
     }
 
-    HmckBuffer::HmckBuffer(
-        HmckDevice& device,
+    Buffer::Buffer(
+        Device& device,
         VkDeviceSize instanceSize,
         uint32_t instanceCount,
         VkBufferUsageFlags usageFlags,
@@ -46,7 +46,7 @@ namespace Hmck {
         device.createBuffer(bufferSize, usageFlags, memoryPropertyFlags, buffer, memory);
     }
 
-    HmckBuffer::~HmckBuffer() {
+    Buffer::~Buffer() {
         unmap();
         vkDestroyBuffer(hmckDevice.device(), buffer, nullptr);
         vkFreeMemory(hmckDevice.device(), memory, nullptr);
@@ -61,7 +61,7 @@ namespace Hmck {
      *
      * @return VkResult of the buffer mapping call
      */
-    VkResult HmckBuffer::map(VkDeviceSize size, VkDeviceSize offset) {
+    VkResult Buffer::map(VkDeviceSize size, VkDeviceSize offset) {
         assert(buffer && memory && "Called map on buffer before create");
         return vkMapMemory(hmckDevice.device(), memory, offset, size, 0, &mapped);
     }
@@ -71,7 +71,7 @@ namespace Hmck {
      *
      * @note Does not return a result as vkUnmapMemory can't fail
      */
-    void HmckBuffer::unmap() {
+    void Buffer::unmap() {
         if (mapped) {
             vkUnmapMemory(hmckDevice.device(), memory);
             mapped = nullptr;
@@ -87,7 +87,7 @@ namespace Hmck {
      * @param offset (Optional) Byte offset from beginning of mapped region
      *
      */
-    void HmckBuffer::writeToBuffer(void* data, VkDeviceSize size, VkDeviceSize offset) {
+    void Buffer::writeToBuffer(void* data, VkDeviceSize size, VkDeviceSize offset) {
         assert(mapped && "Cannot copy to unmapped buffer");
 
         if (size == VK_WHOLE_SIZE) {
@@ -111,7 +111,7 @@ namespace Hmck {
      *
      * @return VkResult of the flush call
      */
-    VkResult HmckBuffer::flush(VkDeviceSize size, VkDeviceSize offset) {
+    VkResult Buffer::flush(VkDeviceSize size, VkDeviceSize offset) {
         VkMappedMemoryRange mappedRange = {};
         mappedRange.sType = VK_STRUCTURE_TYPE_MAPPED_MEMORY_RANGE;
         mappedRange.memory = memory;
@@ -131,7 +131,7 @@ namespace Hmck {
      *
      * @return VkResult of the invalidate call
      */
-    VkResult HmckBuffer::invalidate(VkDeviceSize size, VkDeviceSize offset) {
+    VkResult Buffer::invalidate(VkDeviceSize size, VkDeviceSize offset) {
         VkMappedMemoryRange mappedRange = {};
         mappedRange.sType = VK_STRUCTURE_TYPE_MAPPED_MEMORY_RANGE;
         mappedRange.memory = memory;
@@ -148,7 +148,7 @@ namespace Hmck {
      *
      * @return VkDescriptorBufferInfo of specified offset and range
      */
-    VkDescriptorBufferInfo HmckBuffer::descriptorInfo(VkDeviceSize size, VkDeviceSize offset) {
+    VkDescriptorBufferInfo Buffer::descriptorInfo(VkDeviceSize size, VkDeviceSize offset) {
         return VkDescriptorBufferInfo{
             buffer,
             offset,
@@ -163,7 +163,7 @@ namespace Hmck {
      * @param index Used in offset calculation
      *
      */
-    void HmckBuffer::writeToIndex(void* data, int index) {
+    void Buffer::writeToIndex(void* data, int index) {
         writeToBuffer(data, instanceSize, index * alignmentSize);
     }
 
@@ -173,7 +173,7 @@ namespace Hmck {
      * @param index Used in offset calculation
      *
      */
-    VkResult HmckBuffer::flushIndex(int index) { return flush(alignmentSize, index * alignmentSize); }
+    VkResult Buffer::flushIndex(int index) { return flush(alignmentSize, index * alignmentSize); }
 
     /**
      * Create a buffer info descriptor
@@ -182,7 +182,7 @@ namespace Hmck {
      *
      * @return VkDescriptorBufferInfo for instance at index
      */
-    VkDescriptorBufferInfo HmckBuffer::descriptorInfoForIndex(int index) {
+    VkDescriptorBufferInfo Buffer::descriptorInfoForIndex(int index) {
         return descriptorInfo(alignmentSize, index * alignmentSize);
     }
 
@@ -195,7 +195,7 @@ namespace Hmck {
      *
      * @return VkResult of the invalidate call
      */
-    VkResult HmckBuffer::invalidateIndex(int index) {
+    VkResult Buffer::invalidateIndex(int index) {
         return invalidate(alignmentSize, index * alignmentSize);
     }
 

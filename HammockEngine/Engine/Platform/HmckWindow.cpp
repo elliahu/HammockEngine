@@ -1,6 +1,6 @@
 #include "HmckWindow.h"
 
-void Hmck::HmckWindow::initWindow(int width, int height)
+void Hmck::Window::initWindow(int width, int height)
 {
 	if (!glfwInit())
 	{
@@ -15,32 +15,32 @@ void Hmck::HmckWindow::initWindow(int width, int height)
 	setWindowMode(HMCK_WINDOW_MODE_WINDOWED);
 }
 
-void Hmck::HmckWindow::framebufferResizeCallback(GLFWwindow* window, int width, int height)
+void Hmck::Window::framebufferResizeCallback(GLFWwindow* window, int width, int height)
 {
-	auto hmckWindow = reinterpret_cast<HmckWindow*>(glfwGetWindowUserPointer(window));
+	auto hmckWindow = reinterpret_cast<Window*>(glfwGetWindowUserPointer(window));
 	hmckWindow->framebufferResized = true;
 	hmckWindow->width = width;
 	hmckWindow->height = height;
 }
 
-Hmck::HmckWindow::HmckWindow(int windowWidth, int windowHeight, std::string _windowName) : width{ windowWidth }, height{ windowHeight }, windowName{ _windowName }
+Hmck::Window::Window(int windowWidth, int windowHeight, std::string _windowName) : width{ windowWidth }, height{ windowHeight }, windowName{ _windowName }
 {
 	initWindow(width, height);
 	inputHandler.setWindow(window);
 }
 
-Hmck::HmckWindow::~HmckWindow()
+Hmck::Window::~Window()
 {
 	glfwDestroyWindow(window);
 	glfwTerminate();
 }
 
-bool Hmck::HmckWindow::shouldClose()
+bool Hmck::Window::shouldClose()
 {
 	return glfwWindowShouldClose(window);
 }
 
-void Hmck::HmckWindow::createWindowSurface(VkInstance instance, VkSurfaceKHR* surface)
+void Hmck::Window::createWindowSurface(VkInstance instance, VkSurfaceKHR* surface)
 {
 	if (glfwCreateWindowSurface(instance, window, nullptr, surface) != VK_SUCCESS)
 	{
@@ -48,17 +48,17 @@ void Hmck::HmckWindow::createWindowSurface(VkInstance instance, VkSurfaceKHR* su
 	}
 }
 
-void Hmck::HmckWindow::setCursorVisibility(bool visible)
+void Hmck::Window::setCursorVisibility(bool visible)
 {
 	glfwSetInputMode(window, GLFW_CURSOR, (visible)? GLFW_CURSOR_NORMAL : GLFW_CURSOR_DISABLED);
 }
 
-void Hmck::HmckWindow::getCursorPosition(double& x, double& y)
+void Hmck::Window::getCursorPosition(double& x, double& y)
 {
 	glfwGetCursorPos(window, &x, &y);
 }
 
-void Hmck::HmckWindow::setWindowMode(HmckWindowMode mode)
+void Hmck::Window::setWindowMode(WindowMode mode)
 {
 	const GLFWvidmode* vidmode = glfwGetVideoMode(monitors[monitorIndex]);
 	if (mode == HMCK_WINDOW_MODE_FULLSCREEN)
@@ -88,7 +88,7 @@ void Hmck::HmckWindow::setWindowMode(HmckWindowMode mode)
 	
 }
 
-void Hmck::HmckWindow::setWindowResolution(uint32_t resX, uint32_t resY)
+void Hmck::Window::setWindowResolution(uint32_t resX, uint32_t resY)
 {
 	width = resX;
 	height = resY;

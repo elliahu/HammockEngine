@@ -15,7 +15,7 @@ namespace Hmck
 	// Loosely based of framebuffer abstraction
 	// https://github.com/SaschaWillems/Vulkan/blob/master/base/VulkanFrameBuffer.hpp by Sascha Willems
 
-	struct HmckFramebufferAttachment
+	struct FramebufferAttachment
 	{
 		VkImage image;
 		VkDeviceMemory memory;
@@ -78,7 +78,7 @@ namespace Hmck
 	/**
 	* @brief Describes the attributes of an attachment to be created
 	*/
-	struct HmckAttachmentCreateInfo
+	struct FramebufferAttachmentCreateInfo
 	{
 		uint32_t width, height;
 		uint32_t layerCount;
@@ -90,18 +90,18 @@ namespace Hmck
 	/**
 	* @brief Encapsulates a complete Vulkan framebuffer with an arbitrary number and combination of attachments
 	*/
-	struct HmckFramebuffer
+	struct Framebuffer
 	{
 		struct FramebufferCreateInfo
 		{
-			HmckDevice& device;
+			Device& device;
 			uint32_t width = 0, height = 0;
 			struct FrameBufferSamplerInfo {
 				VkFilter magFilter = VK_FILTER_LINEAR;
 				VkFilter minFilter = VK_FILTER_LINEAR;
 				VkSamplerAddressMode addressMode = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
 			} sampler;
-			std::vector<HmckAttachmentCreateInfo> attachments;
+			std::vector<FramebufferAttachmentCreateInfo> attachments;
 		};
 
 	public:
@@ -109,22 +109,22 @@ namespace Hmck
 		VkFramebuffer framebuffer = nullptr;
 		VkRenderPass renderPass = nullptr;
 		VkSampler sampler = nullptr;
-		std::vector<HmckFramebufferAttachment> attachments;
+		std::vector<FramebufferAttachment> attachments;
 
 		/**
 		* Default constructor
 		*
 		* @param vulkanDevice Pointer to a valid VulkanDevice
 		*/
-		HmckFramebuffer(HmckDevice& device) : hmckDevice{ device } 
+		Framebuffer(Device& device) : hmckDevice{ device } 
 		{ 
-			assert(&device && "Failed to create HmckFramebuffer - device is NULL!"); 
+			assert(&device && "Failed to create Framebuffer - device is NULL!"); 
 		}
 
 		/**
 		* Destroy and free Vulkan resources used for the framebuffer and all of its attachments
 		*/
-		~HmckFramebuffer()
+		~Framebuffer()
 		{
 			for (auto attachment : attachments)
 			{
@@ -142,13 +142,13 @@ namespace Hmck
 		* @param createInfo Configuration struct
 		* @return created Framebuffer
 		*/
-		static HmckFramebuffer createFramebuffer(FramebufferCreateInfo createInfo) 
+		static Framebuffer createFramebuffer(FramebufferCreateInfo createInfo) 
 		{
-			HmckFramebuffer fb{ createInfo.device };
+			Framebuffer fb{ createInfo.device };
 			fb.width = createInfo.width;
 			fb.height = createInfo.height;
 			checkResult(fb.createSampler(createInfo.sampler.magFilter, createInfo.sampler.minFilter, createInfo.sampler.addressMode));
-			for (HmckAttachmentCreateInfo& at : createInfo.attachments) 
+			for (FramebufferAttachmentCreateInfo& at : createInfo.attachments) 
 			{
 				fb.addAttachment(at);
 			}
@@ -163,9 +163,9 @@ namespace Hmck
 		*
 		* @return Index of the new attachment
 		*/
-		uint32_t addAttachment(HmckAttachmentCreateInfo createinfo)
+		uint32_t addAttachment(FramebufferAttachmentCreateInfo createinfo)
 		{
-			HmckFramebufferAttachment attachment;
+			FramebufferAttachment attachment;
 
 			attachment.format = createinfo.format;
 
@@ -409,7 +409,7 @@ namespace Hmck
 		}
 
 		private:
-			HmckDevice& hmckDevice;
+			Device& hmckDevice;
 	};
 }
 

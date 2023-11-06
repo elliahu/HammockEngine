@@ -1,6 +1,6 @@
 #include "HmckCollisionDetectionSystem.h"
 
-bool Hmck::HmckCollisionDetectionSystem::intersect(HmckGameObject& obj1, HmckGameObject& obj2)
+bool Hmck::CollisionDetectionSystem::intersect(GameObject& obj1, GameObject& obj2)
 {
 	assert(obj1.boundingBoxComponent != nullptr && "Provided object 1 needs bounding box to calculate intersections !");
 	assert(obj2.boundingBoxComponent != nullptr && "Provided object 2 needs bounding box to calculate intersections !");

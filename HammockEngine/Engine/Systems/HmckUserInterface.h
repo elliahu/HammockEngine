@@ -15,21 +15,21 @@
 namespace Hmck
 {
 
-	class HmckUISystem
+	class UserInterface
 	{
 	public:
-		HmckUISystem(HmckDevice& device, VkRenderPass renderPass, HmckWindow& window);
-		~HmckUISystem();
+		UserInterface(Device& device, VkRenderPass renderPass, Window& window);
+		~UserInterface();
 
 		// Ui rendering
 		void beginUserInterface();
 		void endUserInterface(VkCommandBuffer commandBuffer);
 		void showDemoWindow() { ImGui::ShowDemoWindow(); }
-		void showDebugStats(HmckGameObject& camera);
+		void showDebugStats(GameObject& camera);
 		void showWindowControls();
-		void showGameObjectComponents(HmckGameObject& gameObject, bool * close = (bool*)0);
-		void showGameObjectsInspector(HmckGameObject::Map& gameObjects);
-		void showGlobalSettings(HmckGlobalUbo& ubo);
+		void showGameObjectComponents(GameObject& gameObject, bool * close = (bool*)0);
+		void showGameObjectsInspector(GameObject::Map& gameObjects);
+		void showGlobalSettings(GlobalUbo& ubo);
 		void showLog();
 
 		// forwarding events to ImGUI
@@ -44,10 +44,10 @@ namespace Hmck
 
 		void beginWindow(const char* title,bool * open = (bool*) 0, ImGuiWindowFlags flags = 0);
 		void endWindow();
-		void gameObjectComponets(HmckGameObject& gameObject);
+		void gameObjectComponets(GameObject& gameObject);
 
-		HmckDevice& hmckDevice;
-		HmckWindow& hmckWindow;
+		Device& hmckDevice;
+		Window& hmckWindow;
 		VkRenderPass renderPass;
 		VkDescriptorPool imguiPool;
 	};

@@ -11,22 +11,21 @@
 #include "HmckDevice.h"
 #include "HmckUtils.h"
 
-#define FB_DIM 512
 #define FB_COLOR_FORMAT VK_FORMAT_R8G8B8A8_UNORM
 
 namespace Hmck {
 
-    class HmckSwapChain {
+    class SwapChain {
 
     public:
         static constexpr int MAX_FRAMES_IN_FLIGHT = 2;
 
-        HmckSwapChain(HmckDevice& deviceRef, VkExtent2D windowExtent);
-        HmckSwapChain(HmckDevice& deviceRef, VkExtent2D windowExtent, std::shared_ptr<HmckSwapChain> previous);
-        ~HmckSwapChain();
+        SwapChain(Device& deviceRef, VkExtent2D windowExtent);
+        SwapChain(Device& deviceRef, VkExtent2D windowExtent, std::shared_ptr<SwapChain> previous);
+        ~SwapChain();
 
-        HmckSwapChain(const HmckSwapChain&) = delete;
-        HmckSwapChain& operator=(const HmckSwapChain&) = delete;
+        SwapChain(const SwapChain&) = delete;
+        SwapChain& operator=(const SwapChain&) = delete;
 
         VkFramebuffer getFrameBuffer(int index) { return swapChainFramebuffers[index]; }
         VkRenderPass getRenderPass() { return renderPass; }
@@ -45,7 +44,7 @@ namespace Hmck {
         VkResult acquireNextImage(uint32_t* imageIndex);
         VkResult submitCommandBuffers(const VkCommandBuffer* buffers, uint32_t* imageIndex);
 
-        bool compareSwapFormats(const HmckSwapChain& swapChain) const 
+        bool compareSwapFormats(const SwapChain& swapChain) const 
         {
             return swapChain.swapChainDepthFormat == swapChainDepthFormat &&
                 swapChain.swapChainImageFormat == swapChainImageFormat;
@@ -83,11 +82,11 @@ namespace Hmck {
         std::vector<VkImageView> swapChainImageViews;
 
 
-        HmckDevice& device;
+        Device& device;
         VkExtent2D windowExtent;
 
         VkSwapchainKHR swapChain;
-        std::shared_ptr<HmckSwapChain> oldSwapChain;
+        std::shared_ptr<SwapChain> oldSwapChain;
 
         std::vector<VkSemaphore> imageAvailableSemaphores;
         std::vector<VkSemaphore> renderFinishedSemaphores;

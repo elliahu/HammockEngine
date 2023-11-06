@@ -6,7 +6,7 @@
 
 namespace Hmck
 {
-	enum HmckKeyboardKey
+	enum KeyboardKey
 	{
 		HMCK_KEY_W,
 		HMCK_KEY_S,
@@ -22,7 +22,7 @@ namespace Hmck
 		__HMCK_KEYBOARD_KEY_COUNT__
 	};
 
-	enum HmckMouseKey
+	enum MouseKey
 	{
 		HMCK_MOUSE_LEFT,
 		HMCK_MOUSE_RIGHT,
@@ -30,15 +30,15 @@ namespace Hmck
 		__HMCK_MOUSE_KEY_COUNT__
 	};
 
-	class HmckInputManager
+	class InputManager
 	{
 	public:
 		void setWindow(GLFWwindow* _window) { window = _window; };
-		bool isKeyboardKeyDown(HmckKeyboardKey key);
-		bool isMouseKeyDown(HmckMouseKey key);
+		bool isKeyboardKeyDown(KeyboardKey key);
+		bool isMouseKeyDown(MouseKey key);
 
 	private:
-		std::map<HmckKeyboardKey, int> keyboardKeyMap = {
+		std::map<KeyboardKey, int> keyboardKeyMap = {
 			{HMCK_KEY_W, GLFW_KEY_W},
 			{HMCK_KEY_A, GLFW_KEY_A},
 			{HMCK_KEY_S, GLFW_KEY_S},
@@ -52,7 +52,7 @@ namespace Hmck
 			{HMCK_KEY_RIGHT, GLFW_KEY_RIGHT},
 		};
 
-		std::map<HmckMouseKey, int> mouseKeyMap = {
+		std::map<MouseKey, int> mouseKeyMap = {
 			{HMCK_MOUSE_LEFT, GLFW_MOUSE_BUTTON_1},
 			{HMCK_MOUSE_RIGHT, GLFW_MOUSE_BUTTON_2},
 			{HMCK_MOUSE_MIDDLE, GLFW_MOUSE_BUTTON_3},
