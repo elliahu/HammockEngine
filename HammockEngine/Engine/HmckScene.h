@@ -47,6 +47,7 @@ namespace Hmck
 		void addChildOfRoot(std::shared_ptr<Entity> child)
 		{
 			child->parent = root();
+			root()->children.push_back(child);
 			entities.push_back(child);
 		}
 

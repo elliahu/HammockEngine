@@ -63,7 +63,10 @@ void Hmck::VolumetricRenderingApp::run()
 	auto viewerObject = Entity::createEntity();
 	viewerObject->translate({ 1.f, 1.f, -5.f });
 	scene->addChildOfRoot(viewerObject);
+	auto root = scene->root();
 	KeyboardMovementController cameraController{};
+
+	UserInterface ui{hmckDevice, hmckRenderer.getSwapChainRenderPass(), hmckWindow};
 
 	GraphicsPipeline standardPipeline = GraphicsPipeline::createGraphicsPipeline({
 		.debugName = "standard_forward_pass",
@@ -162,6 +165,14 @@ void Hmck::VolumetricRenderingApp::run()
 			);
 
 			scene->draw(commandBuffer, standardPipeline.graphicsPipelineLayout);
+
+			{
+				ui.beginUserInterface();
+				ui.showDebugStats(viewerObject);
+				ui.showWindowControls();
+				ui.showEntityInspector(scene->root());
+				ui.endUserInterface(commandBuffer);
+			}
 
 			hmckRenderer.endRenderPass(commandBuffer);
 			hmckRenderer.endFrame();

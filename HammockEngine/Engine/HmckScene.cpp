@@ -3,7 +3,8 @@
 Hmck::Scene::Scene(SceneCreateInfo createInfo): device{createInfo.device}
 {
 	// create root
-	entities.push_back(std::make_shared<Entity3D>());
+	auto root = std::make_shared<Entity3D>();
+	entities.push_back(root);
 
 	// load all files
 	for (auto& fileInfo : createInfo.loadFiles)
@@ -43,7 +44,7 @@ void Hmck::Scene::draw(VkCommandBuffer commandBuffer, VkPipelineLayout pipelineL
 void Hmck::Scene::loadFile(SceneLoadFileInfo loadInfo)
 {
 	// load the entity tree
-	std::shared_ptr<Entity> entity = Gltf::load(
+	std::vector<std::shared_ptr<Entity>> roots = Gltf::load(
 		loadInfo.filename, 
 		device, 
 		images,
@@ -54,7 +55,8 @@ void Hmck::Scene::loadFile(SceneLoadFileInfo loadInfo)
 		entities,
 		loadInfo.binary);
 	// set the entity tree as a child of a scene root
-	entity->parent = entities[0];
+	for(auto& entity : roots)
+		addChildOfRoot(entity);
 }
 
 void Hmck::Scene::drawEntity(VkCommandBuffer commandBuffer, std::shared_ptr<Entity>& entity, VkPipelineLayout pipelineLayout)

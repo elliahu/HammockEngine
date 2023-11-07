@@ -7,7 +7,7 @@
 
 namespace gltf = tinygltf;
 
-std::shared_ptr<Hmck::Entity> Hmck::Gltf::load(
+std::vector<std::shared_ptr<Hmck::Entity>> Hmck::Gltf::load(
 	std::string filename,
 	Device& device, 
 	std::vector<Image>& images,
@@ -49,16 +49,18 @@ std::shared_ptr<Hmck::Entity> Hmck::Gltf::load(
 		std::cerr << "Failed to parse glTF\n";
 	}
 
+	std::vector<std::shared_ptr<Entity>> roots{};
 	const gltf::Scene& scene = model.scenes[0];
 	for (size_t i = 0; i < scene.nodes.size(); i++) {
 		loadImages(model, device, images);
 		loadMaterials(model, device, materials);
 		loadTextures(model, device, textures);
 		const gltf::Node node = model.nodes[scene.nodes[i]];
-		loadNode(node, model, nullptr, vertices, indices, entities);
+		auto root = loadNode(node, model, nullptr, vertices, indices, entities);
+		roots.push_back(root);
 	}
 
-	return entities[0];
+	return roots;
 }
 
 
@@ -141,7 +143,7 @@ void Hmck::Gltf::loadTextures(gltf::Model& input, Device& device, std::vector<Te
 	}
 }
 
-void Hmck::Gltf::loadNode(
+std::shared_ptr<Hmck::Entity> Hmck::Gltf::loadNode(
 	const tinygltf::Node& inputNode, 
 	const tinygltf::Model& input, 
 	std::shared_ptr<Entity> parent, 
@@ -281,7 +283,7 @@ void Hmck::Gltf::loadNode(
 				default:
 					std::cerr << "Index component type " << accessor.componentType << " not supported!" << std::endl;
 					throw std::runtime_error("Unsupported component type");
-					return;
+					return {};
 				}
 			}
 			Primitive primitive{};
@@ -299,4 +301,6 @@ void Hmck::Gltf::loadNode(
 	else {
 		entities.push_back(entity);
 	}
+
+	return entity;
 }

@@ -50,9 +50,12 @@ namespace Hmck
 		glm::vec3 translation();
 		glm::mat3 rotationMat();
 		glm::vec3 rotation();
+		glm::vec3 scale();
+		void decompose(glm::vec3& scale, glm::quat& rotation, glm::vec3& translation, glm::vec3& skew, glm::vec4& perspective);
 
 		void translate(glm::vec3 position);
-		void rotate(glm::vec3 rotation);
+		void rotate(glm::vec3 rotation); // TODO FIXME
+		void scale(glm::vec3 scale); // TODO FIXME
 
 		static Id currentId;
 		Id id;

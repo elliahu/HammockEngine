@@ -1,5 +1,6 @@
 #include "HmckUserInterface.h"
 
+
 Hmck::UserInterface::UserInterface(Device& device, VkRenderPass renderPass, Window& window) : hmckDevice{ device }, hmckWindow{ window }, renderPass{renderPass}
 {
 	init();
@@ -34,8 +35,10 @@ void Hmck::UserInterface::showDebugStats(std::shared_ptr<Entity> camera)
 	ImGui::SetNextWindowPos({10,10});
 	ImGui::SetNextWindowBgAlpha(0.35f);
 	ImGui::Begin(hmckWindow.getWindowName().c_str(),(bool*)0, window_flags);
-	ImGui::Text("Camera world position:");
-	ImGui::Text("Camera world rotaion:");
+	auto cameraPosition = camera->translation();
+	auto cameraRotation = camera->rotation();
+	ImGui::Text("Camera world position: ( %.2f, %.2f, %.2f )",cameraPosition.x, cameraPosition.y, cameraPosition.z);
+	ImGui::Text("Camera world rotaion: ( %.2f, %.2f, %.2f )", cameraRotation.x, cameraRotation.y, cameraRotation.z);
 	if (ImGui::IsMousePosValid())
 		ImGui::Text("Mouse Position: (%.1f,%.1f)", io.MousePos.x, io.MousePos.y);
 	else
@@ -81,24 +84,24 @@ void Hmck::UserInterface::showWindowControls()
 	ImGui::End();
 }
 
-void Hmck::UserInterface::showGameObjectComponents(std::shared_ptr<Entity>& gameObject, bool* close)
+void Hmck::UserInterface::showEntityComponents(std::shared_ptr<Entity>& entity, bool* close)
 {
-	// TODO
-	//beginWindow(gameObject.getName().c_str(), close, ImGuiWindowFlags_AlwaysAutoResize);
-	//ImGui::Text("Components attached to GameObject");
-	//gameObjectComponets(gameObject);
-	//endWindow();
+	beginWindow(("#" + std::to_string(entity->id)).c_str(), close, ImGuiWindowFlags_AlwaysAutoResize);
+	ImGui::Text("Attached components:");
+	entityComponets(entity);
+	endWindow();
 }
 
-void Hmck::UserInterface::showGameObjectsInspector(std::vector<std::shared_ptr<Entity>>& gameObjects)
+void Hmck::UserInterface::showEntityInspector(std::shared_ptr<Entity> entity)
 {
 	const ImGuiWindowFlags window_flags = ImGuiWindowFlags_AlwaysAutoResize;
 	ImGui::SetNextWindowPos({ 10, 130}, ImGuiCond_Once, {0,0});
 	ImGui::SetNextWindowSizeConstraints({ 300, 200 }, ImVec2(static_cast<float>(hmckWindow.getExtent().width), 500));
-	beginWindow("GameObjects Inspector", (bool*)false, ImGuiWindowFlags_AlwaysAutoResize);
-	ImGui::Text("Inspect all GameObjects in the scene", window_flags);
+	beginWindow("Entity Inspector", (bool*)false, ImGuiWindowFlags_AlwaysAutoResize);
+	ImGui::Text("Inspect all entities in the scene", window_flags);
 
-	// TODO loop entities and call showGameObjectComponents
+	inspectEntity(entity);
+
 	endWindow();
 }
 
@@ -297,81 +300,56 @@ void Hmck::UserInterface::endWindow()
 	ImGui::End();
 }
 
-void Hmck::UserInterface::gameObjectComponets(std::shared_ptr<Entity>& gameObject)
-{/* TODO
-	if (ImGui::CollapsingHeader("Transform", ImGuiTreeNodeFlags_DefaultOpen)) // Tranform
+void Hmck::UserInterface::entityComponets(std::shared_ptr<Entity> entity)
+{
+	
+	if (ImGui::CollapsingHeader("Transform")) // Tranform
 	{
 		if (ImGui::TreeNode("Translation"))
 		{
-			ImGui::DragFloat("x", &gameObject.transformComponent.translation.x, 0.01f);
-			ImGui::DragFloat("y", &gameObject.transformComponent.translation.y, 0.01f);
-			ImGui::DragFloat("z", &gameObject.transformComponent.translation.z, 0.01f);
+			auto translation = entity->translation();
+			ImGui::DragFloat("x", &translation.x, 0.01f);
+			ImGui::DragFloat("y", &translation.y, 0.01f);
+			ImGui::DragFloat("z", &translation.z, 0.01f);
+			entity->translate(translation);
 			ImGui::TreePop();
 		}
-		//ImGui::Separator();
 		if (ImGui::TreeNode("Rotation"))
 		{
-			ImGui::DragFloat("x", &gameObject.transformComponent.rotation.x, 0.01f);
-			ImGui::DragFloat("y", &gameObject.transformComponent.rotation.y, 0.01f);
-			ImGui::DragFloat("z", &gameObject.transformComponent.rotation.z, 0.01f);
-			ImGui::TreePop();
+			auto rotation = entity->rotation();
+			ImGui::DragFloat("x", &rotation.x, 0.01f);
+			ImGui::DragFloat("y", &rotation.y, 0.01f);
+			ImGui::DragFloat("z", &rotation.z, 0.01f);
+			entity->rotate(rotation);
+			
 		}
-		//ImGui::Separator();
 		if (ImGui::TreeNode("Scale"))
 		{
-			ImGui::DragFloat("x", &gameObject.transformComponent.scale.x, 0.01f);
-			ImGui::DragFloat("y", &gameObject.transformComponent.scale.y, 0.01f);
-			ImGui::DragFloat("z", &gameObject.transformComponent.scale.z, 0.01f);
+			auto scale = entity->scale();
+			ImGui::DragFloat("x", &scale.x, 0.01f);
+			ImGui::DragFloat("y", &scale.y, 0.01f);
+			ImGui::DragFloat("z", &scale.z, 0.01f);
+			entity->scale(scale);
 			ImGui::TreePop();
 		}
+		
 	}
-	if (ImGui::CollapsingHeader("Color")) // Color
+	ImGui::Separator();
+}
+
+void Hmck::UserInterface::inspectEntity(std::shared_ptr<Entity> entity)
+{
+	if (ImGui::TreeNode(("#" + std::to_string(entity->id)).c_str()))
 	{
-		float* color_hsv[3] = {
-			&gameObject.colorComponent.x,
-			&gameObject.colorComponent.y,
-			&gameObject.colorComponent.z,
-		};
-		ImGui::ColorEdit3("Color", color_hsv[0], ImGuiColorEditFlags_Float | ImGuiColorEditFlags_DisplayRGB);
-	}
-	if (gameObject.boundingBoxComponent != nullptr) // Bounding box
-	{
-		if (ImGui::CollapsingHeader("Bounding box"))
+		entityComponets(entity);
+		ImGui::Text("Children:");
+		for (auto& child : entity->children)
 		{
-			ImGui::DragFloat("x min", &gameObject.boundingBoxComponent->x.min, 0.01f);
-			ImGui::DragFloat("x max", &gameObject.boundingBoxComponent->x.max, 0.01f);
-			ImGui::DragFloat("y min", &gameObject.boundingBoxComponent->y.min, 0.01f);
-			ImGui::DragFloat("y max", &gameObject.boundingBoxComponent->y.max, 0.01f);
-			ImGui::DragFloat("z min", &gameObject.boundingBoxComponent->z.min, 0.01f);
-			ImGui::DragFloat("z max", &gameObject.boundingBoxComponent->z.max, 0.01f);
+			inspectEntity(child);
 		}
+
+		ImGui::TreePop();
 	}
-	if (gameObject.pointLightComponent != nullptr) // Point light
-	{
-		if (ImGui::CollapsingHeader("Point light"))
-		{
-			ImGui::DragFloat("Intensity", &gameObject.pointLightComponent->lightIntensity, 0.01f, 0.0f);
-			ImGui::DragFloat("Quadratic Term", &gameObject.pointLightComponent->quadraticTerm, 0.01f, 0.0f, 4.0f);
-			ImGui::DragFloat("Linear Term", &gameObject.pointLightComponent->linearTerm, 0.01f, 0.0f, 4.0f);
-			ImGui::DragFloat("Constant Term", &gameObject.pointLightComponent->constantTerm, 0.01f, 0.0f, 4.0f);
-		}
-	}
-	if (gameObject.directionalLightComponent != nullptr) // directional light
-	{
-		if (ImGui::CollapsingHeader("Directional light"))
-		{
-			ImGui::DragFloat("Intensity", &gameObject.directionalLightComponent->lightIntensity, 0.01f, 0.0f);
-			ImGui::DragFloat("FOV", &gameObject.directionalLightComponent->fov, 1.0f, 10.0f, 180.f);
-			ImGui::DragFloat("Near", &gameObject.directionalLightComponent->_near, 0.01f, 0.001f);
-			ImGui::DragFloat("Far", &gameObject.directionalLightComponent->_far, 1.0f, 0.001f);
-			float* target[3] = {
-				&gameObject.directionalLightComponent->target.x,
-				&gameObject.directionalLightComponent->target.y,
-				&gameObject.directionalLightComponent->target.z
-			};
-			ImGui::DragFloat3("Target", target[0],0.1f);
-		}
-	}*/
 }
 
 
