@@ -27,6 +27,7 @@ layout (push_constant) uniform Push
 {
     mat4 modelMatrix; // model matrix
     mat4 normalMatrix; // using mat4 bcs alignment requirements
+    //int albedo_index;
 } push;
 
 

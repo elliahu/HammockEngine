@@ -1,5 +1,5 @@
 #include "App.h"
-
+/*
 Hmck::App::App()
 {
     // TODO change this so that material sets are allocated dynamicly or from different pool object
@@ -779,3 +779,5 @@ void Hmck::App::load()
     gameObjects.emplace(directionalLight.getId(), std::move(directionalLight));
 
 }
+
+*/

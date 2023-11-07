@@ -8,145 +8,43 @@
 #include <glm/gtc/type_ptr.hpp>
 #include <tiny_gltf.h>
 #include "HmckTexture.h"
-#include "HmckDescriptors.h"
+#include "HmckEntity.h"
+#include "HmckEntity3D.h"
 
 namespace gltf = tinygltf;
 namespace Hmck
 {
-	// scalar float: N = 4 Bytes
-	// vec2: 2N = 8 Bytes
-	// vec3 (or vec4): 4N = 16 Bytes
-	// taken from 15.6.4 Offset and Stride Assignment
-	struct MatrixPushConstantData {
-		glm::mat4 modelMatrix{ 1.f };
-		glm::mat4 normalMatrix{ 1.f };
-	};
-
-
 	class Gltf
 	{
 	public:
 
-		Gltf(Device& device);
-
-		~Gltf();
-
-		// delete copy constructor and copy destructor
-		Gltf(const Gltf&) = delete;
-		Gltf& operator=(const Gltf&) = delete;
-
-		struct Config
-		{
-			bool binary = false;
-		};
-
-		struct Vertex
-		{
-			glm::vec3 position{};
-			glm::vec3 color{};
-			glm::vec3 normal{};
-			glm::vec2 uv{};
-			glm::vec4 tangent{};
-		};
-
-		struct Primitive {
-			uint32_t firstIndex;
-			uint32_t indexCount;
-			int32_t materialIndex;
-		};
-
-		struct Image
-		{
-			std::string uri;
-			std::string name;
-			Texture2D texture{};
-		};
-
-		struct Texture
-		{
-			uint32_t imageIndex;
-			uint32_t scale;
-		};
-
-		struct Material
-		{
-			std::string name;
-			glm::vec4 baseColorFactor = glm::vec4(1.0f);
-			uint32_t baseColorTextureIndex;
-			uint32_t normalTextureIndex;
-			uint32_t metallicRoughnessTextureIndex;
-			uint32_t occlusionTexture;
-			std::string alphaMode = "OPAQUE";
-			float alphaCutOff;
-			bool doubleSided = false;
-			VkDescriptorSet descriptorSet;
-			VkPipeline pipeline;
-		};
-
-		struct Mesh
-		{
-			std::vector<Primitive> primitives;
-			std::string name;
-		};
-
-		struct Node {
-			std::shared_ptr<Node> parent;
-			std::vector<std::shared_ptr<Node>> children;
-			Mesh mesh{};
-			glm::mat4 matrix;
-			std::string name{};
-			bool visible = true;
-
-			~Node() {
-				// ensures that before parent node is deleted, all of its children are deleted as well
-				for (auto& child : children) {
-					child = nullptr;
-				}
-			}
-		};
-
-		void load(std::string filepath, Config& info);
-		void draw(VkCommandBuffer commandBuffer, VkPipelineLayout pipelineLayout, glm::mat4 transform);
-		void drawNode(VkCommandBuffer commandBuffer, std::shared_ptr<Node>& node, VkPipelineLayout pipelineLayout, glm::mat4 objectTransform);
-
-		static std::vector<VkVertexInputBindingDescription> getBindingDescriptions();
-		static std::vector<VkVertexInputAttributeDescription> getAttributeDescriptions();
-
-		void prepareDescriptors();
-		// TODO create per-material pipelines
-		// void createMaterialPipelines();
-
-		std::vector<Vertex> vertices{};
-		std::vector<uint32_t> indices{};
-		std::vector<Image> images;
-		std::vector<Texture> textures;
-		std::vector<Material> materials;
-		std::vector<std::shared_ptr<Node>> nodes;
-		std::string path;
-
-		std::unique_ptr<Buffer> vertexBuffer;
-		uint32_t vertexCount;
-
-		std::unique_ptr<Buffer> indexBuffer;
-		uint32_t indexCount;
+		static std::shared_ptr<Entity> load(
+			std::string filename,
+			Device& device,
+			std::vector<Image>& images,
+			std::vector<Material>& materials,
+			std::vector<Texture>& textures,
+			std::vector<Vertex>& vertices,
+			std::vector<uint32_t>& indices,
+			std::vector<std::shared_ptr<Entity>>& entities,
+			bool binary = true
+		);
 
 	private:
 
-		void loadImages(gltf::Model& input);
-		void loadMaterials(gltf::Model& input);
-		void loadTextures(gltf::Model& input);
-		void loadNode(
+		static void loadImages(gltf::Model& input, Device& device, std::vector<Image>& images);
+		static void loadMaterials(gltf::Model& input, Device& device, std::vector<Material>& materials);
+		static void loadTextures(gltf::Model& input, Device& device, std::vector<Texture>& textures);
+		static void loadNode(
 			const tinygltf::Node& inputNode,
-			const tinygltf::Model& input, std::shared_ptr<Node> parent);
-		void createVertexBuffer();
-		void createIndexBuffer();
+			const tinygltf::Model& input, 
+			std::shared_ptr<Entity> parent,
+			std::vector<Vertex>& vertices,
+			std::vector<uint32_t>& indices,
+			std::vector<std::shared_ptr<Entity>>& entities
+			);
 
-
-
-		gltf::Model model;
-		std::unique_ptr<DescriptorPool> descriptorPool{};
-		std::unique_ptr<DescriptorSetLayout> descriptorSetLayout;
-		Device& device;
+		
 	};
 }
 

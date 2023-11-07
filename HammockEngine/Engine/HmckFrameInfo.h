@@ -1,7 +1,6 @@
 #pragma once
 
 #include "HmckCamera.h"
-#include "HmckGameObject.h"
 
 #include <vulkan/vulkan.h>
 
@@ -58,6 +57,5 @@ namespace Hmck
 		VkCommandBuffer commandBuffer;
 		Camera& camera;
 		VkDescriptorSet globalDescriptorSet;
-		GameObject::Map& gameObjects;
 	};
 }

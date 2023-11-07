@@ -207,7 +207,7 @@ void Hmck::Texture2D::createSampler(Device& hmckDevice, VkFilter filter)
 	}
 }
 
-void Hmck::Texture::updateDescriptor()
+void Hmck::ITexture::updateDescriptor()
 {
 	descriptor.sampler = sampler;
 	descriptor.imageView = view;

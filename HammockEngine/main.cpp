@@ -2,7 +2,6 @@
 #include <iostream>
 #include <stdexcept>
 
-#include "Apps/App.h"
 #include "Apps/VolumetricRenderingApp.h"
 #include "Utils/HmckLogger.h"
 
@@ -10,7 +9,6 @@
 
 int main()
 {
-	//Hmck::App app{};
 	Hmck::VolumetricRenderingApp app{};
 
 	try

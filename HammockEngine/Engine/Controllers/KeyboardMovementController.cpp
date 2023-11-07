@@ -1,6 +1,6 @@
 #include "KeyboardMovementController.h"
 
-void Hmck::KeyboardMovementController::moveInPlaneXZ(Window& window, float dt, GameObject& gameObject)
+void Hmck::KeyboardMovementController::moveInPlaneXZ(Window& window, float dt, std::shared_ptr<Entity> entity)
 {
 	glm::vec3 rotate{ 0 };
 	if (window.getInputManager().isKeyboardKeyDown(HMCK_KEY_RIGHT)) rotate.y += 1.f;
@@ -32,8 +32,9 @@ void Hmck::KeyboardMovementController::moveInPlaneXZ(Window& window, float dt, G
 		double offsetX = x - mouseMotionStartX;
 		double offsetY = mouseMotionStartY - y;
 
-		gameObject.transformComponent.rotation.y += glm::clamp(glm::radians((float)offsetX), -360.0f, 360.0f);
-		gameObject.transformComponent.rotation.x -= glm::clamp(glm::radians((float)offsetY), -89.0f, 89.0f);
+		// TODO
+		//gameObject.transformComponent.rotation.y += glm::clamp(glm::radians((float)offsetX), -360.0f, 360.0f);
+		//gameObject.transformComponent.rotation.x -= glm::clamp(glm::radians((float)offsetY), -89.0f, 89.0f);
 
 		mouseMotionStartX = x;
 		mouseMotionStartY = y;
@@ -41,14 +42,14 @@ void Hmck::KeyboardMovementController::moveInPlaneXZ(Window& window, float dt, G
 
 	if (glm::dot(rotate, rotate) > std::numeric_limits<float>::epsilon())
 	{
-		gameObject.transformComponent.rotation += lookSpeed * dt * glm::normalize(rotate);
+		//gameObject.transformComponent.rotation += lookSpeed * dt * glm::normalize(rotate);
 	}
 
 	//clamping
-	gameObject.transformComponent.rotation.x = glm::clamp(gameObject.transformComponent.rotation.x, -1.5f, 1.5f);
-	gameObject.transformComponent.rotation.y = glm::mod(gameObject.transformComponent.rotation.y, glm::two_pi<float>());
+	//gameObject.transformComponent.rotation.x = glm::clamp(gameObject.transformComponent.rotation.x, -1.5f, 1.5f);
+	//gameObject.transformComponent.rotation.y = glm::mod(gameObject.transformComponent.rotation.y, glm::two_pi<float>());
 
-	float yaw = gameObject.transformComponent.rotation.y;
+	/*float yaw = gameObject.transformComponent.rotation.y;
 	const glm::vec3 forwardDir{ sin(yaw), 0.0f, cos(yaw) };
 	const glm::vec3 rightDir{ forwardDir.z, 0.0f, -forwardDir.x };
 	const glm::vec3 upDir{ 0.0f , 1.f, 0.0f };
@@ -64,5 +65,5 @@ void Hmck::KeyboardMovementController::moveInPlaneXZ(Window& window, float dt, G
 	if (glm::dot(moveDir, moveDir) > std::numeric_limits<float>::epsilon())
 	{
 		gameObject.transformComponent.translation += moveSpeed * dt * glm::normalize(moveDir);
-	}
+	}*/
 }

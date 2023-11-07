@@ -13,7 +13,8 @@ namespace Hmck
 		uint32_t binding,
 		VkDescriptorType descriptorType,
 		VkShaderStageFlags stageFlags,
-		uint32_t count)
+		uint32_t count,
+		VkDescriptorBindingFlags flags)
 	{
 		assert(bindings.count(binding) == 0 && "Binding already in use");
 		VkDescriptorSetLayoutBinding layoutBinding{};
@@ -22,32 +23,47 @@ namespace Hmck
 		layoutBinding.descriptorCount = count;
 		layoutBinding.stageFlags = stageFlags;
 		bindings[binding] = layoutBinding;
+		bindingFlags[binding] = flags;
 		return *this;
 	}
 
 	std::unique_ptr<DescriptorSetLayout> DescriptorSetLayout::Builder::build() const
 	{
-		return std::make_unique<DescriptorSetLayout>(hmckDevice, bindings);
+		return std::make_unique<DescriptorSetLayout>(hmckDevice, bindings, bindingFlags);
 	}
 
 	// *************** Descriptor Set Layout *********************
 
 	DescriptorSetLayout::DescriptorSetLayout(
-		Device& hmckDevice, std::unordered_map<uint32_t, VkDescriptorSetLayoutBinding> bindings)
+		Device& hmckDevice, std::unordered_map<uint32_t, 
+		VkDescriptorSetLayoutBinding> bindings,
+		std::unordered_map <uint32_t, VkDescriptorBindingFlags> flags)
 		: hmckDevice{ hmckDevice }, bindings{ bindings }
 	{
-
-
 		std::vector<VkDescriptorSetLayoutBinding> setLayoutBindings{};
+		std::vector<VkDescriptorBindingFlags> setLayoutBindingFlags{};
 		for (auto kv : bindings)
 		{
 			setLayoutBindings.push_back(kv.second);
 		}
 
+		for (auto kv : flags)
+		{
+			setLayoutBindingFlags.push_back(kv.second);
+		}
+
+		VkDescriptorSetLayoutBindingFlagsCreateInfo bindingFlagsInfo = {};
+		bindingFlagsInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_BINDING_FLAGS_CREATE_INFO;
+		bindingFlagsInfo.bindingCount = static_cast<uint32_t>(setLayoutBindingFlags.size());
+		bindingFlagsInfo.pBindingFlags = setLayoutBindingFlags.data();
+
 		VkDescriptorSetLayoutCreateInfo descriptorSetLayoutInfo{};
 		descriptorSetLayoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
 		descriptorSetLayoutInfo.bindingCount = static_cast<uint32_t>(setLayoutBindings.size());
 		descriptorSetLayoutInfo.pBindings = setLayoutBindings.data();
+		descriptorSetLayoutInfo.pNext = &bindingFlagsInfo;
+		descriptorSetLayoutInfo.flags = VK_DESCRIPTOR_SET_LAYOUT_CREATE_UPDATE_AFTER_BIND_POOL_BIT;
+		
 
 		if (vkCreateDescriptorSetLayout(
 			hmckDevice.device(),
@@ -195,6 +211,25 @@ namespace Hmck
 		write.descriptorType = bindingDescription.descriptorType;
 		write.dstBinding = binding;
 		write.pImageInfo = imageInfo;
+		write.descriptorCount = 1;
+
+		writes.push_back(write);
+		return *this;
+	}
+
+	DescriptorWriter& DescriptorWriter::writeImages(uint32_t binding, std::vector<VkDescriptorImageInfo>& imageInfo)
+	{
+		assert(setLayout.bindings.count(binding) == 1 && "Layout does not contain specified binding");
+
+		auto& bindingDescription = setLayout.bindings[binding];
+
+
+		VkWriteDescriptorSet write{};
+		write.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+		write.descriptorType = bindingDescription.descriptorType;
+		write.dstBinding = binding;
+		write.pImageInfo = imageInfo.data();
+		write.descriptorCount = static_cast<uint32_t>(imageInfo.size());
 		write.descriptorCount = 1;
 
 		writes.push_back(write);

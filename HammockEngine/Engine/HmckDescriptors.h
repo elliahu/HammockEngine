@@ -9,6 +9,8 @@
 
 namespace Hmck {
 
+    typedef const uint32_t Binding;
+
     class DescriptorSetLayout {
     public:
         class Builder {
@@ -19,17 +21,21 @@ namespace Hmck {
                 uint32_t binding,
                 VkDescriptorType descriptorType,
                 VkShaderStageFlags stageFlags,
-                uint32_t count = 1
+                uint32_t count = 1,
+                VkDescriptorBindingFlags flags = 0
             );
             std::unique_ptr<DescriptorSetLayout> build() const;
 
         private:
             Device& hmckDevice;
             std::unordered_map<uint32_t, VkDescriptorSetLayoutBinding> bindings{};
+            std::unordered_map <uint32_t, VkDescriptorBindingFlags> bindingFlags{};
         };
 
         DescriptorSetLayout(
-            Device& hmckDevice, std::unordered_map<uint32_t, VkDescriptorSetLayoutBinding> bindings);
+            Device& hmckDevice, 
+            std::unordered_map<uint32_t, VkDescriptorSetLayoutBinding> bindings,
+            std::unordered_map <uint32_t, VkDescriptorBindingFlags> flags);
         ~DescriptorSetLayout();
         DescriptorSetLayout(const DescriptorSetLayout&) = delete;
         DescriptorSetLayout& operator=(const DescriptorSetLayout&) = delete;
@@ -92,6 +98,7 @@ namespace Hmck {
 
         DescriptorWriter& writeBuffer(uint32_t binding, VkDescriptorBufferInfo* bufferInfo);
         DescriptorWriter& writeImage(uint32_t binding, VkDescriptorImageInfo* imageInfo);
+        DescriptorWriter& writeImages(uint32_t binding, std::vector<VkDescriptorImageInfo>& imageInfo);
 
         bool build(VkDescriptorSet& set);
         void overwrite(VkDescriptorSet& set);

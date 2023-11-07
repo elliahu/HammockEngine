@@ -1,18 +1,4 @@
 #pragma once
-#include "Platform/HmckWindow.h"
-#include "HmckDevice.h"
-#include "HmckGameObject.h"
-#include "HmckRenderer.h"
-#include "Systems/HmckUserInterface.h"
-#include "HmckCamera.h"
-#include "Controllers/KeyboardMovementController.h"
-#include "HmckBuffer.h"
-#include "HmckDescriptors.h"
-#include "HmckCollisionDetectionSystem.h"
-#include "Utils/HmckLogger.h"
-#include "HmckGLTF.h"
-#include "IApp.h"
-
 #define GLM_FORCE_RADIANS
 #define GLM_FORCE_DEPTH_ZERO_TO_ONE
 #include <glm/glm.hpp>
@@ -23,6 +9,19 @@
 #include <stdexcept>
 #include <chrono>
 
+#include "Platform/HmckWindow.h"
+#include "HmckDevice.h"
+#include "HmckRenderer.h"
+#include "Systems/HmckUserInterface.h"
+#include "HmckCamera.h"
+#include "Controllers/KeyboardMovementController.h"
+#include "HmckBuffer.h"
+#include "HmckDescriptors.h"
+#include "Utils/HmckLogger.h"
+#include "IApp.h"
+#include "HmckEntity.h"
+#include "HmckScene.h"
+
 
 #ifndef MODELS_DIR
 #define MODELS_DIR "../../Resources/Models/"
@@ -32,6 +31,7 @@
 #define MATERIALS_DIR "../../Resources/Materials/"
 #endif // !MATERIALS_DIR
 
+
 namespace Hmck 
 {
 	class VolumetricRenderingApp : public IApp
@@ -40,18 +40,11 @@ namespace Hmck
 		// TODO make more abstraction layers over the IApp
 
 	public:
-
 		struct PerFrameData
 		{
 			glm::mat4 projection{ 1.f };
 			glm::mat4 view{ 1.f };
 			glm::mat4 inverseView{ 1.f };
-		};
-
-		struct PushConstantData
-		{
-			glm::mat4 model{1.f};
-			glm::mat4 normal{1.f};
 		};
 
 		VolumetricRenderingApp();
@@ -62,9 +55,8 @@ namespace Hmck
 
 		std::unique_ptr<DescriptorPool> descriptorPool{};
 		std::unique_ptr<DescriptorSetLayout> descriptorSetLayout{};
-		std::unique_ptr<DescriptorSetLayout> materialLayout{};
 
-		GameObject::Map gameObjects;
+		std::unique_ptr<Scene> scene{};
 	};
 
 }

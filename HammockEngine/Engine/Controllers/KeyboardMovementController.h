@@ -1,11 +1,11 @@
 #pragma once
 
-#include "HmckGameObject.h"
 #include "Platform/HmckWindow.h"
 #include "Utils/HmckLogger.h"
 #include "Systems/HmckUserInterface.h"
 
 #include <limits>
+#include <memory>
 
 namespace Hmck
 {
@@ -13,7 +13,7 @@ namespace Hmck
 	{
 	public:
 
-        void moveInPlaneXZ(Window& window, float dt, GameObject& gameObject);
+        void moveInPlaneXZ(Window& window, float dt, std::shared_ptr<Entity> entity);
 
         float moveSpeed{ 3.f };
         float lookSpeed{ 1.5f };

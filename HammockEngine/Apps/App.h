@@ -2,14 +2,12 @@
 
 #include "Platform/HmckWindow.h"
 #include "HmckDevice.h"
-#include "HmckGameObject.h"
 #include "HmckRenderer.h"
 #include "Systems/HmckUserInterface.h"
 #include "HmckCamera.h"
 #include "Controllers/KeyboardMovementController.h"
 #include "HmckBuffer.h"
 #include "HmckDescriptors.h"
-#include "HmckCollisionDetectionSystem.h"
 #include "Utils/HmckLogger.h"
 #include "HmckGLTF.h"
 #include "IApp.h"
@@ -33,7 +31,7 @@
 #endif // !MATERIALS_DIR
 
 
-
+/*
 namespace Hmck
 {
 	class App: public IApp
@@ -56,3 +54,4 @@ namespace Hmck
 	};
 
 }
+*/

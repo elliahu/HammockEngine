@@ -13,7 +13,7 @@ namespace Hmck
 		Texture represents a texture
 		that can be used to sample from in a shader
 	*/
-	class Texture
+	class ITexture
 	{
 	public:
 		// Recommended:
@@ -31,7 +31,7 @@ namespace Hmck
 	};
 
 
-	class Texture2D : public Texture
+	class Texture2D : public ITexture
 	{
 	public:
 		void loadFromFile(
@@ -54,7 +54,7 @@ namespace Hmck
 		void destroy(Device& hmckDevice);
 	};
 
-	class TextureCubeMap : public Texture
+	class TextureCubeMap : public ITexture
 	{
 	public:
 		void loadFromFile(

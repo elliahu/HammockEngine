@@ -1,4 +1,5 @@
 #version 450
+#extension GL_EXT_nonuniform_qualifier : enable
 
 // inputs
 layout (location = 0) in vec3 normal;
@@ -10,12 +11,6 @@ layout (location = 3) in vec4 tangent;
 layout (location = 0) out vec4 outColor;
 
 
-layout(set = 1, binding = 0) uniform sampler2D albedoSampler;
-layout(set = 1, binding = 1) uniform sampler2D normSampler;
-layout(set = 1, binding = 2) uniform sampler2D roughMetalSampler;
-layout(set = 1, binding = 3) uniform sampler2D occlusionSampler;
-
-
 layout (set = 0, binding = 0) uniform ShaderData
 {
     mat4 projection;
@@ -23,11 +18,19 @@ layout (set = 0, binding = 0) uniform ShaderData
     mat4 inverseView;
 } data;
 
+layout(set = 0, binding = 1) uniform sampler2D albedoSampler[];
+layout(set = 0, binding = 2) uniform sampler2D normSampler[];
+layout(set = 0, binding = 3) uniform sampler2D roughMetalSampler[];
+layout(set = 0, binding = 4) uniform sampler2D occlusionSampler[];
+
+
+
 // push constants
 layout (push_constant) uniform Push
 {
     mat4 modelMatrix; // model matrix
     mat4 normalMatrix; // using mat4 bcs alignment requirements
+    //int albedo_index;
 } push;
 
 float beers_law(float distance, float absorbtion)
@@ -42,5 +45,5 @@ void main()
     vec3 sphere_position = vec3(2,0,2);
 
 
-    outColor = texture(albedoSampler, uv) ;//+ vec4(1) * (1 - beers_law(distance(vec3(0), position),0.04));
+    outColor = texture(albedoSampler[0], uv) ;//+ vec4(1) * (1 - beers_law(distance(vec3(0), position),0.04));
 }

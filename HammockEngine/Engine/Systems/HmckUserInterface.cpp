@@ -27,21 +27,15 @@ void Hmck::UserInterface::endUserInterface(VkCommandBuffer commandBuffer)
 	ImGui_ImplVulkan_RenderDrawData(ImGui::GetDrawData(), commandBuffer);
 }
 
-void Hmck::UserInterface::showDebugStats(GameObject& camera)
+void Hmck::UserInterface::showDebugStats(std::shared_ptr<Entity> camera)
 {
 	ImGuiIO& io = ImGui::GetIO();
 	ImGuiWindowFlags window_flags = ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_NoFocusOnAppearing | ImGuiWindowFlags_NoNav;
 	ImGui::SetNextWindowPos({10,10});
 	ImGui::SetNextWindowBgAlpha(0.35f);
 	ImGui::Begin(hmckWindow.getWindowName().c_str(),(bool*)0, window_flags);
-	ImGui::Text("Camera world position: ( %.2f, %.2f, %.2f )", 
-		camera.transformComponent.translation.x,
-		camera.transformComponent.translation.y,
-		camera.transformComponent.translation.z);
-	ImGui::Text("Camera world rotaion: ( %.2f, %.2f, %.2f )", 
-		camera.transformComponent.rotation.x,
-		camera.transformComponent.rotation.y,
-		camera.transformComponent.rotation.z);
+	ImGui::Text("Camera world position:");
+	ImGui::Text("Camera world rotaion:");
 	if (ImGui::IsMousePosValid())
 		ImGui::Text("Mouse Position: (%.1f,%.1f)", io.MousePos.x, io.MousePos.y);
 	else
@@ -87,15 +81,16 @@ void Hmck::UserInterface::showWindowControls()
 	ImGui::End();
 }
 
-void Hmck::UserInterface::showGameObjectComponents(GameObject& gameObject, bool* close)
+void Hmck::UserInterface::showGameObjectComponents(std::shared_ptr<Entity>& gameObject, bool* close)
 {
-	beginWindow(gameObject.getName().c_str(), close, ImGuiWindowFlags_AlwaysAutoResize);
-	ImGui::Text("Components attached to GameObject");
-	gameObjectComponets(gameObject);
-	endWindow();
+	// TODO
+	//beginWindow(gameObject.getName().c_str(), close, ImGuiWindowFlags_AlwaysAutoResize);
+	//ImGui::Text("Components attached to GameObject");
+	//gameObjectComponets(gameObject);
+	//endWindow();
 }
 
-void Hmck::UserInterface::showGameObjectsInspector(GameObject::Map& gameObjects)
+void Hmck::UserInterface::showGameObjectsInspector(std::vector<std::shared_ptr<Entity>>& gameObjects)
 {
 	const ImGuiWindowFlags window_flags = ImGuiWindowFlags_AlwaysAutoResize;
 	ImGui::SetNextWindowPos({ 10, 130}, ImGuiCond_Once, {0,0});
@@ -103,17 +98,7 @@ void Hmck::UserInterface::showGameObjectsInspector(GameObject::Map& gameObjects)
 	beginWindow("GameObjects Inspector", (bool*)false, ImGuiWindowFlags_AlwaysAutoResize);
 	ImGui::Text("Inspect all GameObjects in the scene", window_flags);
 
-	for (auto& kv : gameObjects)
-	{
-		GameObject& gameObject = kv.second;
-
-		if (ImGui::TreeNode(gameObject.getName().c_str()))
-		{
-			gameObjectComponets(gameObject);
-			ImGui::TreePop();
-		}
-		ImGui::Separator();
-	}
+	// TODO loop entities and call showGameObjectComponents
 	endWindow();
 }
 
@@ -312,8 +297,8 @@ void Hmck::UserInterface::endWindow()
 	ImGui::End();
 }
 
-void Hmck::UserInterface::gameObjectComponets(GameObject& gameObject)
-{
+void Hmck::UserInterface::gameObjectComponets(std::shared_ptr<Entity>& gameObject)
+{/* TODO
 	if (ImGui::CollapsingHeader("Transform", ImGuiTreeNodeFlags_DefaultOpen)) // Tranform
 	{
 		if (ImGui::TreeNode("Translation"))
@@ -386,7 +371,7 @@ void Hmck::UserInterface::gameObjectComponets(GameObject& gameObject)
 			};
 			ImGui::DragFloat3("Target", target[0],0.1f);
 		}
-	}
+	}*/
 }
 
 

@@ -5,50 +5,34 @@
 #define STB_IMAGE_WRITE_IMPLEMENTATION
 #include "tiny_gltf.h"
 
-
 namespace gltf = tinygltf;
 
-Hmck::Gltf::Gltf(Device& device): device{device}
-{
-	descriptorPool = DescriptorPool::Builder(device)
-		.setMaxSets(1000)
-		.addPoolSize(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1000)
-		.build();
-
-	descriptorSetLayout = DescriptorSetLayout::Builder(device)
-		.addBinding(0, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT) // albedo
-		.addBinding(1, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT) // normal
-		.addBinding(2, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT) // roughnessMetalic
-		.addBinding(3, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT) // occlusion
-		.build();
-}
-
-Hmck::Gltf::~Gltf()
-{
-	for (unsigned int i = 0; i < images.size(); i++)
-	{
-		images[i].texture.destroy(device);
-	}
-
-	for (auto& material : materials) {
-		vkDestroyPipeline(device.device(), material.pipeline, nullptr);
-	}
-}
-
-void Hmck::Gltf::load(std::string filepath, Config& info)
+std::shared_ptr<Hmck::Entity> Hmck::Gltf::load(
+	std::string filename,
+	Device& device, 
+	std::vector<Image>& images,
+	std::vector<Material>& materials,
+	std::vector<Texture>& textures,
+	std::vector<Vertex>& vertices,
+	std::vector<uint32_t>& indices,
+	std::vector<std::shared_ptr<Entity>>& entities,
+	bool binary
+	)
 {
 	gltf::TinyGLTF loader;
+	gltf::Model model;
 	std::string err;
 	std::string warn;
 
+
 	bool loaded = false;
-	if (info.binary) 
+	if (binary) 
 	{
-		loaded = loader.LoadBinaryFromFile(&model, &err, &warn, filepath);
+		loaded = loader.LoadBinaryFromFile(&model, &err, &warn, filename);
 	}
 	else 
 	{
-		loaded = loader.LoadASCIIFromFile(&model, &err, &warn, filepath);
+		loaded = loader.LoadASCIIFromFile(&model, &err, &warn, filename);
 	}
 
 	if (!warn.empty()) 
@@ -65,112 +49,20 @@ void Hmck::Gltf::load(std::string filepath, Config& info)
 		std::cerr << "Failed to parse glTF\n";
 	}
 
-	path = filepath;
-
 	const gltf::Scene& scene = model.scenes[0];
 	for (size_t i = 0; i < scene.nodes.size(); i++) {
-		loadImages(model);
-		loadMaterials(model);
-		loadTextures(model);
+		loadImages(model, device, images);
+		loadMaterials(model, device, materials);
+		loadTextures(model, device, textures);
 		const gltf::Node node = model.nodes[scene.nodes[i]];
-		loadNode(node, model, nullptr);
+		loadNode(node, model, nullptr, vertices, indices, entities);
 	}
-	createVertexBuffer();
-	createIndexBuffer();
-	vertices.clear();
-	indices.clear();
-	prepareDescriptors();
+
+	return entities[0];
 }
 
-void Hmck::Gltf::draw(VkCommandBuffer commandBuffer, VkPipelineLayout pipelineLayout, glm::mat4 transform)
-{
-	VkDeviceSize offsets[] = { 0 };
-	VkBuffer buffers[] = { vertexBuffer->getBuffer() };
-	vkCmdBindVertexBuffers(commandBuffer, 0, 1, buffers, offsets);
-	vkCmdBindIndexBuffer(commandBuffer, indexBuffer->getBuffer(), 0, VK_INDEX_TYPE_UINT32);
 
-	// Render all nodes at top-level
-	for (auto& node : nodes) {
-		drawNode(commandBuffer, node, pipelineLayout, transform);
-	}
-}
-
-void Hmck::Gltf::drawNode(VkCommandBuffer commandBuffer, std::shared_ptr<Node>& node, VkPipelineLayout pipelineLayout, glm::mat4 objectTransform)
-{
-	// don't render invisible nodes
-	if (!node->visible) { return; }
-
-	if (node->mesh.primitives.size() > 0) {
-		// Pass the node's matrix via push constants
-		// Traverse the node hierarchy to the top-most parent to get the final matrix of the current node
-		glm::mat4 nodeMatrix = node->matrix;
-		std::shared_ptr<Node> currentParent = node->parent;
-		while (currentParent) {
-			nodeMatrix = currentParent->matrix * nodeMatrix;
-			currentParent = currentParent->parent;
-		}
-		nodeMatrix = objectTransform * nodeMatrix;
-		// Pass the final matrix to the vertex shader using push constants
-
-		MatrixPushConstantData pushData{};
-		pushData.modelMatrix = nodeMatrix;
-		pushData.normalMatrix = glm::transpose(glm::inverse(nodeMatrix));
-		vkCmdPushConstants(commandBuffer, pipelineLayout, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(MatrixPushConstantData), &pushData);
-
-		for (Primitive& primitive : node->mesh.primitives) {
-			if (primitive.indexCount > 0) {
-				// Get the material index for this primitive
-				Material& material = materials[primitive.materialIndex];
-				// Bind the pipeline for the node's material
-				//vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, material.pipeline);
-				vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 1, 1, &material.descriptorSet, 0, nullptr);
-				// draw
-				vkCmdDrawIndexed(commandBuffer, primitive.indexCount, 1, primitive.firstIndex, 0, 0);
-			}
-		}
-	}
-	for (auto& child : node->children) {
-		drawNode(commandBuffer, child, pipelineLayout, objectTransform);
-	}
-}
-
-void Hmck::Gltf::prepareDescriptors()
-{
-	for (auto& material : materials)
-	{
-		// create descriptor set
-		DescriptorWriter(*descriptorSetLayout, *descriptorPool)
-			.writeImage(0, &images[textures[material.baseColorTextureIndex].imageIndex].texture.descriptor)
-			.writeImage(1, &images[textures[material.normalTextureIndex].imageIndex].texture.descriptor)
-			.writeImage(2, &images[textures[material.metallicRoughnessTextureIndex].imageIndex].texture.descriptor)
-			.writeImage(3, &images[textures[material.occlusionTexture].imageIndex].texture.descriptor)
-			.build(material.descriptorSet);
-	}
-}
-
-std::vector<VkVertexInputBindingDescription> Hmck::Gltf::getBindingDescriptions()
-{
-	std::vector<VkVertexInputBindingDescription> bindingDescriptions(1);
-	bindingDescriptions[0].binding = 0;
-	bindingDescriptions[0].stride = sizeof(Vertex);
-	bindingDescriptions[0].inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
-	return bindingDescriptions;
-}
-
-std::vector<VkVertexInputAttributeDescription> Hmck::Gltf::getAttributeDescriptions()
-{
-	return
-	{
-		// order is location, binding, format, offset
-		{0, 0, VK_FORMAT_R32G32B32_SFLOAT, offsetof(Vertex, position)},
-		{1, 0, VK_FORMAT_R32G32B32_SFLOAT, offsetof(Vertex, color)},
-		{2, 0, VK_FORMAT_R32G32B32_SFLOAT, offsetof(Vertex, normal)},
-		{3, 0, VK_FORMAT_R32G32_SFLOAT, offsetof(Vertex, uv)},
-		{4, 0, VK_FORMAT_R32G32B32_SFLOAT, offsetof(Vertex, tangent)}
-	};
-}
-
-void Hmck::Gltf::loadImages(gltf::Model& input)
+void Hmck::Gltf::loadImages(gltf::Model& input,Device& device, std::vector<Image>& images)
 {
 	// Images can be stored inside the glTF (which is the case for the sample model), so instead of directly
 	// loading them from disk, we fetch them from the glTF loader and upload the buffers
@@ -203,7 +95,7 @@ void Hmck::Gltf::loadImages(gltf::Model& input)
 }
 
 
-void Hmck::Gltf::loadMaterials(gltf::Model& input)
+void Hmck::Gltf::loadMaterials(gltf::Model& input, Device& device, std::vector<Material>& materials)
 {
 	materials.resize(input.materials.size());
 	for (size_t i = 0; i < input.materials.size(); i++) 
@@ -241,7 +133,7 @@ void Hmck::Gltf::loadMaterials(gltf::Model& input)
 	}
 }
 
-void Hmck::Gltf::loadTextures(gltf::Model& input)
+void Hmck::Gltf::loadTextures(gltf::Model& input, Device& device, std::vector<Texture>& textures)
 {
 	textures.resize(input.textures.size());
 	for (size_t i = 0; i < input.textures.size(); i++) {
@@ -249,45 +141,51 @@ void Hmck::Gltf::loadTextures(gltf::Model& input)
 	}
 }
 
-void Hmck::Gltf::loadNode(const tinygltf::Node& inputNode, const tinygltf::Model& input, std::shared_ptr<Node> parent)
+void Hmck::Gltf::loadNode(
+	const tinygltf::Node& inputNode, 
+	const tinygltf::Model& input, 
+	std::shared_ptr<Entity> parent, 
+	std::vector<Vertex>& vertices,
+	std::vector<uint32_t>& indices,
+	std::vector<std::shared_ptr<Entity>>& entities)
 {
-	std::shared_ptr<Node> node = std::make_unique<Node>();
-	node->matrix = glm::mat4(1.0f);
-	node->parent = parent;
-	node->name = inputNode.name;
+	std::shared_ptr<Entity3D> entity = std::make_unique<Entity3D>();
+	entity->transform = glm::mat4(1.0f);
+	entity->parent = parent;
+	entity->name = inputNode.name;
 
-	// Get the local node matrix
+	// Get the local entity matrix
 	// It's either made up from translation, rotation, scale or a 4x4 matrix
 	if (inputNode.translation.size() == 3) {
-		node->matrix = glm::translate(node->matrix, glm::vec3(glm::make_vec3(inputNode.translation.data())));
+		entity->transform = glm::translate(entity->transform, glm::vec3(glm::make_vec3(inputNode.translation.data())));
 	}
 	if (inputNode.rotation.size() == 4) {
 		glm::quat q = glm::make_quat(inputNode.rotation.data());
-		node->matrix *= glm::mat4(q);
+		entity->transform *= glm::mat4(q);
 	}
 	if (inputNode.scale.size() == 3) {
-		node->matrix = glm::scale(node->matrix, glm::vec3(glm::make_vec3(inputNode.scale.data())));
+		entity->transform = glm::scale(entity->transform, glm::vec3(glm::make_vec3(inputNode.scale.data())));
 	}
 	if (inputNode.matrix.size() == 16) {
-		node->matrix = glm::make_mat4x4(inputNode.matrix.data());
+		entity->transform = glm::make_mat4x4(inputNode.matrix.data());
 	};
 
 
-	// Load node's children
+	// Load entity's children
 	if (inputNode.children.size() > 0) 
 	{
 		for (size_t i = 0; i < inputNode.children.size(); i++) 
 		{
-			loadNode(input.nodes[inputNode.children[i]], input, node);
+			loadNode(input.nodes[inputNode.children[i]], input, entity,vertices, indices, entities);
 		}
 	}
 
-	// If the node contains mesh data, we load vertices and indices from the buffers
+	// If the entity contains mesh data, we load vertices and indices from the buffers
 	// In glTF this is done via accessors and buffer views
 	if (inputNode.mesh > -1) 
 	{
 		const gltf::Mesh mesh = input.meshes[inputNode.mesh];
-		// Iterate through all primitives of this node's mesh
+		// Iterate through all primitives of this entity's mesh
 		for (size_t i = 0; i < mesh.primitives.size(); i++)
 		{
 			const gltf::Primitive& glTFPrimitive = mesh.primitives[i];
@@ -390,77 +288,15 @@ void Hmck::Gltf::loadNode(const tinygltf::Node& inputNode, const tinygltf::Model
 			primitive.firstIndex = firstIndex;
 			primitive.indexCount = indexCount;
 			primitive.materialIndex = glTFPrimitive.material;
-			node->mesh.primitives.push_back(primitive);
+			entity->mesh.primitives.push_back(primitive);
 		}
-		node->mesh.name = mesh.name;
+		entity->mesh.name = mesh.name;
 	}
 
 	if (parent) {
-		parent->children.push_back(node);
+		parent->children.push_back(entity);
 	}
 	else {
-		nodes.push_back(node);
+		entities.push_back(entity);
 	}
 }
-
-void Hmck::Gltf::createVertexBuffer()
-{
-	// copy data to staging memory on device, then copy from staging to v/i memory
-	vertexCount = static_cast<uint32_t>(vertices.size());
-	assert(vertexCount >= 3 && "Vertex count must be at least 3");
-	VkDeviceSize bufferSize = sizeof(vertices[0]) * vertexCount;
-	uint32_t vertexSize = sizeof(vertices[0]);
-
-	Buffer stagingBuffer{
-		device,
-		vertexSize,
-		vertexCount,
-		VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
-		VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
-	};
-
-
-	stagingBuffer.map();
-	stagingBuffer.writeToBuffer((void*)vertices.data());
-
-	vertexBuffer = std::make_unique<Buffer>(
-		device,
-		vertexSize,
-		vertexCount,
-		VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT,
-		VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT
-		);
-
-	device.copyBuffer(stagingBuffer.getBuffer(), vertexBuffer->getBuffer(), bufferSize);
-}
-
-void Hmck::Gltf::createIndexBuffer()
-{
-	indexCount = static_cast<uint32_t>(indices.size());
-
-	VkDeviceSize bufferSize = sizeof(indices[0]) * indexCount;
-	uint32_t indexSize = sizeof(indices[0]);
-
-	Buffer stagingBuffer{
-		device,
-		indexSize,
-		indexCount,
-		VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
-		VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT
-	};
-
-	stagingBuffer.map();
-	stagingBuffer.writeToBuffer((void*)indices.data());
-
-	indexBuffer = std::make_unique<Buffer>(
-		device,
-		indexSize,
-		indexCount,
-		VK_BUFFER_USAGE_INDEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT,
-		VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT
-		);
-
-
-	device.copyBuffer(stagingBuffer.getBuffer(), indexBuffer->getBuffer(), bufferSize);
-}
-
