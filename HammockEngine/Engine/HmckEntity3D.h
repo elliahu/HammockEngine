@@ -64,6 +64,14 @@ namespace Hmck
 	class Entity3D : public Entity
 	{
 	public:
+
+		Entity3D() : Entity() { visible = true; };
+
+		static std::shared_ptr<Entity3D> createEntity3D()
+		{
+			return std::make_unique<Entity3D>();
+		}
+
 		Mesh mesh{};
 	};
 }

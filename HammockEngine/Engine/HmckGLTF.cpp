@@ -149,7 +149,7 @@ void Hmck::Gltf::loadNode(
 	std::vector<uint32_t>& indices,
 	std::vector<std::shared_ptr<Entity>>& entities)
 {
-	std::shared_ptr<Entity3D> entity = std::make_unique<Entity3D>();
+	std::shared_ptr<Entity3D> entity = Entity3D::createEntity3D();
 	entity->transform = glm::mat4(1.0f);
 	entity->parent = parent;
 	entity->name = inputNode.name;

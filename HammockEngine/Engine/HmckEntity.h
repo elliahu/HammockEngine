@@ -6,6 +6,8 @@
 #define GLM_FORCE_DEPTH_ZERO_TO_ONE
 #include <glm/glm.hpp>
 #include <glm/gtc/type_ptr.hpp>
+#include <glm/gtc/quaternion.hpp>
+#include <glm/gtc/matrix_transform.hpp>
 #include <tiny_gltf.h>
 #include "HmckTexture.h"
 #include "HmckDescriptors.h"
@@ -30,13 +32,7 @@ namespace Hmck
 			//uint32_t albedo_index{}; // TODO remove this later as this does not belong here and is over the minimum size
 		};
 
-		Id id;
-		std::string name{};
-		glm::mat4 transform; // model matrix
-		std::shared_ptr<Entity> parent;
-		std::vector<std::shared_ptr<Entity>> children;
-		EntityComponentMap components;
-		bool visible = true;
+		Entity() : id{ currentId++ } {};
 
 		virtual ~Entity() {
 			// ensures that before parent Entity is deleted, all of its children are deleted as well
@@ -44,5 +40,28 @@ namespace Hmck
 				child = nullptr;
 			}
 		}
+
+		static std::shared_ptr<Entity> createEntity()
+		{
+			return std::make_unique<Entity>();
+		}
+
+		float scalingFactor();
+		glm::vec3 translation();
+		glm::mat3 rotationMat();
+		glm::vec3 rotation();
+
+		void translate(glm::vec3 position);
+		void rotate(glm::vec3 rotation);
+
+		static Id currentId;
+		Id id;
+		std::string name{};
+		glm::mat4 transform{ 1 }; // model matrix
+		std::shared_ptr<Entity> parent{};
+		std::vector<std::shared_ptr<Entity>> children{};
+		EntityComponentMap components{};
+		bool visible = false;
+
 	};
 }

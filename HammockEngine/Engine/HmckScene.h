@@ -43,6 +43,13 @@ namespace Hmck
 
 		void draw(VkCommandBuffer commandBuffer, VkPipelineLayout pipelineLayout);
 
+		std::shared_ptr<Entity> root() { return entities[0]; }
+		void addChildOfRoot(std::shared_ptr<Entity> child)
+		{
+			child->parent = root();
+			entities.push_back(child);
+		}
+
 		std::vector<std::shared_ptr<Entity>> entities;
 		std::vector<Image> images;
 		std::vector<Texture> textures;

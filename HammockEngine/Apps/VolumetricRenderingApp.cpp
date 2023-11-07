@@ -59,7 +59,10 @@ void Hmck::VolumetricRenderingApp::run()
 
 	// camera and movement
 	Camera camera{};
-	camera.setViewTarget(glm::vec3(-1.f, -2.f, 2.f), glm::vec3(0.f, 0.f, 0.f));
+	camera.setViewTarget({ 1.f, 1.f, -1.f }, { 0.f, 0.f, 0.f });
+	auto viewerObject = Entity::createEntity();
+	viewerObject->translate({ 1.f, 1.f, -5.f });
+	scene->addChildOfRoot(viewerObject);
 	KeyboardMovementController cameraController{};
 
 	GraphicsPipeline standardPipeline = GraphicsPipeline::createGraphicsPipeline({
@@ -121,8 +124,8 @@ void Hmck::VolumetricRenderingApp::run()
 		currentTime = newTime;
 
 		// camera
-		//cameraController.moveInPlaneXZ(hmckWindow, frameTime, viewerObject);
-		//camera.setViewYXZ(viewerObject.transformComponent.translation, viewerObject.transformComponent.rotation);
+		cameraController.moveInPlaneXZ(hmckWindow, frameTime, viewerObject);
+		camera.setViewYXZ(viewerObject->translation(), viewerObject->rotation());
 		float aspect = hmckRenderer.getAspectRatio();
 		camera.setPerspectiveProjection(glm::radians(50.0f), aspect, 0.1f, 1000.f);
 
