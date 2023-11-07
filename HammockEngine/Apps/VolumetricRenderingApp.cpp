@@ -6,25 +6,18 @@ Hmck::VolumetricRenderingApp::VolumetricRenderingApp()
 		.setPoolFlags(VK_DESCRIPTOR_POOL_CREATE_UPDATE_AFTER_BIND_BIT)
 		.setMaxSets(100)
 		.addPoolSize(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 2000)
+		.addPoolSize(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC, 2000)
 		.addPoolSize(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, 2000)
+		.addPoolSize(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER_DYNAMIC, 2000)
 		.addPoolSize(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 2000)
 		.build();
 
 	load();
 
 	descriptorSetLayout = DescriptorSetLayout::Builder(hmckDevice)
-		.addBinding(0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_ALL_GRAPHICS)
-		.addBinding(1, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 
-			VK_SHADER_STAGE_ALL_GRAPHICS, 500, 
-			VK_DESCRIPTOR_BINDING_PARTIALLY_BOUND_BIT | VK_DESCRIPTOR_BINDING_UPDATE_AFTER_BIND_BIT)
-		.addBinding(2, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
-			VK_SHADER_STAGE_ALL_GRAPHICS, 500, 
-			VK_DESCRIPTOR_BINDING_PARTIALLY_BOUND_BIT | VK_DESCRIPTOR_BINDING_UPDATE_AFTER_BIND_BIT)
-		.addBinding(3, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 
-			VK_SHADER_STAGE_ALL_GRAPHICS, 500, 
-			VK_DESCRIPTOR_BINDING_PARTIALLY_BOUND_BIT | VK_DESCRIPTOR_BINDING_UPDATE_AFTER_BIND_BIT)
-		.addBinding(4, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 
-			VK_SHADER_STAGE_ALL_GRAPHICS, 500, 
+		.addBinding(cameraBinding, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_ALL_GRAPHICS)
+		.addBinding(textureBinding, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 
+			VK_SHADER_STAGE_ALL_GRAPHICS, 2000, 
 			VK_DESCRIPTOR_BINDING_PARTIALLY_BOUND_BIT | VK_DESCRIPTOR_BINDING_UPDATE_AFTER_BIND_BIT)
 		.build();
 }
@@ -47,26 +40,20 @@ void Hmck::VolumetricRenderingApp::run()
 	std::vector<VkDescriptorSet> globalDescriptorSets(SwapChain::MAX_FRAMES_IN_FLIGHT);
 	for (int i = 0; i < globalDescriptorSets.size(); i++)
 	{
-		std::vector<VkDescriptorImageInfo> albedoImageInfos{};
-		std::vector<VkDescriptorImageInfo> normalImageInfos{};
-		std::vector<VkDescriptorImageInfo> metallicRoughnessImageInfos{};
-		std::vector<VkDescriptorImageInfo> occlusionImageInfos{};
+		std::vector<VkDescriptorImageInfo> imageInfos{};
 		for (auto& material : scene->materials)
 		{
-			albedoImageInfos.push_back(scene->images[scene->textures[material.baseColorTextureIndex].imageIndex].texture.descriptor);
-			normalImageInfos.push_back(scene->images[scene->textures[material.normalTextureIndex].imageIndex].texture.descriptor);
-			metallicRoughnessImageInfos.push_back(scene->images[scene->textures[material.metallicRoughnessTextureIndex].imageIndex].texture.descriptor);
-			occlusionImageInfos.push_back(scene->images[scene->textures[material.occlusionTexture].imageIndex].texture.descriptor);
+			imageInfos.push_back(scene->images[scene->textures[material.baseColorTextureIndex].imageIndex].texture.descriptor);
+			imageInfos.push_back(scene->images[scene->textures[material.normalTextureIndex].imageIndex].texture.descriptor);
+			imageInfos.push_back(scene->images[scene->textures[material.metallicRoughnessTextureIndex].imageIndex].texture.descriptor);
+			imageInfos.push_back(scene->images[scene->textures[material.occlusionTexture].imageIndex].texture.descriptor);
 		}
 
 		auto bufferInfo = uboBuffers[i]->descriptorInfo();
 		
 		DescriptorWriter(*descriptorSetLayout, *descriptorPool)
-			.writeBuffer(0, &bufferInfo)
-			.writeImages(1, albedoImageInfos)
-			.writeImages(2, normalImageInfos)
-			.writeImages(3, metallicRoughnessImageInfos)
-			.writeImages(4, occlusionImageInfos)
+			.writeBuffer(cameraBinding, &bufferInfo)
+			.writeImages(textureBinding, imageInfos)
 			.build(globalDescriptorSets[i]);
 	}
 

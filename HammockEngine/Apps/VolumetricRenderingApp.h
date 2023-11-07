@@ -40,6 +40,10 @@ namespace Hmck
 		// TODO make more abstraction layers over the IApp
 
 	public:
+
+		Binding cameraBinding = 0;
+		Binding textureBinding = 1;
+
 		struct PerFrameData
 		{
 			glm::mat4 projection{ 1.f };

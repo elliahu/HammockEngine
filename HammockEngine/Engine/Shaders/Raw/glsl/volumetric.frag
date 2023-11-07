@@ -18,10 +18,7 @@ layout (set = 0, binding = 0) uniform ShaderData
     mat4 inverseView;
 } data;
 
-layout(set = 0, binding = 1) uniform sampler2D albedoSampler[];
-layout(set = 0, binding = 2) uniform sampler2D normSampler[];
-layout(set = 0, binding = 3) uniform sampler2D roughMetalSampler[];
-layout(set = 0, binding = 4) uniform sampler2D occlusionSampler[];
+layout(set = 0, binding = 1) uniform sampler2D textures[];
 
 
 
@@ -45,5 +42,5 @@ void main()
     vec3 sphere_position = vec3(2,0,2);
 
 
-    outColor = texture(albedoSampler[0], uv) ;//+ vec4(1) * (1 - beers_law(distance(vec3(0), position),0.04));
+    outColor = texture(textures[0], uv) ;//+ vec4(1) * (1 - beers_law(distance(vec3(0), position),0.04));
 }
