@@ -36,7 +36,7 @@ namespace Hmck {
         VkBufferUsageFlags usageFlags,
         VkMemoryPropertyFlags memoryPropertyFlags,
         VkDeviceSize minOffsetAlignment)
-        : hmckDevice{ device },
+        : device{ device },
         instanceSize{ instanceSize },
         instanceCount{ instanceCount },
         usageFlags{ usageFlags },
@@ -48,8 +48,8 @@ namespace Hmck {
 
     Buffer::~Buffer() {
         unmap();
-        vkDestroyBuffer(hmckDevice.device(), buffer, nullptr);
-        vkFreeMemory(hmckDevice.device(), memory, nullptr);
+        vkDestroyBuffer(device.device(), buffer, nullptr);
+        vkFreeMemory(device.device(), memory, nullptr);
     }
 
     /**
@@ -63,7 +63,7 @@ namespace Hmck {
      */
     VkResult Buffer::map(VkDeviceSize size, VkDeviceSize offset) {
         assert(buffer && memory && "Called map on buffer before create");
-        return vkMapMemory(hmckDevice.device(), memory, offset, size, 0, &mapped);
+        return vkMapMemory(device.device(), memory, offset, size, 0, &mapped);
     }
 
     /**
@@ -73,7 +73,7 @@ namespace Hmck {
      */
     void Buffer::unmap() {
         if (mapped) {
-            vkUnmapMemory(hmckDevice.device(), memory);
+            vkUnmapMemory(device.device(), memory);
             mapped = nullptr;
         }
     }
@@ -117,7 +117,7 @@ namespace Hmck {
         mappedRange.memory = memory;
         mappedRange.offset = offset;
         mappedRange.size = size;
-        return vkFlushMappedMemoryRanges(hmckDevice.device(), 1, &mappedRange);
+        return vkFlushMappedMemoryRanges(device.device(), 1, &mappedRange);
     }
 
     /**
@@ -137,7 +137,7 @@ namespace Hmck {
         mappedRange.memory = memory;
         mappedRange.offset = offset;
         mappedRange.size = size;
-        return vkInvalidateMappedMemoryRanges(hmckDevice.device(), 1, &mappedRange);
+        return vkInvalidateMappedMemoryRanges(device.device(), 1, &mappedRange);
     }
 
     /**

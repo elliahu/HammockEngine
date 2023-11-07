@@ -15,32 +15,40 @@ layout (location = 3) out vec4 _tangent;
 layout (location = 4) out vec3 _camera;
 
 
-layout (set = 0, binding = 0) uniform ShaderData
+layout (set = 0, binding = 0) uniform SceneUbo
 {
     mat4 projection;
     mat4 view;
     mat4 inverseView;
-} data;
+    mat4 depthBias;
+    vec4 ambientColor;
+} scene;
 
-// push constants
-layout (push_constant) uniform Push
+layout (set = 0, binding = 2) uniform TransformUbo
 {
-    mat4 modelMatrix; // model matrix
-    mat4 normalMatrix; // using mat4 bcs alignment requirements
-    //int albedo_index;
-} push;
+    mat4 model;
+    mat4 normal;
+} transform;
+
+layout (set = 0, binding = 3) uniform MaterialPropertyUbo
+{
+    vec4 baseColorFactor;
+    uint baseColorTextureIndex;
+    uint normalTextureIndex;
+    uint metallicRoughnessTextureIndex;
+    uint occlusionTextureIndex;
+    float alphaCutoff;
+} material;
 
 
 void main()
 {
-    gl_Position = data.projection * data.view * push.modelMatrix * vec4(position, 1.0);
+    gl_Position = scene.projection * scene.view * transform.model * vec4(position, 1.0);
 
     _uv = uv;
 
     // vertex pos in viewspace
-	_position = vec3(data.view * push.modelMatrix * vec4(position, 1.0));
-
-
-	_normal = mat3(push.normalMatrix) * normalize(normal);	
-	_tangent = mat4(push.normalMatrix) * normalize(tangent);
+	_position = vec3(scene.view * transform.model * vec4(position, 1.0));
+	_normal = mat3(transform.normal) * normalize(normal);	
+	_tangent = mat4(transform.normal) * normalize(tangent);
 }

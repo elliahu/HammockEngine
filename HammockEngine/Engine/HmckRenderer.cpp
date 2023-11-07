@@ -1,6 +1,6 @@
 #include "HmckRenderer.h"
 
-Hmck::Renderer::Renderer(Window& window, Device& device) : hmckWindow{window}, hmckDevice{device}
+Hmck::Renderer::Renderer(Window& window, Device& device) : window{window}, device{device}
 {
 	recreateSwapChain();
 	createCommandBuffer();
@@ -19,10 +19,10 @@ void Hmck::Renderer::createCommandBuffer()
 	VkCommandBufferAllocateInfo allocInfo{};
 	allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
 	allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
-	allocInfo.commandPool = hmckDevice.getCommandPool();
+	allocInfo.commandPool = device.getCommandPool();
 	allocInfo.commandBufferCount = static_cast<uint32_t>(commandBuffers.size());
 
-	if (vkAllocateCommandBuffers(hmckDevice.device(), &allocInfo, commandBuffers.data()) != VK_SUCCESS)
+	if (vkAllocateCommandBuffers(device.device(), &allocInfo, commandBuffers.data()) != VK_SUCCESS)
 	{
 		throw std::runtime_error("failed to allocate command buffer");
 	}
@@ -32,8 +32,8 @@ void Hmck::Renderer::createCommandBuffer()
 void Hmck::Renderer::freeCommandBuffers()
 {
 	vkFreeCommandBuffers(
-		hmckDevice.device(),
-		hmckDevice.getCommandPool(),
+		device.device(),
+		device.getCommandPool(),
 		static_cast<uint32_t>(commandBuffers.size()),
 		commandBuffers.data());
 	commandBuffers.clear();
@@ -43,21 +43,21 @@ void Hmck::Renderer::freeCommandBuffers()
 
 void Hmck::Renderer::recreateSwapChain()
 {
-	auto extent = hmckWindow.getExtent();
+	auto extent = window.getExtent();
 	while (extent.width == 0 || extent.height == 0)
 	{
-		extent = hmckWindow.getExtent();
+		extent = window.getExtent();
 		glfwWaitEvents();
 	}
-	vkDeviceWaitIdle(hmckDevice.device());
+	vkDeviceWaitIdle(device.device());
 
 	if (hmckSwapChain == nullptr)
 	{
-		hmckSwapChain = std::make_unique<SwapChain>(hmckDevice, extent);
+		hmckSwapChain = std::make_unique<SwapChain>(device, extent);
 	}
 	else {
 		std::shared_ptr<SwapChain> oldSwapChain = std::move(hmckSwapChain);
-		hmckSwapChain = std::make_unique<SwapChain>(hmckDevice, extent, oldSwapChain);
+		hmckSwapChain = std::make_unique<SwapChain>(device, extent, oldSwapChain);
 
 		if (!oldSwapChain->compareSwapFormats(*hmckSwapChain.get()))
 		{
@@ -66,6 +66,59 @@ void Hmck::Renderer::recreateSwapChain()
 	}
 
 	//
+}
+
+void Hmck::Renderer::renderEntity(
+	std::unique_ptr<Scene>& scene, 
+	VkCommandBuffer commandBuffer, 
+	std::shared_ptr<Entity>& entity, 
+	VkPipelineLayout pipelineLayout,
+	std::unique_ptr<Buffer>& transformBuffer,
+	std::unique_ptr<Buffer>& materialPropertyBuffer)
+{
+	// don't render invisible nodes
+	if (!entity->visible) { return; }
+
+	if (std::dynamic_pointer_cast<Entity3D>(entity)->mesh.primitives.size() > 0) {
+		// Pass the node's matrix via push constants
+		// Traverse the node hierarchy to the top-most parent to get the final matrix of the current node
+		glm::mat4 model = entity->transform;
+		std::shared_ptr<Entity> currentParent = entity->parent;
+		while (currentParent) {
+			model = currentParent->transform * model;
+			currentParent = currentParent->parent;
+		}
+
+		// Reduce writes by checking if material changed
+		for (Primitive& primitive : std::dynamic_pointer_cast<Entity3D>(entity)->mesh.primitives) {
+			if (primitive.indexCount > 0) {
+				// Get the material index for this primitive
+				Material& material = scene->materials[primitive.materialIndex];
+
+				MaterialPropertyUbo materialPropertyData{
+					.baseColorFactor = material.baseColorFactor,
+					.baseColorTextureIndex = scene->textures[material.baseColorTextureIndex].imageIndex,
+					.normalTextureIndex = scene->textures[material.normalTextureIndex].imageIndex,
+					.metallicRoughnessTextureIndex = scene->textures[material.metallicRoughnessTextureIndex].imageIndex,
+					.occlusionTextureIndex = scene->textures[material.occlusionTextureIndex].imageIndex,
+					.alphaCutoff = material.alphaCutOff
+				};
+				materialPropertyBuffer->writeToBuffer(&materialPropertyData);
+
+				TransformUbo transformData{
+					.model = model,
+					.normal = glm::transpose(glm::inverse(model))
+				};
+				transformBuffer->writeToBuffer(&transformData);
+
+				// draw
+				vkCmdDrawIndexed(commandBuffer, primitive.indexCount, 1, primitive.firstIndex, 0, 0);
+			}
+		}
+	}
+	for (auto& child : entity->children) {
+		renderEntity(scene, commandBuffer, child, pipelineLayout, materialPropertyBuffer, transformBuffer);
+	}
 }
 
 VkCommandBuffer Hmck::Renderer::beginFrame()
@@ -109,10 +162,10 @@ void Hmck::Renderer::endFrame()
 	}
 
 	auto result = hmckSwapChain->submitCommandBuffers(&commandBuffer, &currentImageIndex);
-	if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR || hmckWindow.wasWindowResized())
+	if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR || window.wasWindowResized())
 	{
 		// Window was resized (resolution was changed)
-		hmckWindow.resetWindowResizedFlag();
+		window.resetWindowResizedFlag();
 		recreateSwapChain();
 	}
 
@@ -220,4 +273,22 @@ void Hmck::Renderer::endRenderPass(VkCommandBuffer commandBuffer)
 	assert(commandBuffer == getCurrentCommandBuffer() && "Cannot end render pass on command buffer from a different frame");
 
 	vkCmdEndRenderPass(commandBuffer);
+}
+
+void Hmck::Renderer::render(
+	std::unique_ptr<Hmck::Scene>& scene, 
+	VkCommandBuffer commandBuffer, 
+	VkPipelineLayout pipelineLayout,
+	std::unique_ptr<Buffer>& transformBuffer,
+	std::unique_ptr<Buffer>& materialPropertyBuffer)
+{
+	VkDeviceSize offsets[] = { 0 };
+	VkBuffer buffers[] = { scene->vertexBuffer->getBuffer() };
+	vkCmdBindVertexBuffers(commandBuffer, 0, 1, buffers, offsets);
+	vkCmdBindIndexBuffer(commandBuffer, scene->indexBuffer->getBuffer(), 0, VK_INDEX_TYPE_UINT32);
+
+	// Render all nodes at top-level
+	for (auto& entity : scene->entities) {
+		renderEntity(scene, commandBuffer, entity, pipelineLayout, materialPropertyBuffer, transformBuffer);
+	}
 }

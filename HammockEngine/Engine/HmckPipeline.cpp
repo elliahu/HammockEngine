@@ -4,16 +4,16 @@ Hmck::Pipeline::Pipeline(
 	Device& device,
 	const std::string& vertexShaderFilePath,
 	const std::string& fragmentShaderFilePath,
-	const PipelineConfigInfo& configInfo) : hmckDevice{ device }
+	const PipelineConfigInfo& configInfo) : device{ device }
 {
 	createGraphicsPipeline(vertexShaderFilePath, fragmentShaderFilePath, configInfo);
 }
 
 Hmck::Pipeline::~Pipeline()
 {
-	vkDestroyShaderModule(hmckDevice.device(), vertShaderModule, nullptr);
-	vkDestroyShaderModule(hmckDevice.device(), fragShaderModule, nullptr);
-	vkDestroyPipeline(hmckDevice.device(), graphicsPipeline, nullptr);
+	vkDestroyShaderModule(device.device(), vertShaderModule, nullptr);
+	vkDestroyShaderModule(device.device(), fragShaderModule, nullptr);
+	vkDestroyPipeline(device.device(), graphicsPipeline, nullptr);
 }
 
 void Hmck::Pipeline::defaultHmckPipelineConfigInfo(PipelineConfigInfo& configInfo)
@@ -192,7 +192,7 @@ void Hmck::Pipeline::createGraphicsPipeline(
 	pipelineInfo.basePipelineHandle = VK_NULL_HANDLE;
 
 	if (vkCreateGraphicsPipelines(
-		hmckDevice.device(),
+		device.device(),
 		VK_NULL_HANDLE,
 		1,
 		&pipelineInfo,
@@ -209,7 +209,7 @@ void Hmck::Pipeline::createShaderModule(const std::vector<char>& code, VkShaderM
 	createInfo.codeSize = code.size();
 	createInfo.pCode = reinterpret_cast<const uint32_t*>(code.data());
 
-	if (vkCreateShaderModule(hmckDevice.device(), &createInfo, nullptr, shaderModule) != VK_SUCCESS) {
+	if (vkCreateShaderModule(device.device(), &createInfo, nullptr, shaderModule) != VK_SUCCESS) {
 		throw std::runtime_error("failed to create shader module");
 	}
 }

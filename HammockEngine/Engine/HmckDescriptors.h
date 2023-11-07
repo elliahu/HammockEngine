@@ -15,7 +15,7 @@ namespace Hmck {
     public:
         class Builder {
         public:
-            Builder(Device& hmckDevice) : hmckDevice{ hmckDevice } {}
+            Builder(Device& device) : device{ device } {}
 
             Builder& addBinding(
                 uint32_t binding,
@@ -27,13 +27,13 @@ namespace Hmck {
             std::unique_ptr<DescriptorSetLayout> build() const;
 
         private:
-            Device& hmckDevice;
+            Device& device;
             std::unordered_map<uint32_t, VkDescriptorSetLayoutBinding> bindings{};
             std::unordered_map <uint32_t, VkDescriptorBindingFlags> bindingFlags{};
         };
 
         DescriptorSetLayout(
-            Device& hmckDevice, 
+            Device& device, 
             std::unordered_map<uint32_t, VkDescriptorSetLayoutBinding> bindings,
             std::unordered_map <uint32_t, VkDescriptorBindingFlags> flags);
         ~DescriptorSetLayout();
@@ -43,7 +43,7 @@ namespace Hmck {
         VkDescriptorSetLayout getDescriptorSetLayout() const { return descriptorSetLayout; }
 
     private:
-        Device& hmckDevice;
+        Device& device;
         VkDescriptorSetLayout descriptorSetLayout;
         std::unordered_map<uint32_t, VkDescriptorSetLayoutBinding> bindings;
 
@@ -54,7 +54,7 @@ namespace Hmck {
     public:
         class Builder {
         public:
-            Builder(Device& hmckDevice) : hmckDevice{ hmckDevice } {}
+            Builder(Device& device) : device{ device } {}
 
             Builder& addPoolSize(VkDescriptorType descriptorType, uint32_t count);
             Builder& setPoolFlags(VkDescriptorPoolCreateFlags flags);
@@ -62,14 +62,14 @@ namespace Hmck {
             std::unique_ptr<DescriptorPool> build() const;
 
         private:
-            Device& hmckDevice;
+            Device& device;
             std::vector<VkDescriptorPoolSize> poolSizes{};
             uint32_t maxSets = 1000;
             VkDescriptorPoolCreateFlags poolFlags = 0;
         };
 
         DescriptorPool(
-            Device& hmckDevice,
+            Device& device,
             uint32_t maxSets,
             VkDescriptorPoolCreateFlags poolFlags,
             const std::vector<VkDescriptorPoolSize>& poolSizes);
@@ -86,7 +86,7 @@ namespace Hmck {
         VkDescriptorPool descriptorPool;
 
     private:
-        Device& hmckDevice;
+        Device& device;
         
 
         friend class DescriptorWriter;
@@ -97,8 +97,9 @@ namespace Hmck {
         DescriptorWriter(DescriptorSetLayout& setLayout, DescriptorPool& pool);
 
         DescriptorWriter& writeBuffer(uint32_t binding, VkDescriptorBufferInfo* bufferInfo);
+        DescriptorWriter& writeBuffers(uint32_t binding, std::vector<VkDescriptorBufferInfo>& bufferInfos);
         DescriptorWriter& writeImage(uint32_t binding, VkDescriptorImageInfo* imageInfo);
-        DescriptorWriter& writeImages(uint32_t binding, std::vector<VkDescriptorImageInfo>& imageInfo);
+        DescriptorWriter& writeImages(uint32_t binding, std::vector<VkDescriptorImageInfo>& imageInfos);
 
         bool build(VkDescriptorSet& set);
         void overwrite(VkDescriptorSet& set);

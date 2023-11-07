@@ -13,6 +13,9 @@
 
 namespace Hmck
 {
+
+	enum TextureHandle : uint32_t { Invalid = 4294967295 };
+
 	struct Vertex
 	{
 		glm::vec3 position{};
@@ -45,10 +48,10 @@ namespace Hmck
 	{
 		std::string name;
 		glm::vec4 baseColorFactor = glm::vec4(1.0f);
-		uint32_t baseColorTextureIndex;
-		uint32_t normalTextureIndex;
-		uint32_t metallicRoughnessTextureIndex;
-		uint32_t occlusionTexture;
+		uint32_t baseColorTextureIndex = TextureHandle::Invalid;
+		uint32_t normalTextureIndex = TextureHandle::Invalid;
+		uint32_t metallicRoughnessTextureIndex = TextureHandle::Invalid;
+		uint32_t occlusionTextureIndex = TextureHandle::Invalid;
 		std::string alphaMode = "OPAQUE";
 		float alphaCutOff;
 		bool doubleSided = false;

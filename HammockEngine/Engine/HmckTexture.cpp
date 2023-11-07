@@ -1,23 +1,23 @@
 #include "HmckTexture.h"
 #include <stb_image.h>
 
-void Hmck::Texture2D::destroy(Device& hmckDevice)
+void Hmck::Texture2D::destroy(Device& device)
 {
 	// if image have sampler, destroy it
 	if (sampler != VK_NULL_HANDLE)
 	{
-		vkDestroySampler(hmckDevice.device(), sampler, nullptr);
+		vkDestroySampler(device.device(), sampler, nullptr);
 		sampler = VK_NULL_HANDLE;
 	}
 
-	vkDestroyImageView(hmckDevice.device(), view, nullptr);
-	vkDestroyImage(hmckDevice.device(), image, nullptr);
-	vkFreeMemory(hmckDevice.device(), memory, nullptr);
+	vkDestroyImageView(device.device(), view, nullptr);
+	vkDestroyImage(device.device(), image, nullptr);
+	vkFreeMemory(device.device(), memory, nullptr);
 }
 
 void Hmck::Texture2D::loadFromFile(
 	std::string& filepath,
-	Device& hmckDevice,
+	Device& device,
 	VkFormat format,
 	VkImageLayout imageLayout
 )
@@ -36,7 +36,7 @@ void Hmck::Texture2D::loadFromFile(
 
 	Buffer stagingBuffer
 	{
-		hmckDevice,
+		device,
 		sizeof(pixels[0]),
 		static_cast<uint32_t>(width * height * 4),
 		VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
@@ -66,21 +66,21 @@ void Hmck::Texture2D::loadFromFile(
 	imageInfo.samples = VK_SAMPLE_COUNT_1_BIT;
 	imageInfo.flags = 0; // Optional
 
-	hmckDevice.createImageWithInfo(imageInfo, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, image, memory);
+	device.createImageWithInfo(imageInfo, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, image, memory);
 
 	// copy data from staging buffer to VkImage
-	hmckDevice.transitionImageLayout(
+	device.transitionImageLayout(
 		image,
 		VK_IMAGE_LAYOUT_UNDEFINED,
 		VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL
 	);
-	hmckDevice.copyBufferToImage(
+	device.copyBufferToImage(
 		stagingBuffer.getBuffer(),
 		image, static_cast<uint32_t>(width),
 		static_cast<uint32_t>(height),
 		1
 	);
-	hmckDevice.transitionImageLayout(
+	device.transitionImageLayout(
 		image,
 		VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
 		imageLayout
@@ -99,17 +99,17 @@ void Hmck::Texture2D::loadFromFile(
 	viewInfo.subresourceRange.baseArrayLayer = 0;
 	viewInfo.subresourceRange.layerCount = 1;
 
-	if (vkCreateImageView(hmckDevice.device(), &viewInfo, nullptr, &view) != VK_SUCCESS)
+	if (vkCreateImageView(device.device(), &viewInfo, nullptr, &view) != VK_SUCCESS)
 	{
 		throw std::runtime_error("Failed to create image view!");
 	}
 }
 
-void Hmck::Texture2D::loadFromBuffer(unsigned char* buffer, uint32_t bufferSize, uint32_t width, uint32_t height, Device& hmckDevice, VkFormat format, VkImageLayout imageLayout)
+void Hmck::Texture2D::loadFromBuffer(unsigned char* buffer, uint32_t bufferSize, uint32_t width, uint32_t height, Device& device, VkFormat format, VkImageLayout imageLayout)
 {
 	Buffer stagingBuffer
 	{
-		hmckDevice,
+		device,
 		sizeof(buffer[0]),
 		bufferSize,
 		VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
@@ -137,21 +137,21 @@ void Hmck::Texture2D::loadFromBuffer(unsigned char* buffer, uint32_t bufferSize,
 	imageInfo.samples = VK_SAMPLE_COUNT_1_BIT;
 	imageInfo.flags = 0; // Optional
 
-	hmckDevice.createImageWithInfo(imageInfo, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, image, memory);
+	device.createImageWithInfo(imageInfo, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, image, memory);
 
 	// copy data from staging buffer to VkImage
-	hmckDevice.transitionImageLayout(
+	device.transitionImageLayout(
 		image,
 		VK_IMAGE_LAYOUT_UNDEFINED,
 		VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL
 	);
-	hmckDevice.copyBufferToImage(
+	device.copyBufferToImage(
 		stagingBuffer.getBuffer(),
 		image, static_cast<uint32_t>(width),
 		static_cast<uint32_t>(height),
 		1
 	);
-	hmckDevice.transitionImageLayout(
+	device.transitionImageLayout(
 		image,
 		VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
 		imageLayout
@@ -170,13 +170,13 @@ void Hmck::Texture2D::loadFromBuffer(unsigned char* buffer, uint32_t bufferSize,
 	viewInfo.subresourceRange.baseArrayLayer = 0;
 	viewInfo.subresourceRange.layerCount = 1;
 
-	if (vkCreateImageView(hmckDevice.device(), &viewInfo, nullptr, &view) != VK_SUCCESS)
+	if (vkCreateImageView(device.device(), &viewInfo, nullptr, &view) != VK_SUCCESS)
 	{
 		throw std::runtime_error("Failed to create image view!");
 	}
 }
 
-void Hmck::Texture2D::createSampler(Device& hmckDevice, VkFilter filter)
+void Hmck::Texture2D::createSampler(Device& device, VkFilter filter)
 {
 	VkSamplerCreateInfo samplerInfo{};
 	samplerInfo.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
@@ -189,7 +189,7 @@ void Hmck::Texture2D::createSampler(Device& hmckDevice, VkFilter filter)
 
 	// retrieve max anisotropy from physical device
 	VkPhysicalDeviceProperties properties{};
-	vkGetPhysicalDeviceProperties(hmckDevice.getPhysicalDevice(), &properties);
+	vkGetPhysicalDeviceProperties(device.getPhysicalDevice(), &properties);
 
 	samplerInfo.maxAnisotropy = properties.limits.maxSamplerAnisotropy;
 	samplerInfo.borderColor = VK_BORDER_COLOR_INT_OPAQUE_BLACK;
@@ -201,7 +201,7 @@ void Hmck::Texture2D::createSampler(Device& hmckDevice, VkFilter filter)
 	samplerInfo.minLod = 0.0f;
 	samplerInfo.maxLod = 0.0f;
 
-	if (vkCreateSampler(hmckDevice.device(), &samplerInfo, nullptr, &sampler) != VK_SUCCESS)
+	if (vkCreateSampler(device.device(), &samplerInfo, nullptr, &sampler) != VK_SUCCESS)
 	{
 		throw std::runtime_error("Failed to create image sampler!");
 	}

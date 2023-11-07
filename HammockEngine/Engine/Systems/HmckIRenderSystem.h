@@ -14,7 +14,7 @@ namespace Hmck
 	class IRenderSystem
 	{
 	public:
-		IRenderSystem(Device& device): hmckDevice{device}{}
+		IRenderSystem(Device& device): device{device}{}
 
 		virtual void render(FrameInfo& frameInfo) = 0;
 
@@ -25,7 +25,7 @@ namespace Hmck
 		virtual void createPipelineLayout(std::vector<VkDescriptorSetLayout>& setLayouts) = 0;
 		virtual void createPipeline(VkRenderPass renderPass) = 0;
 
-		Device& hmckDevice;
+		Device& device;
 		VkPipelineLayout pipelineLayout = nullptr;
 	};
 }

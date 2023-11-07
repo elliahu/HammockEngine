@@ -36,7 +36,7 @@ namespace Hmck
 	public:
 		void loadFromFile(
 			std::string& filepath,
-			Device& hmckDevice,
+			Device& device,
 			VkFormat format,
 			VkImageLayout imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL
 		);
@@ -45,13 +45,13 @@ namespace Hmck
 			unsigned char* buffer,
 			uint32_t bufferSize,
 			uint32_t width, uint32_t height,
-			Device& hmckDevice,
+			Device& device,
 			VkFormat format,
 			VkImageLayout imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL
 		);
 
-		void createSampler(Device& hmckDevice, VkFilter filter = VK_FILTER_LINEAR);
-		void destroy(Device& hmckDevice);
+		void createSampler(Device& device, VkFilter filter = VK_FILTER_LINEAR);
+		void destroy(Device& device);
 	};
 
 	class TextureCubeMap : public ITexture

@@ -41,15 +41,10 @@ namespace Hmck
 
 	public:
 
-		Binding cameraBinding = 0;
+		Binding sceneBinding = 0;
 		Binding textureBinding = 1;
-
-		struct PerFrameData
-		{
-			glm::mat4 projection{ 1.f };
-			glm::mat4 view{ 1.f };
-			glm::mat4 inverseView{ 1.f };
-		};
+		Binding transformBinding = 2;
+		Binding materialPropertyBinding = 3;
 
 		VolumetricRenderingApp();
 

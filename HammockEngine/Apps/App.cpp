@@ -3,7 +3,7 @@
 Hmck::App::App()
 {
     // TODO change this so that material sets are allocated dynamicly or from different pool object
-    globalPool = DescriptorPool::Builder(hmckDevice)
+    globalPool = DescriptorPool::Builder(device)
         .setPoolFlags(VK_DESCRIPTOR_POOL_CREATE_UPDATE_AFTER_BIND_BIT)
         .setMaxSets(100)
         .addPoolSize(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 2000)
@@ -16,18 +16,18 @@ Hmck::App::App()
     // layouts
     // TODO think about using array of combined image samplers
     // TODO move this to Gbuffer system as it is the only system that uses this, no need for this to be in App
-    materialLayout = DescriptorSetLayout::Builder(hmckDevice)
+    materialLayout = DescriptorSetLayout::Builder(device)
         .addBinding(0, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT) // albedo
         .addBinding(1, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT) // normal
         .addBinding(2, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT) // roughnessMetalic
         .addBinding(3, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT) // occlusion
         .build();
 
-    globalSetLayout = DescriptorSetLayout::Builder(hmckDevice)
+    globalSetLayout = DescriptorSetLayout::Builder(device)
         .addBinding(0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_ALL_GRAPHICS)
         .build();
 
-    bindlessLayout = DescriptorSetLayout::Builder(hmckDevice)
+    bindlessLayout = DescriptorSetLayout::Builder(device)
         .addBinding(0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_ALL, 1000)
         .addBinding(1, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_SHADER_STAGE_ALL, 1000)
         .addBinding(2, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_ALL, 1000)
@@ -41,8 +41,8 @@ void Hmck::App::run()
     for (int i = 0; i < uboBuffers.size(); i++)
     {
         uboBuffers[i] = std::make_unique<Buffer>(
-            hmckDevice,
-            sizeof(GlobalUbo),
+            device,
+            sizeof(SceneUbo),
             1,
             VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
             VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT 
@@ -60,9 +60,9 @@ void Hmck::App::run()
     }
 
     UserInterface userInterfaceSystem{
-        hmckDevice,
-        hmckRenderer.getSwapChainRenderPass(),
-        hmckWindow
+        device,
+        renderer.getSwapChainRenderPass(),
+        window
     };
 
 
@@ -73,15 +73,15 @@ void Hmck::App::run()
     viewerObject.transformComponent.translation.z = -2.5f;
     KeyboardMovementController cameraController{};
 
-    GlobalUbo ubo{};
+    SceneUbo ubo{};
 
-    auto depthFormat = hmckDevice.findSupportedFormat(
+    auto depthFormat = device.findSupportedFormat(
         { VK_FORMAT_D32_SFLOAT, VK_FORMAT_D32_SFLOAT_S8_UINT, VK_FORMAT_D24_UNORM_S8_UINT },
         VK_IMAGE_TILING_OPTIMAL,
         VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT);
 
     Framebuffer shadowmapFramebuffer = Framebuffer::createFramebuffer({
-        .device = hmckDevice,
+        .device = device,
         .width = SHADOW_RES_WIDTH, .height = SHADOW_RES_WIDTH,
         .attachments {
             {
@@ -95,7 +95,7 @@ void Hmck::App::run()
 
     GraphicsPipeline shadowmapPipeline = GraphicsPipeline::createGraphicsPipeline({
         .debugName = "shadow_pass",
-        .device = hmckDevice,
+        .device = device,
         .VS {
             .byteCode = Hmck::Filesystem::readFile("../../HammockEngine/Engine/Shaders/Compiled/shadowmap.vert.spv"),
             .entryFunc = "main"
@@ -128,7 +128,7 @@ void Hmck::App::run()
     });
 
     Framebuffer gbuffer = Framebuffer::createFramebuffer({
-        .device = hmckDevice,
+        .device = device,
         .width = WINDOW_WIDTH, .height = WINDOW_HEIGHT,
         .attachments {
             // 0 position
@@ -171,7 +171,7 @@ void Hmck::App::run()
 
     GraphicsPipeline gbufferPipeline = GraphicsPipeline::createGraphicsPipeline({
         .debugName = "gbuffer_pass",
-        .device = hmckDevice,
+        .device = device,
         .VS {
             .byteCode = Hmck::Filesystem::readFile("../../HammockEngine/Engine/Shaders/Compiled/gbuffer.vert.spv"),
             .entryFunc = "main"
@@ -210,7 +210,7 @@ void Hmck::App::run()
 
     const float ssao_mult = 0.5f;
     Framebuffer ssaoFramebuffer = Framebuffer::createFramebuffer({
-        .device = hmckDevice,
+        .device = device,
         .width = 1280 , .height = 720,
         .attachments {
             {
@@ -222,7 +222,7 @@ void Hmck::App::run()
         }
     });
 
-    std::unique_ptr<DescriptorSetLayout> ssaoLayout = DescriptorSetLayout::Builder(hmckDevice)
+    std::unique_ptr<DescriptorSetLayout> ssaoLayout = DescriptorSetLayout::Builder(device)
         .addBinding(0, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT)
         .addBinding(1, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT)
         .addBinding(2, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT)
@@ -232,7 +232,7 @@ void Hmck::App::run()
 
     GraphicsPipeline ssaoPipeline = GraphicsPipeline::createGraphicsPipeline({
         .debugName = "ssao_pass",
-        .device = hmckDevice,
+        .device = device,
         .VS {
             .byteCode = Hmck::Filesystem::readFile("../../HammockEngine/Engine/Shaders/Compiled/fullscreen.vert.spv"),
             .entryFunc = "main"
@@ -275,8 +275,8 @@ void Hmck::App::run()
     };
 
     VkDescriptorSet ssaoDescriptorSet;
-    std::unique_ptr<Buffer> ssaoKernelBuffer = Rnd::createSSAOKernel(hmckDevice, 64);
-    Texture2D ssaoNoiseTexture = Rnd::createNoiseTexture(hmckDevice, 4); // TODO memory leak on device destruction
+    std::unique_ptr<Buffer> ssaoKernelBuffer = Rnd::createSSAOKernel(device, 64);
+    Texture2D ssaoNoiseTexture = Rnd::createNoiseTexture(device, 4); // TODO memory leak on device destruction
     auto bufferInfo = ssaoKernelBuffer->descriptorInfo();
     DescriptorWriter(*ssaoLayout, *globalPool)
         .writeImage(0, &imgInf1)
@@ -289,7 +289,7 @@ void Hmck::App::run()
 
 
     Framebuffer blurFramebuffer = Framebuffer::createFramebuffer({
-        .device = hmckDevice,
+        .device = device,
         .width = WINDOW_WIDTH, .height = WINDOW_HEIGHT,
         .attachments {
             {
@@ -301,13 +301,13 @@ void Hmck::App::run()
         }
     });
 
-    std::unique_ptr<DescriptorSetLayout> ssaoBlurLayout = DescriptorSetLayout::Builder(hmckDevice)
+    std::unique_ptr<DescriptorSetLayout> ssaoBlurLayout = DescriptorSetLayout::Builder(device)
         .addBinding(0, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT)
         .build();
 
     GraphicsPipeline blurPipeline = GraphicsPipeline::createGraphicsPipeline({
         .debugName = "blur_pass",
-        .device = hmckDevice,
+        .device = device,
         .VS {
             .byteCode = Hmck::Filesystem::readFile("../../HammockEngine/Engine/Shaders/Compiled/fullscreen.vert.spv"),
             .entryFunc = "main"
@@ -343,23 +343,23 @@ void Hmck::App::run()
         .writeImage(0, &ssaoImageInfo)
         .build(ssaoBlurDescriptorSet);
 
-    std::unique_ptr<DescriptorSetLayout> shadowmapDescriptorLayout = DescriptorSetLayout::Builder(hmckDevice)
+    std::unique_ptr<DescriptorSetLayout> shadowmapDescriptorLayout = DescriptorSetLayout::Builder(device)
         .addBinding(0, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT)
         .build();
-    std::unique_ptr<DescriptorSetLayout> gbufferDescriptorLayout = DescriptorSetLayout::Builder(hmckDevice)
+    std::unique_ptr<DescriptorSetLayout> gbufferDescriptorLayout = DescriptorSetLayout::Builder(device)
         .addBinding(0, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT) // position
         .addBinding(1, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT) // albedo
         .addBinding(2, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT) // normal
         .addBinding(3, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT) // material (roughness, metalness, ao)
         .build();
-    std::unique_ptr<DescriptorSetLayout> ssaoDescriptorLayout = DescriptorSetLayout::Builder(hmckDevice)
+    std::unique_ptr<DescriptorSetLayout> ssaoDescriptorLayout = DescriptorSetLayout::Builder(device)
         .addBinding(0, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT) // ssao
         .addBinding(1, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT) // ssao blur
         .build();
 
     GraphicsPipeline deferredPipeline = GraphicsPipeline::createGraphicsPipeline({
         .debugName = "deferred_pass",
-        .device = hmckDevice,
+        .device = device,
         .VS {
             .byteCode = Hmck::Filesystem::readFile("../../HammockEngine/Engine/Shaders/Compiled/fullscreen.vert.spv"),
             .entryFunc = "main"
@@ -384,7 +384,7 @@ void Hmck::App::run()
                 .vertexAttributeDescriptions = Gltf::getAttributeDescriptions()
             }
         },
-        .renderPass = hmckRenderer.getSwapChainRenderPass()
+        .renderPass = renderer.getSwapChainRenderPass()
     });
 
     VkDescriptorSet d_shadowmapDescriptorSet;
@@ -440,25 +440,25 @@ void Hmck::App::run()
         .build(d_ssaoDescriptorSet);
 
     auto currentTime = std::chrono::high_resolution_clock::now();
-	while (!hmckWindow.shouldClose())
+	while (!window.shouldClose())
 	{
-        hmckWindow.pollEvents();
+        window.pollEvents();
 
         // gameloop timing
         auto newTime = std::chrono::high_resolution_clock::now();
         float frameTime = std::chrono::duration<float, std::chrono::seconds::period>(newTime - currentTime).count();
         currentTime = newTime;
 
-        cameraController.moveInPlaneXZ(hmckWindow, frameTime, viewerObject);
+        cameraController.moveInPlaneXZ(window, frameTime, viewerObject);
         camera.setViewYXZ(viewerObject.transformComponent.translation, viewerObject.transformComponent.rotation);
 
-        float aspect = hmckRenderer.getAspectRatio();
+        float aspect = renderer.getAspectRatio();
         camera.setPerspectiveProjection(glm::radians(50.0f), aspect, 0.1f,  1000.f );
 
         // start a new frame
-		if (auto commandBuffer = hmckRenderer.beginFrame())
+		if (auto commandBuffer = renderer.beginFrame())
 		{
-            int frameIndex = hmckRenderer.getFrameIndex();
+            int frameIndex = renderer.getFrameIndex();
             FrameInfo frameInfo{
                 frameIndex,
                 frameTime,
@@ -532,7 +532,7 @@ void Hmck::App::run()
             // OFFSCREEN RENDER
             // shadowmap
             {
-                hmckRenderer.beginRenderPass(
+                renderer.beginRenderPass(
                     shadowmapFramebuffer,
                     commandBuffer,
                     {
@@ -561,12 +561,12 @@ void Hmck::App::run()
 
                     obj.glTFComponent->glTF->draw(frameInfo.commandBuffer, shadowmapPipeline.graphicsPipelineLayout, obj.transformComponent.mat4());
                 }
-                hmckRenderer.endRenderPass(commandBuffer);
+                renderer.endRenderPass(commandBuffer);
             }
 
             //gbuffer
             {
-                hmckRenderer.beginRenderPass(gbuffer, commandBuffer, {
+                renderer.beginRenderPass(gbuffer, commandBuffer, {
                     {.color = { 0.0f, 0.0f, 0.0f, 0.0f } },
                     {.color = { 0.0f, 0.0f, 0.0f, 0.0f } },
                     {.color = { 0.0f, 0.0f, 0.0f, 0.0f } },
@@ -591,13 +591,13 @@ void Hmck::App::run()
 
                     obj.glTFComponent->glTF->draw(frameInfo.commandBuffer, gbufferPipeline.graphicsPipelineLayout, obj.transformComponent.mat4());
                 }
-                hmckRenderer.endRenderPass(commandBuffer);
+                renderer.endRenderPass(commandBuffer);
             }
 
             
             // ssao
             {
-                hmckRenderer.beginRenderPass(ssaoFramebuffer, commandBuffer, {
+                renderer.beginRenderPass(ssaoFramebuffer, commandBuffer, {
                     {.color = { 0.0f, 0.0f, 0.0f, 1.0f } },
                     {.depthStencil = { 1.0f, 0 }}
                     });
@@ -623,10 +623,10 @@ void Hmck::App::run()
                 );
 
                 vkCmdDraw(frameInfo.commandBuffer, 3, 1, 0, 0);
-                hmckRenderer.endRenderPass(commandBuffer);
+                renderer.endRenderPass(commandBuffer);
 
                 // blur
-                hmckRenderer.beginRenderPass(blurFramebuffer, commandBuffer, {
+                renderer.beginRenderPass(blurFramebuffer, commandBuffer, {
                     {.color = { 0.0f, 0.0f, 0.0f, 1.0f } },
                     {.depthStencil = { 1.0f, 0 }}
                     });
@@ -651,11 +651,11 @@ void Hmck::App::run()
                 );
 
                 vkCmdDraw(frameInfo.commandBuffer, 3, 1, 0, 0);
-                hmckRenderer.endRenderPass(commandBuffer);
+                renderer.endRenderPass(commandBuffer);
             }
 
             // on screen
-            hmckRenderer.beginSwapChainRenderPass(commandBuffer);
+            renderer.beginSwapChainRenderPass(commandBuffer);
             // deferred
             {
                 deferredPipeline.bind(commandBuffer);
@@ -717,35 +717,35 @@ void Hmck::App::run()
                 userInterfaceSystem.endUserInterface(commandBuffer);
             }
        
-			hmckRenderer.endRenderPass(commandBuffer);
-			hmckRenderer.endFrame();
+			renderer.endRenderPass(commandBuffer);
+			renderer.endFrame();
 		}
 
 	}
 
-	vkDeviceWaitIdle(hmckDevice.device());
+	vkDeviceWaitIdle(device.device());
 
     // clean used resources that cannot clean themselves
-    ssaoNoiseTexture.destroy(hmckDevice);
+    ssaoNoiseTexture.destroy(device);
 }
 
 void Hmck::App::load()
 {
-    //auto helmet = GameObject::createFromGLTF(std::string(MODELS_DIR) + "helmet/helmet.glb", hmckDevice,{ .binary = true });
+    //auto helmet = GameObject::createFromGLTF(std::string(MODELS_DIR) + "helmet/helmet.glb", device,{ .binary = true });
     //helmet.setName("Flight Helmet");
     //gameObjects.emplace(helmet.getId(), std::move(helmet));
 
-    //auto wall = GameObject::createFromGLTF(std::string(MODELS_DIR) + "wall/wall.glb", hmckDevice,{ .binary = true });
+    //auto wall = GameObject::createFromGLTF(std::string(MODELS_DIR) + "wall/wall.glb", device,{ .binary = true });
     //wall.setName("Wall");
     //gameObjects.emplace(wall.getId(), std::move(wall));
 
 
-    //auto sponza = GameObject::createFromGLTF(std::string(MODELS_DIR) + "sponza/sponza.glb", hmckDevice, { .binary = true });
+    //auto sponza = GameObject::createFromGLTF(std::string(MODELS_DIR) + "sponza/sponza.glb", device, { .binary = true });
     //sponza.transformComponent.translation.y = - .25f;
     //sponza.setName("Sponza");
     //gameObjects.emplace(sponza.getId(), std::move(sponza));
 
-    auto bistro = GameObject::createFromGLTF(std::string(MODELS_DIR) + "Bistro/BistroExterior.glb", hmckDevice, { .binary = true });
+    auto bistro = GameObject::createFromGLTF(std::string(MODELS_DIR) + "Bistro/BistroExterior.glb", device, { .binary = true });
     bistro.setName("Bistro"); // TODO put this in config
     gameObjects.emplace(bistro.getId(), std::move(bistro));
 

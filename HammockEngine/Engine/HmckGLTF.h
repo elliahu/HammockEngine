@@ -22,8 +22,11 @@ namespace Hmck
 			std::string filename,
 			Device& device,
 			std::vector<Image>& images,
+			uint32_t imagesOffset,
 			std::vector<Material>& materials,
+			uint32_t materialsOffset,
 			std::vector<Texture>& textures,
+			uint32_t texturesOffset,
 			std::vector<Vertex>& vertices,
 			std::vector<uint32_t>& indices,
 			std::vector<std::shared_ptr<Entity>>& entities,
@@ -32,9 +35,9 @@ namespace Hmck
 
 	private:
 
-		static void loadImages(gltf::Model& input, Device& device, std::vector<Image>& images);
-		static void loadMaterials(gltf::Model& input, Device& device, std::vector<Material>& materials);
-		static void loadTextures(gltf::Model& input, Device& device, std::vector<Texture>& textures);
+		static void loadImages(gltf::Model& input, Device& device, std::vector<Image>& images, uint32_t imagesOffset);
+		static void loadMaterials(gltf::Model& input, Device& device, std::vector<Material>& materials, uint32_t materialsOffset, uint32_t texturesOffset);
+		static void loadTextures(gltf::Model& input, Device& device, std::vector<Texture>& textures, uint32_t texturesOffset);
 		static std::shared_ptr<Entity> loadNode(
 			const tinygltf::Node& inputNode,
 			const tinygltf::Model& input, 

@@ -2,7 +2,7 @@
 
 Hmck::VolumetricRenderingApp::VolumetricRenderingApp()
 {
-	descriptorPool = DescriptorPool::Builder(hmckDevice)
+	descriptorPool = DescriptorPool::Builder(device)
 		.setPoolFlags(VK_DESCRIPTOR_POOL_CREATE_UPDATE_AFTER_BIND_BIT)
 		.setMaxSets(100)
 		.addPoolSize(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 2000)
@@ -14,46 +14,77 @@ Hmck::VolumetricRenderingApp::VolumetricRenderingApp()
 
 	load();
 
-	descriptorSetLayout = DescriptorSetLayout::Builder(hmckDevice)
-		.addBinding(cameraBinding, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_ALL_GRAPHICS)
+	descriptorSetLayout = DescriptorSetLayout::Builder(device)
+		.addBinding(sceneBinding, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_ALL_GRAPHICS)
 		.addBinding(textureBinding, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 
 			VK_SHADER_STAGE_ALL_GRAPHICS, 2000, 
 			VK_DESCRIPTOR_BINDING_PARTIALLY_BOUND_BIT | VK_DESCRIPTOR_BINDING_UPDATE_AFTER_BIND_BIT)
+		.addBinding(transformBinding, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_ALL_GRAPHICS)
+		.addBinding(materialPropertyBinding, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,VK_SHADER_STAGE_ALL_GRAPHICS)
 		.build();
 }
 
 void Hmck::VolumetricRenderingApp::run()
 {
-	std::vector<std::unique_ptr<Buffer>> uboBuffers{ SwapChain::MAX_FRAMES_IN_FLIGHT };
-	for (int i = 0; i < uboBuffers.size(); i++)
+	// Prepare buffers
+	std::vector<std::unique_ptr<Buffer>> sceneBuffers{ SwapChain::MAX_FRAMES_IN_FLIGHT };
+	for (int i = 0; i < sceneBuffers.size(); i++)
 	{
-		uboBuffers[i] = std::make_unique<Buffer>(
-			hmckDevice,
-			sizeof(GlobalUbo),
+		sceneBuffers[i] = std::make_unique<Buffer>(
+			device,
+			sizeof(SceneUbo),
 			1,
 			VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
 			VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT
 			);
-		uboBuffers[i]->map();
+		sceneBuffers[i]->map();
 	}
 
-	std::vector<VkDescriptorSet> globalDescriptorSets(SwapChain::MAX_FRAMES_IN_FLIGHT);
-	for (int i = 0; i < globalDescriptorSets.size(); i++)
+	std::vector<std::unique_ptr<Buffer>> transformBuffers{ SwapChain::MAX_FRAMES_IN_FLIGHT };
+	for (int i = 0; i < transformBuffers.size(); i++)
 	{
-		std::vector<VkDescriptorImageInfo> imageInfos{};
-		for (auto& material : scene->materials)
+		transformBuffers[i] = std::make_unique<Buffer>(
+			device,
+			sizeof(TransformUbo),
+			1,
+			VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
+			VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT
+			);
+		transformBuffers[i]->map();
+	}
+
+	std::vector<std::unique_ptr<Buffer>> materialPropertyBuffers{ SwapChain::MAX_FRAMES_IN_FLIGHT };
+	for (int i = 0; i < materialPropertyBuffers.size(); i++)
+	{
+		materialPropertyBuffers[i] = std::make_unique<Buffer>(
+			device,
+			sizeof(MaterialPropertyUbo),
+			1,
+			VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
+			VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT
+			);
+		materialPropertyBuffers[i]->map();
+	}
+
+	// write to buffers
+	std::vector<VkDescriptorSet> globalDescriptorSets{ SwapChain::MAX_FRAMES_IN_FLIGHT };
+	for (int i = 0; i < SwapChain::MAX_FRAMES_IN_FLIGHT; i++)
+	{
+		std::vector<VkDescriptorImageInfo> imageInfos{ scene->images.size() };
+		for (int im = 0; im < scene->images.size(); im ++)
 		{
-			imageInfos.push_back(scene->images[scene->textures[material.baseColorTextureIndex].imageIndex].texture.descriptor);
-			imageInfos.push_back(scene->images[scene->textures[material.normalTextureIndex].imageIndex].texture.descriptor);
-			imageInfos.push_back(scene->images[scene->textures[material.metallicRoughnessTextureIndex].imageIndex].texture.descriptor);
-			imageInfos.push_back(scene->images[scene->textures[material.occlusionTexture].imageIndex].texture.descriptor);
+			imageInfos[im] = scene->images[im].texture.descriptor;
 		}
 
-		auto bufferInfo = uboBuffers[i]->descriptorInfo();
+		auto sceneBufferInfo = sceneBuffers[i]->descriptorInfo();
+		auto transformBufferInfo = transformBuffers[i]->descriptorInfo();
+		auto materialPropertyBufferInfo = materialPropertyBuffers[i]->descriptorInfo();
 		
 		DescriptorWriter(*descriptorSetLayout, *descriptorPool)
-			.writeBuffer(cameraBinding, &bufferInfo)
+			.writeBuffer(sceneBinding, &sceneBufferInfo)
 			.writeImages(textureBinding, imageInfos)
+			.writeBuffer(transformBinding, &transformBufferInfo)
+			.writeBuffer(materialPropertyBinding, &materialPropertyBufferInfo)
 			.build(globalDescriptorSets[i]);
 	}
 
@@ -66,11 +97,11 @@ void Hmck::VolumetricRenderingApp::run()
 	auto root = scene->root();
 	KeyboardMovementController cameraController{};
 
-	UserInterface ui{hmckDevice, hmckRenderer.getSwapChainRenderPass(), hmckWindow};
+	UserInterface ui{device, renderer.getSwapChainRenderPass(), window};
 
 	GraphicsPipeline standardPipeline = GraphicsPipeline::createGraphicsPipeline({
 		.debugName = "standard_forward_pass",
-		.device = hmckDevice,
+		.device = device,
 		.VS {
 			.byteCode = Hmck::Filesystem::readFile("../../HammockEngine/Engine/Shaders/Compiled/volumetric.vert.spv"),
 			.entryFunc = "main"
@@ -111,14 +142,14 @@ void Hmck::VolumetricRenderingApp::run()
 		}
 	}
 },
-.renderPass = hmckRenderer.getSwapChainRenderPass()
+.renderPass = renderer.getSwapChainRenderPass()
 		});
 
 
 	auto currentTime = std::chrono::high_resolution_clock::now();
-	while (!hmckWindow.shouldClose())
+	while (!window.shouldClose())
 	{
-		hmckWindow.pollEvents();
+		window.pollEvents();
 
 
 		// gameloop timing
@@ -127,24 +158,26 @@ void Hmck::VolumetricRenderingApp::run()
 		currentTime = newTime;
 
 		// camera
-		cameraController.moveInPlaneXZ(hmckWindow, frameTime, viewerObject);
+		cameraController.moveInPlaneXZ(window, frameTime, viewerObject);
 		camera.setViewYXZ(viewerObject->translation(), viewerObject->rotation());
-		float aspect = hmckRenderer.getAspectRatio();
+		float aspect = renderer.getAspectRatio();
 		camera.setPerspectiveProjection(glm::radians(50.0f), aspect, 0.1f, 1000.f);
 
 		// start a new frame
-		if (auto commandBuffer = hmckRenderer.beginFrame())
+		if (auto commandBuffer = renderer.beginFrame())
 		{
-			int frameIndex = hmckRenderer.getFrameIndex();
-			PerFrameData data{
+			int frameIndex = renderer.getFrameIndex();
+
+			// scene data
+			SceneUbo sceneData{
 				.projection = camera.getProjection(),
 				.view = camera.getView(),
 				.inverseView = camera.getInverseView()
 			};
-			uboBuffers[frameIndex]->writeToBuffer(&data);
+			sceneBuffers[frameIndex]->writeToBuffer(&sceneData);
 
 			// on screen rendering
-			hmckRenderer.beginSwapChainRenderPass(commandBuffer);
+			renderer.beginSwapChainRenderPass(commandBuffer);
 
 			standardPipeline.bind(commandBuffer);
 
@@ -161,24 +194,29 @@ void Hmck::VolumetricRenderingApp::run()
 				0, 1,
 				&globalDescriptorSets[frameIndex],
 				0,
-				nullptr
-			);
-
-			scene->draw(commandBuffer, standardPipeline.graphicsPipelineLayout);
+				nullptr);
+			
+			// TODO FIXME wrong texture being used
+			renderer.render(
+				scene, 
+				commandBuffer, 
+				standardPipeline.graphicsPipelineLayout, 
+				transformBuffers[frameIndex],
+				materialPropertyBuffers[frameIndex]);
 
 			{
 				ui.beginUserInterface();
 				ui.showDebugStats(viewerObject);
 				ui.showWindowControls();
-				ui.showEntityInspector(scene->root());
+				ui.showEntityInspector(scene->root()); // TODO crashes on rotation
 				ui.endUserInterface(commandBuffer);
 			}
 
-			hmckRenderer.endRenderPass(commandBuffer);
-			hmckRenderer.endFrame();
+			renderer.endRenderPass(commandBuffer);
+			renderer.endFrame();
 		}
 
-		vkDeviceWaitIdle(hmckDevice.device());
+		vkDeviceWaitIdle(device.device());
 
 		// destroy allocated stuff here
 	}
@@ -187,7 +225,7 @@ void Hmck::VolumetricRenderingApp::run()
 void Hmck::VolumetricRenderingApp::load()
 {
 	Scene::SceneCreateInfo info = {
-		.device = hmckDevice,
+		.device = device,
 		.name = "Volumetric scene",
 		.loadFiles = {
 			{

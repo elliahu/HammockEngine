@@ -17,10 +17,10 @@ void Hmck::Window::initWindow(int width, int height)
 
 void Hmck::Window::framebufferResizeCallback(GLFWwindow* window, int width, int height)
 {
-	auto hmckWindow = reinterpret_cast<Window*>(glfwGetWindowUserPointer(window));
-	hmckWindow->framebufferResized = true;
-	hmckWindow->width = width;
-	hmckWindow->height = height;
+	auto window_ = reinterpret_cast<Window*>(glfwGetWindowUserPointer(window));
+	window_->framebufferResized = true;
+	window_->width = width;
+	window_->height = height;
 }
 
 Hmck::Window::Window(int windowWidth, int windowHeight, std::string _windowName) : width{ windowWidth }, height{ windowHeight }, windowName{ _windowName }

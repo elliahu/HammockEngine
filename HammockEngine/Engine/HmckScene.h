@@ -41,8 +41,6 @@ namespace Hmck
 		Scene(const Scene&) = delete;
 		Scene& operator=(const Scene&) = delete;
 
-		void draw(VkCommandBuffer commandBuffer, VkPipelineLayout pipelineLayout);
-
 		std::shared_ptr<Entity> root() { return entities[0]; }
 		void addChildOfRoot(std::shared_ptr<Entity> child)
 		{
@@ -56,19 +54,19 @@ namespace Hmck
 		std::vector<Texture> textures;
 		std::vector<Material> materials;
 
+		std::unique_ptr<Buffer> vertexBuffer;
+		std::unique_ptr<Buffer> indexBuffer;
+		uint32_t vertexCount;
+		uint32_t indexCount;
+
 	private:
 
 		void loadFile(SceneLoadFileInfo loadInfo);
-		void drawEntity(VkCommandBuffer commandBuffer, std::shared_ptr<Entity>& entity, VkPipelineLayout pipelineLayout);
 		void createVertexBuffer();
 		void createIndexBuffer();
 
 		std::vector<Vertex> vertices{};
 		std::vector<uint32_t> indices{};
-		std::unique_ptr<Buffer> vertexBuffer;
-		uint32_t vertexCount;
-		std::unique_ptr<Buffer> indexBuffer;
-		uint32_t indexCount;
 
 		Device& device;
 	};

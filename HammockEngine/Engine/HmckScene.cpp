@@ -28,18 +28,6 @@ Hmck::Scene::~Scene()
 	}
 }
 
-void Hmck::Scene::draw(VkCommandBuffer commandBuffer, VkPipelineLayout pipelineLayout)
-{
-	VkDeviceSize offsets[] = { 0 };
-	VkBuffer buffers[] = { vertexBuffer->getBuffer() };
-	vkCmdBindVertexBuffers(commandBuffer, 0, 1, buffers, offsets);
-	vkCmdBindIndexBuffer(commandBuffer, indexBuffer->getBuffer(), 0, VK_INDEX_TYPE_UINT32);
-
-	// Render all nodes at top-level
-	for (auto& entity : entities) {
-		drawEntity(commandBuffer, entity, pipelineLayout);
-	}
-}
 
 void Hmck::Scene::loadFile(SceneLoadFileInfo loadInfo)
 {
@@ -48,8 +36,11 @@ void Hmck::Scene::loadFile(SceneLoadFileInfo loadInfo)
 		loadInfo.filename, 
 		device, 
 		images,
+		static_cast<uint32_t>(images.size()),
 		materials, 
+		static_cast<uint32_t>(materials.size()),
 		textures, 
+		static_cast<uint32_t>(textures.size()),
 		vertices, 
 		indices, 
 		entities,
@@ -57,50 +48,6 @@ void Hmck::Scene::loadFile(SceneLoadFileInfo loadInfo)
 	// set the entity tree as a child of a scene root
 	for(auto& entity : roots)
 		addChildOfRoot(entity);
-}
-
-void Hmck::Scene::drawEntity(VkCommandBuffer commandBuffer, std::shared_ptr<Entity>& entity, VkPipelineLayout pipelineLayout)
-{
-	// don't render invisible nodes
-	if (!entity->visible) { return; }
-
-	if (std::dynamic_pointer_cast<Entity3D>(entity)->mesh.primitives.size() > 0) {
-		// Pass the node's matrix via push constants
-		// Traverse the node hierarchy to the top-most parent to get the final matrix of the current node
-		glm::mat4 nodeMatrix = entity->transform;
-		std::shared_ptr<Entity> currentParent = entity->parent;
-		while (currentParent) {
-			nodeMatrix = currentParent->transform * nodeMatrix;
-			currentParent = currentParent->parent;
-		}
-
-		for (Primitive& primitive : std::dynamic_pointer_cast<Entity3D>(entity)->mesh.primitives) {
-			if (primitive.indexCount > 0) {
-				// Get the material index for this primitive
-				Material& material = materials[primitive.materialIndex];
-
-				// Pass the final matrix to the vertex shader using push constants
-				Entity::TransformPushConstantData pushData{
-					.modelMatrix = nodeMatrix,
-					.normalMatrix = glm::transpose(glm::inverse(nodeMatrix)),
-					//.albedo_index = textures[material.baseColorTextureIndex].imageIndex
-				};
-
-				vkCmdPushConstants(
-					commandBuffer,
-					pipelineLayout,
-					VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT,
-					0, sizeof(Entity::TransformPushConstantData),
-					&pushData);
-
-				// draw
-				vkCmdDrawIndexed(commandBuffer, primitive.indexCount, 1, primitive.firstIndex, 0, 0);
-			}
-		}
-	}
-	for (auto& child : entity->children) {
-		drawEntity(commandBuffer, child, pipelineLayout);
-	}
 }
 
 void Hmck::Scene::createVertexBuffer()

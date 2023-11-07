@@ -1,7 +1,7 @@
 #include "HmckUserInterface.h"
 
 
-Hmck::UserInterface::UserInterface(Device& device, VkRenderPass renderPass, Window& window) : hmckDevice{ device }, hmckWindow{ window }, renderPass{renderPass}
+Hmck::UserInterface::UserInterface(Device& device, VkRenderPass renderPass, Window& window) : device{ device }, window{ window }, renderPass{renderPass}
 {
 	init();
 	setupStyle();
@@ -9,7 +9,7 @@ Hmck::UserInterface::UserInterface(Device& device, VkRenderPass renderPass, Wind
 
 Hmck::UserInterface::~UserInterface()
 {
-	vkDestroyDescriptorPool(hmckDevice.device(), imguiPool, nullptr);
+	vkDestroyDescriptorPool(device.device(), imguiPool, nullptr);
 	ImGui_ImplVulkan_Shutdown();
 	ImGui_ImplGlfw_Shutdown();
 	ImGui::DestroyContext();
@@ -34,7 +34,7 @@ void Hmck::UserInterface::showDebugStats(std::shared_ptr<Entity> camera)
 	ImGuiWindowFlags window_flags = ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_NoFocusOnAppearing | ImGuiWindowFlags_NoNav;
 	ImGui::SetNextWindowPos({10,10});
 	ImGui::SetNextWindowBgAlpha(0.35f);
-	ImGui::Begin(hmckWindow.getWindowName().c_str(),(bool*)0, window_flags);
+	ImGui::Begin(window.getWindowName().c_str(),(bool*)0, window_flags);
 	auto cameraPosition = camera->translation();
 	auto cameraRotation = camera->rotation();
 	ImGui::Text("Camera world position: ( %.2f, %.2f, %.2f )",cameraPosition.x, cameraPosition.y, cameraPosition.z);
@@ -43,7 +43,7 @@ void Hmck::UserInterface::showDebugStats(std::shared_ptr<Entity> camera)
 		ImGui::Text("Mouse Position: (%.1f,%.1f)", io.MousePos.x, io.MousePos.y);
 	else
 		ImGui::Text("Mouse Position: <invalid or hidden>");
-	ImGui::Text("Window resolution: (%d x %d)", hmckWindow.getExtent().width, hmckWindow.getExtent().height);
+	ImGui::Text("Window resolution: (%d x %d)", window.getExtent().width, window.getExtent().height);
 	ImGui::Text("Application average %.3f ms/frame (%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
 	ImGui::End();
 }
@@ -51,33 +51,33 @@ void Hmck::UserInterface::showDebugStats(std::shared_ptr<Entity> camera)
 void Hmck::UserInterface::showWindowControls()
 {
 	ImGuiWindowFlags window_flags = ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_NoFocusOnAppearing | ImGuiWindowFlags_NoNav;
-	ImGui::SetNextWindowPos({ static_cast<float>(hmckWindow.getExtent().width - 10),10.f}, ImGuiCond_Always, {1.f, 0.f});
+	ImGui::SetNextWindowPos({ static_cast<float>(window.getExtent().width - 10),10.f}, ImGuiCond_Always, {1.f, 0.f});
 	ImGui::SetNextWindowBgAlpha(0.35f);
 	ImGui::Begin("Window controls", (bool*)0, window_flags);
 	if (ImGui::TreeNode("Window mode"))
 	{
 		if (ImGui::Button("Fullscreen"))
 		{
-			hmckWindow.setWindowMode(HMCK_WINDOW_MODE_FULLSCREEN);
+			window.setWindowMode(HMCK_WINDOW_MODE_FULLSCREEN);
 		}
 		if (ImGui::Button("Borderless"))
 		{
-			hmckWindow.setWindowMode(HMCK_WINDOW_MODE_BORDERLESS);
+			window.setWindowMode(HMCK_WINDOW_MODE_BORDERLESS);
 		}
 		if (ImGui::Button("Windowed"))
 		{
-			hmckWindow.setWindowMode(HMCK_WINDOW_MODE_WINDOWED);
+			window.setWindowMode(HMCK_WINDOW_MODE_WINDOWED);
 		}
 		ImGui::TreePop();
 	}
 	if (ImGui::TreeNode("Resolution"))
 	{
-		static int x = hmckWindow.getExtent().width, y = hmckWindow.getExtent().height;
+		static int x = window.getExtent().width, y = window.getExtent().height;
 		ImGui::DragInt("Horizontal", &x, 1.f, 800, 3840);
 		ImGui::DragInt("Vertical", &y, 1.f, 600, 2160);
 		if (ImGui::Button("Apply"))
 		{
-			hmckWindow.setWindowResolution(x, y);
+			window.setWindowResolution(x, y);
 		}
 		ImGui::TreePop();
 	}
@@ -96,7 +96,7 @@ void Hmck::UserInterface::showEntityInspector(std::shared_ptr<Entity> entity)
 {
 	const ImGuiWindowFlags window_flags = ImGuiWindowFlags_AlwaysAutoResize;
 	ImGui::SetNextWindowPos({ 10, 130}, ImGuiCond_Once, {0,0});
-	ImGui::SetNextWindowSizeConstraints({ 300, 200 }, ImVec2(static_cast<float>(hmckWindow.getExtent().width), 500));
+	ImGui::SetNextWindowSizeConstraints({ 300, 200 }, ImVec2(static_cast<float>(window.getExtent().width), 500));
 	beginWindow("Entity Inspector", (bool*)false, ImGuiWindowFlags_AlwaysAutoResize);
 	ImGui::Text("Inspect all entities in the scene", window_flags);
 
@@ -105,11 +105,11 @@ void Hmck::UserInterface::showEntityInspector(std::shared_ptr<Entity> entity)
 	endWindow();
 }
 
-void Hmck::UserInterface::showGlobalSettings(GlobalUbo& ubo)
+void Hmck::UserInterface::showGlobalSettings(SceneUbo& ubo)
 {
 	const ImGuiWindowFlags window_flags = ImGuiWindowFlags_AlwaysAutoResize;
 	ImGui::SetNextWindowPos({ 10, 800 }, ImGuiCond_Once, { 0,0 });
-	ImGui::SetNextWindowSizeConstraints({ 300, 200 }, ImVec2(static_cast<float>(hmckWindow.getExtent().width), 500));
+	ImGui::SetNextWindowSizeConstraints({ 300, 200 }, ImVec2(static_cast<float>(window.getExtent().width), 500));
 	beginWindow("Global UBO settings", (bool*)false, ImGuiWindowFlags_AlwaysAutoResize);
 	if (ImGui::TreeNode("Ambient"))
 	{
@@ -165,7 +165,7 @@ void Hmck::UserInterface::init()
 	pool_info.pPoolSizes = pool_sizes;
 
 	
-	if (vkCreateDescriptorPool(hmckDevice.device(), &pool_info, nullptr, &imguiPool) != VK_SUCCESS)
+	if (vkCreateDescriptorPool(device.device(), &pool_info, nullptr, &imguiPool) != VK_SUCCESS)
 	{
 		throw std::runtime_error("Failed to create descriptor pool for UI");
 	}
@@ -176,14 +176,14 @@ void Hmck::UserInterface::init()
 	ImGui::CreateContext();
 
 	// initialize for glfw
-	ImGui_ImplGlfw_InitForVulkan(hmckWindow.getGLFWwindow(), true);
+	ImGui_ImplGlfw_InitForVulkan(window.getGLFWwindow(), true);
 
 	//this initializes imgui for Vulkan
 	ImGui_ImplVulkan_InitInfo init_info = {};
-	init_info.Instance = hmckDevice.getInstance();
-	init_info.PhysicalDevice = hmckDevice.getPhysicalDevice();
-	init_info.Device = hmckDevice.device();
-	init_info.Queue = hmckDevice.graphicsQueue();
+	init_info.Instance = device.getInstance();
+	init_info.PhysicalDevice = device.getPhysicalDevice();
+	init_info.Device = device.device();
+	init_info.Queue = device.graphicsQueue();
 	init_info.DescriptorPool = imguiPool;
 	init_info.MinImageCount = 3;
 	init_info.ImageCount = 3;
@@ -260,11 +260,11 @@ VkCommandBuffer Hmck::UserInterface::beginSingleTimeCommands()
 	VkCommandBufferAllocateInfo allocInfo{};
 	allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
 	allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
-	allocInfo.commandPool = hmckDevice.getCommandPool();
+	allocInfo.commandPool = device.getCommandPool();
 	allocInfo.commandBufferCount = 1;
 
 	VkCommandBuffer commandBuffer;
-	vkAllocateCommandBuffers(hmckDevice.device(), &allocInfo, &commandBuffer);
+	vkAllocateCommandBuffers(device.device(), &allocInfo, &commandBuffer);
 
 	VkCommandBufferBeginInfo beginInfo{};
 	beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
@@ -284,10 +284,10 @@ void Hmck::UserInterface::endSingleTimeCommands(VkCommandBuffer commandBuffer)
 	submitInfo.commandBufferCount = 1;
 	submitInfo.pCommandBuffers = &commandBuffer;
 
-	vkQueueSubmit(hmckDevice.graphicsQueue(), 1, &submitInfo, VK_NULL_HANDLE);
-	vkQueueWaitIdle(hmckDevice.graphicsQueue());
+	vkQueueSubmit(device.graphicsQueue(), 1, &submitInfo, VK_NULL_HANDLE);
+	vkQueueWaitIdle(device.graphicsQueue());
 
-	vkFreeCommandBuffers(hmckDevice.device(), hmckDevice.getCommandPool(), 1, &commandBuffer);
+	vkFreeCommandBuffers(device.device(), device.getCommandPool(), 1, &commandBuffer);
 }
 
 void Hmck::UserInterface::beginWindow(const char* title, bool* open, ImGuiWindowFlags flags)

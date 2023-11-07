@@ -116,7 +116,7 @@ namespace Hmck
 		*
 		* @param vulkanDevice Pointer to a valid VulkanDevice
 		*/
-		Framebuffer(Device& device) : hmckDevice{ device } 
+		Framebuffer(Device& device) : device{ device } 
 		{ 
 			assert(&device && "Failed to create Framebuffer - device is NULL!"); 
 		}
@@ -128,13 +128,13 @@ namespace Hmck
 		{
 			for (auto attachment : attachments)
 			{
-				vkDestroyImage(hmckDevice.device(), attachment.image, nullptr);
-				vkDestroyImageView(hmckDevice.device(), attachment.view, nullptr);
-				vkFreeMemory(hmckDevice.device(), attachment.memory, nullptr);
+				vkDestroyImage(device.device(), attachment.image, nullptr);
+				vkDestroyImageView(device.device(), attachment.view, nullptr);
+				vkFreeMemory(device.device(), attachment.memory, nullptr);
 			}
-			vkDestroySampler(hmckDevice.device(), sampler, nullptr);
-			vkDestroyRenderPass(hmckDevice.device(), renderPass, nullptr);
-			vkDestroyFramebuffer(hmckDevice.device(), framebuffer, nullptr);
+			vkDestroySampler(device.device(), sampler, nullptr);
+			vkDestroyRenderPass(device.device(), renderPass, nullptr);
+			vkDestroyFramebuffer(device.device(), framebuffer, nullptr);
 		}
 
 		/**
@@ -210,16 +210,16 @@ namespace Hmck
 			VkMemoryRequirements memReqs;
 
 			// Create image for this attachment
-			if (vkCreateImage(hmckDevice.device(), &image, nullptr, &attachment.image) != VK_SUCCESS){
+			if (vkCreateImage(device.device(), &image, nullptr, &attachment.image) != VK_SUCCESS){
 				throw std::runtime_error("Failed to create image");
 			}
-			vkGetImageMemoryRequirements(hmckDevice.device(), attachment.image, &memReqs);
+			vkGetImageMemoryRequirements(device.device(), attachment.image, &memReqs);
 			memAlloc.allocationSize = memReqs.size;
-			memAlloc.memoryTypeIndex = hmckDevice.findMemoryType(memReqs.memoryTypeBits, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
-			if (vkAllocateMemory(hmckDevice.device(), &memAlloc, nullptr, &attachment.memory) != VK_SUCCESS) {
+			memAlloc.memoryTypeIndex = device.findMemoryType(memReqs.memoryTypeBits, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
+			if (vkAllocateMemory(device.device(), &memAlloc, nullptr, &attachment.memory) != VK_SUCCESS) {
 				throw std::runtime_error("Failed to allocate memory");
 			}
-			if (vkBindImageMemory(hmckDevice.device(), attachment.image, attachment.memory, 0) != VK_SUCCESS) {
+			if (vkBindImageMemory(device.device(), attachment.image, attachment.memory, 0) != VK_SUCCESS) {
 				throw std::runtime_error("Failed to bind memory");
 			}
 
@@ -235,7 +235,7 @@ namespace Hmck
 			//TODO: workaround for depth+stencil attachments
 			imageView.subresourceRange.aspectMask = (attachment.hasDepth()) ? VK_IMAGE_ASPECT_DEPTH_BIT : aspectMask;
 			imageView.image = attachment.image;
-			if (vkCreateImageView(hmckDevice.device(), &imageView, nullptr, &attachment.view) != VK_SUCCESS) {
+			if (vkCreateImageView(device.device(), &imageView, nullptr, &attachment.view) != VK_SUCCESS) {
 				throw std::runtime_error("Failed to create image view");
 			}
 
@@ -288,7 +288,7 @@ namespace Hmck
 			samplerInfo.minLod = 0.0f;
 			samplerInfo.maxLod = 1.0f;
 			samplerInfo.borderColor = VK_BORDER_COLOR_FLOAT_OPAQUE_WHITE;
-			return vkCreateSampler(hmckDevice.device(), &samplerInfo, nullptr, &sampler);
+			return vkCreateSampler(device.device(), &samplerInfo, nullptr, &sampler);
 		}
 
 		/**
@@ -373,7 +373,7 @@ namespace Hmck
 			renderPassInfo.pSubpasses = &subpass;
 			renderPassInfo.dependencyCount = 2;
 			renderPassInfo.pDependencies = dependencies.data();
-			if (vkCreateRenderPass(hmckDevice.device(), &renderPassInfo, nullptr, &renderPass) != VK_SUCCESS) {
+			if (vkCreateRenderPass(device.device(), &renderPassInfo, nullptr, &renderPass) != VK_SUCCESS) {
 				throw std::runtime_error("Failed to create render pass");
 			}
 
@@ -401,7 +401,7 @@ namespace Hmck
 			framebufferInfo.width = width;
 			framebufferInfo.height = height;
 			framebufferInfo.layers = maxLayers;
-			if (vkCreateFramebuffer(hmckDevice.device(), &framebufferInfo, nullptr, &framebuffer) != VK_SUCCESS) {
+			if (vkCreateFramebuffer(device.device(), &framebufferInfo, nullptr, &framebuffer) != VK_SUCCESS) {
 				throw std::runtime_error("Failed to create framebuffer");
 			}
 
@@ -409,7 +409,7 @@ namespace Hmck
 		}
 
 		private:
-			Device& hmckDevice;
+			Device& device;
 	};
 }
 

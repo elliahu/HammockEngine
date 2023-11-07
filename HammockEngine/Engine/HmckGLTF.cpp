@@ -9,10 +9,13 @@ namespace gltf = tinygltf;
 
 std::vector<std::shared_ptr<Hmck::Entity>> Hmck::Gltf::load(
 	std::string filename,
-	Device& device, 
+	Device& device,
 	std::vector<Image>& images,
+	uint32_t imagesOffset,
 	std::vector<Material>& materials,
+	uint32_t materialsOffset,
 	std::vector<Texture>& textures,
+	uint32_t texturesOffset,
 	std::vector<Vertex>& vertices,
 	std::vector<uint32_t>& indices,
 	std::vector<std::shared_ptr<Entity>>& entities,
@@ -52,9 +55,9 @@ std::vector<std::shared_ptr<Hmck::Entity>> Hmck::Gltf::load(
 	std::vector<std::shared_ptr<Entity>> roots{};
 	const gltf::Scene& scene = model.scenes[0];
 	for (size_t i = 0; i < scene.nodes.size(); i++) {
-		loadImages(model, device, images);
-		loadMaterials(model, device, materials);
-		loadTextures(model, device, textures);
+		loadImages(model, device, images, imagesOffset);
+		loadMaterials(model, device, materials, materialsOffset, texturesOffset);
+		loadTextures(model, device, textures, texturesOffset);
 		const gltf::Node node = model.nodes[scene.nodes[i]];
 		auto root = loadNode(node, model, nullptr, vertices, indices, entities);
 		roots.push_back(root);
@@ -64,13 +67,13 @@ std::vector<std::shared_ptr<Hmck::Entity>> Hmck::Gltf::load(
 }
 
 
-void Hmck::Gltf::loadImages(gltf::Model& input,Device& device, std::vector<Image>& images)
+void Hmck::Gltf::loadImages(gltf::Model& input,Device& device, std::vector<Image>& images, uint32_t imagesOffset)
 {
 	// Images can be stored inside the glTF (which is the case for the sample model), so instead of directly
 	// loading them from disk, we fetch them from the glTF loader and upload the buffers
 	images.resize(input.images.size());
-	for (size_t i = 0; i < input.images.size(); i++) {
-		gltf::Image& glTFImage = input.images[i];
+	for (size_t i = imagesOffset; i < input.images.size(); i++) {
+		gltf::Image& glTFImage = input.images[i - imagesOffset];
 		// Get the image data from the glTF loader
 		unsigned char* buffer = nullptr;
 		uint32_t bufferSize = 0;
@@ -97,13 +100,13 @@ void Hmck::Gltf::loadImages(gltf::Model& input,Device& device, std::vector<Image
 }
 
 
-void Hmck::Gltf::loadMaterials(gltf::Model& input, Device& device, std::vector<Material>& materials)
+void Hmck::Gltf::loadMaterials(gltf::Model& input, Device& device, std::vector<Material>& materials, uint32_t materialsOffset, uint32_t texturesOffset)
 {
 	materials.resize(input.materials.size());
-	for (size_t i = 0; i < input.materials.size(); i++) 
+	for (size_t i = materialsOffset; i < input.materials.size(); i++)
 	{
 		// Only read the most basic properties required
-		tinygltf::Material glTFMaterial = input.materials[i];
+		tinygltf::Material glTFMaterial = input.materials[i - materialsOffset];
 		// Get the base color factor
 		if (glTFMaterial.values.find("baseColorFactor") != glTFMaterial.values.end()) {
 			materials[i].baseColorFactor = glm::make_vec4(glTFMaterial.values["baseColorFactor"].ColorFactor().data());
@@ -111,22 +114,22 @@ void Hmck::Gltf::loadMaterials(gltf::Model& input, Device& device, std::vector<M
 		// Get base color texture index
 		if (glTFMaterial.values.find("baseColorTexture") != glTFMaterial.values.end()) 
 		{
-			materials[i].baseColorTextureIndex = glTFMaterial.values["baseColorTexture"].TextureIndex();
+			materials[i].baseColorTextureIndex = texturesOffset + glTFMaterial.values["baseColorTexture"].TextureIndex();
 		}
 		// Get normal texture index
 		if (glTFMaterial.additionalValues.find("normalTexture") != glTFMaterial.additionalValues.end()) 
 		{
-			materials[i].normalTextureIndex = glTFMaterial.additionalValues["normalTexture"].TextureIndex();
+			materials[i].normalTextureIndex = texturesOffset + glTFMaterial.additionalValues["normalTexture"].TextureIndex();
 		}
 		// Get rough/metal texture index
 		if (glTFMaterial.values.find("metallicRoughnessTexture") != glTFMaterial.values.end()) 
 		{
-			materials[i].metallicRoughnessTextureIndex = glTFMaterial.values["metallicRoughnessTexture"].TextureIndex();
+			materials[i].metallicRoughnessTextureIndex = texturesOffset + glTFMaterial.values["metallicRoughnessTexture"].TextureIndex();
 		}
 		// Get occlusion texture index
 		if (glTFMaterial.additionalValues.find("occlusionTexture") != glTFMaterial.additionalValues.end())
 		{
-			materials[i].occlusionTexture = glTFMaterial.additionalValues["occlusionTexture"].TextureIndex();
+			materials[i].occlusionTextureIndex = texturesOffset + glTFMaterial.additionalValues["occlusionTexture"].TextureIndex();
 		}
 		materials[i].alphaMode = glTFMaterial.alphaMode;
 		materials[i].alphaCutOff = (float)glTFMaterial.alphaCutoff;
@@ -135,11 +138,11 @@ void Hmck::Gltf::loadMaterials(gltf::Model& input, Device& device, std::vector<M
 	}
 }
 
-void Hmck::Gltf::loadTextures(gltf::Model& input, Device& device, std::vector<Texture>& textures)
+void Hmck::Gltf::loadTextures(gltf::Model& input, Device& device, std::vector<Texture>& textures, uint32_t texturesOffset)
 {
 	textures.resize(input.textures.size());
-	for (size_t i = 0; i < input.textures.size(); i++) {
-		textures[i].imageIndex = input.textures[i].source;
+	for (size_t i = texturesOffset; i < input.textures.size(); i++) {
+		textures[i].imageIndex = input.textures[i - texturesOffset].source;
 	}
 }
 

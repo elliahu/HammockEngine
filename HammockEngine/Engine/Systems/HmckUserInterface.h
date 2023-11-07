@@ -32,7 +32,7 @@ namespace Hmck
 		void showWindowControls();
 		void showEntityComponents(std::shared_ptr<Entity>& entity, bool* close = (bool*)0);
 		void showEntityInspector(std::shared_ptr<Entity> entity);
-		void showGlobalSettings(GlobalUbo& ubo);
+		void showGlobalSettings(SceneUbo& ubo);
 		void showLog();
 
 		// forwarding events to ImGUI
@@ -50,8 +50,8 @@ namespace Hmck
 		void entityComponets(std::shared_ptr<Entity> entity);
 		void inspectEntity(std::shared_ptr<Entity> entity);
 
-		Device& hmckDevice;
-		Window& hmckWindow;
+		Device& device;
+		Window& window;
 		VkRenderPass renderPass;
 		VkDescriptorPool imguiPool;
 	};

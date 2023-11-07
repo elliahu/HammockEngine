@@ -1,11 +1,5 @@
 #pragma once
 
-#include "Platform/HmckWindow.h"
-#include "HmckDevice.h"
-#include "HmckSwapChain.h"
-#include "Systems/HmckUserInterface.h"
-#include "HmckFramebuffer.h"
-
 #define GLM_FORCE_RADIANS
 #define GLM_FORCE_DEPTH_ZERO_TO_ONE
 #include <glm/glm.hpp>
@@ -15,6 +9,13 @@
 #include <vector>
 #include <stdexcept>
 #include <cassert>
+
+#include "Platform/HmckWindow.h"
+#include "HmckDevice.h"
+#include "HmckSwapChain.h"
+#include "Systems/HmckUserInterface.h"
+#include "HmckFramebuffer.h"
+#include "HmckScene.h"
 
 // black clear color
 #define HMCK_CLEAR_COLOR { 0.f,171.f / 255.f,231.f / 255.f,1.f }
@@ -68,15 +69,28 @@ namespace Hmck
 			VkCommandBuffer commandBuffer,
 			std::vector<VkClearValue> clearValues);
 		void endRenderPass(VkCommandBuffer commandBuffer);
+		void render(
+			std::unique_ptr<Scene>& scene, 
+			VkCommandBuffer commandBuffer, 
+			VkPipelineLayout pipelineLayout,
+			std::unique_ptr<Buffer>& transformBuffer,
+			std::unique_ptr<Buffer>& materialPropertyBuffer);
 
 
 	private:
 		void createCommandBuffer();
 		void freeCommandBuffers();
 		void recreateSwapChain();
+		void renderEntity(
+			std::unique_ptr<Scene>& scene, 
+			VkCommandBuffer commandBuffer, 
+			std::shared_ptr<Entity>& entity, 
+			VkPipelineLayout pipelineLayout,
+			std::unique_ptr<Buffer>& transformBuffer,
+			std::unique_ptr<Buffer>& materialPropertyBuffer);
 
-		Window& hmckWindow;
-		Device& hmckDevice;
+		Window& window;
+		Device& device;
 		std::unique_ptr<SwapChain> hmckSwapChain;
 		std::vector<VkCommandBuffer> commandBuffers;
 		
