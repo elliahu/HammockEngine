@@ -32,17 +32,23 @@ void Hmck::KeyboardMovementController::moveInPlaneXZ(Window& window, float dt, s
 		double offsetX = x - mouseMotionStartX;
 		double offsetY = mouseMotionStartY - y;
 
+		entity->transform.rotation.y += glm::clamp(glm::radians((float)offsetX), -360.0f, 360.0f);
+		entity->transform.rotation.x -= glm::clamp(glm::radians((float)offsetY), -89.0f, 89.0f);
+
 		mouseMotionStartX = x;
 		mouseMotionStartY = y;
 	}
 
 	if (glm::dot(rotate, rotate) > std::numeric_limits<float>::epsilon())
 	{
-		// TODO FIXME
-		entity->rotate(lookSpeed * dt * glm::normalize(rotate) + entity->rotation());
+		entity->transform.rotation += lookSpeed * dt * glm::normalize(rotate);
 	}
 
-	float yaw = entity->rotation().y;
+	//clamping
+	entity->transform.rotation.x = glm::clamp(entity->transform.rotation.x, -1.5f, 1.5f);
+	entity->transform.rotation.y = glm::mod(entity->transform.rotation.y, glm::two_pi<float>());
+
+	float yaw = entity->transform.rotation.y;
 	const glm::vec3 forwardDir{ sin(yaw), 0.0f, cos(yaw) };
 	const glm::vec3 rightDir{ forwardDir.z, 0.0f, -forwardDir.x };
 	const glm::vec3 upDir{ 0.0f , 1.f, 0.0f };
@@ -57,6 +63,6 @@ void Hmck::KeyboardMovementController::moveInPlaneXZ(Window& window, float dt, s
 
 	if (glm::dot(moveDir, moveDir) > std::numeric_limits<float>::epsilon())
 	{
-		entity->translate(moveSpeed * dt * glm::normalize(moveDir) + entity->translation());
+		entity->transform.translation += moveSpeed * dt * glm::normalize(moveDir);
 	}
 }

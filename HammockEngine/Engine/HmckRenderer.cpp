@@ -82,10 +82,10 @@ void Hmck::Renderer::renderEntity(
 	if (std::dynamic_pointer_cast<Entity3D>(entity)->mesh.primitives.size() > 0) {
 		// Pass the node's matrix via push constants
 		// Traverse the node hierarchy to the top-most parent to get the final matrix of the current node
-		glm::mat4 model = entity->transform;
+		glm::mat4 model = entity->transform.mat4();
 		std::shared_ptr<Entity> currentParent = entity->parent;
 		while (currentParent) {
-			model = currentParent->transform * model;
+			model = currentParent->transform.mat4() * model;
 			currentParent = currentParent->parent;
 		}
 

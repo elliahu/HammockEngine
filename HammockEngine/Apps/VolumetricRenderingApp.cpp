@@ -16,11 +16,11 @@ Hmck::VolumetricRenderingApp::VolumetricRenderingApp()
 
 	descriptorSetLayout = DescriptorSetLayout::Builder(device)
 		.addBinding(sceneBinding, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_ALL_GRAPHICS)
-		.addBinding(textureBinding, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 
-			VK_SHADER_STAGE_ALL_GRAPHICS, 2000, 
+		.addBinding(textureBinding, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
+			VK_SHADER_STAGE_ALL_GRAPHICS, 2000,
 			VK_DESCRIPTOR_BINDING_PARTIALLY_BOUND_BIT | VK_DESCRIPTOR_BINDING_UPDATE_AFTER_BIND_BIT)
 		.addBinding(transformBinding, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_ALL_GRAPHICS)
-		.addBinding(materialPropertyBinding, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,VK_SHADER_STAGE_ALL_GRAPHICS)
+		.addBinding(materialPropertyBinding, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_ALL_GRAPHICS)
 		.build();
 }
 
@@ -71,7 +71,7 @@ void Hmck::VolumetricRenderingApp::run()
 	for (int i = 0; i < SwapChain::MAX_FRAMES_IN_FLIGHT; i++)
 	{
 		std::vector<VkDescriptorImageInfo> imageInfos{ scene->images.size() };
-		for (int im = 0; im < scene->images.size(); im ++)
+		for (int im = 0; im < scene->images.size(); im++)
 		{
 			imageInfos[im] = scene->images[im].texture.descriptor;
 		}
@@ -79,7 +79,7 @@ void Hmck::VolumetricRenderingApp::run()
 		auto sceneBufferInfo = sceneBuffers[i]->descriptorInfo();
 		auto transformBufferInfo = transformBuffers[i]->descriptorInfo();
 		auto materialPropertyBufferInfo = materialPropertyBuffers[i]->descriptorInfo();
-		
+
 		DescriptorWriter(*descriptorSetLayout, *descriptorPool)
 			.writeBuffer(sceneBinding, &sceneBufferInfo)
 			.writeImages(textureBinding, imageInfos)
@@ -92,48 +92,48 @@ void Hmck::VolumetricRenderingApp::run()
 	Camera camera{};
 	camera.setViewTarget({ 1.f, 1.f, -1.f }, { 0.f, 0.f, 0.f });
 	auto viewerObject = Entity::createEntity();
-	viewerObject->translate({ 1.f, 1.f, -5.f });
+	viewerObject->transform.translation = { 1.f, 1.f, -5.f };
 	scene->addChildOfRoot(viewerObject);
 	auto root = scene->root();
 	KeyboardMovementController cameraController{};
 
-	UserInterface ui{device, renderer.getSwapChainRenderPass(), window};
+	UserInterface ui{ device, renderer.getSwapChainRenderPass(), window };
 
-	GraphicsPipeline standardPipeline = GraphicsPipeline::createGraphicsPipeline({
-		.debugName = "standard_forward_pass",
-		.device = device,
-		.VS {
-			.byteCode = Hmck::Filesystem::readFile("../../HammockEngine/Engine/Shaders/Compiled/volumetric.vert.spv"),
-			.entryFunc = "main"
-		},
-		.FS {
-			.byteCode = Hmck::Filesystem::readFile("../../HammockEngine/Engine/Shaders/Compiled/volumetric.frag.spv"),
-			.entryFunc = "main"
-		},
-		.descriptorSetLayouts = {
-			descriptorSetLayout->getDescriptorSetLayout()
-		},
-		.pushConstantRanges {
-			{
-				.stageFlags = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT,
-				.offset = 0,
-				.size = sizeof(Entity::TransformPushConstantData)
+	GraphicsPipeline standardPipeline = GraphicsPipeline::createGraphicsPipeline(
+		{
+			.debugName = "standard_forward_pass",
+			.device = device,
+			.VS {
+				.byteCode = Hmck::Filesystem::readFile("../../HammockEngine/Engine/Shaders/Compiled/volumetric.vert.spv"),
+				.entryFunc = "main"
 			},
-		},
-		.graphicsState {
-			.depthTest = VK_TRUE,
-			.depthTestCompareOp = VK_COMPARE_OP_LESS_OR_EQUAL,
-			.blendAtaAttachmentStates {},
-			.vertexBufferBindings {
-				.vertexBindingDescriptions = {
-					{
-						.binding = 0,
-						.stride = sizeof(Vertex),
-						.inputRate = VK_VERTEX_INPUT_RATE_VERTEX
-					}
+			.FS {
+				.byteCode = Hmck::Filesystem::readFile("../../HammockEngine/Engine/Shaders/Compiled/volumetric.frag.spv"),
+				.entryFunc = "main"
+			},
+			.descriptorSetLayouts = {
+				descriptorSetLayout->getDescriptorSetLayout()
+			},
+			.pushConstantRanges {
+				{
+					.stageFlags = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT,
+					.offset = 0,
+					.size = sizeof(Entity::TransformPushConstantData)
 				},
-				.vertexAttributeDescriptions = {
-			// order is location, binding, format, offset
+			},
+			.graphicsState {
+				.depthTest = VK_TRUE,
+				.depthTestCompareOp = VK_COMPARE_OP_LESS_OR_EQUAL,
+				.blendAtaAttachmentStates {},
+				.vertexBufferBindings {
+					.vertexBindingDescriptions = {
+						{
+							.binding = 0,
+							.stride = sizeof(Vertex),
+							.inputRate = VK_VERTEX_INPUT_RATE_VERTEX
+						}
+					},
+					.vertexAttributeDescriptions = {
 			{0, 0, VK_FORMAT_R32G32B32_SFLOAT, offsetof(Vertex, position)},
 			{1, 0, VK_FORMAT_R32G32B32_SFLOAT, offsetof(Vertex, color)},
 			{2, 0, VK_FORMAT_R32G32B32_SFLOAT, offsetof(Vertex, normal)},
@@ -143,7 +143,8 @@ void Hmck::VolumetricRenderingApp::run()
 	}
 },
 .renderPass = renderer.getSwapChainRenderPass()
-		});
+		}
+	);
 
 
 	auto currentTime = std::chrono::high_resolution_clock::now();
@@ -159,7 +160,7 @@ void Hmck::VolumetricRenderingApp::run()
 
 		// camera
 		cameraController.moveInPlaneXZ(window, frameTime, viewerObject);
-		camera.setViewYXZ(viewerObject->translation(), viewerObject->rotation());
+		camera.setViewYXZ(viewerObject->transform.translation, viewerObject->transform.rotation);
 		float aspect = renderer.getAspectRatio();
 		camera.setPerspectiveProjection(glm::radians(50.0f), aspect, 0.1f, 1000.f);
 
@@ -168,7 +169,7 @@ void Hmck::VolumetricRenderingApp::run()
 		{
 			int frameIndex = renderer.getFrameIndex();
 
-			// scene data
+			// scene data is written to once per frame
 			SceneUbo sceneData{
 				.projection = camera.getProjection(),
 				.view = camera.getView(),
@@ -195,12 +196,12 @@ void Hmck::VolumetricRenderingApp::run()
 				&globalDescriptorSets[frameIndex],
 				0,
 				nullptr);
-			
+
 			// TODO FIXME wrong texture being used
 			renderer.render(
-				scene, 
-				commandBuffer, 
-				standardPipeline.graphicsPipelineLayout, 
+				scene,
+				commandBuffer,
+				standardPipeline.graphicsPipelineLayout,
 				transformBuffers[frameIndex],
 				materialPropertyBuffers[frameIndex]);
 
@@ -224,6 +225,8 @@ void Hmck::VolumetricRenderingApp::run()
 
 void Hmck::VolumetricRenderingApp::load()
 {
+	// TODO FIXME crashes on multiple files loaded
+	// TODO FIXME crashes on anything other than flight helmet
 	Scene::SceneCreateInfo info = {
 		.device = device,
 		.name = "Volumetric scene",

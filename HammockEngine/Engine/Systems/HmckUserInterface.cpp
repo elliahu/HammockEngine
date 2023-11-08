@@ -35,8 +35,8 @@ void Hmck::UserInterface::showDebugStats(std::shared_ptr<Entity> camera)
 	ImGui::SetNextWindowPos({10,10});
 	ImGui::SetNextWindowBgAlpha(0.35f);
 	ImGui::Begin(window.getWindowName().c_str(),(bool*)0, window_flags);
-	auto cameraPosition = camera->translation();
-	auto cameraRotation = camera->rotation();
+	auto cameraPosition = camera->transform.translation;
+	auto cameraRotation = camera->transform.rotation;
 	ImGui::Text("Camera world position: ( %.2f, %.2f, %.2f )",cameraPosition.x, cameraPosition.y, cameraPosition.z);
 	ImGui::Text("Camera world rotaion: ( %.2f, %.2f, %.2f )", cameraRotation.x, cameraRotation.y, cameraRotation.z);
 	if (ImGui::IsMousePosValid())
@@ -307,29 +307,23 @@ void Hmck::UserInterface::entityComponets(std::shared_ptr<Entity> entity)
 	{
 		if (ImGui::TreeNode("Translation"))
 		{
-			auto translation = entity->translation();
-			ImGui::DragFloat("x", &translation.x, 0.01f);
-			ImGui::DragFloat("y", &translation.y, 0.01f);
-			ImGui::DragFloat("z", &translation.z, 0.01f);
-			entity->translate(translation);
+			ImGui::DragFloat("x", &entity->transform.translation.x, 0.01f);
+			ImGui::DragFloat("y", &entity->transform.translation.y, 0.01f);
+			ImGui::DragFloat("z", &entity->transform.translation.z, 0.01f);
 			ImGui::TreePop();
 		}
 		if (ImGui::TreeNode("Rotation"))
 		{
-			auto rotation = entity->rotation();
-			ImGui::DragFloat("x", &rotation.x, 0.01f);
-			ImGui::DragFloat("y", &rotation.y, 0.01f);
-			ImGui::DragFloat("z", &rotation.z, 0.01f);
-			entity->rotate(rotation);
-			
+			ImGui::DragFloat("x", &entity->transform.rotation.x, 0.01f);
+			ImGui::DragFloat("y", &entity->transform.rotation.y, 0.01f);
+			ImGui::DragFloat("z", &entity->transform.rotation.z, 0.01f);
+			ImGui::TreePop();
 		}
 		if (ImGui::TreeNode("Scale"))
 		{
-			auto scale = entity->scale();
-			ImGui::DragFloat("x", &scale.x, 0.01f);
-			ImGui::DragFloat("y", &scale.y, 0.01f);
-			ImGui::DragFloat("z", &scale.z, 0.01f);
-			entity->scale(scale);
+			ImGui::DragFloat("x", &entity->transform.scale.x, 0.01f);
+			ImGui::DragFloat("y", &entity->transform.scale.y, 0.01f);
+			ImGui::DragFloat("z", &entity->transform.scale.z, 0.01f);
 			ImGui::TreePop();
 		}
 		

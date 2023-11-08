@@ -155,24 +155,38 @@ std::shared_ptr<Hmck::Entity> Hmck::Gltf::loadNode(
 	std::vector<std::shared_ptr<Entity>>& entities)
 {
 	std::shared_ptr<Entity3D> entity = Entity3D::createEntity3D();
-	entity->transform = glm::mat4(1.0f);
 	entity->parent = parent;
 	entity->name = inputNode.name;
 
 	// Get the local entity matrix
 	// It's either made up from translation, rotation, scale or a 4x4 matrix
 	if (inputNode.translation.size() == 3) {
-		entity->transform = glm::translate(entity->transform, glm::vec3(glm::make_vec3(inputNode.translation.data())));
+
+		((TransformComponent)entity->components["TransformComponent"]).translation = glm::vec3(glm::make_vec3(inputNode.translation.data()));
 	}
 	if (inputNode.rotation.size() == 4) {
-		glm::quat q = glm::make_quat(inputNode.rotation.data());
-		entity->transform *= glm::mat4(q);
+		((TransformComponent)entity->components["TransformComponent"]).rotation = glm::eulerAngles(glm::make_quat(inputNode.rotation.data()));
 	}
 	if (inputNode.scale.size() == 3) {
-		entity->transform = glm::scale(entity->transform, glm::vec3(glm::make_vec3(inputNode.scale.data())));
+		((TransformComponent)entity->components["TransformComponent"]).scale = glm::vec3(glm::make_vec3(inputNode.scale.data()));
 	}
 	if (inputNode.matrix.size() == 16) {
-		entity->transform = glm::make_mat4x4(inputNode.matrix.data());
+		glm::mat4 transform = glm::make_mat4x4(inputNode.matrix.data());
+		glm::vec3 scale;
+		glm::quat rotation;
+		glm::vec3 translation;
+		glm::vec3 skew;
+		glm::vec4 perspective;
+		glm::decompose(
+			transform,
+			scale,
+			rotation,
+			translation,
+			skew,
+			perspective);
+		((TransformComponent)entity->components["TransformComponent"]).scale = scale;
+		((TransformComponent)entity->components["TransformComponent"]).rotation = glm::eulerAngles(rotation);
+		((TransformComponent)entity->components["TransformComponent"]).translation = translation;
 	};
 
 
