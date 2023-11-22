@@ -3,24 +3,25 @@
 Hmck::VolumetricRenderingApp::VolumetricRenderingApp()
 {
 	descriptorPool = DescriptorPool::Builder(device)
-		.setPoolFlags(VK_DESCRIPTOR_POOL_CREATE_UPDATE_AFTER_BIND_BIT)
+		//.setPoolFlags(VK_DESCRIPTOR_POOL_CREATE_UPDATE_AFTER_BIND_BIT)
 		.setMaxSets(100)
 		.addPoolSize(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 2000)
-		.addPoolSize(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC, 2000)
-		.addPoolSize(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, 2000)
-		.addPoolSize(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER_DYNAMIC, 2000)
 		.addPoolSize(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 2000)
 		.build();
 
 	load();
+	//VK_DESCRIPTOR_BINDING_PARTIALLY_BOUND_BIT | VK_DESCRIPTOR_BINDING_UPDATE_AFTER_BIND_BIT
+	globalDescriptorSetLayout = DescriptorSetLayout::Builder(device)
+		.addBinding(0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_ALL_GRAPHICS)
+		.addBinding(1, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_ALL_GRAPHICS, 200 )
+		.build();
+	
+	transformDescriptorSetLayout = DescriptorSetLayout::Builder(device)
+		.addBinding(0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_ALL_GRAPHICS)
+		.build();
 
-	descriptorSetLayout = DescriptorSetLayout::Builder(device)
-		.addBinding(sceneBinding, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_ALL_GRAPHICS)
-		.addBinding(textureBinding, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
-			VK_SHADER_STAGE_ALL_GRAPHICS, 2000,
-			VK_DESCRIPTOR_BINDING_PARTIALLY_BOUND_BIT | VK_DESCRIPTOR_BINDING_UPDATE_AFTER_BIND_BIT)
-		.addBinding(transformBinding, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_ALL_GRAPHICS)
-		.addBinding(materialPropertyBinding, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_ALL_GRAPHICS)
+	materialDescriptorSetLayout = DescriptorSetLayout::Builder(device)
+		.addBinding(0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_ALL_GRAPHICS)
 		.build();
 }
 
@@ -65,28 +66,45 @@ void Hmck::VolumetricRenderingApp::run()
 			);
 		materialPropertyBuffers[i]->map();
 	}
+	
 
 	// write to buffers
+	std::vector<VkDescriptorImageInfo> imageInfos{ scene->images.size() };
+	for (int im = 0; im < scene->images.size(); im++)
+	{
+		imageInfos[im] = scene->images[im].texture.descriptor;
+	}
 	std::vector<VkDescriptorSet> globalDescriptorSets{ SwapChain::MAX_FRAMES_IN_FLIGHT };
 	for (int i = 0; i < SwapChain::MAX_FRAMES_IN_FLIGHT; i++)
 	{
-		std::vector<VkDescriptorImageInfo> imageInfos{ scene->images.size() };
-		for (int im = 0; im < scene->images.size(); im++)
-		{
-			imageInfos[im] = scene->images[im].texture.descriptor;
-		}
-
 		auto sceneBufferInfo = sceneBuffers[i]->descriptorInfo();
-		auto transformBufferInfo = transformBuffers[i]->descriptorInfo();
-		auto materialPropertyBufferInfo = materialPropertyBuffers[i]->descriptorInfo();
 
-		DescriptorWriter(*descriptorSetLayout, *descriptorPool)
+		DescriptorWriter(*globalDescriptorSetLayout, *descriptorPool)
 			.writeBuffer(sceneBinding, &sceneBufferInfo)
 			.writeImages(textureBinding, imageInfos)
-			.writeBuffer(transformBinding, &transformBufferInfo)
-			.writeBuffer(materialPropertyBinding, &materialPropertyBufferInfo)
 			.build(globalDescriptorSets[i]);
 	}
+
+	std::vector<VkDescriptorSet> transformDescriptorSets{ SwapChain::MAX_FRAMES_IN_FLIGHT };
+	for (int i = 0; i < SwapChain::MAX_FRAMES_IN_FLIGHT; i++)
+	{
+		auto transformBufferInfo = transformBuffers[i]->descriptorInfo();
+
+		DescriptorWriter(*transformDescriptorSetLayout, *descriptorPool)
+			.writeBuffer(0, &transformBufferInfo)
+			.build(transformDescriptorSets[i]);
+	}
+
+	std::vector<VkDescriptorSet> materialDescriptorSets{ SwapChain::MAX_FRAMES_IN_FLIGHT };
+	for (int i = 0; i < SwapChain::MAX_FRAMES_IN_FLIGHT; i++)
+	{
+		auto materialPropertyBufferInfo = materialPropertyBuffers[i]->descriptorInfo();
+
+		DescriptorWriter(*materialDescriptorSetLayout, *descriptorPool)
+			.writeBuffer(0, &materialPropertyBufferInfo)
+			.build(materialDescriptorSets[i]);
+	}
+
 
 	// camera and movement
 	Camera camera{};
@@ -112,39 +130,37 @@ void Hmck::VolumetricRenderingApp::run()
 				.entryFunc = "main"
 			},
 			.descriptorSetLayouts = {
-				descriptorSetLayout->getDescriptorSetLayout()
+				globalDescriptorSetLayout->getDescriptorSetLayout(),
+				transformDescriptorSetLayout->getDescriptorSetLayout(),
+				materialDescriptorSetLayout->getDescriptorSetLayout()
 			},
 			.pushConstantRanges {
-				{
-					.stageFlags = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT,
-					.offset = 0,
-					.size = sizeof(Entity::TransformPushConstantData)
-				},
 			},
-			.graphicsState {
-				.depthTest = VK_TRUE,
-				.depthTestCompareOp = VK_COMPARE_OP_LESS_OR_EQUAL,
-				.blendAtaAttachmentStates {},
-				.vertexBufferBindings {
-					.vertexBindingDescriptions = {
-						{
-							.binding = 0,
-							.stride = sizeof(Vertex),
-							.inputRate = VK_VERTEX_INPUT_RATE_VERTEX
-						}
-					},
-					.vertexAttributeDescriptions = {
-			{0, 0, VK_FORMAT_R32G32B32_SFLOAT, offsetof(Vertex, position)},
-			{1, 0, VK_FORMAT_R32G32B32_SFLOAT, offsetof(Vertex, color)},
-			{2, 0, VK_FORMAT_R32G32B32_SFLOAT, offsetof(Vertex, normal)},
-			{3, 0, VK_FORMAT_R32G32_SFLOAT, offsetof(Vertex, uv)},
-			{4, 0, VK_FORMAT_R32G32B32_SFLOAT, offsetof(Vertex, tangent)}
-		}
+		.graphicsState {
+			.depthTest = VK_TRUE,
+			.depthTestCompareOp = VK_COMPARE_OP_LESS_OR_EQUAL,
+			.blendAtaAttachmentStates {},
+			.vertexBufferBindings {
+				.vertexBindingDescriptions = {
+					{
+						.binding = 0,
+						.stride = sizeof(Vertex),
+						.inputRate = VK_VERTEX_INPUT_RATE_VERTEX
+					}
+				},
+				.vertexAttributeDescriptions = {
+		{0, 0, VK_FORMAT_R32G32B32_SFLOAT, offsetof(Vertex, position)},
+		{1, 0, VK_FORMAT_R32G32B32_SFLOAT, offsetof(Vertex, color)},
+		{2, 0, VK_FORMAT_R32G32B32_SFLOAT, offsetof(Vertex, normal)},
+		{3, 0, VK_FORMAT_R32G32_SFLOAT, offsetof(Vertex, uv)},
+		{4, 0, VK_FORMAT_R32G32B32_SFLOAT, offsetof(Vertex, tangent)}
 	}
+}
 },
 .renderPass = renderer.getSwapChainRenderPass()
 		}
 	);
+
 
 
 	auto currentTime = std::chrono::high_resolution_clock::now();
@@ -202,14 +218,54 @@ void Hmck::VolumetricRenderingApp::run()
 				scene,
 				commandBuffer,
 				standardPipeline.graphicsPipelineLayout,
-				transformBuffers[frameIndex],
-				materialPropertyBuffers[frameIndex]);
+				[&](std::shared_ptr<Entity3D> entity)
+				{
+					TransformUbo transformData{
+						.model = entity->transform.mat4(),
+						.normal = entity->transform.normalMatrix()
+					};
+					transformBuffers[frameIndex]->writeToBuffer(&transformData);
+
+					vkCmdBindDescriptorSets(
+						commandBuffer,
+						VK_PIPELINE_BIND_POINT_GRAPHICS,
+						standardPipeline.graphicsPipelineLayout,
+						1, 1,
+						&transformDescriptorSets[frameIndex],
+						0,
+						nullptr);
+				},
+				[&](uint32_t materialIndex)
+				{
+					Material& material = this->scene->materials[materialIndex];
+
+					MaterialPropertyUbo materialData{
+						.baseColorFactor = material.baseColorFactor,
+						.baseColorTextureIndex =  (material.baseColorTextureIndex != TextureHandle::Invalid) ? this->scene->textures[material.baseColorTextureIndex].imageIndex: TextureHandle::Invalid,
+						.normalTextureIndex = (material.normalTextureIndex != TextureHandle::Invalid) ? this->scene->textures[material.normalTextureIndex].imageIndex : TextureHandle::Invalid,
+						.metallicRoughnessTextureIndex = (material.metallicRoughnessTextureIndex != TextureHandle::Invalid) ? this->scene->textures[material.metallicRoughnessTextureIndex].imageIndex : TextureHandle::Invalid,
+						.occlusionTextureIndex = (material.occlusionTextureIndex != TextureHandle::Invalid) ? this->scene->textures[material.occlusionTextureIndex].imageIndex : TextureHandle::Invalid,
+						.alphaCutoff = material.alphaCutOff
+					};
+
+					materialPropertyBuffers[frameIndex]->writeToBuffer(&materialData);
+
+					vkCmdBindDescriptorSets(
+						commandBuffer,
+						VK_PIPELINE_BIND_POINT_GRAPHICS,
+						standardPipeline.graphicsPipelineLayout,
+						2, 1,
+						&materialDescriptorSets[frameIndex],
+						0,
+						nullptr);
+				});
+
 
 			{
 				ui.beginUserInterface();
 				ui.showDebugStats(viewerObject);
 				ui.showWindowControls();
-				ui.showEntityInspector(scene->root()); // TODO crashes on rotation
+				ui.showEntityInspector(scene->root()); 
 				ui.endUserInterface(commandBuffer);
 			}
 
@@ -225,14 +281,13 @@ void Hmck::VolumetricRenderingApp::run()
 
 void Hmck::VolumetricRenderingApp::load()
 {
-	// TODO FIXME crashes on multiple files loaded
-	// TODO FIXME crashes on anything other than flight helmet
+	// TODO FIXME anything else than helmet is not visible
 	Scene::SceneCreateInfo info = {
 		.device = device,
 		.name = "Volumetric scene",
 		.loadFiles = {
 			{
-				.filename = std::string(MODELS_DIR) + "helmet/helmet.glb"
+				.filename = std::string(MODELS_DIR) + "helmet/helmet.glb",
 			}
 		}
 	};

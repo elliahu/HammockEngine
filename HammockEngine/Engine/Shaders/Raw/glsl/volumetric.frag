@@ -25,13 +25,13 @@ layout (set = 0, binding = 0) uniform SceneUbo
 
 layout(set = 0, binding = 1) uniform sampler2D textures[];
 
-layout (set = 0, binding = 2) uniform TransformUbo
+layout (set = 1, binding = 0) uniform TransformUbo
 {
     mat4 model;
     mat4 normal;
 } transform;
 
-layout (set = 0, binding = 3) uniform MaterialPropertyUbo
+layout (set = 2, binding = 0) uniform MaterialPropertyUbo
 {
     vec4 baseColorFactor;
     uint baseColorTextureIndex;
@@ -49,7 +49,6 @@ float beers_law(float distance, float absorbtion)
 
 void main()
 {
-    vec3 sphere_position = vec3(2,0,2);
 
     if(material.baseColorTextureIndex == INVALID_TEXTURE)
     {
@@ -59,5 +58,4 @@ void main()
     {
         outColor = texture(textures[material.baseColorTextureIndex], uv);
     }
-    
 }

@@ -22,16 +22,6 @@ namespace Hmck
 	{
 	public:
 
-		// scalar float: N = 4 Bytes
-		// vec2: 2N = 8 Bytes
-		// vec3 (or vec4): 4N = 16 Bytes
-		// taken from 15.6.4 Offset and Stride Assignment
-		struct TransformPushConstantData {
-			glm::mat4 modelMatrix{ 1.f };
-			glm::mat4 normalMatrix{ 1.f };
-			//uint32_t albedo_index{}; // TODO remove this later as this does not belong here and is over the minimum size
-		};
-
 		Entity() : id{ currentId++ } {}
 
 		virtual ~Entity() {

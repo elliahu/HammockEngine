@@ -14,7 +14,6 @@ layout (location = 2) out vec3 _position;
 layout (location = 3) out vec4 _tangent;
 layout (location = 4) out vec3 _camera;
 
-
 layout (set = 0, binding = 0) uniform SceneUbo
 {
     mat4 projection;
@@ -24,21 +23,11 @@ layout (set = 0, binding = 0) uniform SceneUbo
     vec4 ambientColor;
 } scene;
 
-layout (set = 0, binding = 2) uniform TransformUbo
+layout (set = 1, binding = 0) uniform TransformUbo
 {
     mat4 model;
     mat4 normal;
 } transform;
-
-layout (set = 0, binding = 3) uniform MaterialPropertyUbo
-{
-    vec4 baseColorFactor;
-    uint baseColorTextureIndex;
-    uint normalTextureIndex;
-    uint metallicRoughnessTextureIndex;
-    uint occlusionTextureIndex;
-    float alphaCutoff;
-} material;
 
 
 void main()

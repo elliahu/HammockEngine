@@ -41,11 +41,6 @@ namespace Hmck
 
 	public:
 
-		Binding sceneBinding = 0;
-		Binding textureBinding = 1;
-		Binding transformBinding = 2;
-		Binding materialPropertyBinding = 3;
-
 		VolumetricRenderingApp();
 
 		// Inherited via IApp
@@ -53,7 +48,10 @@ namespace Hmck
 		virtual void load() override;
 
 		std::unique_ptr<DescriptorPool> descriptorPool{};
-		std::unique_ptr<DescriptorSetLayout> descriptorSetLayout{};
+
+		std::unique_ptr<DescriptorSetLayout> globalDescriptorSetLayout{};
+		std::unique_ptr<DescriptorSetLayout> transformDescriptorSetLayout{};
+		std::unique_ptr<DescriptorSetLayout> materialDescriptorSetLayout{};
 
 		std::unique_ptr<Scene> scene{};
 	};

@@ -9,6 +9,7 @@
 #include <vector>
 #include <stdexcept>
 #include <cassert>
+#include <functional>
 
 #include "Platform/HmckWindow.h"
 #include "HmckDevice.h"
@@ -69,12 +70,13 @@ namespace Hmck
 			VkCommandBuffer commandBuffer,
 			std::vector<VkClearValue> clearValues);
 		void endRenderPass(VkCommandBuffer commandBuffer);
+
 		void render(
 			std::unique_ptr<Scene>& scene, 
 			VkCommandBuffer commandBuffer, 
 			VkPipelineLayout pipelineLayout,
-			std::unique_ptr<Buffer>& transformBuffer,
-			std::unique_ptr<Buffer>& materialPropertyBuffer);
+			std::function<void(std::shared_ptr<Entity3D>)> perEntityBinding,
+			std::function<void(uint32_t)> perMaterialBinding);
 
 
 	private:
@@ -86,8 +88,8 @@ namespace Hmck
 			VkCommandBuffer commandBuffer, 
 			std::shared_ptr<Entity>& entity, 
 			VkPipelineLayout pipelineLayout,
-			std::unique_ptr<Buffer>& transformBuffer,
-			std::unique_ptr<Buffer>& materialPropertyBuffer);
+			std::function<void(std::shared_ptr<Entity3D>)> perEntityBinding,
+			std::function<void(uint32_t)> perMaterialBinding);
 
 		Window& window;
 		Device& device;

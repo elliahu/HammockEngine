@@ -23,13 +23,14 @@ namespace Hmck
 
 	struct MaterialPropertyUbo
 	{
-		glm::vec4 baseColorFactor{ 1.f };
-		uint32_t baseColorTextureIndex = TextureHandle::Invalid;
-		uint32_t normalTextureIndex = TextureHandle::Invalid;
-		uint32_t metallicRoughnessTextureIndex = TextureHandle::Invalid;
-		uint32_t occlusionTextureIndex = TextureHandle::Invalid;
-		float alphaCutoff = 0.f;
+		glm::vec4 baseColorFactor;
+		uint32_t baseColorTextureIndex;
+		uint32_t normalTextureIndex;
+		uint32_t metallicRoughnessTextureIndex;
+		uint32_t occlusionTextureIndex;
+		float alphaCutoff;
 	};
+
 
 	/*
 		This information is passed to renderSystem every frame 

@@ -35,7 +35,7 @@ namespace Hmck
 	// *************** Descriptor Set Layout *********************
 
 	DescriptorSetLayout::DescriptorSetLayout(
-		Device& device, std::unordered_map<uint32_t, 
+		Device& device, std::unordered_map<uint32_t,
 		VkDescriptorSetLayoutBinding> bindings,
 		std::unordered_map <uint32_t, VkDescriptorBindingFlags> flags)
 		: device{ device }, bindings{ bindings }
@@ -62,8 +62,8 @@ namespace Hmck
 		descriptorSetLayoutInfo.bindingCount = static_cast<uint32_t>(setLayoutBindings.size());
 		descriptorSetLayoutInfo.pBindings = setLayoutBindings.data();
 		descriptorSetLayoutInfo.pNext = &bindingFlagsInfo;
-		descriptorSetLayoutInfo.flags = VK_DESCRIPTOR_SET_LAYOUT_CREATE_UPDATE_AFTER_BIND_POOL_BIT;
-		
+		descriptorSetLayoutInfo.flags = 0;//VK_DESCRIPTOR_SET_LAYOUT_CREATE_UPDATE_AFTER_BIND_POOL_BIT;
+
 
 		if (vkCreateDescriptorSetLayout(
 			device.device(),
@@ -247,8 +247,8 @@ namespace Hmck
 		write.dstBinding = binding;
 		write.pImageInfo = imageInfos.data();
 		write.descriptorCount = static_cast<uint32_t>(imageInfos.size());
-
-		writes.push_back(write);
+		if (imageInfos.size() > 0)
+			writes.push_back(write);
 		return *this;
 	}
 

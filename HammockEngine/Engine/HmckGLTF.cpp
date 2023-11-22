@@ -59,7 +59,7 @@ std::vector<std::shared_ptr<Hmck::Entity>> Hmck::Gltf::load(
 		loadMaterials(model, device, materials, materialsOffset, texturesOffset);
 		loadTextures(model, device, textures, texturesOffset);
 		const gltf::Node node = model.nodes[scene.nodes[i]];
-		auto root = loadNode(node, model, nullptr, vertices, indices, entities);
+		auto root = loadNode(node, model, materialsOffset, nullptr, vertices, indices, entities);
 		roots.push_back(root);
 	}
 
@@ -149,6 +149,7 @@ void Hmck::Gltf::loadTextures(gltf::Model& input, Device& device, std::vector<Te
 std::shared_ptr<Hmck::Entity> Hmck::Gltf::loadNode(
 	const tinygltf::Node& inputNode, 
 	const tinygltf::Model& input, 
+	uint32_t materialsOffset,
 	std::shared_ptr<Entity> parent, 
 	std::vector<Vertex>& vertices,
 	std::vector<uint32_t>& indices,
@@ -161,14 +162,13 @@ std::shared_ptr<Hmck::Entity> Hmck::Gltf::loadNode(
 	// Get the local entity matrix
 	// It's either made up from translation, rotation, scale or a 4x4 matrix
 	if (inputNode.translation.size() == 3) {
-
-		((TransformComponent)entity->components["TransformComponent"]).translation = glm::vec3(glm::make_vec3(inputNode.translation.data()));
+		entity->transform.translation = glm::vec3(glm::make_vec3(inputNode.translation.data()));
 	}
 	if (inputNode.rotation.size() == 4) {
-		((TransformComponent)entity->components["TransformComponent"]).rotation = glm::eulerAngles(glm::make_quat(inputNode.rotation.data()));
+		entity->transform.rotation = glm::eulerAngles(glm::make_quat(inputNode.rotation.data()));
 	}
 	if (inputNode.scale.size() == 3) {
-		((TransformComponent)entity->components["TransformComponent"]).scale = glm::vec3(glm::make_vec3(inputNode.scale.data()));
+		entity->transform.scale = glm::vec3(glm::make_vec3(inputNode.scale.data()));
 	}
 	if (inputNode.matrix.size() == 16) {
 		glm::mat4 transform = glm::make_mat4x4(inputNode.matrix.data());
@@ -184,9 +184,9 @@ std::shared_ptr<Hmck::Entity> Hmck::Gltf::loadNode(
 			translation,
 			skew,
 			perspective);
-		((TransformComponent)entity->components["TransformComponent"]).scale = scale;
-		((TransformComponent)entity->components["TransformComponent"]).rotation = glm::eulerAngles(rotation);
-		((TransformComponent)entity->components["TransformComponent"]).translation = translation;
+		entity->transform.scale = scale;
+		entity->transform.rotation = glm::eulerAngles(rotation);
+		entity->transform.translation = translation;
 	};
 
 
@@ -195,7 +195,7 @@ std::shared_ptr<Hmck::Entity> Hmck::Gltf::loadNode(
 	{
 		for (size_t i = 0; i < inputNode.children.size(); i++) 
 		{
-			loadNode(input.nodes[inputNode.children[i]], input, entity,vertices, indices, entities);
+			loadNode(input.nodes[inputNode.children[i]], input, materialsOffset, entity,vertices, indices, entities);
 		}
 	}
 
@@ -306,7 +306,7 @@ std::shared_ptr<Hmck::Entity> Hmck::Gltf::loadNode(
 			Primitive primitive{};
 			primitive.firstIndex = firstIndex;
 			primitive.indexCount = indexCount;
-			primitive.materialIndex = glTFPrimitive.material;
+			primitive.materialIndex = materialsOffset + glTFPrimitive.material;
 			entity->mesh.primitives.push_back(primitive);
 		}
 		entity->mesh.name = mesh.name;

@@ -1,6 +1,6 @@
 #include "HmckRenderer.h"
 
-Hmck::Renderer::Renderer(Window& window, Device& device) : window{window}, device{device}
+Hmck::Renderer::Renderer(Window& window, Device& device) : window{ window }, device{ device }
 {
 	recreateSwapChain();
 	createCommandBuffer();
@@ -69,12 +69,12 @@ void Hmck::Renderer::recreateSwapChain()
 }
 
 void Hmck::Renderer::renderEntity(
-	std::unique_ptr<Scene>& scene, 
-	VkCommandBuffer commandBuffer, 
-	std::shared_ptr<Entity>& entity, 
+	std::unique_ptr<Scene>& scene,
+	VkCommandBuffer commandBuffer,
+	std::shared_ptr<Entity>& entity,
 	VkPipelineLayout pipelineLayout,
-	std::unique_ptr<Buffer>& transformBuffer,
-	std::unique_ptr<Buffer>& materialPropertyBuffer)
+	std::function<void(std::shared_ptr<Entity3D>)> perEntityBinding,
+	std::function<void(uint32_t)> perMaterialBinding)
 {
 	// don't render invisible nodes
 	if (!entity->visible) { return; }
@@ -89,27 +89,13 @@ void Hmck::Renderer::renderEntity(
 			currentParent = currentParent->parent;
 		}
 
-		// Reduce writes by checking if material changed
+		perEntityBinding(std::dynamic_pointer_cast<Entity3D>(entity));
+
+		// TODO Reduce writes by checking if material changed
 		for (Primitive& primitive : std::dynamic_pointer_cast<Entity3D>(entity)->mesh.primitives) {
 			if (primitive.indexCount > 0) {
-				// Get the material index for this primitive
-				Material& material = scene->materials[primitive.materialIndex];
 
-				MaterialPropertyUbo materialPropertyData{
-					.baseColorFactor = material.baseColorFactor,
-					.baseColorTextureIndex = scene->textures[material.baseColorTextureIndex].imageIndex,
-					.normalTextureIndex = scene->textures[material.normalTextureIndex].imageIndex,
-					.metallicRoughnessTextureIndex = scene->textures[material.metallicRoughnessTextureIndex].imageIndex,
-					.occlusionTextureIndex = scene->textures[material.occlusionTextureIndex].imageIndex,
-					.alphaCutoff = material.alphaCutOff
-				};
-				materialPropertyBuffer->writeToBuffer(&materialPropertyData);
-
-				TransformUbo transformData{
-					.model = model,
-					.normal = glm::transpose(glm::inverse(model))
-				};
-				transformBuffer->writeToBuffer(&transformData);
+				perMaterialBinding(static_cast<uint32_t>((primitive.materialIndex == -1)? TextureHandle::Invalid : primitive.materialIndex));
 
 				// draw
 				vkCmdDrawIndexed(commandBuffer, primitive.indexCount, 1, primitive.firstIndex, 0, 0);
@@ -117,7 +103,7 @@ void Hmck::Renderer::renderEntity(
 		}
 	}
 	for (auto& child : entity->children) {
-		renderEntity(scene, commandBuffer, child, pipelineLayout, materialPropertyBuffer, transformBuffer);
+		renderEntity(scene, commandBuffer, child, pipelineLayout, perEntityBinding, perMaterialBinding);
 	}
 }
 
@@ -182,7 +168,7 @@ void Hmck::Renderer::endFrame()
 
 void Hmck::Renderer::beginRenderPass(
 	std::unique_ptr<Framebuffer>& framebuffer,
-	VkCommandBuffer commandBuffer, 
+	VkCommandBuffer commandBuffer,
 	std::vector<VkClearValue> clearValues)
 {
 	// TODO delete this method when no longer used
@@ -195,7 +181,7 @@ void Hmck::Renderer::beginRenderPass(
 	renderPassInfo.renderPass = framebuffer->renderPass;
 	renderPassInfo.framebuffer = framebuffer->framebuffer;
 	renderPassInfo.renderArea.offset = { 0, 0 };
-	renderPassInfo.renderArea.extent = { framebuffer->width, framebuffer->height};
+	renderPassInfo.renderArea.extent = { framebuffer->width, framebuffer->height };
 	renderPassInfo.clearValueCount = static_cast<uint32_t>(clearValues.size());
 	renderPassInfo.pClearValues = clearValues.data();
 
@@ -245,7 +231,7 @@ void Hmck::Renderer::beginSwapChainRenderPass(VkCommandBuffer commandBuffer)
 	renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
 	renderPassInfo.renderPass = hmckSwapChain->getRenderPass();
 	renderPassInfo.framebuffer = hmckSwapChain->getFrameBuffer(currentImageIndex);
-	
+
 	renderPassInfo.renderArea.offset = { 0, 0 };
 	renderPassInfo.renderArea.extent = hmckSwapChain->getSwapChainExtent();
 
@@ -276,11 +262,11 @@ void Hmck::Renderer::endRenderPass(VkCommandBuffer commandBuffer)
 }
 
 void Hmck::Renderer::render(
-	std::unique_ptr<Hmck::Scene>& scene, 
-	VkCommandBuffer commandBuffer, 
+	std::unique_ptr<Hmck::Scene>& scene,
+	VkCommandBuffer commandBuffer,
 	VkPipelineLayout pipelineLayout,
-	std::unique_ptr<Buffer>& transformBuffer,
-	std::unique_ptr<Buffer>& materialPropertyBuffer)
+	std::function<void(std::shared_ptr<Entity3D>)> perEntityBinding,
+	std::function<void(uint32_t)> perMaterialBinding)
 {
 	VkDeviceSize offsets[] = { 0 };
 	VkBuffer buffers[] = { scene->vertexBuffer->getBuffer() };
@@ -289,6 +275,6 @@ void Hmck::Renderer::render(
 
 	// Render all nodes at top-level
 	for (auto& entity : scene->entities) {
-		renderEntity(scene, commandBuffer, entity, pipelineLayout, materialPropertyBuffer, transformBuffer);
+		renderEntity(scene, commandBuffer, entity, pipelineLayout, perEntityBinding, perMaterialBinding);
 	}
 }

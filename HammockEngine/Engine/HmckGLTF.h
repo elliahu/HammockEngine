@@ -41,6 +41,7 @@ namespace Hmck
 		static std::shared_ptr<Entity> loadNode(
 			const tinygltf::Node& inputNode,
 			const tinygltf::Model& input, 
+			uint32_t materialsOffset,
 			std::shared_ptr<Entity> parent,
 			std::vector<Vertex>& vertices,
 			std::vector<uint32_t>& indices,
