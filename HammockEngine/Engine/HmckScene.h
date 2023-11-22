@@ -50,16 +50,15 @@ namespace Hmck
 		Scene(const Scene&) = delete;
 		Scene& operator=(const Scene&) = delete;
 
-		std::shared_ptr<Entity> root() { return entities[0]; }
+		std::shared_ptr<Entity> getRoot() { return root; }
 		Device& getDevice() { return device; }
 		void addChildOfRoot(std::shared_ptr<Entity> child)
 		{
-			child->parent = root();
-			root()->children.push_back(child);
-			entities.push_back(child);
+			child->parent = getRoot();
+			getRoot()->children.push_back(child);
 		}
 
-		std::vector<std::shared_ptr<Entity>> entities;
+		std::shared_ptr<Entity> root;
 		std::vector<Image> images;
 		std::vector<Texture> textures;
 		std::vector<Material> materials;

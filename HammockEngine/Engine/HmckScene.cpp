@@ -15,8 +15,7 @@ Hmck::Scene::Scene(SceneCreateInfo createInfo): device{createInfo.device}
 		.build();
 
 	// create root
-	auto root = std::make_shared<Entity3D>(device, descriptorPool);
-	entities.push_back(root);
+	root = std::make_shared<Entity3D>(device, descriptorPool);
 
 	// load all files
 	for (auto& fileInfo : createInfo.loadFiles)
@@ -77,12 +76,9 @@ Hmck::Scene::~Scene()
 
 	// TODO entities are not being destroyed properly :/
 
-	for (unsigned int i = 0; i < entities.size(); i++)
-	{
-		entities[i]->buffer = nullptr;
-		entities[i]->descriptorSetLayout = nullptr;
-		entities[i] = nullptr;
-	}
+	root->buffer = nullptr;
+	root->descriptorSetLayout = nullptr;
+	root = nullptr;
 }
 
 
@@ -101,11 +97,8 @@ void Hmck::Scene::loadFile(SceneLoadFileInfo loadInfo)
 		static_cast<uint32_t>(textures.size()),
 		vertices, 
 		indices, 
-		entities,
+		root,
 		loadInfo.binary);
-	// set the entity tree as a child of a scene root
-	for(auto& entity : roots)
-		addChildOfRoot(entity);
 }
 
 void Hmck::Scene::createVertexBuffer()

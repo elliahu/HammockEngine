@@ -91,7 +91,15 @@ namespace Hmck
 
 		Entity3D(Device& device, std::unique_ptr<DescriptorPool>& descriptorPool) : Entity(device, descriptorPool) { visible = true; };
 
-		~Entity3D(){}
+		~Entity3D()
+		{
+			buffer = nullptr;
+			descriptorSetLayout = nullptr;
+			// ensures that before parent Entity is deleted, all of its children are deleted as well
+			for (auto& child : children) {
+				child = nullptr;
+			}
+		}
 
 		Mesh mesh{};
 	};

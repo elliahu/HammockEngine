@@ -32,7 +32,7 @@ namespace Hmck
 			uint32_t texturesOffset,
 			std::vector<Vertex>& vertices,
 			std::vector<uint32_t>& indices,
-			std::vector<std::shared_ptr<Entity>>& entities,
+			std::shared_ptr<Entity>& root,
 			bool binary = true
 		);
 
@@ -50,7 +50,7 @@ namespace Hmck
 			std::shared_ptr<Entity> parent,
 			std::vector<Vertex>& vertices,
 			std::vector<uint32_t>& indices,
-			std::vector<std::shared_ptr<Entity>>& entities
+			std::shared_ptr<Entity>& root
 			);
 
 		

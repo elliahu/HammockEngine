@@ -58,4 +58,6 @@ void main()
     {
         outColor = texture(textures[material.baseColorTextureIndex], uv);
     }
+
+    outColor *= .25 + max(dot(normalize(normal), normalize(- position)), 0.0);
 }

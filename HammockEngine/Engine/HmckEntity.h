@@ -52,7 +52,8 @@ namespace Hmck
 				.build(descriptorSet);
 		}
 
-		virtual ~Entity() {
+		virtual ~Entity() 
+		{
 			buffer = nullptr;
 			descriptorSetLayout = nullptr;
 			// ensures that before parent Entity is deleted, all of its children are deleted as well

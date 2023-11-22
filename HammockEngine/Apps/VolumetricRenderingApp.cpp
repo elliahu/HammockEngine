@@ -14,7 +14,7 @@ void Hmck::VolumetricRenderingApp::run()
 	auto viewerObject = std::make_shared<Entity>(device, scene->descriptorPool);
 	viewerObject->transform.translation = { 1.f, 1.f, -5.f };
 	scene->addChildOfRoot(viewerObject);
-	auto root = scene->root();
+	auto root = scene->getRoot();
 	KeyboardMovementController cameraController{};
 
 	UserInterface ui{ device, renderer.getSwapChainRenderPass(), window };
@@ -87,8 +87,6 @@ void Hmck::VolumetricRenderingApp::run()
 		{
 			int frameIndex = renderer.getFrameIndex();
 
-			
-
 			// on screen rendering
 			renderer.beginSwapChainRenderPass(commandBuffer);
 
@@ -142,6 +140,13 @@ void Hmck::VolumetricRenderingApp::run()
 				[&](uint32_t materialIndex, VkCommandBuffer commandBuffer, VkPipelineLayout pipelineLayout)
 				{
 					// TODO per material pipeline in the future
+
+					// if the materialInedx is invalid, use default one
+					if (materialIndex == TextureHandle::Invalid)
+					{
+						materialIndex = 0;
+					}
+
 					scene->materials[materialIndex].updateBuffer();
 
 					vkCmdBindDescriptorSets(
@@ -159,7 +164,7 @@ void Hmck::VolumetricRenderingApp::run()
 				ui.beginUserInterface();
 				ui.showDebugStats(viewerObject);
 				ui.showWindowControls();
-				ui.showEntityInspector(scene->root()); 
+				ui.showEntityInspector(scene->getRoot()); 
 				ui.endUserInterface(commandBuffer);
 			}
 

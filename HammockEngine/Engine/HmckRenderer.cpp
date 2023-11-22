@@ -277,7 +277,5 @@ void Hmck::Renderer::render(
 	perFrameBinding(scene, commandBuffer, pipelineLayout);
 
 	// Render all nodes at top-level
-	for (auto& entity : scene->entities) {
-		renderEntity(scene, commandBuffer, entity, pipelineLayout, perEntityBinding, perMaterialBinding);
-	}
+	renderEntity(scene, commandBuffer, scene->root, pipelineLayout, perEntityBinding, perMaterialBinding);
 }
