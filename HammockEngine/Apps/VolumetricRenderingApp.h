@@ -38,7 +38,6 @@ namespace Hmck
 	{
 		// There is so much code in this class 
 		// TODO make more abstraction layers over the IApp
-
 	public:
 
 		VolumetricRenderingApp();
@@ -46,12 +45,6 @@ namespace Hmck
 		// Inherited via IApp
 		virtual void run() override;
 		virtual void load() override;
-
-		std::unique_ptr<DescriptorPool> descriptorPool{};
-
-		std::unique_ptr<DescriptorSetLayout> globalDescriptorSetLayout{};
-		std::unique_ptr<DescriptorSetLayout> transformDescriptorSetLayout{};
-		std::unique_ptr<DescriptorSetLayout> materialDescriptorSetLayout{};
 
 		std::unique_ptr<Scene> scene{};
 	};

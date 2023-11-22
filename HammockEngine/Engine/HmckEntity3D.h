@@ -10,26 +10,13 @@
 #include "HmckTexture.h"
 #include "HmckDescriptors.h"
 #include "HmckEntity.h"
+#include "HmckPipeline.h"
+#include "HmckVertex.h"
 
 namespace Hmck
 {
 
 	enum TextureHandle : uint32_t { Invalid = 4294967295 };
-
-	struct Vertex
-	{
-		glm::vec3 position{};
-		glm::vec3 color{};
-		glm::vec3 normal{};
-		glm::vec2 uv{};
-		glm::vec4 tangent{};
-	};
-
-	struct Primitive {
-		uint32_t firstIndex;
-		uint32_t indexCount;
-		int32_t materialIndex;
-	};
 
 	struct Image
 	{
@@ -44,6 +31,16 @@ namespace Hmck
 		uint32_t scale;
 	};
 
+	struct MaterialPropertyUbo
+	{
+		glm::vec4 baseColorFactor;
+		uint32_t baseColorTextureIndex;
+		uint32_t normalTextureIndex;
+		uint32_t metallicRoughnessTextureIndex;
+		uint32_t occlusionTextureIndex;
+		float alphaCutoff;
+	};
+
 	struct Material
 	{
 		std::string name;
@@ -55,6 +52,30 @@ namespace Hmck
 		std::string alphaMode = "OPAQUE";
 		float alphaCutOff;
 		bool doubleSided = false;
+		std::shared_ptr<GraphicsPipeline> pipeline{};
+		std::unique_ptr<DescriptorSetLayout> descriptorSetLayout{};
+		std::unique_ptr<Buffer> buffer{};
+		VkDescriptorSet descriptorSet;
+
+		void updateBuffer()
+		{
+			MaterialPropertyUbo materialData{
+				.baseColorFactor = baseColorFactor,
+				.baseColorTextureIndex = baseColorTextureIndex,
+				.normalTextureIndex = baseColorTextureIndex,
+				.metallicRoughnessTextureIndex = metallicRoughnessTextureIndex,
+				.occlusionTextureIndex = metallicRoughnessTextureIndex,
+				.alphaCutoff = alphaCutOff
+			};
+
+			buffer->writeToBuffer(&materialData);
+		}
+	};
+
+	struct Primitive {
+		uint32_t firstIndex;
+		uint32_t indexCount;
+		int32_t materialIndex;
 	};
 
 	struct Mesh
@@ -68,12 +89,9 @@ namespace Hmck
 	{
 	public:
 
-		Entity3D() : Entity() { visible = true; };
+		Entity3D(Device& device, std::unique_ptr<DescriptorPool>& descriptorPool) : Entity(device, descriptorPool) { visible = true; };
 
-		static std::shared_ptr<Entity3D> createEntity3D()
-		{
-			return std::make_unique<Entity3D>();
-		}
+		~Entity3D(){}
 
 		Mesh mesh{};
 	};

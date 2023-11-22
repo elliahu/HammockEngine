@@ -75,8 +75,9 @@ namespace Hmck
 			std::unique_ptr<Scene>& scene, 
 			VkCommandBuffer commandBuffer, 
 			VkPipelineLayout pipelineLayout,
-			std::function<void(std::shared_ptr<Entity3D>)> perEntityBinding,
-			std::function<void(uint32_t)> perMaterialBinding);
+			std::function<void(std::unique_ptr<Scene>&, VkCommandBuffer, VkPipelineLayout)> perFrameBinding,
+			std::function<void(std::shared_ptr<Entity3D>, VkCommandBuffer, VkPipelineLayout)> perEntityBinding,
+			std::function<void(uint32_t, VkCommandBuffer, VkPipelineLayout)> perMaterialBinding);
 
 
 	private:
@@ -88,8 +89,8 @@ namespace Hmck
 			VkCommandBuffer commandBuffer, 
 			std::shared_ptr<Entity>& entity, 
 			VkPipelineLayout pipelineLayout,
-			std::function<void(std::shared_ptr<Entity3D>)> perEntityBinding,
-			std::function<void(uint32_t)> perMaterialBinding);
+			std::function<void(std::shared_ptr<Entity3D>, VkCommandBuffer, VkPipelineLayout)> perEntityBinding,
+			std::function<void(uint32_t, VkCommandBuffer, VkPipelineLayout)> perMaterialBinding);
 
 		Window& window;
 		Device& device;

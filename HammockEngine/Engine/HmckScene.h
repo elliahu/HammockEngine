@@ -1,6 +1,7 @@
 #pragma once
 #include <string>
 #include <iostream>
+#include <memory>
 
 #define GLM_FORCE_RADIANS
 #define GLM_FORCE_DEPTH_ZERO_TO_ONE
@@ -11,7 +12,8 @@
 #include "HmckDescriptors.h"
 #include "HmckEntity3D.h"
 #include "HmckGLTF.h"
-
+#include "HmckSwapChain.h"
+#include "HmckFrameInfo.h"
 
 namespace Hmck
 {
@@ -19,6 +21,13 @@ namespace Hmck
 	class Scene
 	{
 	public:
+
+		struct SceneUbo
+		{
+			glm::mat4 projection{ 1.f };
+			glm::mat4 view{ 1.f };
+			glm::mat4 inverseView{ 1.f };
+		};
 
 		struct SceneLoadFileInfo
 		{
@@ -42,6 +51,7 @@ namespace Hmck
 		Scene& operator=(const Scene&) = delete;
 
 		std::shared_ptr<Entity> root() { return entities[0]; }
+		Device& getDevice() { return device; }
 		void addChildOfRoot(std::shared_ptr<Entity> child)
 		{
 			child->parent = root();
@@ -59,15 +69,19 @@ namespace Hmck
 		uint32_t vertexCount;
 		uint32_t indexCount;
 
+		std::unique_ptr<DescriptorPool> descriptorPool{};
+		std::unique_ptr<DescriptorSetLayout> descriptorSetLayout{};
+		std::vector<VkDescriptorSet> descriptorSets{ SwapChain::MAX_FRAMES_IN_FLIGHT };
+		std::vector<std::unique_ptr<Buffer>> sceneBuffers{ SwapChain::MAX_FRAMES_IN_FLIGHT };
+
 	private:
 
 		void loadFile(SceneLoadFileInfo loadInfo);
 		void createVertexBuffer();
 		void createIndexBuffer();
 
+		Device& device;
 		std::vector<Vertex> vertices{};
 		std::vector<uint32_t> indices{};
-
-		Device& device;
 	};
 }

@@ -73,8 +73,8 @@ void Hmck::Renderer::renderEntity(
 	VkCommandBuffer commandBuffer,
 	std::shared_ptr<Entity>& entity,
 	VkPipelineLayout pipelineLayout,
-	std::function<void(std::shared_ptr<Entity3D>)> perEntityBinding,
-	std::function<void(uint32_t)> perMaterialBinding)
+	std::function<void(std::shared_ptr<Entity3D>, VkCommandBuffer, VkPipelineLayout)> perEntityBinding,
+	std::function<void(uint32_t, VkCommandBuffer, VkPipelineLayout)> perMaterialBinding)
 {
 	// don't render invisible nodes
 	if (!entity->visible) { return; }
@@ -89,13 +89,13 @@ void Hmck::Renderer::renderEntity(
 			currentParent = currentParent->parent;
 		}
 
-		perEntityBinding(std::dynamic_pointer_cast<Entity3D>(entity));
+		perEntityBinding(std::dynamic_pointer_cast<Entity3D>(entity), commandBuffer, pipelineLayout);
 
 		// TODO Reduce writes by checking if material changed
 		for (Primitive& primitive : std::dynamic_pointer_cast<Entity3D>(entity)->mesh.primitives) {
 			if (primitive.indexCount > 0) {
 
-				perMaterialBinding(static_cast<uint32_t>((primitive.materialIndex == -1)? TextureHandle::Invalid : primitive.materialIndex));
+				perMaterialBinding(static_cast<uint32_t>((primitive.materialIndex == -1)? TextureHandle::Invalid : primitive.materialIndex), commandBuffer, pipelineLayout);
 
 				// draw
 				vkCmdDrawIndexed(commandBuffer, primitive.indexCount, 1, primitive.firstIndex, 0, 0);
@@ -265,13 +265,16 @@ void Hmck::Renderer::render(
 	std::unique_ptr<Hmck::Scene>& scene,
 	VkCommandBuffer commandBuffer,
 	VkPipelineLayout pipelineLayout,
-	std::function<void(std::shared_ptr<Entity3D>)> perEntityBinding,
-	std::function<void(uint32_t)> perMaterialBinding)
+	std::function<void(std::unique_ptr<Scene>&, VkCommandBuffer, VkPipelineLayout)> perFrameBinding,
+	std::function<void(std::shared_ptr<Entity3D>, VkCommandBuffer, VkPipelineLayout)> perEntityBinding,
+	std::function<void(uint32_t, VkCommandBuffer, VkPipelineLayout)> perMaterialBinding)
 {
 	VkDeviceSize offsets[] = { 0 };
 	VkBuffer buffers[] = { scene->vertexBuffer->getBuffer() };
 	vkCmdBindVertexBuffers(commandBuffer, 0, 1, buffers, offsets);
 	vkCmdBindIndexBuffer(commandBuffer, scene->indexBuffer->getBuffer(), 0, VK_INDEX_TYPE_UINT32);
+
+	perFrameBinding(scene, commandBuffer, pipelineLayout);
 
 	// Render all nodes at top-level
 	for (auto& entity : scene->entities) {

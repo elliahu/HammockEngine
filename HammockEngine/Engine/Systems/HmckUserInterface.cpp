@@ -105,23 +105,12 @@ void Hmck::UserInterface::showEntityInspector(std::shared_ptr<Entity> entity)
 	endWindow();
 }
 
-void Hmck::UserInterface::showGlobalSettings(SceneUbo& ubo)
+void Hmck::UserInterface::showGlobalSettings(Scene::SceneUbo& ubo)
 {
 	const ImGuiWindowFlags window_flags = ImGuiWindowFlags_AlwaysAutoResize;
 	ImGui::SetNextWindowPos({ 10, 800 }, ImGuiCond_Once, { 0,0 });
 	ImGui::SetNextWindowSizeConstraints({ 300, 200 }, ImVec2(static_cast<float>(window.getExtent().width), 500));
 	beginWindow("Global UBO settings", (bool*)false, ImGuiWindowFlags_AlwaysAutoResize);
-	if (ImGui::TreeNode("Ambient"))
-	{
-		float* target[3] = {
-				&ubo.ambientLightColor.x,
-				&ubo.ambientLightColor.y,
-				&ubo.ambientLightColor.z
-		};
-		ImGui::ColorEdit3("Color", target[0], ImGuiColorEditFlags_Float | ImGuiColorEditFlags_DisplayRGB);
-		ImGui::DragFloat("Ambient strength",&ubo.ambientLightColor.w, 0.001f, 0.0f, 1.0f);
-		ImGui::TreePop();
-	}
 	ImGui::Separator();
 	endWindow();
 }

@@ -7,6 +7,7 @@
 #include "backends/imgui_impl_vulkan.h"
 #include "HmckFrameInfo.h"
 #include "HmckEntity.h"
+#include "HmckScene.h"
 
 #include <exception>
 #include <deque>
@@ -32,7 +33,7 @@ namespace Hmck
 		void showWindowControls();
 		void showEntityComponents(std::shared_ptr<Entity>& entity, bool* close = (bool*)0);
 		void showEntityInspector(std::shared_ptr<Entity> entity);
-		void showGlobalSettings(SceneUbo& ubo);
+		void showGlobalSettings(Scene::SceneUbo& ubo);
 		void showLog();
 
 		// forwarding events to ImGUI

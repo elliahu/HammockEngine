@@ -10,6 +10,7 @@ namespace gltf = tinygltf;
 std::vector<std::shared_ptr<Hmck::Entity>> Hmck::Gltf::load(
 	std::string filename,
 	Device& device,
+	std::unique_ptr<DescriptorPool>& descriptorPool,
 	std::vector<Image>& images,
 	uint32_t imagesOffset,
 	std::vector<Material>& materials,
@@ -56,10 +57,10 @@ std::vector<std::shared_ptr<Hmck::Entity>> Hmck::Gltf::load(
 	const gltf::Scene& scene = model.scenes[0];
 	for (size_t i = 0; i < scene.nodes.size(); i++) {
 		loadImages(model, device, images, imagesOffset);
-		loadMaterials(model, device, materials, materialsOffset, texturesOffset);
-		loadTextures(model, device, textures, texturesOffset);
+		loadMaterials(model, device,descriptorPool, materials, materialsOffset, texturesOffset);
+		loadTextures(model, device, descriptorPool, textures, texturesOffset);
 		const gltf::Node node = model.nodes[scene.nodes[i]];
-		auto root = loadNode(node, model, materialsOffset, nullptr, vertices, indices, entities);
+		auto root = loadNode(device, descriptorPool, node, model, materialsOffset, nullptr, vertices, indices, entities);
 		roots.push_back(root);
 	}
 
@@ -100,7 +101,7 @@ void Hmck::Gltf::loadImages(gltf::Model& input,Device& device, std::vector<Image
 }
 
 
-void Hmck::Gltf::loadMaterials(gltf::Model& input, Device& device, std::vector<Material>& materials, uint32_t materialsOffset, uint32_t texturesOffset)
+void Hmck::Gltf::loadMaterials(gltf::Model& input, Device& device, std::unique_ptr<DescriptorPool>& descriptorPool, std::vector<Material>& materials, uint32_t materialsOffset, uint32_t texturesOffset)
 {
 	materials.resize(input.materials.size());
 	for (size_t i = materialsOffset; i < input.materials.size(); i++)
@@ -135,10 +136,34 @@ void Hmck::Gltf::loadMaterials(gltf::Model& input, Device& device, std::vector<M
 		materials[i].alphaCutOff = (float)glTFMaterial.alphaCutoff;
 		materials[i].doubleSided = glTFMaterial.doubleSided;
 		materials[i].name = glTFMaterial.name;
+
+		// prepare layout
+		materials[i].descriptorSetLayout = DescriptorSetLayout::Builder(device)
+			.addBinding(0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_ALL_GRAPHICS)
+			.build();
+
+		// prepare buffer
+		materials[i].buffer = std::make_unique<Buffer>(
+			device,
+			sizeof(MaterialPropertyUbo),
+			1,
+			VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
+			VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT
+			);
+		materials[i].buffer->map();
+
+		// write descriptor
+		auto materialPropertyBufferInfo = materials[i].buffer->descriptorInfo();
+		DescriptorWriter(*materials[i].descriptorSetLayout, *descriptorPool)
+			.writeBuffer(0, &materialPropertyBufferInfo)
+			.build(materials[i].descriptorSet);
+
+		// create a pipeline
+		// TODO per paterial pipeline
 	}
 }
 
-void Hmck::Gltf::loadTextures(gltf::Model& input, Device& device, std::vector<Texture>& textures, uint32_t texturesOffset)
+void Hmck::Gltf::loadTextures(gltf::Model& input, Device& device, std::unique_ptr<DescriptorPool>& descriptorPool, std::vector<Texture>& textures, uint32_t texturesOffset)
 {
 	textures.resize(input.textures.size());
 	for (size_t i = texturesOffset; i < input.textures.size(); i++) {
@@ -147,6 +172,8 @@ void Hmck::Gltf::loadTextures(gltf::Model& input, Device& device, std::vector<Te
 }
 
 std::shared_ptr<Hmck::Entity> Hmck::Gltf::loadNode(
+	Device& device,
+	std::unique_ptr<DescriptorPool>& descriptorPool,
 	const tinygltf::Node& inputNode, 
 	const tinygltf::Model& input, 
 	uint32_t materialsOffset,
@@ -155,7 +182,7 @@ std::shared_ptr<Hmck::Entity> Hmck::Gltf::loadNode(
 	std::vector<uint32_t>& indices,
 	std::vector<std::shared_ptr<Entity>>& entities)
 {
-	std::shared_ptr<Entity3D> entity = Entity3D::createEntity3D();
+	std::shared_ptr<Entity3D> entity = std::make_shared<Entity3D>(device, descriptorPool);
 	entity->parent = parent;
 	entity->name = inputNode.name;
 
@@ -195,7 +222,7 @@ std::shared_ptr<Hmck::Entity> Hmck::Gltf::loadNode(
 	{
 		for (size_t i = 0; i < inputNode.children.size(); i++) 
 		{
-			loadNode(input.nodes[inputNode.children[i]], input, materialsOffset, entity,vertices, indices, entities);
+			loadNode(device, descriptorPool, input.nodes[inputNode.children[i]], input, materialsOffset, entity,vertices, indices, entities);
 		}
 	}
 
