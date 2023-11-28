@@ -59,8 +59,8 @@ namespace Hmck
 		std::vector<Texture> textures;
 		std::vector<Material> materials;
 
-		std::unique_ptr<Buffer> vertexBuffer;
-		std::unique_ptr<Buffer> indexBuffer;
+		std::vector<Vertex> vertices{};
+		std::vector<uint32_t> indices{};
 		uint32_t vertexCount;
 		uint32_t indexCount;
 
@@ -69,12 +69,9 @@ namespace Hmck
 	private:
 
 		void loadFile(SceneLoadFileInfo loadInfo);
-		void createVertexBuffer();
-		void createIndexBuffer();
 
 		Device& device;
-		std::vector<Vertex> vertices{};
-		std::vector<uint32_t> indices{};
+		
 
 
 	};

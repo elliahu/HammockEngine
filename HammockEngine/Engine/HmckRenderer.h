@@ -112,6 +112,8 @@ namespace Hmck
 	private:
 		void createCommandBuffer();
 		void freeCommandBuffers();
+		void createVertexBuffer();
+		void createIndexBuffer();
 		void recreateSwapChain();
 		void renderEntity(
 			uint32_t frameIndex, 
@@ -122,6 +124,9 @@ namespace Hmck
 		Device& device;
 		std::unique_ptr<SwapChain> hmckSwapChain;
 		std::vector<VkCommandBuffer> commandBuffers;
+
+		std::unique_ptr<Buffer> vertexBuffer;
+		std::unique_ptr<Buffer> indexBuffer;
 
 		std::unique_ptr<Scene>& scene;
 
