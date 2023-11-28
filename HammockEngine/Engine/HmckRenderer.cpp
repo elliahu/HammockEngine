@@ -102,11 +102,11 @@ Hmck::Renderer::Renderer(Window& window, Device& device, std::unique_ptr<Scene>&
 			.debugName = "standard_forward_pass",
 			.device = device,
 			.VS {
-				.byteCode = Hmck::Filesystem::readFile("../../HammockEngine/Engine/Shaders/Compiled/volumetric.vert.spv"),
+				.byteCode = Hmck::Filesystem::readFile("../../HammockEngine/Engine/Shaders/Compiled/default_forward.vert.spv"),
 				.entryFunc = "main"
 			},
 			.FS {
-				.byteCode = Hmck::Filesystem::readFile("../../HammockEngine/Engine/Shaders/Compiled/volumetric.frag.spv"),
+				.byteCode = Hmck::Filesystem::readFile("../../HammockEngine/Engine/Shaders/Compiled/default_forward.frag.spv"),
 				.entryFunc = "main"
 			},
 			.descriptorSetLayouts = {

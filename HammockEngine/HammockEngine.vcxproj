@@ -103,6 +103,8 @@
     <None Include="build_shaders_glsl.py" />
     <None Include="build_shaders_hlsl.py" />
     <None Include="Engine\Shaders\Raw\glsl\blur.frag" />
+    <None Include="Engine\Shaders\Raw\glsl\default_forward.frag" />
+    <None Include="Engine\Shaders\Raw\glsl\default_forward.vert" />
     <None Include="Engine\Shaders\Raw\glsl\gbuffer.frag" />
     <None Include="Engine\Shaders\Raw\glsl\gbuffer.vert" />
     <None Include="Engine\Shaders\Raw\glsl\shadowmap.frag" />
@@ -112,8 +114,6 @@
     <None Include="Engine\Shaders\Raw\glsl\deferred.frag" />
     <None Include="Engine\Shaders\Raw\glsl\fullscreen.vert" />
     <None Include="Engine\Shaders\Raw\glsl\ssao.frag" />
-    <None Include="Engine\Shaders\Raw\glsl\volumetric.frag" />
-    <None Include="Engine\Shaders\Raw\glsl\volumetric.vert" />
     <None Include="packages.config" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
