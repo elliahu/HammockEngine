@@ -99,6 +99,9 @@
     <ClCompile Include="Engine\HmckEntity.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="HmckLights.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Apps\App.h">
@@ -222,6 +225,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="Engine\HmckVertex.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="HmckLights.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

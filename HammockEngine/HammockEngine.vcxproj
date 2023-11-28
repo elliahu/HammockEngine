@@ -53,6 +53,7 @@
     <ClCompile Include="External\misc\cpp\imgui_stdlib.cpp" />
     <ClCompile Include="Engine\Utils\HmckLogger.cpp" />
     <ClCompile Include="Engine\Platform\HmckInputHandler.cpp" />
+    <ClCompile Include="HmckLights.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="Apps\VolumetricRenderingApp.cpp" />
   </ItemGroup>
@@ -98,6 +99,7 @@
     <ClInclude Include="Engine\HmckFramebuffer.h" />
     <ClInclude Include="Engine\HmckGLTF.h" />
     <ClInclude Include="Apps\VolumetricRenderingApp.h" />
+    <ClInclude Include="HmckLights.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include="build_shaders_glsl.py" />

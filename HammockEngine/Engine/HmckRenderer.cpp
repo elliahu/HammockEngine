@@ -33,7 +33,7 @@ Hmck::Renderer::Renderer(Window& window, Device& device, std::unique_ptr<Scene>&
 	// prepare buffers
 	environmentBuffer = std::make_unique<Buffer>(
 		device,
-		sizeof(SceneBufferData),
+		sizeof(EnvironmentBufferData),
 		1,
 		VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
 		VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT
@@ -531,7 +531,7 @@ void Hmck::Renderer::render(
 }
 
 
-void Hmck::Renderer::writeSceneData(std::vector<Image>& images, SceneBufferData data)
+void Hmck::Renderer::writeEnvironmentData(std::vector<Image>& images, EnvironmentBufferData data)
 {
 	std::vector<VkDescriptorImageInfo> imageInfos{ images.size() };
 	for (int im = 0; im < images.size(); im++)
@@ -539,6 +539,7 @@ void Hmck::Renderer::writeSceneData(std::vector<Image>& images, SceneBufferData 
 		imageInfos[im] = images[im].texture.descriptor;
 	}
 
+	environmentBuffer->writeToBuffer(&data);
 
 	auto sceneBufferInfo = environmentBuffer->descriptorInfo();
 	DescriptorWriter(*environmentDescriptorSetLayout, *descriptorPool)
@@ -548,7 +549,7 @@ void Hmck::Renderer::writeSceneData(std::vector<Image>& images, SceneBufferData 
 
 }
 
-void Hmck::Renderer::bindSceneData( VkCommandBuffer commandBuffer)
+void Hmck::Renderer::bindEnvironmentData( VkCommandBuffer commandBuffer)
 {
 	// bind when needed
 	vkCmdBindDescriptorSets(
@@ -559,6 +560,11 @@ void Hmck::Renderer::bindSceneData( VkCommandBuffer commandBuffer)
 		&environmentDescriptorSet,
 		0,
 		nullptr);
+}
+
+void Hmck::Renderer::updateEnvironmentBuffer(EnvironmentBufferData data)
+{
+	environmentBuffer->writeToBuffer(&data);
 }
 
 

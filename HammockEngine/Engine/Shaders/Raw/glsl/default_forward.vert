@@ -34,8 +34,8 @@ void main()
 
     _uv = uv;
 
-    // vertex pos in viewspace
-	_position = vec3(scene.view * transform.model * vec4(position, 1.0));
+    // vertex pos in worldspace
+	_position = vec3(transform.model * vec4(position, 1.0));
 	_normal = mat3(transform.normal) * normalize(normal);	
 	_tangent = mat4(transform.normal) * normalize(tangent);
 }

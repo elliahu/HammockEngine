@@ -20,7 +20,7 @@
 #include "HmckPipeline.h"
 
 // black clear color
-#define HMCK_CLEAR_COLOR { 0.f,171.f / 255.f,231.f / 255.f,1.f }
+#define HMCK_CLEAR_COLOR {0.f,0.f,0.f} //{ 0.f,171.f / 255.f,231.f / 255.f,1.f }
 
 #define SHADOW_RES_WIDTH 2048
 #define SHADOW_RES_HEIGHT 2048
@@ -30,9 +30,16 @@
 
 namespace Hmck
 {
-	struct SceneBufferData
+	struct EnvironmentBufferData
 	{
-		
+		struct OmniLight
+		{
+			glm::vec4 position;
+			glm::vec4 color;
+		};
+
+		OmniLight omniLights[10]; // TODO lights should be in frame buffer data
+		uint32_t numOmniLights = 0;
 	};
 
 	struct FrameBufferData
@@ -102,8 +109,9 @@ namespace Hmck
 			uint32_t frameIndex,
 			VkCommandBuffer commandBuffer);
 
-		void writeSceneData(std::vector<Image>& images, SceneBufferData data);
-		void bindSceneData(VkCommandBuffer commandBuffer);
+		void writeEnvironmentData(std::vector<Image>& images, EnvironmentBufferData data);
+		void bindEnvironmentData(VkCommandBuffer commandBuffer);
+		void updateEnvironmentBuffer(EnvironmentBufferData data);
 		void updateFrameBuffer(uint32_t index, FrameBufferData data);
 		void updateEntityBuffer(uint32_t index, EntityBufferData data);
 		void updatePrimitiveBuffer(uint32_t index, PrimitiveBufferData data);

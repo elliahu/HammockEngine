@@ -9,17 +9,28 @@ void Hmck::VolumetricRenderingApp::run()
 {
 	// camera and movement
 	Renderer renderer{ window, device, scene };
+
 	scene->camera.setViewTarget({ 1.f, 1.f, -1.f }, { 0.f, 0.f, 0.f });
 	auto viewerObject = std::make_shared<Entity>();
 	viewerObject->transform.translation = { 1.f, 1.f, -5.f };
 	scene->addChildOfRoot(viewerObject);
-	auto root = scene->getRoot();
+
+	std::shared_ptr<OmniLight> light = std::make_shared<OmniLight>();
+	light->transform.translation = { 0.f, 5.f, 0.f };
+	scene->addChildOfRoot(light);
+
 	KeyboardMovementController cameraController{};
 
 	UserInterface ui{ device, renderer.getSwapChainRenderPass(), window };
 
 
-	renderer.writeSceneData(scene->images, {});
+	renderer.writeEnvironmentData(scene->images, {
+		.omniLights = {{
+			.position =glm::vec4(light->transform.translation, 1.0f),
+			.color = glm::vec4(light->color, 1.0f)
+		}},
+		.numOmniLights = 1
+		});
 
 
 	auto currentTime = std::chrono::high_resolution_clock::now();
@@ -54,10 +65,17 @@ void Hmck::VolumetricRenderingApp::run()
 				1.75f);
 
 
-			// TODO make this bound once
-			renderer.bindSceneData(commandBuffer);
+			renderer.updateEnvironmentBuffer({
+				.omniLights = {{
+					.position = glm::vec4(light->transform.translation, 1.0f),
+					.color = glm::vec4(light->color, 1.0f)
+				}},
+				.numOmniLights = 1
+				});
+			// TODO make this bound when data changes
+			renderer.bindEnvironmentData(commandBuffer);
 
-		
+
 			renderer.render(frameIndex, commandBuffer);
 
 
@@ -65,7 +83,7 @@ void Hmck::VolumetricRenderingApp::run()
 				ui.beginUserInterface();
 				ui.showDebugStats(viewerObject);
 				ui.showWindowControls();
-				ui.showEntityInspector(scene->getRoot()); 
+				ui.showEntityInspector(scene->getRoot());
 				ui.endUserInterface(commandBuffer);
 			}
 

@@ -41,6 +41,8 @@ namespace Hmck
 		uint32_t occlusionTextureIndex = TextureHandle::Invalid;
 		std::string alphaMode = "OPAQUE";
 		float alphaCutOff;
+		float metallicFactor = 1.f;
+		float roughnessFactor = 1.f;
 		bool doubleSided = false;
 	};
 
@@ -62,14 +64,6 @@ namespace Hmck
 	public:
 
 		Entity3D() : Entity() { visible = true; };
-
-		~Entity3D()
-		{
-			// ensures that before parent Entity is deleted, all of its children are deleted as well
-			for (auto& child : children) {
-				child = nullptr;
-			}
-		}
 
 		Mesh mesh{};
 	};

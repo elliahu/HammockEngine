@@ -21,7 +21,7 @@
 #include "IApp.h"
 #include "HmckEntity.h"
 #include "HmckScene.h"
-
+#include "HmckLights.h"
 
 #ifndef MODELS_DIR
 #define MODELS_DIR "../../Resources/Models/"

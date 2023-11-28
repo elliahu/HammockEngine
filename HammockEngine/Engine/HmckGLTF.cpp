@@ -115,8 +115,19 @@ void Hmck::Gltf::loadMaterials(gltf::Model& input, Device& device,  std::vector<
 		// Only read the most basic properties required
 		tinygltf::Material glTFMaterial = input.materials[i - materialsOffset];
 		// Get the base color factor
-		if (glTFMaterial.values.find("baseColorFactor") != glTFMaterial.values.end()) {
+		if (glTFMaterial.values.find("baseColorFactor") != glTFMaterial.values.end()) 
+		{
 			materials[i].baseColorFactor = glm::make_vec4(glTFMaterial.values["baseColorFactor"].ColorFactor().data());
+		}
+		// Get metallic factor
+		if (glTFMaterial.values.find("metallicFactor") != glTFMaterial.values.end())
+		{
+			materials[i].metallicFactor = glTFMaterial.values["metallicFactor"].Factor();
+		}
+		// Get roughness factor
+		if (glTFMaterial.values.find("roughnessFactor") != glTFMaterial.values.end())
+		{
+			materials[i].roughnessFactor = glTFMaterial.values["roughnessFactor"].Factor();
 		}
 		// Get base color texture index
 		if (glTFMaterial.values.find("baseColorTexture") != glTFMaterial.values.end()) 
