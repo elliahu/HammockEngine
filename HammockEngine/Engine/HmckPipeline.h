@@ -123,8 +123,9 @@ namespace Hmck
 		};
 
 	public:
-
+		GraphicsPipeline(GraphicsPipelineCreateInfo& createInfo);
 		static GraphicsPipeline createGraphicsPipeline(GraphicsPipelineCreateInfo createInfo);
+		static std::unique_ptr<GraphicsPipeline> createGraphicsPipelinePtr(GraphicsPipelineCreateInfo createInfo);
 		void bind(VkCommandBuffer commandBuffer);
 
 		~GraphicsPipeline();
@@ -135,7 +136,6 @@ namespace Hmck
 		VkPipelineLayout graphicsPipelineLayout;
 
 	private:
-		GraphicsPipeline(GraphicsPipelineCreateInfo& createInfo);
 		void defaultRenderPipelineConfig(GraphicsPipelineConfig& configInfo);
 		void createShaderModule(const std::vector<char>& code, VkShaderModule* shaderModule);
 		Device& device;

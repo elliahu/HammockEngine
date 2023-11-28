@@ -31,16 +31,6 @@ namespace Hmck
 		uint32_t scale;
 	};
 
-	struct MaterialPropertyUbo
-	{
-		glm::vec4 baseColorFactor;
-		uint32_t baseColorTextureIndex;
-		uint32_t normalTextureIndex;
-		uint32_t metallicRoughnessTextureIndex;
-		uint32_t occlusionTextureIndex;
-		float alphaCutoff;
-	};
-
 	struct Material
 	{
 		std::string name;
@@ -52,24 +42,6 @@ namespace Hmck
 		std::string alphaMode = "OPAQUE";
 		float alphaCutOff;
 		bool doubleSided = false;
-		std::shared_ptr<GraphicsPipeline> pipeline{};
-		std::unique_ptr<DescriptorSetLayout> descriptorSetLayout{};
-		std::unique_ptr<Buffer> buffer{};
-		VkDescriptorSet descriptorSet;
-
-		void updateBuffer()
-		{
-			MaterialPropertyUbo materialData{
-				.baseColorFactor = baseColorFactor,
-				.baseColorTextureIndex = baseColorTextureIndex,
-				.normalTextureIndex = baseColorTextureIndex,
-				.metallicRoughnessTextureIndex = metallicRoughnessTextureIndex,
-				.occlusionTextureIndex = metallicRoughnessTextureIndex,
-				.alphaCutoff = alphaCutOff
-			};
-
-			buffer->writeToBuffer(&materialData);
-		}
 	};
 
 	struct Primitive {
@@ -89,12 +61,10 @@ namespace Hmck
 	{
 	public:
 
-		Entity3D(Device& device, std::unique_ptr<DescriptorPool>& descriptorPool) : Entity(device, descriptorPool) { visible = true; };
+		Entity3D() : Entity() { visible = true; };
 
 		~Entity3D()
 		{
-			buffer = nullptr;
-			descriptorSetLayout = nullptr;
 			// ensures that before parent Entity is deleted, all of its children are deleted as well
 			for (auto& child : children) {
 				child = nullptr;

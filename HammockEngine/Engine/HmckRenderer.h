@@ -17,6 +17,7 @@
 #include "Systems/HmckUserInterface.h"
 #include "HmckFramebuffer.h"
 #include "HmckScene.h"
+#include "HmckPipeline.h"
 
 // black clear color
 #define HMCK_CLEAR_COLOR { 0.f,171.f / 255.f,231.f / 255.f,1.f }
@@ -29,12 +30,38 @@
 
 namespace Hmck
 {
+	struct SceneBufferData
+	{
+		
+	};
+
+	struct FrameBufferData
+	{
+		glm::mat4 projection{ 1.f };
+		glm::mat4 view{ 1.f };
+		glm::mat4 inverseView{ 1.f };
+	};
+
+	struct EntityBufferData
+	{
+		glm::mat4 model{ 1.f };
+		glm::mat4 normal{ 1.f };
+	};
+
+	struct PrimitiveBufferData
+	{
+		glm::vec4 baseColorFactor{ 1.0f,1.0f,1.0f,1.0f };
+		uint32_t baseColorTextureIndex = TextureHandle::Invalid;
+		uint32_t normalTextureIndex = TextureHandle::Invalid;
+		uint32_t metallicRoughnessTextureIndex = TextureHandle::Invalid;
+		uint32_t occlusionTextureIndex = TextureHandle::Invalid;
+		float alphaCutoff = 1.0f;
+	};
+
 	class Renderer
 	{
-
 	public:
-
-		Renderer(Window& window, Device& device);
+		Renderer(Window& window, Device& device, std::unique_ptr<Scene>&);
 		~Renderer();
 
 		// delete copy constructor and copy destructor
@@ -72,12 +99,14 @@ namespace Hmck
 		void endRenderPass(VkCommandBuffer commandBuffer);
 
 		void render(
-			std::unique_ptr<Scene>& scene, 
-			VkCommandBuffer commandBuffer, 
-			VkPipelineLayout pipelineLayout,
-			std::function<void(std::unique_ptr<Scene>&, VkCommandBuffer, VkPipelineLayout)> perFrameBinding,
-			std::function<void(std::shared_ptr<Entity3D>, VkCommandBuffer, VkPipelineLayout)> perEntityBinding,
-			std::function<void(uint32_t, VkCommandBuffer, VkPipelineLayout)> perMaterialBinding);
+			uint32_t frameIndex,
+			VkCommandBuffer commandBuffer);
+
+		void writeSceneData(std::vector<Image>& images, SceneBufferData data);
+		void bindSceneData(VkCommandBuffer commandBuffer);
+		void updateFrameBuffer(uint32_t index, FrameBufferData data);
+		void updateEntityBuffer(uint32_t index, EntityBufferData data);
+		void updatePrimitiveBuffer(uint32_t index, PrimitiveBufferData data);
 
 
 	private:
@@ -85,18 +114,41 @@ namespace Hmck
 		void freeCommandBuffers();
 		void recreateSwapChain();
 		void renderEntity(
-			std::unique_ptr<Scene>& scene, 
+			uint32_t frameIndex, 
 			VkCommandBuffer commandBuffer, 
-			std::shared_ptr<Entity>& entity, 
-			VkPipelineLayout pipelineLayout,
-			std::function<void(std::shared_ptr<Entity3D>, VkCommandBuffer, VkPipelineLayout)> perEntityBinding,
-			std::function<void(uint32_t, VkCommandBuffer, VkPipelineLayout)> perMaterialBinding);
+			std::shared_ptr<Entity>& entity);
 
 		Window& window;
 		Device& device;
 		std::unique_ptr<SwapChain> hmckSwapChain;
 		std::vector<VkCommandBuffer> commandBuffers;
+
+		std::unique_ptr<Scene>& scene;
+
+		// descriptors
+		std::unique_ptr<DescriptorPool> descriptorPool{};
+
+		// per scene (bound once when scene is initialized)
+		VkDescriptorSet environmentDescriptorSet;
+		std::unique_ptr<DescriptorSetLayout> environmentDescriptorSetLayout;
+		std::unique_ptr<Buffer> environmentBuffer;
+
+		// per frame
+		std::vector<VkDescriptorSet> frameDescriptorSets{ SwapChain::MAX_FRAMES_IN_FLIGHT };
+		std::unique_ptr<DescriptorSetLayout> frameDescriptorSetLayout;
+		std::vector<std::unique_ptr<Buffer>> frameBuffers{ SwapChain::MAX_FRAMES_IN_FLIGHT };
+
+		// per entity
+		std::vector<VkDescriptorSet> entityDescriptorSets;
+		std::unique_ptr<DescriptorSetLayout> entityDescriptorSetLayout;
+		std::vector<std::unique_ptr<Buffer>> entityBuffers;
 		
+		// per primitive
+		std::vector<VkDescriptorSet> primitiveDescriptorSets;
+		std::unique_ptr<DescriptorSetLayout> primitiveDescriptorSetLayout;
+		std::vector<std::unique_ptr<Buffer>> primitiveBuffers;
+
+		std::unique_ptr<GraphicsPipeline> pipeline{};
 
 		uint32_t currentImageIndex;
 		int currentFrameIndex{ 0 };

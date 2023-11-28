@@ -14,16 +14,14 @@ layout (location = 2) out vec3 _position;
 layout (location = 3) out vec4 _tangent;
 layout (location = 4) out vec3 _camera;
 
-layout (set = 0, binding = 0) uniform SceneUbo
+layout (set = 1, binding = 0) uniform SceneUbo
 {
     mat4 projection;
     mat4 view;
     mat4 inverseView;
-    mat4 depthBias;
-    vec4 ambientColor;
 } scene;
 
-layout (set = 1, binding = 0) uniform TransformUbo
+layout (set = 2, binding = 0) uniform TransformUbo
 {
     mat4 model;
     mat4 normal;

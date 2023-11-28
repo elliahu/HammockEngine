@@ -10,7 +10,6 @@ namespace gltf = tinygltf;
 std::vector<std::shared_ptr<Hmck::Entity>> Hmck::Gltf::load(
 	std::string filename,
 	Device& device,
-	std::unique_ptr<DescriptorPool>& descriptorPool,
 	std::vector<Image>& images,
 	uint32_t imagesOffset,
 	std::vector<Material>& materials,
@@ -57,10 +56,10 @@ std::vector<std::shared_ptr<Hmck::Entity>> Hmck::Gltf::load(
 	const gltf::Scene& scene = model.scenes[0];
 	for (size_t i = 0; i < scene.nodes.size(); i++) {
 		loadImages(model, device, images, imagesOffset);
-		loadMaterials(model, device,descriptorPool, materials, materialsOffset, texturesOffset);
-		loadTextures(model, device, descriptorPool, textures, texturesOffset);
+		loadMaterials(model, device, materials, materialsOffset, texturesOffset);
+		loadTextures(model, device, textures, texturesOffset);
 		const gltf::Node node = model.nodes[scene.nodes[i]];
-		auto r = loadNode(device, descriptorPool, node, model, materialsOffset, nullptr, vertices, indices, root);
+		auto r = loadNode(device, node, model, materialsOffset, nullptr, vertices, indices, root);
 		roots.push_back(r);
 	}
 
@@ -101,34 +100,12 @@ void Hmck::Gltf::loadImages(gltf::Model& input,Device& device, std::vector<Image
 }
 
 
-void Hmck::Gltf::loadMaterials(gltf::Model& input, Device& device, std::unique_ptr<DescriptorPool>& descriptorPool, std::vector<Material>& materials, uint32_t materialsOffset, uint32_t texturesOffset)
+void Hmck::Gltf::loadMaterials(gltf::Model& input, Device& device,  std::vector<Material>& materials, uint32_t materialsOffset, uint32_t texturesOffset)
 {
 	// if there is no material a default one will be created
 	if (input.materials.size() == 0)
 	{
-		materials.resize(1);
-		// prepare layout
-		materials[0].descriptorSetLayout = DescriptorSetLayout::Builder(device)
-			.addBinding(0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_ALL_GRAPHICS)
-			.build();
-
-		// prepare buffer
-		materials[0].buffer = std::make_unique<Buffer>(
-			device,
-			sizeof(MaterialPropertyUbo),
-			1,
-			VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
-			VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT
-			);
-		materials[0].buffer->map();
-
-		// write descriptor
-		auto materialPropertyBufferInfo = materials[0].buffer->descriptorInfo();
-		DescriptorWriter(*materials[0].descriptorSetLayout, *descriptorPool)
-			.writeBuffer(0, &materialPropertyBufferInfo)
-			.build(materials[0].descriptorSet);
-
-		materials[0].updateBuffer();
+		materials.push_back({});
 		return;
 	}
 
@@ -165,36 +142,10 @@ void Hmck::Gltf::loadMaterials(gltf::Model& input, Device& device, std::unique_p
 		materials[i].alphaCutOff = (float)glTFMaterial.alphaCutoff;
 		materials[i].doubleSided = glTFMaterial.doubleSided;
 		materials[i].name = glTFMaterial.name;
-
-		// prepare layout
-		materials[i].descriptorSetLayout = DescriptorSetLayout::Builder(device)
-			.addBinding(0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_ALL_GRAPHICS)
-			.build();
-
-		// prepare buffer
-		materials[i].buffer = std::make_unique<Buffer>(
-			device,
-			sizeof(MaterialPropertyUbo),
-			1,
-			VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
-			VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT
-			);
-		materials[i].buffer->map();
-
-		// write descriptor
-		auto materialPropertyBufferInfo = materials[i].buffer->descriptorInfo();
-		DescriptorWriter(*materials[i].descriptorSetLayout, *descriptorPool)
-			.writeBuffer(0, &materialPropertyBufferInfo)
-			.build(materials[i].descriptorSet);
-
-		materials[i].updateBuffer();
-
-		// create a pipeline
-		// TODO per paterial pipeline
 	}
 }
 
-void Hmck::Gltf::loadTextures(gltf::Model& input, Device& device, std::unique_ptr<DescriptorPool>& descriptorPool, std::vector<Texture>& textures, uint32_t texturesOffset)
+void Hmck::Gltf::loadTextures(gltf::Model& input, Device& device, std::vector<Texture>& textures, uint32_t texturesOffset)
 {
 	textures.resize(input.textures.size());
 	for (size_t i = texturesOffset; i < input.textures.size(); i++) {
@@ -204,7 +155,6 @@ void Hmck::Gltf::loadTextures(gltf::Model& input, Device& device, std::unique_pt
 
 std::shared_ptr<Hmck::Entity> Hmck::Gltf::loadNode(
 	Device& device,
-	std::unique_ptr<DescriptorPool>& descriptorPool,
 	const tinygltf::Node& inputNode, 
 	const tinygltf::Model& input, 
 	uint32_t materialsOffset,
@@ -213,7 +163,7 @@ std::shared_ptr<Hmck::Entity> Hmck::Gltf::loadNode(
 	std::vector<uint32_t>& indices,
 	std::shared_ptr<Entity>& root)
 {
-	std::shared_ptr<Entity3D> entity = std::make_shared<Entity3D>(device, descriptorPool);
+	std::shared_ptr<Entity3D> entity = std::make_shared<Entity3D>();
 	entity->parent = parent;
 	entity->name = inputNode.name;
 
@@ -253,7 +203,7 @@ std::shared_ptr<Hmck::Entity> Hmck::Gltf::loadNode(
 	{
 		for (size_t i = 0; i < inputNode.children.size(); i++) 
 		{
-			loadNode(device, descriptorPool, input.nodes[inputNode.children[i]], input, materialsOffset, entity,vertices, indices, root);
+			loadNode(device, input.nodes[inputNode.children[i]], input, materialsOffset, entity,vertices, indices, root);
 		}
 	}
 

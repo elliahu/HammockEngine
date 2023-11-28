@@ -257,6 +257,11 @@ Hmck::GraphicsPipeline Hmck::GraphicsPipeline::createGraphicsPipeline(GraphicsPi
 	return Hmck::GraphicsPipeline(createInfo);
 }
 
+std::unique_ptr<Hmck::GraphicsPipeline> Hmck::GraphicsPipeline::createGraphicsPipelinePtr(GraphicsPipelineCreateInfo createInfo)
+{
+	return std::make_unique<GraphicsPipeline>(createInfo);
+}
+
 void Hmck::GraphicsPipeline::bind(VkCommandBuffer commandBuffer)
 {
 	vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, graphicsPipeline);

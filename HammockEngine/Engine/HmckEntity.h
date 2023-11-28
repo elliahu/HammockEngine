@@ -22,56 +22,29 @@ namespace Hmck
 	{
 	public:
 
-		struct TransformUbo
+		Entity() : id{ currentId++ }
 		{
-			glm::mat4 model{ 1.f };
-			glm::mat4 normal{ 1.f };
-		};
-
-		Entity(Device& device, std::unique_ptr<DescriptorPool>& descriptorPool) : id{ currentId++ }, device{ device }
-		{
-			// prepare layout
-			descriptorSetLayout = DescriptorSetLayout::Builder(device)
-				.addBinding(0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_ALL_GRAPHICS)
-				.build();
-
-			// prepare buffer
-			buffer = std::make_unique<Buffer>(
-				device,
-				sizeof(TransformUbo),
-				1,
-				VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
-				VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT
-				);
-			buffer->map();
-
-			// write to descriptor
-			auto bufferInfo = buffer->descriptorInfo();
-			DescriptorWriter(*descriptorSetLayout, *descriptorPool)
-				.writeBuffer(0, &bufferInfo)
-				.build(descriptorSet);
 		}
 
 		virtual ~Entity() 
 		{
-			buffer = nullptr;
-			descriptorSetLayout = nullptr;
 			// ensures that before parent Entity is deleted, all of its children are deleted as well
 			for (auto& child : children) {
 				child = nullptr;
 			}
 		}
 
-		void updateBuffer()
+		uint32_t numberOfEntities()
 		{
-			TransformUbo transformData{
-				.model = transform.mat4(),
-				.normal = transform.normalMatrix()
-			};
-			buffer->writeToBuffer(&transformData);
+			uint32_t total = 1;
+			for (auto& child : children)
+			{
+				total += child->numberOfEntities();
+			}
+
+			return total;
 		}
 
-		Device& device;
 
 		static Id currentId;
 		Id id;
@@ -80,10 +53,6 @@ namespace Hmck
 		std::vector<std::shared_ptr<Entity>> children{};
 		TransformComponent transform{};
 		bool visible = false;
-
-		std::unique_ptr<DescriptorSetLayout> descriptorSetLayout;
-		std::unique_ptr<Buffer> buffer;
-		VkDescriptorSet descriptorSet;
 
 	};
 }

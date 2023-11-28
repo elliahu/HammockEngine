@@ -105,16 +105,6 @@ void Hmck::UserInterface::showEntityInspector(std::shared_ptr<Entity> entity)
 	endWindow();
 }
 
-void Hmck::UserInterface::showGlobalSettings(Scene::SceneUbo& ubo)
-{
-	const ImGuiWindowFlags window_flags = ImGuiWindowFlags_AlwaysAutoResize;
-	ImGui::SetNextWindowPos({ 10, 800 }, ImGuiCond_Once, { 0,0 });
-	ImGui::SetNextWindowSizeConstraints({ 300, 200 }, ImVec2(static_cast<float>(window.getExtent().width), 500));
-	beginWindow("Global UBO settings", (bool*)false, ImGuiWindowFlags_AlwaysAutoResize);
-	ImGui::Separator();
-	endWindow();
-}
-
 void Hmck::UserInterface::showLog()
 {
 	// TODO

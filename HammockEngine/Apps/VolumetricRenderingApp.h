@@ -47,6 +47,9 @@ namespace Hmck
 		virtual void load() override;
 
 		std::unique_ptr<Scene> scene{};
+
+	private:
+		bool sceneDataBound = false;
 	};
 
 }

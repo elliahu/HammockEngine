@@ -14,24 +14,24 @@ layout (location = 3) in vec4 tangent;
 layout (location = 0) out vec4 outColor;
 
 
-layout (set = 0, binding = 0) uniform SceneUbo
+layout(set = 0, binding = 1) uniform sampler2D textures[];
+
+layout (set = 1, binding = 0) uniform SceneUbo
 {
     mat4 projection;
     mat4 view;
     mat4 inverseView;
-    mat4 depthBias;
-    vec4 ambientColor;
 } scene;
 
-layout(set = 0, binding = 1) uniform sampler2D textures[];
 
-layout (set = 1, binding = 0) uniform TransformUbo
+
+layout (set = 2, binding = 0) uniform TransformUbo
 {
     mat4 model;
     mat4 normal;
 } transform;
 
-layout (set = 2, binding = 0) uniform MaterialPropertyUbo
+layout (set = 3, binding = 0) uniform MaterialPropertyUbo
 {
     vec4 baseColorFactor;
     uint baseColorTextureIndex;

@@ -1,9 +1,145 @@
 #include "HmckRenderer.h"
 
-Hmck::Renderer::Renderer(Window& window, Device& device) : window{ window }, device{ device }
+Hmck::Renderer::Renderer(Window& window, Device& device, std::unique_ptr<Scene>& scene) : window{ window }, device{ device }, scene{scene}
 {
 	recreateSwapChain();
 	createCommandBuffer();
+
+	// create descriptor pool
+	descriptorPool = DescriptorPool::Builder(device)
+		.setMaxSets(100)
+		.addPoolSize(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 2000)
+		.addPoolSize(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 2000)
+		.build();
+
+	// prepare descriptor set layouts
+	environmentDescriptorSetLayout = DescriptorSetLayout::Builder(device)
+		.addBinding(0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_ALL_GRAPHICS)
+		.addBinding(1, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_ALL_GRAPHICS, 200, VK_DESCRIPTOR_BINDING_PARTIALLY_BOUND_BIT)
+		.build();
+
+	frameDescriptorSetLayout = DescriptorSetLayout::Builder(device)
+		.addBinding(0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_ALL_GRAPHICS)
+		.build();
+
+	entityDescriptorSetLayout = DescriptorSetLayout::Builder(device)
+		.addBinding(0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_ALL_GRAPHICS)
+		.build();
+
+	primitiveDescriptorSetLayout = DescriptorSetLayout::Builder(device)
+		.addBinding(0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_ALL_GRAPHICS)
+		.build();
+
+	// prepare buffers
+	environmentBuffer = std::make_unique<Buffer>(
+		device,
+		sizeof(SceneBufferData),
+		1,
+		VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
+		VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT
+		);
+	environmentBuffer->map();
+
+
+	for (int i = 0; i < SwapChain::MAX_FRAMES_IN_FLIGHT; i++)
+	{
+		frameBuffers[i] = std::make_unique<Buffer>(
+			device,
+			sizeof(FrameBufferData),
+			1,
+			VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
+			VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT
+			);
+		frameBuffers[i]->map();
+
+		auto fbufferInfo = frameBuffers[i]->descriptorInfo();
+		DescriptorWriter(*frameDescriptorSetLayout, *descriptorPool)
+			.writeBuffer(0, &fbufferInfo)
+			.build(frameDescriptorSets[i]);
+	}
+
+	entityDescriptorSets.resize(scene->root->numberOfEntities());
+	entityBuffers.resize(scene->root->numberOfEntities());
+	for (size_t i = 0; i < entityDescriptorSets.size(); i++)
+	{
+		entityBuffers[i] = std::make_unique<Buffer>(
+			device,
+			sizeof(EntityBufferData),
+			1,
+			VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
+			VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT
+			);
+		entityBuffers[i]->map();
+
+		auto ebufferInfo = entityBuffers[i]->descriptorInfo();
+		DescriptorWriter(*entityDescriptorSetLayout, *descriptorPool)
+			.writeBuffer(0, &ebufferInfo)
+			.build(entityDescriptorSets[i]);	
+	}
+
+	primitiveDescriptorSets.resize(scene->materials.size());
+	primitiveBuffers.resize(scene->materials.size());
+	for (size_t i = 0; i < primitiveDescriptorSets.size(); i++)
+	{
+		primitiveBuffers[i] = std::make_unique<Buffer>(
+			device,
+			sizeof(PrimitiveBufferData),
+			1,
+			VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
+			VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT
+			);
+		primitiveBuffers[i]->map();
+
+		auto pbufferInfo = primitiveBuffers[i]->descriptorInfo();
+		DescriptorWriter(*primitiveDescriptorSetLayout, *descriptorPool)
+			.writeBuffer(0, &pbufferInfo)
+			.build(primitiveDescriptorSets[i]);
+	}
+
+	// create pipline
+	// TODO change this to per material pipeline
+	pipeline = GraphicsPipeline::createGraphicsPipelinePtr({
+			.debugName = "standard_forward_pass",
+			.device = device,
+			.VS {
+				.byteCode = Hmck::Filesystem::readFile("../../HammockEngine/Engine/Shaders/Compiled/volumetric.vert.spv"),
+				.entryFunc = "main"
+			},
+			.FS {
+				.byteCode = Hmck::Filesystem::readFile("../../HammockEngine/Engine/Shaders/Compiled/volumetric.frag.spv"),
+				.entryFunc = "main"
+			},
+			.descriptorSetLayouts = {
+				environmentDescriptorSetLayout->getDescriptorSetLayout(),
+				frameDescriptorSetLayout->getDescriptorSetLayout(),
+				entityDescriptorSetLayout->getDescriptorSetLayout(),
+				primitiveDescriptorSetLayout->getDescriptorSetLayout(),
+			},
+			.pushConstantRanges {
+			},
+		.graphicsState {
+			.depthTest = VK_TRUE,
+			.depthTestCompareOp = VK_COMPARE_OP_LESS_OR_EQUAL,
+			.blendAtaAttachmentStates {},
+			.vertexBufferBindings {
+				.vertexBindingDescriptions = {
+					{
+						.binding = 0,
+						.stride = sizeof(Vertex),
+						.inputRate = VK_VERTEX_INPUT_RATE_VERTEX
+					}
+				},
+				.vertexAttributeDescriptions = {
+		{0, 0, VK_FORMAT_R32G32B32_SFLOAT, offsetof(Vertex, position)},
+		{1, 0, VK_FORMAT_R32G32B32_SFLOAT, offsetof(Vertex, color)},
+		{2, 0, VK_FORMAT_R32G32B32_SFLOAT, offsetof(Vertex, normal)},
+		{3, 0, VK_FORMAT_R32G32_SFLOAT, offsetof(Vertex, uv)},
+		{4, 0, VK_FORMAT_R32G32B32_SFLOAT, offsetof(Vertex, tangent)}
+	}
+}
+},
+.renderPass = getSwapChainRenderPass()
+		});
 }
 
 Hmck::Renderer::~Renderer()
@@ -69,12 +205,9 @@ void Hmck::Renderer::recreateSwapChain()
 }
 
 void Hmck::Renderer::renderEntity(
-	std::unique_ptr<Scene>& scene,
+	uint32_t frameIndex,
 	VkCommandBuffer commandBuffer,
-	std::shared_ptr<Entity>& entity,
-	VkPipelineLayout pipelineLayout,
-	std::function<void(std::shared_ptr<Entity3D>, VkCommandBuffer, VkPipelineLayout)> perEntityBinding,
-	std::function<void(uint32_t, VkCommandBuffer, VkPipelineLayout)> perMaterialBinding)
+	std::shared_ptr<Entity>& entity)
 {
 	// don't render invisible nodes
 	if (!entity->visible) { return; }
@@ -89,13 +222,52 @@ void Hmck::Renderer::renderEntity(
 			currentParent = currentParent->parent;
 		}
 
-		perEntityBinding(std::dynamic_pointer_cast<Entity3D>(entity), commandBuffer, pipelineLayout);
+		EntityBufferData entityData{
+			.model = model,
+			.normal = glm::transpose(glm::inverse(model))
+		};
+		entityBuffers[entity->id]->writeToBuffer(&entityData);
+
+		// bind per entity
+		vkCmdBindDescriptorSets(
+			commandBuffer,
+			VK_PIPELINE_BIND_POINT_GRAPHICS,
+			pipeline->graphicsPipelineLayout,
+			2, 1,
+			&entityDescriptorSets[entity->id],
+			0,
+			nullptr);
 
 		// TODO Reduce writes by checking if material changed
-		for (Primitive& primitive : std::dynamic_pointer_cast<Entity3D>(entity)->mesh.primitives) {
+		auto _entity = std::dynamic_pointer_cast<Entity3D>(entity);
+		for (Primitive& primitive : _entity->mesh.primitives) {
 			if (primitive.indexCount > 0) {
 
-				perMaterialBinding(static_cast<uint32_t>((primitive.materialIndex == -1)? TextureHandle::Invalid : primitive.materialIndex), commandBuffer, pipelineLayout);
+				if (primitive.materialIndex >= 0)
+				{
+					Material& material = scene->materials[primitive.materialIndex];
+
+					PrimitiveBufferData pData{
+					.baseColorFactor = material.baseColorFactor,
+					.baseColorTextureIndex = (material.baseColorTextureIndex != TextureHandle::Invalid) ? scene->textures[material.baseColorTextureIndex].imageIndex : TextureHandle::Invalid,
+					.normalTextureIndex = (material.normalTextureIndex != TextureHandle::Invalid) ? scene->textures[material.normalTextureIndex].imageIndex : TextureHandle::Invalid,
+					.metallicRoughnessTextureIndex = (material.metallicRoughnessTextureIndex != TextureHandle::Invalid) ? scene->textures[material.metallicRoughnessTextureIndex].imageIndex : TextureHandle::Invalid,
+					.occlusionTextureIndex = (material.occlusionTextureIndex != TextureHandle::Invalid) ? scene->textures[material.occlusionTextureIndex].imageIndex : TextureHandle::Invalid,
+					.alphaCutoff = material.alphaCutOff
+					};
+
+					primitiveBuffers[primitive.materialIndex]->writeToBuffer(&pData);
+				}
+
+				// bind per primitive
+				vkCmdBindDescriptorSets(
+					commandBuffer,
+					VK_PIPELINE_BIND_POINT_GRAPHICS,
+					pipeline->graphicsPipelineLayout,
+					3, 1,
+					&primitiveDescriptorSets[(primitive.materialIndex >= 0 ? primitive.materialIndex : 0)],
+					0,
+					nullptr);
 
 				// draw
 				vkCmdDrawIndexed(commandBuffer, primitive.indexCount, 1, primitive.firstIndex, 0, 0);
@@ -103,7 +275,7 @@ void Hmck::Renderer::renderEntity(
 		}
 	}
 	for (auto& child : entity->children) {
-		renderEntity(scene, commandBuffer, child, pipelineLayout, perEntityBinding, perMaterialBinding);
+		renderEntity(frameIndex, commandBuffer, child);
 	}
 }
 
@@ -262,20 +434,80 @@ void Hmck::Renderer::endRenderPass(VkCommandBuffer commandBuffer)
 }
 
 void Hmck::Renderer::render(
-	std::unique_ptr<Hmck::Scene>& scene,
-	VkCommandBuffer commandBuffer,
-	VkPipelineLayout pipelineLayout,
-	std::function<void(std::unique_ptr<Scene>&, VkCommandBuffer, VkPipelineLayout)> perFrameBinding,
-	std::function<void(std::shared_ptr<Entity3D>, VkCommandBuffer, VkPipelineLayout)> perEntityBinding,
-	std::function<void(uint32_t, VkCommandBuffer, VkPipelineLayout)> perMaterialBinding)
+	uint32_t frameIndex,
+	VkCommandBuffer commandBuffer)
 {
 	VkDeviceSize offsets[] = { 0 };
 	VkBuffer buffers[] = { scene->vertexBuffer->getBuffer() };
 	vkCmdBindVertexBuffers(commandBuffer, 0, 1, buffers, offsets);
 	vkCmdBindIndexBuffer(commandBuffer, scene->indexBuffer->getBuffer(), 0, VK_INDEX_TYPE_UINT32);
 
-	perFrameBinding(scene, commandBuffer, pipelineLayout);
+	pipeline->bind(commandBuffer);
+
+	FrameBufferData data{
+		.projection = scene->camera.getProjection(),
+		.view = scene->camera.getView(),
+		.inverseView = scene->camera.getInverseView()
+	};
+	frameBuffers[frameIndex]->writeToBuffer(&data);
+
+	// bind per frame
+	vkCmdBindDescriptorSets(
+		commandBuffer,
+		VK_PIPELINE_BIND_POINT_GRAPHICS,
+		pipeline->graphicsPipelineLayout,
+		1, 1,
+		&frameDescriptorSets[frameIndex],
+		0,
+		nullptr);
 
 	// Render all nodes at top-level
-	renderEntity(scene, commandBuffer, scene->root, pipelineLayout, perEntityBinding, perMaterialBinding);
+	renderEntity(frameIndex, commandBuffer, scene->root);
+}
+
+
+void Hmck::Renderer::writeSceneData(std::vector<Image>& images, SceneBufferData data)
+{
+	std::vector<VkDescriptorImageInfo> imageInfos{ images.size() };
+	for (int im = 0; im < images.size(); im++)
+	{
+		imageInfos[im] = images[im].texture.descriptor;
+	}
+
+
+	auto sceneBufferInfo = environmentBuffer->descriptorInfo();
+	DescriptorWriter(*environmentDescriptorSetLayout, *descriptorPool)
+		.writeBuffer(0, &sceneBufferInfo)
+		.writeImages(1, imageInfos)
+		.build(environmentDescriptorSet);
+
+}
+
+void Hmck::Renderer::bindSceneData( VkCommandBuffer commandBuffer)
+{
+	// bind when needed
+	vkCmdBindDescriptorSets(
+		commandBuffer,
+		VK_PIPELINE_BIND_POINT_GRAPHICS,
+		pipeline->graphicsPipelineLayout,
+		0, 1,
+		&environmentDescriptorSet,
+		0,
+		nullptr);
+}
+
+
+void Hmck::Renderer::updateFrameBuffer(uint32_t index, FrameBufferData data)
+{
+	frameBuffers[index]->writeToBuffer(&data);
+}
+
+void Hmck::Renderer::updateEntityBuffer(uint32_t index, EntityBufferData data)
+{
+	entityBuffers[index]->writeToBuffer(&data);
+}
+
+void Hmck::Renderer::updatePrimitiveBuffer(uint32_t index, PrimitiveBufferData data)
+{
+	primitiveBuffers[index]->writeToBuffer(&data);
 }

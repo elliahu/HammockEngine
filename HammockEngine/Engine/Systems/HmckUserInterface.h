@@ -8,6 +8,7 @@
 #include "HmckFrameInfo.h"
 #include "HmckEntity.h"
 #include "HmckScene.h"
+#include "HmckRenderer.h"
 
 #include <exception>
 #include <deque>
@@ -33,7 +34,6 @@ namespace Hmck
 		void showWindowControls();
 		void showEntityComponents(std::shared_ptr<Entity>& entity, bool* close = (bool*)0);
 		void showEntityInspector(std::shared_ptr<Entity> entity);
-		void showGlobalSettings(Scene::SceneUbo& ubo);
 		void showLog();
 
 		// forwarding events to ImGUI

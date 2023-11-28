@@ -3,15 +3,14 @@
 Hmck::VolumetricRenderingApp::VolumetricRenderingApp()
 {
 	load();
-	//VK_DESCRIPTOR_BINDING_PARTIALLY_BOUND_BIT | VK_DESCRIPTOR_BINDING_UPDATE_AFTER_BIND_BIT
 }
 
 void Hmck::VolumetricRenderingApp::run()
 {
 	// camera and movement
-	Camera camera{};
-	camera.setViewTarget({ 1.f, 1.f, -1.f }, { 0.f, 0.f, 0.f });
-	auto viewerObject = std::make_shared<Entity>(device, scene->descriptorPool);
+	Renderer renderer{ window, device, scene };
+	scene->camera.setViewTarget({ 1.f, 1.f, -1.f }, { 0.f, 0.f, 0.f });
+	auto viewerObject = std::make_shared<Entity>();
 	viewerObject->transform.translation = { 1.f, 1.f, -5.f };
 	scene->addChildOfRoot(viewerObject);
 	auto root = scene->getRoot();
@@ -19,50 +18,8 @@ void Hmck::VolumetricRenderingApp::run()
 
 	UserInterface ui{ device, renderer.getSwapChainRenderPass(), window };
 
-	GraphicsPipeline standardPipeline = GraphicsPipeline::createGraphicsPipeline(
-		{
-			.debugName = "standard_forward_pass",
-			.device = device,
-			.VS {
-				.byteCode = Hmck::Filesystem::readFile("../../HammockEngine/Engine/Shaders/Compiled/volumetric.vert.spv"),
-				.entryFunc = "main"
-			},
-			.FS {
-				.byteCode = Hmck::Filesystem::readFile("../../HammockEngine/Engine/Shaders/Compiled/volumetric.frag.spv"),
-				.entryFunc = "main"
-			},
-			.descriptorSetLayouts = {
-				scene->descriptorSetLayout->getDescriptorSetLayout(),
-				viewerObject->descriptorSetLayout->getDescriptorSetLayout(),
-				scene->materials[0].descriptorSetLayout->getDescriptorSetLayout() // all materials have same layout for now
-			},
-			.pushConstantRanges {
-			},
-		.graphicsState {
-			.depthTest = VK_TRUE,
-			.depthTestCompareOp = VK_COMPARE_OP_LESS_OR_EQUAL,
-			.blendAtaAttachmentStates {},
-			.vertexBufferBindings {
-				.vertexBindingDescriptions = {
-					{
-						.binding = 0,
-						.stride = sizeof(Vertex),
-						.inputRate = VK_VERTEX_INPUT_RATE_VERTEX
-					}
-				},
-				.vertexAttributeDescriptions = {
-		{0, 0, VK_FORMAT_R32G32B32_SFLOAT, offsetof(Vertex, position)},
-		{1, 0, VK_FORMAT_R32G32B32_SFLOAT, offsetof(Vertex, color)},
-		{2, 0, VK_FORMAT_R32G32B32_SFLOAT, offsetof(Vertex, normal)},
-		{3, 0, VK_FORMAT_R32G32_SFLOAT, offsetof(Vertex, uv)},
-		{4, 0, VK_FORMAT_R32G32B32_SFLOAT, offsetof(Vertex, tangent)}
-	}
-}
-},
-.renderPass = renderer.getSwapChainRenderPass()
-		}
-	);
 
+	renderer.writeSceneData(scene->images, {});
 
 
 	auto currentTime = std::chrono::high_resolution_clock::now();
@@ -78,9 +35,9 @@ void Hmck::VolumetricRenderingApp::run()
 
 		// camera
 		cameraController.moveInPlaneXZ(window, frameTime, viewerObject);
-		camera.setViewYXZ(viewerObject->transform.translation, viewerObject->transform.rotation);
+		scene->camera.setViewYXZ(viewerObject->transform.translation, viewerObject->transform.rotation);
 		float aspect = renderer.getAspectRatio();
-		camera.setPerspectiveProjection(glm::radians(50.0f), aspect, 0.1f, 1000.f);
+		scene->camera.setPerspectiveProjection(glm::radians(50.0f), aspect, 0.1f, 1000.f);
 
 		// start a new frame
 		if (auto commandBuffer = renderer.beginFrame())
@@ -90,74 +47,18 @@ void Hmck::VolumetricRenderingApp::run()
 			// on screen rendering
 			renderer.beginSwapChainRenderPass(commandBuffer);
 
-			standardPipeline.bind(commandBuffer);
-
 			vkCmdSetDepthBias(
 				commandBuffer,
 				1.25f,
 				0.0f,
 				1.75f);
 
+
+			// TODO make this bound once
+			renderer.bindSceneData(commandBuffer);
+
 		
-			renderer.render(
-				scene,
-				commandBuffer,
-				standardPipeline.graphicsPipelineLayout,
-				// per frame
-				[&camera, &frameIndex](std::unique_ptr<Scene>& scene, VkCommandBuffer commandBuffer, VkPipelineLayout pipelineLayout)
-				{
-					Scene::SceneUbo sceneData{
-						.projection = camera.getProjection(),
-						.view = camera.getView(),
-						.inverseView = camera.getInverseView()
-						};
-					scene->sceneBuffers[frameIndex]->writeToBuffer(&sceneData);
-
-					vkCmdBindDescriptorSets(
-						commandBuffer,
-						VK_PIPELINE_BIND_POINT_GRAPHICS,
-						pipelineLayout,
-						0, 1,
-						&scene->descriptorSets[frameIndex],
-						0,
-						nullptr);
-				},
-				// per entity
-				[](std::shared_ptr<Entity3D> entity, VkCommandBuffer commandBuffer, VkPipelineLayout pipelineLayout)
-				{
-					entity->updateBuffer();
-
-					vkCmdBindDescriptorSets(
-						commandBuffer,
-						VK_PIPELINE_BIND_POINT_GRAPHICS,
-						pipelineLayout,
-						1, 1,
-						&entity->descriptorSet,
-						0,
-						nullptr);
-				},
-				// per material
-				[&](uint32_t materialIndex, VkCommandBuffer commandBuffer, VkPipelineLayout pipelineLayout)
-				{
-					// TODO per material pipeline in the future
-
-					// if the materialInedx is invalid, use default one
-					if (materialIndex == TextureHandle::Invalid)
-					{
-						materialIndex = 0;
-					}
-
-					scene->materials[materialIndex].updateBuffer();
-
-					vkCmdBindDescriptorSets(
-						commandBuffer,
-						VK_PIPELINE_BIND_POINT_GRAPHICS,
-						pipelineLayout,
-						2, 1,
-						&scene->materials[materialIndex].descriptorSet,
-						0,
-						nullptr);
-				});
+			renderer.render(frameIndex, commandBuffer);
 
 
 			{
@@ -173,8 +74,6 @@ void Hmck::VolumetricRenderingApp::run()
 		}
 
 		vkDeviceWaitIdle(device.device());
-
-		// destroy allocated stuff here
 	}
 }
 
