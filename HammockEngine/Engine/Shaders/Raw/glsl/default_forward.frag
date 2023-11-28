@@ -133,6 +133,15 @@ vec3 Uncharted2Tonemap(vec3 x)
 void main()
 {
     vec3 N = normalize(normal);
+	if(material.normalTextureIndex != INVALID_TEXTURE)
+	{
+		vec3 N = normalize(normal);
+		vec3 T = normalize(tangent).xyz;
+		vec3 B = cross(normal, tangent.xyz) * tangent.w;
+		mat3 TBN = mat3(T, B, N);
+		N = TBN * normalize(texture(textures[material.normalTextureIndex], uv).rgb * 2.0 - vec3(1.0));
+	}
+
 	vec3 V = normalize(scene.inverseView[3].xyz - position);
 
 	vec3 albedo;

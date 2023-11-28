@@ -12,7 +12,6 @@ layout (location = 0) out vec3 _normal;
 layout (location = 1) out vec2 _uv;
 layout (location = 2) out vec3 _position;
 layout (location = 3) out vec4 _tangent;
-layout (location = 4) out vec3 _camera;
 
 layout (set = 1, binding = 0) uniform SceneUbo
 {
