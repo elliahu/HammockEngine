@@ -103,7 +103,7 @@ void Hmck::VolumetricRenderingApp::load()
 		.name = "Volumetric scene",
 		.loadFiles = {
 			{
-				.filename = std::string(MODELS_DIR) + "helmet/helmet.glb",
+				.filename = std::string(MODELS_DIR) + "sponza/sponza.glb",
 			}
 		}
 	};
