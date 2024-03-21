@@ -10,65 +10,6 @@
 
 namespace Hmck 
 {
-	struct PipelineConfigInfo
-	{
-		PipelineConfigInfo() = default;
-		PipelineConfigInfo(const PipelineConfigInfo&) = delete;
-		PipelineConfigInfo& operator=(const PipelineConfigInfo&) = delete;
-
-		std::vector<VkVertexInputBindingDescription> bindingDescriptions{};
-		std::vector<VkVertexInputAttributeDescription> attributeDescriptions{};
-		VkPipelineViewportStateCreateInfo viewportInfo;
-		VkPipelineInputAssemblyStateCreateInfo inputAssemblyInfo;
-		VkPipelineRasterizationStateCreateInfo rasterizationInfo;
-		VkPipelineMultisampleStateCreateInfo multisampleInfo;
-		VkPipelineColorBlendAttachmentState colorBlendAttachment;
-		VkPipelineColorBlendStateCreateInfo colorBlendInfo;
-		VkPipelineDepthStencilStateCreateInfo depthStencilInfo;
-		std::vector<VkDynamicState> dynamicStateEnables;
-		VkPipelineDynamicStateCreateInfo dynamicStateInfo;
-		VkPipelineLayout pipelineLayout = nullptr;
-		VkRenderPass renderPass = nullptr;
-		uint32_t subpass = 0;
-	};
-
-
-	class Pipeline
-	{
-	public:
-		Pipeline(
-			Device& device, 
-			const std::string& vertexShaderFilePath, 
-			const std::string& fragmentShaderFilePath, 
-			const PipelineConfigInfo& configInfo);
-		~Pipeline();
-
-		Pipeline(const Pipeline&) = delete;
-		Pipeline& operator =(const Pipeline&) = delete;
-
-		static void defaultHmckPipelineConfigInfo(PipelineConfigInfo& configInfo);
-		static void enableAlphaBlending(PipelineConfigInfo& configInfo);
-		static void enablePolygonModeLine(PipelineConfigInfo& configInfo);
-		static void enableGbuffer(PipelineConfigInfo& configInfo, std::array<VkPipelineColorBlendAttachmentState, 4> blendAttachmentStates);
-		static void disableDepthTest(PipelineConfigInfo& configInfo);
-
-		void bind(VkCommandBuffer commandBuffer);
-
-	private:
-		static std::vector<char> readFile(const std::string& filePath);
-
-		void createGraphicsPipeline(const std::string& vertexShaderFilePath, 
-			const std::string& fragmentShaderFilePath, 
-			const PipelineConfigInfo& configInfo);
-		
-		void createShaderModule(const std::vector<char>& code, VkShaderModule* shaderModule);
-		
-		Device& device; // TODO potentionaly memmory unsafe
-		VkPipeline graphicsPipeline;
-		VkShaderModule vertShaderModule;
-		VkShaderModule fragShaderModule;
-	};
-
 	class GraphicsPipeline
 	{
 		struct GraphicsPipelineConfig

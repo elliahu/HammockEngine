@@ -170,9 +170,6 @@
     <ClInclude Include="Engine\Controllers\KeyboardMovementController.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="Engine\Systems\HmckIRenderSystem.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="Engine\Platform\HmckWindow.h">
       <Filter>Header Files</Filter>
     </ClInclude>

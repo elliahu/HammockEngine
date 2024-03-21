@@ -149,7 +149,7 @@ namespace Hmck
 		// per frame
 		std::vector<VkDescriptorSet> frameDescriptorSets{ SwapChain::MAX_FRAMES_IN_FLIGHT };
 		std::unique_ptr<DescriptorSetLayout> frameDescriptorSetLayout;
-		std::vector<std::unique_ptr<Buffer>> frameBuffers{ SwapChain::MAX_FRAMES_IN_FLIGHT };
+		std::vector<std::unique_ptr<Buffer>> frameBuffers{ SwapChain::MAX_FRAMES_IN_FLIGHT }; // TODO this is misleading as these ara data buffers but name suggests these are actual framebbuffers
 
 		// per entity
 		std::vector<VkDescriptorSet> entityDescriptorSets;
@@ -161,7 +161,10 @@ namespace Hmck
 		std::unique_ptr<DescriptorSetLayout> primitiveDescriptorSetLayout;
 		std::vector<std::unique_ptr<Buffer>> primitiveBuffers;
 
-		std::unique_ptr<GraphicsPipeline> pipeline{};
+		// pipelines
+		std::unique_ptr<GraphicsPipeline> forwardPipeline{};
+		std::unique_ptr<GraphicsPipeline> gbufferPipeline{};
+		std::unique_ptr<GraphicsPipeline> defferedPipeline{};
 
 		uint32_t currentImageIndex;
 		int currentFrameIndex{ 0 };

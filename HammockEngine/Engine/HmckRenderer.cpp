@@ -98,7 +98,7 @@ Hmck::Renderer::Renderer(Window& window, Device& device, std::unique_ptr<Scene>&
 
 	// create pipline
 	// TODO change this to per material pipeline
-	pipeline = GraphicsPipeline::createGraphicsPipelinePtr({
+	forwardPipeline = GraphicsPipeline::createGraphicsPipelinePtr({
 			.debugName = "standard_forward_pass",
 			.device = device,
 			.VS {
@@ -297,7 +297,7 @@ void Hmck::Renderer::renderEntity(
 		vkCmdBindDescriptorSets(
 			commandBuffer,
 			VK_PIPELINE_BIND_POINT_GRAPHICS,
-			pipeline->graphicsPipelineLayout,
+			forwardPipeline->graphicsPipelineLayout,
 			2, 1,
 			&entityDescriptorSets[entity->id],
 			0,
@@ -328,7 +328,7 @@ void Hmck::Renderer::renderEntity(
 				vkCmdBindDescriptorSets(
 					commandBuffer,
 					VK_PIPELINE_BIND_POINT_GRAPHICS,
-					pipeline->graphicsPipelineLayout,
+					forwardPipeline->graphicsPipelineLayout,
 					3, 1,
 					&primitiveDescriptorSets[(primitive.materialIndex >= 0 ? primitive.materialIndex : 0)],
 					0,
@@ -507,7 +507,7 @@ void Hmck::Renderer::render(
 	vkCmdBindVertexBuffers(commandBuffer, 0, 1, buffers, offsets);
 	vkCmdBindIndexBuffer(commandBuffer, indexBuffer->getBuffer(), 0, VK_INDEX_TYPE_UINT32);
 
-	pipeline->bind(commandBuffer);
+	forwardPipeline->bind(commandBuffer);
 
 	FrameBufferData data{
 		.projection = scene->camera.getProjection(),
@@ -520,7 +520,7 @@ void Hmck::Renderer::render(
 	vkCmdBindDescriptorSets(
 		commandBuffer,
 		VK_PIPELINE_BIND_POINT_GRAPHICS,
-		pipeline->graphicsPipelineLayout,
+		forwardPipeline->graphicsPipelineLayout,
 		1, 1,
 		&frameDescriptorSets[frameIndex],
 		0,
@@ -555,7 +555,7 @@ void Hmck::Renderer::bindEnvironmentData( VkCommandBuffer commandBuffer)
 	vkCmdBindDescriptorSets(
 		commandBuffer,
 		VK_PIPELINE_BIND_POINT_GRAPHICS,
-		pipeline->graphicsPipelineLayout,
+		forwardPipeline->graphicsPipelineLayout,
 		0, 1,
 		&environmentDescriptorSet,
 		0,

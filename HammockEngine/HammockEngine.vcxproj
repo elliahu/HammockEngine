@@ -75,7 +75,6 @@
     <ClInclude Include="Engine\HmckTexture.h" />
     <ClInclude Include="Engine\Platform\HmckWindow.h" />
     <ClInclude Include="Engine\HmckVertex.h" />
-    <ClInclude Include="Engine\Systems\HmckIRenderSystem.h" />
     <ClInclude Include="Engine\HmckSwapChain.h" />
     <ClInclude Include="Engine\HmckUtils.h" />
     <ClInclude Include="Engine\Systems\HmckUserInterface.h" />
