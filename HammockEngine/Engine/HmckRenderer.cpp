@@ -1,6 +1,6 @@
 #include "HmckRenderer.h"
 
-Hmck::Renderer::Renderer(Window& window, Device& device, std::unique_ptr<Scene>& scene) : window{ window }, device{ device }, scene{scene}
+Hmck::Renderer::Renderer(Window& window, Device& device, std::unique_ptr<Scene>& scene) : window{ window }, device{ device }, scene{ scene }
 {
 	recreateSwapChain();
 	createCommandBuffer();
@@ -74,7 +74,7 @@ Hmck::Renderer::Renderer(Window& window, Device& device, std::unique_ptr<Scene>&
 		auto ebufferInfo = entityBuffers[i]->descriptorInfo();
 		DescriptorWriter(*entityDescriptorSetLayout, *descriptorPool)
 			.writeBuffer(0, &ebufferInfo)
-			.build(entityDescriptorSets[i]);	
+			.build(entityDescriptorSets[i]);
 	}
 
 	primitiveDescriptorSets.resize(scene->materials.size());
@@ -101,45 +101,51 @@ Hmck::Renderer::Renderer(Window& window, Device& device, std::unique_ptr<Scene>&
 	forwardPipeline = GraphicsPipeline::createGraphicsPipelinePtr({
 			.debugName = "standard_forward_pass",
 			.device = device,
-			.VS {
+			.VS
+			{
 				.byteCode = Hmck::Filesystem::readFile("../../HammockEngine/Engine/Shaders/Compiled/default_forward.vert.spv"),
 				.entryFunc = "main"
 			},
-			.FS {
+			.FS 
+			{
 				.byteCode = Hmck::Filesystem::readFile("../../HammockEngine/Engine/Shaders/Compiled/default_forward.frag.spv"),
 				.entryFunc = "main"
 			},
-			.descriptorSetLayouts = {
+			.descriptorSetLayouts = 
+			{
 				environmentDescriptorSetLayout->getDescriptorSetLayout(),
 				frameDescriptorSetLayout->getDescriptorSetLayout(),
 				entityDescriptorSetLayout->getDescriptorSetLayout(),
 				primitiveDescriptorSetLayout->getDescriptorSetLayout(),
 			},
-			.pushConstantRanges {
-			},
-		.graphicsState {
-			.depthTest = VK_TRUE,
-			.depthTestCompareOp = VK_COMPARE_OP_LESS_OR_EQUAL,
-			.blendAtaAttachmentStates {},
-			.vertexBufferBindings {
-				.vertexBindingDescriptions = {
+			.pushConstantRanges {},
+			.graphicsState 
+			{
+				.depthTest = VK_TRUE,
+				.depthTestCompareOp = VK_COMPARE_OP_LESS_OR_EQUAL,
+				.blendAtaAttachmentStates {},
+				.vertexBufferBindings 
+				{
+					.vertexBindingDescriptions = 
 					{
-						.binding = 0,
-						.stride = sizeof(Vertex),
-						.inputRate = VK_VERTEX_INPUT_RATE_VERTEX
+						{
+							.binding = 0,
+							.stride = sizeof(Vertex),
+							.inputRate = VK_VERTEX_INPUT_RATE_VERTEX
+						}
+					},
+					.vertexAttributeDescriptions = 
+					{
+						{0, 0, VK_FORMAT_R32G32B32_SFLOAT, offsetof(Vertex, position)},
+						{1, 0, VK_FORMAT_R32G32B32_SFLOAT, offsetof(Vertex, color)},
+						{2, 0, VK_FORMAT_R32G32B32_SFLOAT, offsetof(Vertex, normal)},
+						{3, 0, VK_FORMAT_R32G32_SFLOAT, offsetof(Vertex, uv)},
+						{4, 0, VK_FORMAT_R32G32B32_SFLOAT, offsetof(Vertex, tangent)}
 					}
-				},
-				.vertexAttributeDescriptions = {
-		{0, 0, VK_FORMAT_R32G32B32_SFLOAT, offsetof(Vertex, position)},
-		{1, 0, VK_FORMAT_R32G32B32_SFLOAT, offsetof(Vertex, color)},
-		{2, 0, VK_FORMAT_R32G32B32_SFLOAT, offsetof(Vertex, normal)},
-		{3, 0, VK_FORMAT_R32G32_SFLOAT, offsetof(Vertex, uv)},
-		{4, 0, VK_FORMAT_R32G32B32_SFLOAT, offsetof(Vertex, tangent)}
-	}
-}
-},
-.renderPass = getSwapChainRenderPass()
-		});
+				}
+			},
+			.renderPass = getSwapChainRenderPass()
+	});
 
 	// create vertex & index buffer
 	createVertexBuffer();
@@ -549,7 +555,7 @@ void Hmck::Renderer::writeEnvironmentData(std::vector<Image>& images, Environmen
 
 }
 
-void Hmck::Renderer::bindEnvironmentData( VkCommandBuffer commandBuffer)
+void Hmck::Renderer::bindEnvironmentData(VkCommandBuffer commandBuffer)
 {
 	// bind when needed
 	vkCmdBindDescriptorSets(
