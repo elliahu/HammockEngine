@@ -156,6 +156,20 @@ namespace Hmck
 			return fb;
 		}
 
+		static std::unique_ptr<Framebuffer> createFramebufferPtr(FramebufferCreateInfo createInfo)
+		{
+			std::unique_ptr<Framebuffer> fb = std::make_unique<Framebuffer>( createInfo.device );
+			fb->width = createInfo.width;
+			fb->height = createInfo.height;
+			checkResult(fb->createSampler(createInfo.sampler.magFilter, createInfo.sampler.minFilter, createInfo.sampler.addressMode));
+			for (FramebufferAttachmentCreateInfo& at : createInfo.attachments)
+			{
+				fb->addAttachment(at);
+			}
+			checkResult(fb->createRenderPass());
+			return fb;
+		}
+
 		/**
 		* Add a new attachment described by createinfo to the framebuffer's attachment list
 		*

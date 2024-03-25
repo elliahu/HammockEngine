@@ -1,5 +1,6 @@
 #version 450
 #extension GL_EXT_nonuniform_qualifier : enable
+#define INVALID_TEXTURE 4294967295
 // inputs
 layout (location = 0) in vec3 normal;
 layout (location = 1) in vec2 uv;
@@ -12,26 +13,46 @@ layout (location = 1) out vec4 _albedo;
 layout (location = 2) out vec4 _normal;
 layout (location = 3) out vec4 _material;
 
+struct OmniLight
+{
+    vec4 position;
+    vec4 color;
+};
 
-layout(set = 1, binding = 0) uniform sampler2D albedoSampler;
-layout(set = 1, binding = 1) uniform sampler2D normSampler;
-layout(set = 1, binding = 2) uniform sampler2D roughMetalSampler;
-layout(set = 1, binding = 3) uniform sampler2D occlusionSampler;
+layout(set = 0, binding = 0) uniform Environment
+{
+    OmniLight omniLights[10];
+    uint numOmniLights;
+} env;
 
-layout(set = 2, binding = 0) uniform sampler2D textures[];
+layout(set = 0, binding = 1) uniform sampler2D textures[];
 
-layout (set = 0, binding = 0) uniform GlobalUbo
+layout (set = 1, binding = 0) uniform SceneUbo
 {
     mat4 projection;
     mat4 view;
-} ubo;
+    mat4 inverseView;
+} scene;
 
-// push constants
-layout (push_constant) uniform Push
+
+
+layout (set = 2, binding = 0) uniform TransformUbo
 {
-    mat4 modelMatrix; // model matrix
-    mat4 normalMatrix; // using mat4 bcs alignment requirements
-} push;
+    mat4 model;
+    mat4 normal;
+} transform;
+
+layout (set = 3, binding = 0) uniform MaterialPropertyUbo
+{
+    vec4 baseColorFactor;
+    uint baseColorTextureIndex;
+    uint normalTextureIndex;
+    uint metallicRoughnessTextureIndex;
+    uint occlusionTextureIndex;
+    float alphaCutoff;
+	float metallicFactor;
+	float roughnessFactor;
+} material;
 
 
 layout (constant_id = 0) const bool ALPHA_MASK = true;
@@ -48,20 +69,43 @@ float linearDepth(float depth)
 void main()
 {
     _position = vec4(position, linearDepth(gl_FragCoord.z));
-    _albedo = texture(albedoSampler, uv);
-    _material = vec4(texture(roughMetalSampler, uv).g, texture(roughMetalSampler, uv).b, texture(occlusionSampler, uv).r, 1.0);
 
-    if (ALPHA_MASK) {
-		if (_albedo.a < ALPHA_MASK_CUTOFF) {
-			discard;
-		}
+	if(material.baseColorTextureIndex == INVALID_TEXTURE)
+		_albedo = vec4(material.baseColorFactor.rgb,1);
+	else 
+		_albedo = vec4(pow(texture(textures[material.baseColorTextureIndex], uv).rgb, vec3(2.2)),1);
+
+    float roughness;
+	if(material.metallicRoughnessTextureIndex == INVALID_TEXTURE)
+		roughness = material.roughnessFactor;
+	else
+		roughness = texture(textures[material.metallicRoughnessTextureIndex], uv).g;
+
+	float metallic;
+	if(material.metallicRoughnessTextureIndex == INVALID_TEXTURE)
+		metallic = material.metallicFactor;
+	else
+		metallic = texture(textures[material.metallicRoughnessTextureIndex], uv).b;
+
+    _material = vec4(roughness, metallic, 0.0, 1.0);
+
+	if (_albedo.a < material.alphaCutoff) {
+		discard;
 	}
 
-    // Calculate normal in tangent space
-	vec3 N = normalize(normal);
-	vec3 T = normalize(tangent).xyz;
-	vec3 B = cross(normal, tangent.xyz) * tangent.w;
-	mat3 TBN = mat3(T, B, N);
-    vec3 tnorm = TBN * normalize(texture(normSampler, uv).xyz * 2.0 - vec3(1.0));
-	_normal = vec4(normalize(tnorm), 1.0);
+
+    vec3 N = normal;
+	if(material.normalTextureIndex != INVALID_TEXTURE)
+	{
+		vec3 N = normalize(normal);
+		vec3 T = normalize(tangent).xyz;
+		vec3 B = cross(normal, tangent.xyz) * tangent.w;
+		mat3 TBN = mat3(T, B, N);
+		_normal = vec4(TBN * normalize(texture(textures[material.normalTextureIndex], uv).xyz * 2.0 - vec3(1.0)),1.0);
+	}
+	else
+	{
+		_normal = vec4(N, 1.0);
+	}
+	
 }

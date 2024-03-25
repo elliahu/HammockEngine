@@ -13,29 +13,30 @@ layout (location = 1) out vec2 _uv;
 layout (location = 2) out vec3 _position;
 layout (location = 3) out vec4 _tangent;
 
-layout (set = 0, binding = 0) uniform GlobalUbo
+layout (set = 1, binding = 0) uniform SceneUbo
 {
     mat4 projection;
     mat4 view;
-} ubo;
+    mat4 inverseView;
+} scene;
 
-// push constants
-layout (push_constant) uniform Push
+layout (set = 2, binding = 0) uniform TransformUbo
 {
-    mat4 modelMatrix; // model matrix
-    mat4 normalMatrix; // using mat4 bcs alignment requirements
-} push;
+    mat4 model;
+    mat4 normal;
+} transform;
+
 
 void main()
 {
-	gl_Position = ubo.projection * ubo.view * push.modelMatrix * vec4(position, 1.0);
+	gl_Position = scene.projection * scene.view * transform.model * vec4(position, 1.0);
 	_uv = uv;
 
     // vertex pos in viewspace
-	_position = vec3(ubo.view * push.modelMatrix * vec4(position, 1.0));
+	_position = vec3(scene.view * transform.model * vec4(position, 1.0));
 
     // normal in view space
-    mat3 normalMatrix = transpose(inverse(mat3(ubo.view * push.modelMatrix)));
+    mat3 normalMatrix = transpose(inverse(mat3(scene.view * transform.model)));
 	_normal = normalMatrix * normalize(normal);	
 	_tangent = mat4(normalMatrix) * normalize(tangent);
 }

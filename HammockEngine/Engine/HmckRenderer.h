@@ -18,6 +18,7 @@
 #include "HmckFramebuffer.h"
 #include "HmckScene.h"
 #include "HmckPipeline.h"
+#include "Apps/IApp.h"
 
 // black clear color
 #define HMCK_CLEAR_COLOR {0.f,0.f,0.f} //{ 0.f,171.f / 255.f,231.f / 255.f,1.f }
@@ -105,7 +106,11 @@ namespace Hmck
 			std::vector<VkClearValue> clearValues);
 		void endRenderPass(VkCommandBuffer commandBuffer);
 
-		void render(
+		void renderForward(
+			uint32_t frameIndex,
+			VkCommandBuffer commandBuffer);
+
+		void renderDeffered(
 			uint32_t frameIndex,
 			VkCommandBuffer commandBuffer);
 
@@ -138,7 +143,7 @@ namespace Hmck
 
 		std::unique_ptr<Scene>& scene;
 
-		// descriptors
+		// DESCRIPTORS
 		std::unique_ptr<DescriptorPool> descriptorPool{};
 
 		// per scene (bound once when scene is initialized)
@@ -152,19 +157,29 @@ namespace Hmck
 		std::vector<std::unique_ptr<Buffer>> frameBuffers{ SwapChain::MAX_FRAMES_IN_FLIGHT }; // TODO this is misleading as these ara data buffers but name suggests these are actual framebbuffers
 
 		// per entity
-		std::vector<VkDescriptorSet> entityDescriptorSets;
+		std::vector<VkDescriptorSet> entityDescriptorSets{ SwapChain::MAX_FRAMES_IN_FLIGHT };
 		std::unique_ptr<DescriptorSetLayout> entityDescriptorSetLayout;
-		std::vector<std::unique_ptr<Buffer>> entityBuffers;
+		std::vector<std::unique_ptr<Buffer>> entityBuffers{ SwapChain::MAX_FRAMES_IN_FLIGHT };
 		
 		// per primitive
-		std::vector<VkDescriptorSet> primitiveDescriptorSets;
+		std::vector<VkDescriptorSet> primitiveDescriptorSets{ SwapChain::MAX_FRAMES_IN_FLIGHT };
 		std::unique_ptr<DescriptorSetLayout> primitiveDescriptorSetLayout;
-		std::vector<std::unique_ptr<Buffer>> primitiveBuffers;
+		std::vector<std::unique_ptr<Buffer>> primitiveBuffers{ SwapChain::MAX_FRAMES_IN_FLIGHT };
+
+		// gbuffer descriptors
+		std::vector<VkDescriptorSet> gbufferDescriptorSets{ SwapChain::MAX_FRAMES_IN_FLIGHT };
+		std::unique_ptr<DescriptorSetLayout> gbufferDescriptorSetLayout;
+
+
+		// renderpasses and framebuffers
+		std::unique_ptr<Framebuffer> gbufferFramebuffer{}; // TODO probably shoul be bufferd as well
 
 		// pipelines
-		std::unique_ptr<GraphicsPipeline> forwardPipeline{};
-		std::unique_ptr<GraphicsPipeline> gbufferPipeline{};
-		std::unique_ptr<GraphicsPipeline> defferedPipeline{};
+		std::unique_ptr<GraphicsPipeline> forwardPipeline{}; // uses swapchain render pass
+		std::unique_ptr<GraphicsPipeline> gbufferPipeline{}; // uses gbufferFramebuffer render pass
+		std::unique_ptr<GraphicsPipeline> defferedPipeline{};// uses swapchain render pass
+
+
 
 		uint32_t currentImageIndex;
 		int currentFrameIndex{ 0 };

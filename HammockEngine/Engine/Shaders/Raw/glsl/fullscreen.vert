@@ -10,31 +10,18 @@ layout (location = 4) in vec4 tangent;
 //outputs
 layout (location = 0) out vec2 _uv;
 
-struct PointLight
-{
-    vec4 position;
-    vec4 color;
-    vec4 terms;
-};
-
-struct DirectionalLight
-{
-    vec4 direction;
-    vec4 color;
-};
-
-
-layout (set = 0, binding = 0) uniform GlobalUbo
+layout (set = 1, binding = 0) uniform SceneUbo
 {
     mat4 projection;
     mat4 view;
     mat4 inverseView;
-    mat4 depthBiasMVP;
-    vec4 ambientLightColor; // w is intensity
-    DirectionalLight directionalLight;
-    PointLight pointLights[10];
-    int numLights;
-} ubo;
+} scene;
+
+layout (set = 2, binding = 0) uniform TransformUbo
+{
+    mat4 model;
+    mat4 normal;
+} transform;
 
 out gl_PerVertex
 {

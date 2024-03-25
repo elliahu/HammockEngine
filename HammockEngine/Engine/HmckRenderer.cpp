@@ -147,6 +147,186 @@ Hmck::Renderer::Renderer(Window& window, Device& device, std::unique_ptr<Scene>&
 			.renderPass = getSwapChainRenderPass()
 	});
 
+	auto depthFormat = device.findSupportedFormat(
+		{ VK_FORMAT_D32_SFLOAT, VK_FORMAT_D32_SFLOAT_S8_UINT, VK_FORMAT_D24_UNORM_S8_UINT },
+		VK_IMAGE_TILING_OPTIMAL,
+		VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT);
+
+	gbufferDescriptorSetLayout = DescriptorSetLayout::Builder(device)
+		.addBinding(0, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT) // position
+		.addBinding(1, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT) // albedo
+		.addBinding(2, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT) // normal
+		.addBinding(3, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT) // material (roughness, metalness, ao)
+		.build();
+
+	gbufferFramebuffer = Framebuffer::createFramebufferPtr({
+		.device = device,
+		.width = IApp::WINDOW_WIDTH, .height = IApp::WINDOW_HEIGHT,
+		.attachments {
+			// 0 position
+			{
+				.width = IApp::WINDOW_WIDTH, .height = IApp::WINDOW_HEIGHT,
+				.layerCount = 1,
+				.format = VK_FORMAT_R16G16B16A16_SFLOAT,
+				.usage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,
+			},
+			// 1 albedo
+			{
+				.width = IApp::WINDOW_WIDTH, .height = IApp::WINDOW_HEIGHT,
+				.layerCount = 1,
+				.format = VK_FORMAT_R8G8B8A8_UNORM,
+				.usage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,
+			},
+			// 2 normal
+			{
+				.width = IApp::WINDOW_WIDTH, .height = IApp::WINDOW_HEIGHT,
+				.layerCount = 1,
+				.format = VK_FORMAT_R16G16B16A16_SFLOAT,
+				.usage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,
+			},
+			// 3 rough, metal, ao
+			{
+				.width = IApp::WINDOW_WIDTH, .height = IApp::WINDOW_HEIGHT,
+				.layerCount = 1,
+				.format = VK_FORMAT_R16G16B16A16_SFLOAT,
+				.usage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,
+			},
+			// 4 depth
+			{
+				.width = IApp::WINDOW_WIDTH, .height = IApp::WINDOW_HEIGHT,
+				.layerCount = 1,
+				.format = depthFormat,
+				.usage = VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,
+			},
+		}
+	});
+
+	gbufferPipeline = GraphicsPipeline::createGraphicsPipelinePtr({
+		.debugName = "gbuffer_pass",
+		.device = device,
+		.VS {
+			.byteCode = Hmck::Filesystem::readFile("../../HammockEngine/Engine/Shaders/Compiled/gbuffer.vert.spv"),
+			.entryFunc = "main"
+		},
+		.FS {
+			.byteCode = Hmck::Filesystem::readFile("../../HammockEngine/Engine/Shaders/Compiled/gbuffer.frag.spv"),
+			.entryFunc = "main"
+		},
+		.descriptorSetLayouts = {
+			environmentDescriptorSetLayout->getDescriptorSetLayout(),
+			frameDescriptorSetLayout->getDescriptorSetLayout(),
+			entityDescriptorSetLayout->getDescriptorSetLayout(),
+			primitiveDescriptorSetLayout->getDescriptorSetLayout()
+		},
+		.pushConstantRanges {},
+		.graphicsState {
+			.depthTest = VK_TRUE,
+			.depthTestCompareOp = VK_COMPARE_OP_LESS_OR_EQUAL,
+			.blendAtaAttachmentStates {
+				Hmck::Init::pipelineColorBlendAttachmentState(0xf, VK_FALSE),
+				Hmck::Init::pipelineColorBlendAttachmentState(0xf, VK_FALSE),
+				Hmck::Init::pipelineColorBlendAttachmentState(0xf, VK_FALSE),
+				Hmck::Init::pipelineColorBlendAttachmentState(0xf, VK_FALSE),
+			},
+			.vertexBufferBindings 
+			{
+					.vertexBindingDescriptions =
+					{
+						{
+							.binding = 0,
+							.stride = sizeof(Vertex),
+							.inputRate = VK_VERTEX_INPUT_RATE_VERTEX
+						}
+					},
+					.vertexAttributeDescriptions =
+					{
+						{0, 0, VK_FORMAT_R32G32B32_SFLOAT, offsetof(Vertex, position)},
+						{1, 0, VK_FORMAT_R32G32B32_SFLOAT, offsetof(Vertex, color)},
+						{2, 0, VK_FORMAT_R32G32B32_SFLOAT, offsetof(Vertex, normal)},
+						{3, 0, VK_FORMAT_R32G32_SFLOAT, offsetof(Vertex, uv)},
+						{4, 0, VK_FORMAT_R32G32B32_SFLOAT, offsetof(Vertex, tangent)}
+					}
+				}
+		},
+		.renderPass = gbufferFramebuffer->renderPass
+	});
+
+	for (int i = 0; i < gbufferDescriptorSets.size(); i++)
+	{
+		std::vector<VkDescriptorImageInfo> gbufferImageInfos = {
+			{
+				.sampler = gbufferFramebuffer->sampler,
+				.imageView = gbufferFramebuffer->attachments[0].view,
+				.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL
+			},
+			{
+				.sampler = gbufferFramebuffer->sampler,
+				.imageView = gbufferFramebuffer->attachments[1].view,
+				.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL
+			},
+			{
+				.sampler = gbufferFramebuffer->sampler,
+				.imageView = gbufferFramebuffer->attachments[2].view,
+				.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL
+			},
+			{
+				.sampler = gbufferFramebuffer->sampler,
+				.imageView = gbufferFramebuffer->attachments[3].view,
+				.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL
+			}
+		};
+
+		DescriptorWriter(*gbufferDescriptorSetLayout, *descriptorPool)
+			.writeImages(0, gbufferImageInfos)
+			.build(gbufferDescriptorSets[i]);
+	}
+
+	defferedPipeline = GraphicsPipeline::createGraphicsPipelinePtr({
+		.debugName = "deferred_pass",
+		.device = device,
+		.VS {
+			.byteCode = Hmck::Filesystem::readFile("../../HammockEngine/Engine/Shaders/Compiled/fullscreen.vert.spv"),
+			.entryFunc = "main"
+		},
+		.FS {
+			.byteCode = Hmck::Filesystem::readFile("../../HammockEngine/Engine/Shaders/Compiled/deferred.frag.spv"),
+			.entryFunc = "main"
+		},
+		.descriptorSetLayouts = {
+			environmentDescriptorSetLayout->getDescriptorSetLayout(),
+			frameDescriptorSetLayout->getDescriptorSetLayout(),
+			entityDescriptorSetLayout->getDescriptorSetLayout(),
+			primitiveDescriptorSetLayout->getDescriptorSetLayout(),
+			gbufferDescriptorSetLayout->getDescriptorSetLayout()
+		},
+		.pushConstantRanges {},
+		.graphicsState {
+			.depthTest = VK_TRUE,
+			.depthTestCompareOp = VK_COMPARE_OP_LESS_OR_EQUAL,
+			.blendAtaAttachmentStates {},
+			.vertexBufferBindings 
+			{
+					.vertexBindingDescriptions =
+					{
+						{
+							.binding = 0,
+							.stride = sizeof(Vertex),
+							.inputRate = VK_VERTEX_INPUT_RATE_VERTEX
+						}
+					},
+					.vertexAttributeDescriptions =
+					{
+						{0, 0, VK_FORMAT_R32G32B32_SFLOAT, offsetof(Vertex, position)},
+						{1, 0, VK_FORMAT_R32G32B32_SFLOAT, offsetof(Vertex, color)},
+						{2, 0, VK_FORMAT_R32G32B32_SFLOAT, offsetof(Vertex, normal)},
+						{3, 0, VK_FORMAT_R32G32_SFLOAT, offsetof(Vertex, uv)},
+						{4, 0, VK_FORMAT_R32G32B32_SFLOAT, offsetof(Vertex, tangent)}
+					}
+				}
+		},
+		.renderPass = getSwapChainRenderPass()
+	});
+
 	// create vertex & index buffer
 	createVertexBuffer();
 	createIndexBuffer();
@@ -504,7 +684,7 @@ void Hmck::Renderer::endRenderPass(VkCommandBuffer commandBuffer)
 	vkCmdEndRenderPass(commandBuffer);
 }
 
-void Hmck::Renderer::render(
+void Hmck::Renderer::renderForward(
 	uint32_t frameIndex,
 	VkCommandBuffer commandBuffer)
 {
@@ -534,6 +714,62 @@ void Hmck::Renderer::render(
 
 	// Render all nodes at top-level
 	renderEntity(frameIndex, commandBuffer, scene->root);
+}
+
+void Hmck::Renderer::renderDeffered(uint32_t frameIndex, VkCommandBuffer commandBuffer)
+{
+	beginRenderPass(gbufferFramebuffer, commandBuffer, {
+					{.color = { 0.0f, 0.0f, 0.0f, 0.0f } },
+					{.color = { 0.0f, 0.0f, 0.0f, 0.0f } },
+					{.color = { 0.0f, 0.0f, 0.0f, 0.0f } },
+					{.color = { 0.0f, 0.0f, 0.0f, 0.0f } },
+					{.depthStencil = { 1.0f, 0 }}});
+
+	VkDeviceSize offsets[] = { 0 };
+	VkBuffer buffers[] = { vertexBuffer->getBuffer() };
+	vkCmdBindVertexBuffers(commandBuffer, 0, 1, buffers, offsets);
+	vkCmdBindIndexBuffer(commandBuffer, indexBuffer->getBuffer(), 0, VK_INDEX_TYPE_UINT32);
+
+	gbufferPipeline->bind(commandBuffer);
+
+	FrameBufferData data{
+		.projection = scene->camera.getProjection(),
+		.view = scene->camera.getView(),
+		.inverseView = scene->camera.getInverseView()
+	};
+	frameBuffers[frameIndex]->writeToBuffer(&data);
+
+	// bind per frame
+	vkCmdBindDescriptorSets(
+		commandBuffer,
+		VK_PIPELINE_BIND_POINT_GRAPHICS,
+		forwardPipeline->graphicsPipelineLayout,
+		1, 1,
+		&frameDescriptorSets[frameIndex],
+		0,
+		nullptr);
+
+	// Render all nodes at top-level off-screen
+	renderEntity(frameIndex, commandBuffer, scene->root);
+
+	endRenderPass(commandBuffer);
+	beginSwapChainRenderPass(commandBuffer);
+
+	defferedPipeline->bind(commandBuffer);
+
+	//bind gbuffer descriptors
+	vkCmdBindDescriptorSets(
+		commandBuffer,
+		VK_PIPELINE_BIND_POINT_GRAPHICS,
+		defferedPipeline->graphicsPipelineLayout,
+		4, 1,
+		&gbufferDescriptorSets[frameIndex],
+		0,
+		nullptr);
+
+	// draw deffered
+	vkCmdDraw(commandBuffer, 3, 1, 0, 0);
+
 }
 
 

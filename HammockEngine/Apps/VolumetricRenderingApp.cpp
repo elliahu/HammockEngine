@@ -16,7 +16,7 @@ void Hmck::VolumetricRenderingApp::run()
 	scene->addChildOfRoot(viewerObject);
 
 	std::shared_ptr<OmniLight> light = std::make_shared<OmniLight>();
-	light->transform.translation = { 0.f, 5.f, 0.f };
+	light->transform.translation = { 0.f, 1.f, 0.f };
 	scene->addChildOfRoot(light);
 
 	KeyboardMovementController cameraController{};
@@ -55,9 +55,6 @@ void Hmck::VolumetricRenderingApp::run()
 		{
 			int frameIndex = renderer.getFrameIndex();
 
-			// on screen rendering
-			renderer.beginSwapChainRenderPass(commandBuffer);
-
 			vkCmdSetDepthBias(
 				commandBuffer,
 				1.25f,
@@ -75,8 +72,7 @@ void Hmck::VolumetricRenderingApp::run()
 			// TODO make this bound when data changes
 			renderer.bindEnvironmentData(commandBuffer);
 
-
-			renderer.render(frameIndex, commandBuffer);
+			renderer.renderDeffered(frameIndex, commandBuffer);
 
 
 			{
@@ -103,6 +99,7 @@ void Hmck::VolumetricRenderingApp::load()
 		.name = "Volumetric scene",
 		.loadFiles = {
 			{
+				//.filename = std::string(MODELS_DIR) + "helmet/helmet.glb",
 				.filename = std::string(MODELS_DIR) + "sponza/sponza.glb",
 			}
 		}
