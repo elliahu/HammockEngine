@@ -30,7 +30,9 @@ void Hmck::VolumetricRenderingApp::run()
 			.color = glm::vec4(light->color, 1.0f)
 		}},
 		.numOmniLights = 1
-		});
+		},
+		scene->skybox
+	);
 
 
 	auto currentTime = std::chrono::high_resolution_clock::now();
@@ -101,6 +103,16 @@ void Hmck::VolumetricRenderingApp::load()
 			{
 				//.filename = std::string(MODELS_DIR) + "helmet/helmet.glb",
 				.filename = std::string(MODELS_DIR) + "sponza/sponza.glb",
+			}
+		},
+		.loadSkybox = {
+			.filenames = {
+				"../../Resources/env/skybox/right.jpg",
+				"../../Resources/env/skybox/left.jpg",
+				"../../Resources/env/skybox/top.jpg",
+				"../../Resources/env/skybox/bottom.jpg",
+				"../../Resources/env/skybox/front.jpg",
+				"../../Resources/env/skybox/back.jpg"
 			}
 		}
 	};

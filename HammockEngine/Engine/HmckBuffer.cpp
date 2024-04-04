@@ -47,9 +47,7 @@ namespace Hmck {
     }
 
     Buffer::~Buffer() {
-        unmap();
-        vkDestroyBuffer(device.device(), buffer, nullptr);
-        vkFreeMemory(device.device(), memory, nullptr);
+        destroy();
     }
 
     /**
@@ -76,6 +74,13 @@ namespace Hmck {
             vkUnmapMemory(device.device(), memory);
             mapped = nullptr;
         }
+    }
+
+    void Buffer::destroy()
+    {
+        unmap();
+        vkDestroyBuffer(device.device(), buffer, nullptr);
+        vkFreeMemory(device.device(), memory, nullptr);
     }
 
     /**

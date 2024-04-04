@@ -233,24 +233,6 @@ namespace Hmck
 			return ssaoKernelBuffer;
 		}
 
-		inline Texture2D createNoiseTexture(Device& device, uint32_t noiseDim)
-		{
-			std::default_random_engine rndEngine((unsigned)time(nullptr));
-			std::uniform_real_distribution<float> rndDist(0.0f, 1.0f);
-
-			Texture2D ssaoNoiseTexture{};
-
-			std::vector<glm::vec4> ssaoNoise(noiseDim * noiseDim);
-			for (uint32_t i = 0; i < static_cast<uint32_t>(ssaoNoise.size()); i++)
-			{
-				ssaoNoise[i] = glm::vec4(rndDist(rndEngine) * 2.0f - 1.0f, rndDist(rndEngine) * 2.0f - 1.0f, 0.0f, 0.0f);
-			}
-			// Upload as texture
-			ssaoNoiseTexture.loadFromBuffer((unsigned char*)ssaoNoise.data(), ssaoNoise.size() * sizeof(glm::vec4), noiseDim, noiseDim, device, VK_FORMAT_R32G32B32A32_SFLOAT);
-			ssaoNoiseTexture.createSampler(device, VK_FILTER_NEAREST);
-			ssaoNoiseTexture.updateDescriptor();
-
-			return ssaoNoiseTexture;
-		}
+		
 	}
 } // namespace Hmck

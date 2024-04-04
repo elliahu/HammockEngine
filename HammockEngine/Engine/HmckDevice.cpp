@@ -502,7 +502,7 @@ namespace Hmck {
     }
 
     void Device::copyBufferToImage(
-        VkBuffer buffer, VkImage image, uint32_t width, uint32_t height, uint32_t layerCount) {
+        VkBuffer buffer, VkImage image, uint32_t width, uint32_t height, uint32_t layerCount, uint32_t baseArrayLayer) {
         VkCommandBuffer commandBuffer = beginSingleTimeCommands();
 
         VkBufferImageCopy region{};
@@ -512,7 +512,7 @@ namespace Hmck {
 
         region.imageSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
         region.imageSubresource.mipLevel = 0;
-        region.imageSubresource.baseArrayLayer = 0;
+        region.imageSubresource.baseArrayLayer = baseArrayLayer;
         region.imageSubresource.layerCount = layerCount;
 
         region.imageOffset = { 0, 0, 0 };
@@ -556,8 +556,8 @@ namespace Hmck {
 
     void Device::transitionImageLayout(VkImage image,
         VkImageLayout layoutOld,
-        VkImageLayout layoutNew)
-    {
+        VkImageLayout layoutNew,
+        uint32_t layerCount) {
         VkCommandBuffer commandBuffer = beginSingleTimeCommands();
 
         VkImageMemoryBarrier barrier{};
@@ -571,41 +571,51 @@ namespace Hmck {
         barrier.subresourceRange.baseMipLevel = 0;
         barrier.subresourceRange.levelCount = 1;
         barrier.subresourceRange.baseArrayLayer = 0;
-        barrier.subresourceRange.layerCount = 1;
-        barrier.srcAccessMask = 0; // TODO
-        barrier.dstAccessMask = 0; // TODO
+        barrier.subresourceRange.layerCount = layerCount;
 
-        VkPipelineStageFlags sourceStage;
-        VkPipelineStageFlags destinationStage;
-
+        // Set access masks and pipeline stages based on layout transition
         if (layoutOld == VK_IMAGE_LAYOUT_UNDEFINED && layoutNew == VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL) {
             barrier.srcAccessMask = 0;
             barrier.dstAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
 
-            sourceStage = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
-            destinationStage = VK_PIPELINE_STAGE_TRANSFER_BIT;
+            barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+            barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+
+            VkPipelineStageFlags sourceStage = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
+            VkPipelineStageFlags destinationStage = VK_PIPELINE_STAGE_TRANSFER_BIT;
+
+            // Ensure the appropriate pipeline stage is specified for the source and destination access
+            vkCmdPipelineBarrier(commandBuffer,
+                sourceStage, destinationStage,
+                0,
+                0, nullptr,
+                0, nullptr,
+                1, &barrier);
         }
         else if (layoutOld == VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL && layoutNew == VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL) {
             barrier.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
             barrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
 
-            sourceStage = VK_PIPELINE_STAGE_TRANSFER_BIT;
-            destinationStage = VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
+            barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+            barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+
+            VkPipelineStageFlags sourceStage = VK_PIPELINE_STAGE_TRANSFER_BIT;
+            VkPipelineStageFlags destinationStage = VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
+
+            // Ensure the appropriate pipeline stage is specified for the source and destination access
+            vkCmdPipelineBarrier(commandBuffer,
+                sourceStage, destinationStage,
+                0,
+                0, nullptr,
+                0, nullptr,
+                1, &barrier);
         }
         else {
             throw std::invalid_argument("Unsupported layout transition!");
         }
 
-        vkCmdPipelineBarrier(
-            commandBuffer,
-            sourceStage, destinationStage,
-            0,
-            0, nullptr,
-            0, nullptr,
-            1, &barrier
-        );
-
         endSingleTimeCommands(commandBuffer);
     }
+
 
 }

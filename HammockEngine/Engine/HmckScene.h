@@ -29,12 +29,19 @@ namespace Hmck
 			bool binary = true;
 		};
 
+		struct SkyboxLoadSkyboxInfo
+		{
+			std::vector<std::string> filenames;
+		};
+
 		struct SceneCreateInfo
 		{
 			Device& device;
 			std::string name;
 			std::vector<SceneLoadFileInfo> loadFiles;
+			SkyboxLoadSkyboxInfo loadSkybox;
 		};
+
 		// TODO make builder as well
 		Scene(SceneCreateInfo createInfo);
 
@@ -59,6 +66,8 @@ namespace Hmck
 		std::vector<Texture> textures;
 		std::vector<Material> materials;
 
+		TextureCubeMap skybox;
+
 		std::vector<Vertex> vertices{};
 		std::vector<uint32_t> indices{};
 		uint32_t vertexCount;
@@ -69,7 +78,9 @@ namespace Hmck
 	private:
 
 		void loadFile(SceneLoadFileInfo loadInfo);
+		void loadSkybox(SkyboxLoadSkyboxInfo loadInfo);
 
+		bool hasSkybox = false;
 		Device& device;
 		
 

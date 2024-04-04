@@ -16,6 +16,7 @@ Hmck::Renderer::Renderer(Window& window, Device& device, std::unique_ptr<Scene>&
 	environmentDescriptorSetLayout = DescriptorSetLayout::Builder(device)
 		.addBinding(0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_ALL_GRAPHICS)
 		.addBinding(1, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_ALL_GRAPHICS, 200, VK_DESCRIPTOR_BINDING_PARTIALLY_BOUND_BIT)
+		.addBinding(2, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_ALL_GRAPHICS)
 		.build();
 
 	frameDescriptorSetLayout = DescriptorSetLayout::Builder(device)
@@ -773,7 +774,7 @@ void Hmck::Renderer::renderDeffered(uint32_t frameIndex, VkCommandBuffer command
 }
 
 
-void Hmck::Renderer::writeEnvironmentData(std::vector<Image>& images, EnvironmentBufferData data)
+void Hmck::Renderer::writeEnvironmentData(std::vector<Image>& images, EnvironmentBufferData data, TextureCubeMap skybox)
 {
 	std::vector<VkDescriptorImageInfo> imageInfos{ images.size() };
 	for (int im = 0; im < images.size(); im++)
@@ -787,8 +788,8 @@ void Hmck::Renderer::writeEnvironmentData(std::vector<Image>& images, Environmen
 	DescriptorWriter(*environmentDescriptorSetLayout, *descriptorPool)
 		.writeBuffer(0, &sceneBufferInfo)
 		.writeImages(1, imageInfos)
+		.writeImage(2, &skybox.descriptor)
 		.build(environmentDescriptorSet);
-
 }
 
 void Hmck::Renderer::bindEnvironmentData(VkCommandBuffer commandBuffer)

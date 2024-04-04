@@ -65,7 +65,7 @@ namespace Hmck {
 		void endSingleTimeCommands(VkCommandBuffer commandBuffer);
 		void copyBuffer(VkBuffer srcBuffer, VkBuffer dstBuffer, VkDeviceSize size);
 		void copyBufferToImage(
-			VkBuffer buffer, VkImage image, uint32_t width, uint32_t height, uint32_t layerCount);
+			VkBuffer buffer, VkImage image, uint32_t width, uint32_t height, uint32_t layerCount, uint32_t baseArrayLayer = 0);
 
 		// Image helper functionss
 		void createImageWithInfo(
@@ -76,7 +76,8 @@ namespace Hmck {
 		void transitionImageLayout(
 			VkImage image, 
 			VkImageLayout layoutOld, 
-			VkImageLayout layoutNew
+			VkImageLayout layoutNew,
+			uint32_t layerCount = 1
 		);
 
 		VkPhysicalDeviceProperties properties;

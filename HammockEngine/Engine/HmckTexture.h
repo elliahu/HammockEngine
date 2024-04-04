@@ -6,6 +6,7 @@
 
 #include "HmckDevice.h"
 #include "HmckBuffer.h"
+#include "HmckUtils.h"
 
 namespace Hmck
 {
@@ -57,12 +58,13 @@ namespace Hmck
 	class TextureCubeMap : public ITexture
 	{
 	public:
-		void loadFromFile(
-			std::string filename,
+		void loadFromFiles(
+			std::vector<std::string> filenames,
 			VkFormat format,
 			Device& device,
-			VkQueue copyQueue,
-			VkImageUsageFlags imageUsageFlags = VK_IMAGE_USAGE_SAMPLED_BIT,
 			VkImageLayout imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+
+		void createSampler(Device& device, VkFilter filter = VK_FILTER_LINEAR);
+		void destroy(Device& device);
 	};
 }

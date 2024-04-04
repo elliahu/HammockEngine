@@ -10,6 +10,9 @@ Hmck::Scene::Scene(SceneCreateInfo createInfo): device{createInfo.device}
 	{
 		loadFile(fileInfo);
 	}
+
+	// load skybox
+	loadSkybox(createInfo.loadSkybox);
 }
 
 Hmck::Scene::~Scene()
@@ -23,6 +26,8 @@ void Hmck::Scene::destroy()
 	{
 		images[i].texture.destroy(device);
 	}
+
+	skybox.destroy(device);
 }
 
 
@@ -42,5 +47,21 @@ void Hmck::Scene::loadFile(SceneLoadFileInfo loadInfo)
 		indices, 
 		root,
 		loadInfo.binary);
+}
+
+void Hmck::Scene::loadSkybox(SkyboxLoadSkyboxInfo loadInfo)
+{
+	if (loadInfo.filenames.size() > 0)
+	{
+		skybox.loadFromFiles(
+			loadInfo.filenames,
+			VK_FORMAT_R8G8B8A8_UNORM,
+			device
+		);
+		skybox.createSampler(device);
+		skybox.updateDescriptor();
+		hasSkybox = true;
+	}
+	
 }
 
