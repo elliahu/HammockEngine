@@ -10,9 +10,46 @@ Hmck::Scene::Scene(SceneCreateInfo createInfo): device{createInfo.device}
 	{
 		loadFile(fileInfo);
 	}
-
+	
 	// load skybox
-	loadSkybox(createInfo.loadSkybox);
+	if (createInfo.loadSkybox.textures.size() > 0)
+	{
+		loadSkyboxTexture(createInfo.loadSkybox);
+		/*Gltf::load(
+			createInfo.loadSkybox.model.filename,
+			device,
+			images,
+			static_cast<uint32_t>(images.size()),
+			materials,
+			static_cast<uint32_t>(materials.size()),
+			textures,
+			static_cast<uint32_t>(textures.size()),
+			skyboxVertices,
+			skyboxIndices,
+			root,
+			createInfo.loadSkybox.model.binary);*/
+		skyboxVertices = {
+			{{-0.5f, -0.5f, -0.5f}},
+			{{0.5f, -0.5f, -0.5f}},
+			{{0.5f, 0.5f, -0.5f}},
+			{{-0.5f, 0.5f, -0.5f}},
+			{{-0.5f, -0.5f, 0.5f}},
+			{{0.5f, -0.5f, 0.5f}},
+			{{0.5f, 0.5f, 0.5f}},
+			{{-0.5f, 0.5f, 0.5f}}
+		};
+		skyboxVertexCount = skyboxVertices.size();
+
+		skyboxIndices = {
+			2, 1, 0, 0, 3, 2, // Front face
+			4, 5, 6, 6, 7, 4, // Back face
+			6, 5, 1, 1, 2, 6, // Right face
+			0, 4, 7, 7, 3, 0, // Left face
+			6, 2, 3, 3, 7, 6, // Top face
+			0, 1, 5, 5, 4, 0  // Bottom face
+		};
+		skyboxIndexCount = 36;
+	}
 }
 
 Hmck::Scene::~Scene()
@@ -27,7 +64,7 @@ void Hmck::Scene::destroy()
 		images[i].texture.destroy(device);
 	}
 
-	skybox.destroy(device);
+	skyboxTexture.destroy(device);
 }
 
 
@@ -49,19 +86,15 @@ void Hmck::Scene::loadFile(SceneLoadFileInfo loadInfo)
 		loadInfo.binary);
 }
 
-void Hmck::Scene::loadSkybox(SkyboxLoadSkyboxInfo loadInfo)
+void Hmck::Scene::loadSkyboxTexture(SkyboxLoadSkyboxInfo loadInfo)
 {
-	if (loadInfo.filenames.size() > 0)
-	{
-		skybox.loadFromFiles(
-			loadInfo.filenames,
-			VK_FORMAT_R8G8B8A8_UNORM,
-			device
-		);
-		skybox.createSampler(device);
-		skybox.updateDescriptor();
-		hasSkybox = true;
-	}
-	
+	skyboxTexture.loadFromFiles(
+		loadInfo.textures,
+		VK_FORMAT_R8G8B8A8_UNORM,
+		device
+	);
+	skyboxTexture.createSampler(device);
+	skyboxTexture.updateDescriptor();
+	hasSkybox = true;
 }
 

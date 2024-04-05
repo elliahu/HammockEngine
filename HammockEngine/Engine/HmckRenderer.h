@@ -69,7 +69,7 @@ namespace Hmck
 	class Renderer
 	{
 	public:
-		Renderer(Window& window, Device& device, std::unique_ptr<Scene>&);
+		Renderer(Window& window, Device& device, std::unique_ptr<Scene>& scene);
 		~Renderer();
 
 		// delete copy constructor and copy destructor
@@ -138,8 +138,11 @@ namespace Hmck
 		std::unique_ptr<SwapChain> hmckSwapChain;
 		std::vector<VkCommandBuffer> commandBuffers;
 
-		std::unique_ptr<Buffer> vertexBuffer;
-		std::unique_ptr<Buffer> indexBuffer;
+		std::unique_ptr<Buffer> sceneVertexBuffer;
+		std::unique_ptr<Buffer> sceneIndexBuffer;
+
+		std::unique_ptr<Buffer> skyboxVertexBuffer;
+		std::unique_ptr<Buffer> skyboxIndexBuffer;
 
 		std::unique_ptr<Scene>& scene;
 
@@ -173,10 +176,9 @@ namespace Hmck
 
 		// renderpasses and framebuffers
 		std::unique_ptr<Framebuffer> gbufferFramebuffer{}; // TODO probably shoul be bufferd as well
-		std::unique_ptr<Framebuffer> skyboxFramebuffer{};
 
 		// pipelines
-		std::unique_ptr<GraphicsPipeline> skyboxPipeline{}; // uses skyboxFramebuffer render pass
+		std::unique_ptr<GraphicsPipeline> skyboxPipeline{}; // uses gbufferFramebuffer render pass
 		std::unique_ptr<GraphicsPipeline> forwardPipeline{}; // uses swapchain render pass
 		std::unique_ptr<GraphicsPipeline> gbufferPipeline{}; // uses gbufferFramebuffer render pass
 		std::unique_ptr<GraphicsPipeline> defferedPipeline{};// uses swapchain render pass

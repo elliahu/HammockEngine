@@ -31,7 +31,7 @@ namespace Hmck
 
 		struct SkyboxLoadSkyboxInfo
 		{
-			std::vector<std::string> filenames;
+			std::vector<std::string> textures;
 		};
 
 		struct SceneCreateInfo
@@ -60,30 +60,29 @@ namespace Hmck
 			getRoot()->children.push_back(child);
 		}
 
-
 		std::shared_ptr<Entity> root;
 		std::vector<Image> images;
 		std::vector<Texture> textures;
 		std::vector<Material> materials;
-
-		TextureCubeMap skybox;
 
 		std::vector<Vertex> vertices{};
 		std::vector<uint32_t> indices{};
 		uint32_t vertexCount;
 		uint32_t indexCount;
 
+		TextureCubeMap skyboxTexture;
+		std::vector<Vertex> skyboxVertices{};
+		std::vector<uint32_t> skyboxIndices{};
+		uint32_t skyboxVertexCount;
+		uint32_t skyboxIndexCount;
+
 		Camera camera{};
+		bool hasSkybox = false;
 
 	private:
 
 		void loadFile(SceneLoadFileInfo loadInfo);
-		void loadSkybox(SkyboxLoadSkyboxInfo loadInfo);
-
-		bool hasSkybox = false;
+		void loadSkyboxTexture(SkyboxLoadSkyboxInfo loadInfo);
 		Device& device;
-		
-
-
 	};
 }

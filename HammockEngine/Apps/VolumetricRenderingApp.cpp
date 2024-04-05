@@ -8,7 +8,7 @@ Hmck::VolumetricRenderingApp::VolumetricRenderingApp()
 void Hmck::VolumetricRenderingApp::run()
 {
 	// camera and movement
-	Renderer renderer{ window, device, scene };
+	Renderer renderer{ window, device, scene};
 
 	scene->camera.setViewTarget({ 1.f, 1.f, -1.f }, { 0.f, 0.f, 0.f });
 	auto viewerObject = std::make_shared<Entity>();
@@ -31,7 +31,7 @@ void Hmck::VolumetricRenderingApp::run()
 		}},
 		.numOmniLights = 1
 		},
-		scene->skybox
+		scene->skyboxTexture
 	);
 
 
@@ -101,16 +101,16 @@ void Hmck::VolumetricRenderingApp::load()
 		.name = "Volumetric scene",
 		.loadFiles = {
 			{
-				//.filename = std::string(MODELS_DIR) + "helmet/helmet.glb",
-				.filename = std::string(MODELS_DIR) + "sponza/sponza.glb",
+				.filename = std::string(MODELS_DIR) + "helmet/helmet.glb",
+				//.filename = std::string(MODELS_DIR) + "sponza/sponza.glb",
 			}
 		},
 		.loadSkybox = {
-			.filenames = {
+			.textures = {
 				"../../Resources/env/skybox/right.jpg",
 				"../../Resources/env/skybox/left.jpg",
-				"../../Resources/env/skybox/top.jpg",
 				"../../Resources/env/skybox/bottom.jpg",
+				"../../Resources/env/skybox/top.jpg",
 				"../../Resources/env/skybox/front.jpg",
 				"../../Resources/env/skybox/back.jpg"
 			}

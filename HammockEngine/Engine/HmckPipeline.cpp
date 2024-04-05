@@ -44,6 +44,9 @@ Hmck::GraphicsPipeline::GraphicsPipeline(Hmck::GraphicsPipeline::GraphicsPipelin
 		configInfo.colorBlendInfo.attachmentCount = static_cast<uint32_t>(createInfo.graphicsState.blendAtaAttachmentStates.size());
 		configInfo.colorBlendInfo.pAttachments = createInfo.graphicsState.blendAtaAttachmentStates.data();
 	}
+	configInfo.depthStencilInfo.depthTestEnable = createInfo.graphicsState.depthTest;
+	configInfo.depthStencilInfo.depthWriteEnable = createInfo.graphicsState.depthTest;
+	configInfo.rasterizationInfo.cullMode = createInfo.graphicsState.cullMode;
 	createShaderModule(createInfo.VS.byteCode, &vertShaderModule);
 	createShaderModule(createInfo.FS.byteCode, &fragShaderModule);
 

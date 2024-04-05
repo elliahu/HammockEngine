@@ -202,6 +202,55 @@ Hmck::Renderer::Renderer(Window& window, Device& device, std::unique_ptr<Scene>&
 		}
 	});
 
+	skyboxPipeline = GraphicsPipeline::createGraphicsPipelinePtr({
+		.debugName = "skybox_pass",
+		.device = device,
+		.VS {
+			.byteCode = Hmck::Filesystem::readFile("../../HammockEngine/Engine/Shaders/Compiled/skybox.vert.spv"),
+			.entryFunc = "main"
+		},
+		.FS {
+			.byteCode = Hmck::Filesystem::readFile("../../HammockEngine/Engine/Shaders/Compiled/skybox.frag.spv"),
+			.entryFunc = "main"
+		},
+		.descriptorSetLayouts = {
+			environmentDescriptorSetLayout->getDescriptorSetLayout(),
+			frameDescriptorSetLayout->getDescriptorSetLayout()
+		},
+		.pushConstantRanges {},
+		.graphicsState {
+			.depthTest = VK_FALSE,
+			.depthTestCompareOp = VK_COMPARE_OP_LESS_OR_EQUAL,
+			.cullMode = VK_CULL_MODE_FRONT_BIT,
+			.blendAtaAttachmentStates {
+				Hmck::Init::pipelineColorBlendAttachmentState(0xf, VK_FALSE),
+				Hmck::Init::pipelineColorBlendAttachmentState(0xf, VK_FALSE),
+				Hmck::Init::pipelineColorBlendAttachmentState(0xf, VK_FALSE),
+				Hmck::Init::pipelineColorBlendAttachmentState(0xf, VK_FALSE)
+			},
+			.vertexBufferBindings
+			{
+					.vertexBindingDescriptions =
+					{
+						{
+							.binding = 0,
+							.stride = sizeof(Vertex),
+							.inputRate = VK_VERTEX_INPUT_RATE_VERTEX
+						}
+					},
+					.vertexAttributeDescriptions =
+					{
+						{0, 0, VK_FORMAT_R32G32B32_SFLOAT, offsetof(Vertex, position)},
+						{1, 0, VK_FORMAT_R32G32B32_SFLOAT, offsetof(Vertex, color)},
+						{2, 0, VK_FORMAT_R32G32B32_SFLOAT, offsetof(Vertex, normal)},
+						{3, 0, VK_FORMAT_R32G32_SFLOAT, offsetof(Vertex, uv)},
+						{4, 0, VK_FORMAT_R32G32B32_SFLOAT, offsetof(Vertex, tangent)}
+					}
+				}
+		},
+		.renderPass = gbufferFramebuffer->renderPass
+	});
+
 	gbufferPipeline = GraphicsPipeline::createGraphicsPipelinePtr({
 		.debugName = "gbuffer_pass",
 		.device = device,
@@ -386,7 +435,7 @@ void Hmck::Renderer::createVertexBuffer()
 	stagingBuffer.map();
 	stagingBuffer.writeToBuffer((void*)scene->vertices.data());
 
-	vertexBuffer = std::make_unique<Buffer>(
+	sceneVertexBuffer = std::make_unique<Buffer>(
 		device,
 		vertexSize,
 		vertexCount,
@@ -394,7 +443,37 @@ void Hmck::Renderer::createVertexBuffer()
 		VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT
 		);
 
-	device.copyBuffer(stagingBuffer.getBuffer(), vertexBuffer->getBuffer(), bufferSize);
+	device.copyBuffer(stagingBuffer.getBuffer(), sceneVertexBuffer->getBuffer(), bufferSize);
+
+	if (scene->hasSkybox)
+	{
+		uint32_t vertexCount = static_cast<uint32_t>(scene->skyboxVertices.size());
+		assert(vertexCount >= 3 && "Vertex count must be at least 3");
+		VkDeviceSize bufferSize = sizeof(scene->skyboxVertices[0]) * vertexCount;
+		uint32_t vertexSize = sizeof(scene->skyboxVertices[0]);
+
+		Buffer stagingBuffer{
+			device,
+			vertexSize,
+			vertexCount,
+			VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
+			VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
+		};
+
+
+		stagingBuffer.map();
+		stagingBuffer.writeToBuffer((void*)scene->skyboxVertices.data());
+
+		skyboxVertexBuffer = std::make_unique<Buffer>(
+			device,
+			vertexSize,
+			vertexCount,
+			VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT,
+			VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT
+			);
+
+		device.copyBuffer(stagingBuffer.getBuffer(), skyboxVertexBuffer->getBuffer(), bufferSize);
+	}
 }
 
 void Hmck::Renderer::createIndexBuffer()
@@ -415,7 +494,7 @@ void Hmck::Renderer::createIndexBuffer()
 	stagingBuffer.map();
 	stagingBuffer.writeToBuffer((void*)scene->indices.data());
 
-	indexBuffer = std::make_unique<Buffer>(
+	sceneIndexBuffer = std::make_unique<Buffer>(
 		device,
 		indexSize,
 		indexCount,
@@ -424,7 +503,37 @@ void Hmck::Renderer::createIndexBuffer()
 		);
 
 
-	device.copyBuffer(stagingBuffer.getBuffer(), indexBuffer->getBuffer(), bufferSize);
+	device.copyBuffer(stagingBuffer.getBuffer(), sceneIndexBuffer->getBuffer(), bufferSize);
+
+	if (scene->hasSkybox)
+	{
+		uint32_t indexCount = static_cast<uint32_t>(scene->skyboxIndices.size());
+
+		VkDeviceSize bufferSize = sizeof(scene->skyboxIndices[0]) * indexCount;
+		uint32_t indexSize = sizeof(scene->skyboxIndices[0]);
+
+		Buffer stagingBuffer{
+			device,
+			indexSize,
+			indexCount,
+			VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
+			VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT
+		};
+
+		stagingBuffer.map();
+		stagingBuffer.writeToBuffer((void*)scene->skyboxIndices.data());
+
+		skyboxIndexBuffer = std::make_unique<Buffer>(
+			device,
+			indexSize,
+			indexCount,
+			VK_BUFFER_USAGE_INDEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT,
+			VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT
+			);
+
+
+		device.copyBuffer(stagingBuffer.getBuffer(), skyboxIndexBuffer->getBuffer(), bufferSize);
+	}
 }
 
 
@@ -690,9 +799,9 @@ void Hmck::Renderer::renderForward(
 	VkCommandBuffer commandBuffer)
 {
 	VkDeviceSize offsets[] = { 0 };
-	VkBuffer buffers[] = { vertexBuffer->getBuffer() };
+	VkBuffer buffers[] = { sceneVertexBuffer->getBuffer() };
 	vkCmdBindVertexBuffers(commandBuffer, 0, 1, buffers, offsets);
-	vkCmdBindIndexBuffer(commandBuffer, indexBuffer->getBuffer(), 0, VK_INDEX_TYPE_UINT32);
+	vkCmdBindIndexBuffer(commandBuffer, sceneIndexBuffer->getBuffer(), 0, VK_INDEX_TYPE_UINT32);
 
 	forwardPipeline->bind(commandBuffer);
 
@@ -726,10 +835,31 @@ void Hmck::Renderer::renderDeffered(uint32_t frameIndex, VkCommandBuffer command
 					{.color = { 0.0f, 0.0f, 0.0f, 0.0f } },
 					{.depthStencil = { 1.0f, 0 }}});
 
+	// skybox
 	VkDeviceSize offsets[] = { 0 };
-	VkBuffer buffers[] = { vertexBuffer->getBuffer() };
+	VkBuffer buffers[] = { skyboxVertexBuffer->getBuffer() };
 	vkCmdBindVertexBuffers(commandBuffer, 0, 1, buffers, offsets);
-	vkCmdBindIndexBuffer(commandBuffer, indexBuffer->getBuffer(), 0, VK_INDEX_TYPE_UINT32);
+	vkCmdBindIndexBuffer(commandBuffer, skyboxIndexBuffer->getBuffer(), 0, VK_INDEX_TYPE_UINT32);
+
+	skyboxPipeline->bind(commandBuffer);
+	// bind per frame
+	vkCmdBindDescriptorSets(
+		commandBuffer,
+		VK_PIPELINE_BIND_POINT_GRAPHICS,
+		forwardPipeline->graphicsPipelineLayout,
+		1, 1,
+		&frameDescriptorSets[frameIndex],
+		0,
+		nullptr);
+
+
+	vkCmdDrawIndexed(commandBuffer, 36, 1, 0, 0, 0);
+	
+	// gbuffer
+	VkDeviceSize sceneoffsets[] = { 0 };
+	VkBuffer scenebuffers[] = { sceneVertexBuffer->getBuffer() };
+	vkCmdBindVertexBuffers(commandBuffer, 0, 1, scenebuffers, sceneoffsets);
+	vkCmdBindIndexBuffer(commandBuffer, sceneIndexBuffer->getBuffer(), 0, VK_INDEX_TYPE_UINT32);
 
 	gbufferPipeline->bind(commandBuffer);
 

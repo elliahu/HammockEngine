@@ -50,6 +50,7 @@ namespace Hmck
 			{
 				VkBool32 depthTest;
 				VkCompareOp depthTestCompareOp;
+				VkCullModeFlags cullMode = VK_CULL_MODE_BACK_BIT;
 				std::vector<VkPipelineColorBlendAttachmentState> blendAtaAttachmentStates;
 				struct VertexBufferBindingsInfo
 				{

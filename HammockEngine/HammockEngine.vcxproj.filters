@@ -238,8 +238,8 @@
     <None Include="Engine\Shaders\Raw\glsl\shadowmap.vert" />
     <None Include="Engine\Shaders\Raw\glsl\gbuffer.frag" />
     <None Include="Engine\Shaders\Raw\glsl\gbuffer.vert" />
-    <None Include="build_shaders_glsl.py" />
-    <None Include="build_shaders_hlsl.py" />
+    <None Include="Engine\Shaders\build_shaders_glsl.py" />
+    <None Include="Engine\Shaders\build_shaders_hlsl.py" />
     <None Include="Engine\Shaders\Raw\glsl\blur.frag" />
     <None Include="Engine\Shaders\Raw\glsl\ssao.frag" />
     <None Include="Engine\Shaders\Raw\glsl\default_forward.frag" />
