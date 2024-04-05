@@ -173,8 +173,10 @@ namespace Hmck
 
 		// renderpasses and framebuffers
 		std::unique_ptr<Framebuffer> gbufferFramebuffer{}; // TODO probably shoul be bufferd as well
+		std::unique_ptr<Framebuffer> skyboxFramebuffer{};
 
 		// pipelines
+		std::unique_ptr<GraphicsPipeline> skyboxPipeline{}; // uses skyboxFramebuffer render pass
 		std::unique_ptr<GraphicsPipeline> forwardPipeline{}; // uses swapchain render pass
 		std::unique_ptr<GraphicsPipeline> gbufferPipeline{}; // uses gbufferFramebuffer render pass
 		std::unique_ptr<GraphicsPipeline> defferedPipeline{};// uses swapchain render pass
