@@ -45,6 +45,8 @@ namespace Hmck
 			return total;
 		}
 
+		std::shared_ptr<Entity> getChild(Id id);
+
 
 		static Id currentId;
 		Id id;

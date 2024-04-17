@@ -37,6 +37,7 @@ void Hmck::RaymarchingDemoApp::run()
 		scene->skyboxTexture
 	);
 
+	float elapsedTime = 0.f;
 
 	auto currentTime = std::chrono::high_resolution_clock::now();
 	while (!window.shouldClose())
@@ -48,12 +49,14 @@ void Hmck::RaymarchingDemoApp::run()
 		auto newTime = std::chrono::high_resolution_clock::now();
 		float frameTime = std::chrono::duration<float, std::chrono::seconds::period>(newTime - currentTime).count();
 		currentTime = newTime;
+		elapsedTime += frameTime;
 
 		// camera
 		cameraController.moveInPlaneXZ(window, frameTime, viewerObject);
 		scene->camera.setViewYXZ(viewerObject->transform.translation, viewerObject->transform.rotation);
 		float aspect = renderer.getAspectRatio();
 		scene->camera.setPerspectiveProjection(glm::radians(50.0f), aspect, 0.1f, 1000.f);
+
 
 		// start a new frame
 		if (auto commandBuffer = renderer.beginFrame())
@@ -75,7 +78,7 @@ void Hmck::RaymarchingDemoApp::run()
 				.numOmniLights = 1
 				});
 
-			renderer.renderForward(frameIndex, commandBuffer);
+			renderer.renderForward(frameIndex, elapsedTime, commandBuffer);
 
 
 			{
@@ -104,7 +107,6 @@ void Hmck::RaymarchingDemoApp::load()
 			{
 				.filename = std::string(MODELS_DIR) + "Sphere/Sphere.glb",
 			},
-
 		},
 		.loadSkybox = {
 			.textures = {
@@ -118,4 +120,10 @@ void Hmck::RaymarchingDemoApp::load()
 		}
 	};
 	scene = std::make_unique<Scene>(info);
+
+	auto sphere = scene->getEntity(1);
+	if (sphere != nullptr)
+	{
+		sphere->transform.scale = { 3.0f, 3.0f ,3.0f };
+	}
 }

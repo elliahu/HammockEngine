@@ -63,6 +63,8 @@ namespace Hmck
 		void loadFile(SceneLoadFileInfo loadInfo);
 		void loadSkyboxTexture(SkyboxLoadSkyboxInfo loadInfo);
 
+		std::shared_ptr<Entity> getEntity(Hmck::Id id);
+
 		std::shared_ptr<Entity> root;
 		std::vector<Image> images;
 		std::vector<Texture> textures;

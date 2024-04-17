@@ -86,3 +86,10 @@ void Hmck::Scene::loadSkyboxTexture(SkyboxLoadSkyboxInfo loadInfo)
 	hasSkybox = true;
 }
 
+std::shared_ptr<Hmck::Entity> Hmck::Scene::getEntity(Hmck::Id id)
+{
+	if (id == 0)
+		return root;
+	return root->getChild(id);
+}
+

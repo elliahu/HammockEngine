@@ -69,6 +69,15 @@ namespace Hmck
 	class Renderer
 	{
 	public:
+
+
+		struct PushConstantData
+		{
+			glm::vec2 resolution;
+			float elapsedTime;
+		};
+
+
 		Renderer(Window& window, Device& device, std::unique_ptr<Scene>& scene);
 		~Renderer();
 
@@ -108,6 +117,7 @@ namespace Hmck
 
 		void renderForward(
 			uint32_t frameIndex,
+			float time,
 			VkCommandBuffer commandBuffer);
 
 		void renderDeffered(

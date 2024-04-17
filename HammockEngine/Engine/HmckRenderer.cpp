@@ -117,7 +117,7 @@ Hmck::Renderer::Renderer(Window& window, Device& device, std::unique_ptr<Scene>&
 			.device = device,
 			.VS
 			{
-				.byteCode = Hmck::Filesystem::readFile("../../HammockEngine/Engine/Shaders/Compiled/default_forward.vert.spv"),
+				.byteCode = Hmck::Filesystem::readFile("../../HammockEngine/Engine/Shaders/Compiled/fullscreen.vert.spv"),
 				.entryFunc = "main"
 			},
 			.FS 
@@ -137,7 +137,7 @@ Hmck::Renderer::Renderer(Window& window, Device& device, std::unique_ptr<Scene>&
 				{
 					.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT,
 					.offset = 0,
-					.size = sizeof(glm::vec2)
+					.size = sizeof(Renderer::PushConstantData)
 				}
 			},
 			.graphicsState 
@@ -820,6 +820,7 @@ void Hmck::Renderer::endRenderPass(VkCommandBuffer commandBuffer)
 
 void Hmck::Renderer::renderForward(
 	uint32_t frameIndex,
+	float time,
 	VkCommandBuffer commandBuffer)
 {
 	beginSwapChainRenderPass(commandBuffer);
@@ -859,8 +860,13 @@ void Hmck::Renderer::renderForward(
 		0,
 		nullptr);
 	
-	glm::vec2 resolution = { IApp::WINDOW_WIDTH, IApp::WINDOW_HEIGHT };
-	vkCmdPushConstants(commandBuffer, forwardPipeline->graphicsPipelineLayout, VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(glm::vec2), &resolution);
+	
+	Renderer::PushConstantData pushdata 
+	{ 
+		.resolution = { IApp::WINDOW_WIDTH, IApp::WINDOW_HEIGHT },
+		.elapsedTime = time 
+	};
+	vkCmdPushConstants(commandBuffer, forwardPipeline->graphicsPipelineLayout, VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(Renderer::PushConstantData), &pushdata);
 
 	vkCmdBindDescriptorSets(
 		commandBuffer,
@@ -871,8 +877,7 @@ void Hmck::Renderer::renderForward(
 		0,
 		nullptr);
 
-	// Render all nodes at top-level
-	renderEntity(frameIndex, commandBuffer, forwardPipeline, scene->root);
+	vkCmdDraw(commandBuffer, 3, 1, 0, 0);
 }
 
 void Hmck::Renderer::renderDeffered(uint32_t frameIndex, VkCommandBuffer commandBuffer)
