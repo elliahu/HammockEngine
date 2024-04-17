@@ -12,6 +12,7 @@
 #include <string>
 #include <random>
 #include <cmath>
+#include <memory>
 
 #include "HmckDescriptors.h"
 #include "HmckTexture.h"
@@ -28,6 +29,12 @@ namespace Hmck
 	inline void checkResult(VkResult result)
 	{
 		assert(result == VK_SUCCESS && "Failed to check result. Result is not VK_SUCCESS!");
+	}
+
+	template<typename T, typename P>
+	bool isInstanceOf(std::shared_ptr<T> entity) {
+		std::shared_ptr<P> derived = std::dynamic_pointer_cast<P>(entity);
+		return derived != nullptr;
 	}
 
 	namespace Init 

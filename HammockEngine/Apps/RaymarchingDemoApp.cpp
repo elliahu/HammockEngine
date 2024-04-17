@@ -1,23 +1,26 @@
-#include "VolumetricRenderingApp.h"
+#include "RaymarchingDemoApp.h"
 
-Hmck::VolumetricRenderingApp::VolumetricRenderingApp()
+Hmck::RaymarchingDemoApp::RaymarchingDemoApp()
 {
 	load();
 }
 
-void Hmck::VolumetricRenderingApp::run()
+void Hmck::RaymarchingDemoApp::run()
 {
 	// camera and movement
-	Renderer renderer{ window, device, scene};
+	Renderer renderer{ window, device, scene };
 
 	scene->camera.setViewTarget({ 1.f, 1.f, -1.f }, { 0.f, 0.f, 0.f });
 	auto viewerObject = std::make_shared<Entity>();
-	viewerObject->transform.translation = { 1.f, 1.f, -5.f };
+	viewerObject->transform.translation = { 0.f, 0.f, -5.f };
+	viewerObject->name = "Viewer object";
 	scene->addChildOfRoot(viewerObject);
 
 	std::shared_ptr<OmniLight> light = std::make_shared<OmniLight>();
-	light->transform.translation = { 0.f, 1.f, 0.f };
+	light->transform.translation = { 0.f, 10.f, 0.f };
+	light->name = "Point light";
 	scene->addChildOfRoot(light);
+
 
 	KeyboardMovementController cameraController{};
 
@@ -26,7 +29,7 @@ void Hmck::VolumetricRenderingApp::run()
 
 	renderer.writeEnvironmentData(scene->images, {
 		.omniLights = {{
-			.position =glm::vec4(light->transform.translation, 1.0f),
+			.position = glm::vec4(light->transform.translation, 1.0f),
 			.color = glm::vec4(light->color, 1.0f)
 		}},
 		.numOmniLights = 1
@@ -71,10 +74,8 @@ void Hmck::VolumetricRenderingApp::run()
 				}},
 				.numOmniLights = 1
 				});
-			// TODO make this bound when data changes
-			renderer.bindEnvironmentData(commandBuffer);
 
-			renderer.renderDeffered(frameIndex, commandBuffer);
+			renderer.renderForward(frameIndex, commandBuffer);
 
 
 			{
@@ -82,6 +83,7 @@ void Hmck::VolumetricRenderingApp::run()
 				ui.showDebugStats(viewerObject);
 				ui.showWindowControls();
 				ui.showEntityInspector(scene->getRoot());
+				ui.showDemoWindow();
 				ui.endUserInterface(commandBuffer);
 			}
 
@@ -93,17 +95,16 @@ void Hmck::VolumetricRenderingApp::run()
 	}
 }
 
-void Hmck::VolumetricRenderingApp::load()
+void Hmck::RaymarchingDemoApp::load()
 {
-	// TODO FIXME anything else than helmet is not visible
 	Scene::SceneCreateInfo info = {
 		.device = device,
 		.name = "Volumetric scene",
 		.loadFiles = {
 			{
-				.filename = std::string(MODELS_DIR) + "helmet/helmet.glb",
-				//.filename = std::string(MODELS_DIR) + "sponza/sponza.glb",
-			}
+				.filename = std::string(MODELS_DIR) + "Sphere/Sphere.glb",
+			},
+
 		},
 		.loadSkybox = {
 			.textures = {

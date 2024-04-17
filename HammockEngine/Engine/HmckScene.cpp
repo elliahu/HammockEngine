@@ -4,6 +4,7 @@ Hmck::Scene::Scene(SceneCreateInfo createInfo): device{createInfo.device}
 {
 	// create root
 	root = std::make_shared<Entity3D>();
+	root->name = "Scene root";
 
 	// load all files
 	for (auto& fileInfo : createInfo.loadFiles)
@@ -15,19 +16,6 @@ Hmck::Scene::Scene(SceneCreateInfo createInfo): device{createInfo.device}
 	if (createInfo.loadSkybox.textures.size() > 0)
 	{
 		loadSkyboxTexture(createInfo.loadSkybox);
-		/*Gltf::load(
-			createInfo.loadSkybox.model.filename,
-			device,
-			images,
-			static_cast<uint32_t>(images.size()),
-			materials,
-			static_cast<uint32_t>(materials.size()),
-			textures,
-			static_cast<uint32_t>(textures.size()),
-			skyboxVertices,
-			skyboxIndices,
-			root,
-			createInfo.loadSkybox.model.binary);*/
 		skyboxVertices = {
 			{{-0.5f, -0.5f, -0.5f}},
 			{{0.5f, -0.5f, -0.5f}},

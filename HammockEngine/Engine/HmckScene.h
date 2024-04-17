@@ -60,6 +60,9 @@ namespace Hmck
 			getRoot()->children.push_back(child);
 		}
 
+		void loadFile(SceneLoadFileInfo loadInfo);
+		void loadSkyboxTexture(SkyboxLoadSkyboxInfo loadInfo);
+
 		std::shared_ptr<Entity> root;
 		std::vector<Image> images;
 		std::vector<Texture> textures;
@@ -80,9 +83,6 @@ namespace Hmck
 		bool hasSkybox = false;
 
 	private:
-
-		void loadFile(SceneLoadFileInfo loadInfo);
-		void loadSkyboxTexture(SkyboxLoadSkyboxInfo loadInfo);
 		Device& device;
 	};
 }

@@ -1,7 +1,7 @@
 #include "HmckUserInterface.h"
 
 
-Hmck::UserInterface::UserInterface(Device& device, VkRenderPass renderPass, Window& window) : device{ device }, window{ window }, renderPass{renderPass}
+Hmck::UserInterface::UserInterface(Device& device, VkRenderPass renderPass, Window& window) : device{ device }, window{ window }, renderPass{ renderPass }
 {
 	init();
 	setupStyle();
@@ -32,12 +32,12 @@ void Hmck::UserInterface::showDebugStats(std::shared_ptr<Entity> camera)
 {
 	ImGuiIO& io = ImGui::GetIO();
 	ImGuiWindowFlags window_flags = ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_NoFocusOnAppearing | ImGuiWindowFlags_NoNav;
-	ImGui::SetNextWindowPos({10,10});
+	ImGui::SetNextWindowPos({ 10,10 });
 	ImGui::SetNextWindowBgAlpha(0.35f);
-	ImGui::Begin(window.getWindowName().c_str(),(bool*)0, window_flags);
+	ImGui::Begin(window.getWindowName().c_str(), (bool*)0, window_flags);
 	auto cameraPosition = camera->transform.translation;
 	auto cameraRotation = camera->transform.rotation;
-	ImGui::Text("Camera world position: ( %.2f, %.2f, %.2f )",cameraPosition.x, cameraPosition.y, cameraPosition.z);
+	ImGui::Text("Camera world position: ( %.2f, %.2f, %.2f )", cameraPosition.x, cameraPosition.y, cameraPosition.z);
 	ImGui::Text("Camera world rotaion: ( %.2f, %.2f, %.2f )", cameraRotation.x, cameraRotation.y, cameraRotation.z);
 	if (ImGui::IsMousePosValid())
 		ImGui::Text("Mouse Position: (%.1f,%.1f)", io.MousePos.x, io.MousePos.y);
@@ -51,7 +51,7 @@ void Hmck::UserInterface::showDebugStats(std::shared_ptr<Entity> camera)
 void Hmck::UserInterface::showWindowControls()
 {
 	ImGuiWindowFlags window_flags = ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_NoFocusOnAppearing | ImGuiWindowFlags_NoNav;
-	ImGui::SetNextWindowPos({ static_cast<float>(window.getExtent().width - 10),10.f}, ImGuiCond_Always, {1.f, 0.f});
+	ImGui::SetNextWindowPos({ static_cast<float>(window.getExtent().width - 10),10.f }, ImGuiCond_Always, { 1.f, 0.f });
 	ImGui::SetNextWindowBgAlpha(0.35f);
 	ImGui::Begin("Window controls", (bool*)0, window_flags);
 	if (ImGui::TreeNode("Window mode"))
@@ -95,7 +95,7 @@ void Hmck::UserInterface::showEntityComponents(std::shared_ptr<Entity>& entity, 
 void Hmck::UserInterface::showEntityInspector(std::shared_ptr<Entity> entity)
 {
 	const ImGuiWindowFlags window_flags = ImGuiWindowFlags_AlwaysAutoResize;
-	ImGui::SetNextWindowPos({ 10, 130}, ImGuiCond_Once, {0,0});
+	ImGui::SetNextWindowPos({ 10, 130 }, ImGuiCond_Once, { 0,0 });
 	ImGui::SetNextWindowSizeConstraints({ 300, 200 }, ImVec2(static_cast<float>(window.getExtent().width), 500));
 	beginWindow("Entity Inspector", (bool*)false, ImGuiWindowFlags_AlwaysAutoResize);
 	ImGui::Text("Inspect all entities in the scene", window_flags);
@@ -143,7 +143,7 @@ void Hmck::UserInterface::init()
 	pool_info.poolSizeCount = static_cast<uint32_t>(std::size(pool_sizes));
 	pool_info.pPoolSizes = pool_sizes;
 
-	
+
 	if (vkCreateDescriptorPool(device.device(), &pool_info, nullptr, &imguiPool) != VK_SUCCESS)
 	{
 		throw std::runtime_error("Failed to create descriptor pool for UI");
@@ -183,7 +183,7 @@ void Hmck::UserInterface::init()
 }
 
 void Hmck::UserInterface::setupStyle()
-{  
+{
 	ImGuiStyle& style = ImGui::GetStyle();
 	// Setup ImGUI style
 
@@ -211,7 +211,7 @@ void Hmck::UserInterface::setupStyle()
 	style.WindowTitleAlign = { .5f, .5f };
 
 	// colors
-	style.Colors[ImGuiCol_TitleBg] = ImVec4(15 / 255.0f, 15 / 255.0f, 15 / 255.0f, 146 / 240.0f); 
+	style.Colors[ImGuiCol_TitleBg] = ImVec4(15 / 255.0f, 15 / 255.0f, 15 / 255.0f, 146 / 240.0f);
 	style.Colors[ImGuiCol_FrameBg] = ImVec4(60 / 255.0f, 60 / 255.0f, 60 / 255.0f, 170 / 255.0f);
 	style.Colors[ImGuiCol_FrameBgHovered] = ImVec4(60 / 255.0f, 60 / 255.0f, 60 / 255.0f, 255 / 255.0f);
 	style.Colors[ImGuiCol_FrameBgActive] = ImVec4(60 / 255.0f, 60 / 255.0f, 60 / 255.0f, 255 / 255.0f);
@@ -281,39 +281,32 @@ void Hmck::UserInterface::endWindow()
 
 void Hmck::UserInterface::entityComponets(std::shared_ptr<Entity> entity)
 {
-	
+
 	if (ImGui::CollapsingHeader("Transform")) // Tranform
 	{
-		if (ImGui::TreeNode("Translation"))
-		{
-			ImGui::DragFloat("x", &entity->transform.translation.x, 0.01f);
-			ImGui::DragFloat("y", &entity->transform.translation.y, 0.01f);
-			ImGui::DragFloat("z", &entity->transform.translation.z, 0.01f);
-			ImGui::TreePop();
-		}
-		if (ImGui::TreeNode("Rotation"))
-		{
-			ImGui::DragFloat("x", &entity->transform.rotation.x, 0.01f);
-			ImGui::DragFloat("y", &entity->transform.rotation.y, 0.01f);
-			ImGui::DragFloat("z", &entity->transform.rotation.z, 0.01f);
-			ImGui::TreePop();
-		}
-		if (ImGui::TreeNode("Scale"))
-		{
-			ImGui::DragFloat("x", &entity->transform.scale.x, 0.01f);
-			ImGui::DragFloat("y", &entity->transform.scale.y, 0.01f);
-			ImGui::DragFloat("z", &entity->transform.scale.z, 0.01f);
-			ImGui::TreePop();
-		}
-		
+		ImGui::DragFloat3("Translation", &entity->transform.translation.x);
+		ImGui::DragFloat3("Rotation", &entity->transform.rotation.x);
+		ImGui::DragFloat3("Scale", &entity->transform.scale.x);
 	}
 	ImGui::Separator();
 }
 
 void Hmck::UserInterface::inspectEntity(std::shared_ptr<Entity> entity)
 {
-	if (ImGui::TreeNode(("#" + std::to_string(entity->id)).c_str()))
+	std::string name = entity->name + " # " + std::to_string(entity->id);
+	std::string prefix = "";
+
+	if (isInstanceOf<Entity, Entity3D>(entity))
+		prefix = "3D";
+	else if (isInstanceOf<Entity, OmniLight>(entity))
+		prefix = "L";
+	else prefix = "O";
+
+	name = prefix + " | " + name;
+	
+	if (ImGui::TreeNode(name.c_str()))
 	{
+		
 		entityComponets(entity);
 		ImGui::Text("Children:");
 		for (auto& child : entity->children)

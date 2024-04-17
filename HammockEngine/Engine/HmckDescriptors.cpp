@@ -257,7 +257,7 @@ namespace Hmck
 		bool success = pool.allocateDescriptor(setLayout.getDescriptorSetLayout(), set);
 		if (!success)
 		{
-			return false;
+			throw std::runtime_error("Failed to allocate descriptors from the pool!");
 		}
 		overwrite(set);
 		return true;

@@ -22,6 +22,7 @@
 #include "HmckEntity.h"
 #include "HmckScene.h"
 #include "HmckLights.h"
+#include "HmckTexture.h"
 
 #ifndef MODELS_DIR
 #define MODELS_DIR "../../Resources/Models/"
@@ -32,15 +33,15 @@
 #endif // !MATERIALS_DIR
 
 
-namespace Hmck 
+namespace Hmck
 {
-	class VolumetricRenderingApp : public IApp
+	class RaymarchingDemoApp : public IApp
 	{
 		// There is so much code in this class 
 		// TODO make more abstraction layers over the IApp
 	public:
 
-		VolumetricRenderingApp();
+		RaymarchingDemoApp();
 
 		// Inherited via IApp
 		virtual void run() override;
@@ -50,6 +51,8 @@ namespace Hmck
 
 	private:
 		bool sceneDataBound = false;
+		
+		
 	};
 
 }

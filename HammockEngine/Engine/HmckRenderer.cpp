@@ -7,9 +7,9 @@ Hmck::Renderer::Renderer(Window& window, Device& device, std::unique_ptr<Scene>&
 
 	// create descriptor pool
 	descriptorPool = DescriptorPool::Builder(device)
-		.setMaxSets(100)
-		.addPoolSize(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 2000)
-		.addPoolSize(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 2000)
+		.setMaxSets(10000)
+		.addPoolSize(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 5000)
+		.addPoolSize(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 5000)
 		.build();
 
 	// prepare descriptor set layouts
@@ -30,6 +30,19 @@ Hmck::Renderer::Renderer(Window& window, Device& device, std::unique_ptr<Scene>&
 	primitiveDescriptorSetLayout = DescriptorSetLayout::Builder(device)
 		.addBinding(0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_ALL_GRAPHICS)
 		.build();
+
+	noiseDescriptorSetLayout = DescriptorSetLayout::Builder(device)
+		.addBinding(0, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_ALL_GRAPHICS)
+		.build();
+
+	std::string noiseFile = "../../Resources/Noise/noise2.png";
+	noiseTexture.loadFromFile(noiseFile, device, VK_FORMAT_R8G8B8A8_UNORM);
+	noiseTexture.createSampler(device);
+	noiseTexture.updateDescriptor();
+
+	DescriptorWriter(*noiseDescriptorSetLayout, *descriptorPool)
+		.writeImage(0, &noiseTexture.descriptor)
+		.build(noiseDescriptorSet);
 
 	// prepare buffers
 	environmentBuffer = std::make_unique<Buffer>(
@@ -109,7 +122,7 @@ Hmck::Renderer::Renderer(Window& window, Device& device, std::unique_ptr<Scene>&
 			},
 			.FS 
 			{
-				.byteCode = Hmck::Filesystem::readFile("../../HammockEngine/Engine/Shaders/Compiled/default_forward.frag.spv"),
+				.byteCode = Hmck::Filesystem::readFile("../../HammockEngine/Engine/Shaders/Compiled/raymarch.frag.spv"),
 				.entryFunc = "main"
 			},
 			.descriptorSetLayouts = 
@@ -118,8 +131,15 @@ Hmck::Renderer::Renderer(Window& window, Device& device, std::unique_ptr<Scene>&
 				frameDescriptorSetLayout->getDescriptorSetLayout(),
 				entityDescriptorSetLayout->getDescriptorSetLayout(),
 				primitiveDescriptorSetLayout->getDescriptorSetLayout(),
+				noiseDescriptorSetLayout->getDescriptorSetLayout()
 			},
-			.pushConstantRanges {},
+			.pushConstantRanges {
+				{
+					.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT,
+					.offset = 0,
+					.size = sizeof(glm::vec2)
+				}
+			},
 			.graphicsState 
 			{
 				.depthTest = VK_TRUE,
@@ -147,6 +167,8 @@ Hmck::Renderer::Renderer(Window& window, Device& device, std::unique_ptr<Scene>&
 			},
 			.renderPass = getSwapChainRenderPass()
 	});
+
+	
 
 	auto depthFormat = device.findSupportedFormat(
 		{ VK_FORMAT_D32_SFLOAT, VK_FORMAT_D32_SFLOAT_S8_UINT, VK_FORMAT_D24_UNORM_S8_UINT },
@@ -385,6 +407,7 @@ Hmck::Renderer::Renderer(Window& window, Device& device, std::unique_ptr<Scene>&
 Hmck::Renderer::~Renderer()
 {
 	freeCommandBuffers();
+	noiseTexture.destroy(device);
 }
 
 
@@ -568,6 +591,7 @@ void Hmck::Renderer::recreateSwapChain()
 void Hmck::Renderer::renderEntity(
 	uint32_t frameIndex,
 	VkCommandBuffer commandBuffer,
+	std::unique_ptr<GraphicsPipeline>& pipeline,
 	std::shared_ptr<Entity>& entity)
 {
 	// don't render invisible nodes
@@ -593,7 +617,7 @@ void Hmck::Renderer::renderEntity(
 		vkCmdBindDescriptorSets(
 			commandBuffer,
 			VK_PIPELINE_BIND_POINT_GRAPHICS,
-			forwardPipeline->graphicsPipelineLayout,
+			pipeline->graphicsPipelineLayout,
 			2, 1,
 			&entityDescriptorSets[entity->id],
 			0,
@@ -624,7 +648,7 @@ void Hmck::Renderer::renderEntity(
 				vkCmdBindDescriptorSets(
 					commandBuffer,
 					VK_PIPELINE_BIND_POINT_GRAPHICS,
-					forwardPipeline->graphicsPipelineLayout,
+					pipeline->graphicsPipelineLayout,
 					3, 1,
 					&primitiveDescriptorSets[(primitive.materialIndex >= 0 ? primitive.materialIndex : 0)],
 					0,
@@ -636,7 +660,7 @@ void Hmck::Renderer::renderEntity(
 		}
 	}
 	for (auto& child : entity->children) {
-		renderEntity(frameIndex, commandBuffer, child);
+		renderEntity(frameIndex, commandBuffer, pipeline, child);
 	}
 }
 
@@ -798,12 +822,25 @@ void Hmck::Renderer::renderForward(
 	uint32_t frameIndex,
 	VkCommandBuffer commandBuffer)
 {
+	beginSwapChainRenderPass(commandBuffer);
+	
+
 	VkDeviceSize offsets[] = { 0 };
 	VkBuffer buffers[] = { sceneVertexBuffer->getBuffer() };
 	vkCmdBindVertexBuffers(commandBuffer, 0, 1, buffers, offsets);
 	vkCmdBindIndexBuffer(commandBuffer, sceneIndexBuffer->getBuffer(), 0, VK_INDEX_TYPE_UINT32);
 
 	forwardPipeline->bind(commandBuffer);
+
+	// bind env
+	vkCmdBindDescriptorSets(
+		commandBuffer,
+		VK_PIPELINE_BIND_POINT_GRAPHICS,
+		forwardPipeline->graphicsPipelineLayout,
+		0, 1,
+		&environmentDescriptorSet,
+		0,
+		nullptr);
 
 	FrameBufferData data{
 		.projection = scene->camera.getProjection(),
@@ -821,9 +858,21 @@ void Hmck::Renderer::renderForward(
 		&frameDescriptorSets[frameIndex],
 		0,
 		nullptr);
+	
+	glm::vec2 resolution = { IApp::WINDOW_WIDTH, IApp::WINDOW_HEIGHT };
+	vkCmdPushConstants(commandBuffer, forwardPipeline->graphicsPipelineLayout, VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(glm::vec2), &resolution);
+
+	vkCmdBindDescriptorSets(
+		commandBuffer,
+		VK_PIPELINE_BIND_POINT_GRAPHICS,
+		forwardPipeline->graphicsPipelineLayout,
+		4, 1,
+		&noiseDescriptorSet,
+		0,
+		nullptr);
 
 	// Render all nodes at top-level
-	renderEntity(frameIndex, commandBuffer, scene->root);
+	renderEntity(frameIndex, commandBuffer, forwardPipeline, scene->root);
 }
 
 void Hmck::Renderer::renderDeffered(uint32_t frameIndex, VkCommandBuffer commandBuffer)
@@ -835,25 +884,45 @@ void Hmck::Renderer::renderDeffered(uint32_t frameIndex, VkCommandBuffer command
 					{.color = { 0.0f, 0.0f, 0.0f, 0.0f } },
 					{.depthStencil = { 1.0f, 0 }}});
 
-	// skybox
-	VkDeviceSize offsets[] = { 0 };
-	VkBuffer buffers[] = { skyboxVertexBuffer->getBuffer() };
-	vkCmdBindVertexBuffers(commandBuffer, 0, 1, buffers, offsets);
-	vkCmdBindIndexBuffer(commandBuffer, skyboxIndexBuffer->getBuffer(), 0, VK_INDEX_TYPE_UINT32);
+	FrameBufferData data{
+		.projection = scene->camera.getProjection(),
+		.view = scene->camera.getView(),
+		.inverseView = scene->camera.getInverseView()
+	};
+	frameBuffers[frameIndex]->writeToBuffer(&data);
 
-	skyboxPipeline->bind(commandBuffer);
+	// bind env
+	vkCmdBindDescriptorSets(
+		commandBuffer,
+		VK_PIPELINE_BIND_POINT_GRAPHICS,
+		skyboxPipeline->graphicsPipelineLayout,
+		0, 1,
+		&environmentDescriptorSet,
+		0,
+		nullptr);
+
 	// bind per frame
 	vkCmdBindDescriptorSets(
 		commandBuffer,
 		VK_PIPELINE_BIND_POINT_GRAPHICS,
-		forwardPipeline->graphicsPipelineLayout,
+		skyboxPipeline->graphicsPipelineLayout,
 		1, 1,
 		&frameDescriptorSets[frameIndex],
 		0,
 		nullptr);
 
+	if (scene->hasSkybox) 
+	{
+		// skybox
+		VkDeviceSize offsets[] = { 0 };
+		VkBuffer buffers[] = { skyboxVertexBuffer->getBuffer() };
+		vkCmdBindVertexBuffers(commandBuffer, 0, 1, buffers, offsets);
+		vkCmdBindIndexBuffer(commandBuffer, skyboxIndexBuffer->getBuffer(), 0, VK_INDEX_TYPE_UINT32);
 
-	vkCmdDrawIndexed(commandBuffer, 36, 1, 0, 0, 0);
+		skyboxPipeline->bind(commandBuffer);
+
+		vkCmdDrawIndexed(commandBuffer, 36, 1, 0, 0, 0);
+	}
 	
 	// gbuffer
 	VkDeviceSize sceneoffsets[] = { 0 };
@@ -863,25 +932,8 @@ void Hmck::Renderer::renderDeffered(uint32_t frameIndex, VkCommandBuffer command
 
 	gbufferPipeline->bind(commandBuffer);
 
-	FrameBufferData data{
-		.projection = scene->camera.getProjection(),
-		.view = scene->camera.getView(),
-		.inverseView = scene->camera.getInverseView()
-	};
-	frameBuffers[frameIndex]->writeToBuffer(&data);
-
-	// bind per frame
-	vkCmdBindDescriptorSets(
-		commandBuffer,
-		VK_PIPELINE_BIND_POINT_GRAPHICS,
-		forwardPipeline->graphicsPipelineLayout,
-		1, 1,
-		&frameDescriptorSets[frameIndex],
-		0,
-		nullptr);
-
 	// Render all nodes at top-level off-screen
-	renderEntity(frameIndex, commandBuffer, scene->root);
+	renderEntity(frameIndex, commandBuffer, gbufferPipeline, scene->root);
 
 	endRenderPass(commandBuffer);
 	beginSwapChainRenderPass(commandBuffer);
@@ -915,24 +967,11 @@ void Hmck::Renderer::writeEnvironmentData(std::vector<Image>& images, Environmen
 	environmentBuffer->writeToBuffer(&data);
 
 	auto sceneBufferInfo = environmentBuffer->descriptorInfo();
-	DescriptorWriter(*environmentDescriptorSetLayout, *descriptorPool)
+	auto result = DescriptorWriter(*environmentDescriptorSetLayout, *descriptorPool)
 		.writeBuffer(0, &sceneBufferInfo)
 		.writeImages(1, imageInfos)
 		.writeImage(2, &skybox.descriptor)
 		.build(environmentDescriptorSet);
-}
-
-void Hmck::Renderer::bindEnvironmentData(VkCommandBuffer commandBuffer)
-{
-	// bind when needed
-	vkCmdBindDescriptorSets(
-		commandBuffer,
-		VK_PIPELINE_BIND_POINT_GRAPHICS,
-		forwardPipeline->graphicsPipelineLayout,
-		0, 1,
-		&environmentDescriptorSet,
-		0,
-		nullptr);
 }
 
 void Hmck::Renderer::updateEnvironmentBuffer(EnvironmentBufferData data)

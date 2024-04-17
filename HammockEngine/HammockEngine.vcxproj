@@ -29,6 +29,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Apps\App.cpp" />
+    <ClCompile Include="Apps\RaymarchingDemoApp.cpp" />
     <ClCompile Include="Engine\Controllers\KeyboardMovementController.cpp" />
     <ClCompile Include="Engine\HmckBuffer.cpp" />
     <ClCompile Include="Engine\HmckCamera.cpp" />
@@ -53,13 +54,14 @@
     <ClCompile Include="External\misc\cpp\imgui_stdlib.cpp" />
     <ClCompile Include="Engine\Utils\HmckLogger.cpp" />
     <ClCompile Include="Engine\Platform\HmckInputHandler.cpp" />
-    <ClCompile Include="HmckLights.cpp" />
+    <ClCompile Include="Engine\HmckLights.cpp" />
     <ClCompile Include="main.cpp" />
-    <ClCompile Include="Apps\VolumetricRenderingApp.cpp" />
+    <ClCompile Include="Apps\PBRApp.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Apps\App.h" />
     <ClInclude Include="Apps\IApp.h" />
+    <ClInclude Include="Apps\RaymarchingDemoApp.h" />
     <ClInclude Include="Engine\Controllers\KeyboardMovementController.h" />
     <ClInclude Include="Engine\HmckBuffer.h" />
     <ClInclude Include="Engine\HmckCamera.h" />
@@ -97,8 +99,8 @@
     <ClInclude Include="Engine\Platform\HmckInputHandler.h" />
     <ClInclude Include="Engine\HmckFramebuffer.h" />
     <ClInclude Include="Engine\HmckGLTF.h" />
-    <ClInclude Include="Apps\VolumetricRenderingApp.h" />
-    <ClInclude Include="HmckLights.h" />
+    <ClInclude Include="Apps\PBRApp.h" />
+    <ClInclude Include="Engine\HmckLights.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include="Engine\Shaders\build_shaders_glsl.py" />

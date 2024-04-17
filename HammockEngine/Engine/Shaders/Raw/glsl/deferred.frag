@@ -111,7 +111,7 @@ vec3 Uncharted2Tonemap(vec3 x)
 
 void main()
 {
-    vec3 N = texture(normalSampler, uv).rgb;
+    vec3 N = normalize(texture(normalSampler, uv).rgb);
 	vec3 position = texture(positionSampler, uv).rgb;
 	vec3 V = normalize(- position);
 	vec3 albedo = texture(albedoSampler, uv).rgb;
@@ -119,6 +119,9 @@ void main()
 	float roughness = material.r;
 	float metallic = material.g;
 	float ao = material.b;
+
+	//outColor = max(dot(N, env.omniLights[0].position.xyz - position), 0.0) * vec4(albedo, 1);
+	//return;
 
 	// Specular contribution
 	vec3 Lo = vec3(0.0);
@@ -128,7 +131,7 @@ void main()
 	};
 
 	// Combine with ambient
-	vec3 color = albedo * 0.02;
+	vec3 color = albedo * 0.1;
 	color += Lo;
 
 	// apply occlution if exists
@@ -140,4 +143,5 @@ void main()
 	color = pow(color, vec3(0.4545));
 
 	outColor = vec4(color, 1.0);
+
 }

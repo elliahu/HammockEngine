@@ -2,18 +2,41 @@
 #include <iostream>
 #include <stdexcept>
 
-#include "Apps/VolumetricRenderingApp.h"
+#include "Apps/PBRApp.h"
+#include "Apps/RaymarchingDemoApp.h"
 #include "Utils/HmckLogger.h"
+#include "HmckEntity.h"
 
 
 
 int main()
 {
-	Hmck::VolumetricRenderingApp app{};
+	
 
 	try
 	{
-		app.run();
+		while (true) 
+		{
+			int demo;
+			std::cout << "Enter a demo ID:\n0 - Exit\n1 - PBR Demo\n2 - Raymarching Demo\n";
+			std::cin >> demo;
+
+			if (demo == 0) {
+				break;
+			}
+			else if (demo == 1)
+			{
+				Hmck::PBRApp app{};
+				app.run();
+			}
+			else if (demo == 2)
+			{
+				Hmck::RaymarchingDemoApp app{};
+				app.run();
+			}
+
+			Hmck::Entity::currentId = 0;
+		}
 	}
 	catch (const std::exception& e)
 	{

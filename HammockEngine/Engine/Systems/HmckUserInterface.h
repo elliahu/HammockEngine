@@ -9,6 +9,8 @@
 #include "HmckEntity.h"
 #include "HmckScene.h"
 #include "HmckRenderer.h"
+#include "HmckUtils.h"
+#include "HmckLights.h"
 
 #include <exception>
 #include <deque>

@@ -90,7 +90,7 @@
     <ClCompile Include="Engine\HmckGLTF.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="Apps\VolumetricRenderingApp.cpp">
+    <ClCompile Include="Apps\PBRApp.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="Engine\HmckScene.cpp">
@@ -99,7 +99,10 @@
     <ClCompile Include="Engine\HmckEntity.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="HmckLights.cpp">
+    <ClCompile Include="Engine\HmckLights.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Apps\RaymarchingDemoApp.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
@@ -200,7 +203,7 @@
     <ClInclude Include="External\json.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="Apps\VolumetricRenderingApp.h">
+    <ClInclude Include="Apps\PBRApp.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="Apps\IApp.h">
@@ -224,7 +227,10 @@
     <ClInclude Include="Engine\HmckVertex.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="HmckLights.h">
+    <ClInclude Include="Engine\HmckLights.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Apps\RaymarchingDemoApp.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
