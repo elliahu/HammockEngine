@@ -44,12 +44,20 @@ namespace Hmck
 			glm::mat4 projection{};
 			glm::mat4 view{};
 			glm::mat4 inverseView{};
+			glm::vec4 sunPosition{ 2.0f, .3f, 2.0f, 0.0f };
+			glm::vec4 sunColor{ 1.0f, 0.5f, 0.3f, 0.0f };
+			glm::vec4 baseSkyColor{ 0.7f, 0.7f, 0.90, 0.0f };
+			glm::vec4 gradientSkyColor{ 0.90f, 0.75f, 0.90f, 0.8f };
 		};
 
 		struct PushData
 		{
-			glm::vec2 resolution{};
-			float elapsedTime;
+			float resX = IApp::WINDOW_WIDTH;
+			float resY = IApp::WINDOW_HEIGHT;
+			float elapsedTime = 0.0f;
+			float maxSteps = 100.f;
+			float marchSize = 0.08f;
+
 		};
 
 		RaymarchingDemoApp();
@@ -61,6 +69,7 @@ namespace Hmck
 		void init();
 		void draw(int frameIndex, float elapsedTime, VkCommandBuffer commandBuffer);
 		void destroy();
+		void ui();
 
 	private:
 		std::unique_ptr<Scene> scene{};
@@ -75,6 +84,9 @@ namespace Hmck
 		std::unique_ptr<GraphicsPipeline> pipeline{}; // uses swapchain render pass
 
 		Texture2D noiseTexture;
+
+		PushData pushData;
+		BufferData bufferData;
 	};
 
 }

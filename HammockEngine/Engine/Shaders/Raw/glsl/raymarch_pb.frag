@@ -13,6 +13,8 @@ layout (set = 0, binding = 0) uniform SceneUbo
     mat4 inverseView;
     vec4 sunPosition;
     vec4 sunColor;
+    vec4 baseSkyColor;
+    vec4 gradientSkyColor;
 } data;
 
 layout(set = 0, binding = 1) uniform sampler2D noiseSampler;
@@ -151,11 +153,12 @@ void main() {
   // Sun and Sky
   vec3 sunColor = data.sunColor.rgb;
   vec3 sunDirection = normalize(data.sunPosition.rgb);
+  sunDirection.y *= -1;
   float sun = clamp(dot(sunDirection, rd), 0.0, 1.0);
   // Base sky color
-  color = vec3(0.7,0.7,0.90);
+  color = data.baseSkyColor.rgb;
   // Add vertical gradient
-  color -= 0.8 * vec3(0.90,0.75,0.90) * rd.y;
+  color -= -data.gradientSkyColor.a * data.gradientSkyColor.rgb * rd.y;
   // Add sun color to sky
   color += 0.5 * sunColor * pow(sun, 10.0);
 

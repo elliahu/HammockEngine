@@ -45,8 +45,10 @@ namespace Hmck
 			glm::mat4 projection{};
 			glm::mat4 view{};
 			glm::mat4 inverseView{};
-			glm::vec4 sunPosition{ 2.0f, 1.0f, 2.0f, 0.0f };
+			glm::vec4 sunPosition{ 2.0f, .3f, 2.0f, 0.0f };
 			glm::vec4 sunColor{ 1.0f, 0.5f, 0.3f, 0.0f };
+			glm::vec4 baseSkyColor{ 0.7f, 0.7f, 0.90, 0.0f };
+			glm::vec4 gradientSkyColor{ 0.90f, 0.75f, 0.90f, 0.8f };
 		};
 
 		struct PushData

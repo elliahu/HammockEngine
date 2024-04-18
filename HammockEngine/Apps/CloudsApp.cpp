@@ -119,7 +119,6 @@ void Hmck::CloudsApp::run()
 				ui.showDebugStats(viewerObject);
 				ui.showWindowControls();
 				ui.showEntityInspector(scene->getRoot());
-				ui.showDemoWindow();
 				ui.endUserInterface(commandBuffer);
 			}
 
@@ -198,9 +197,9 @@ void Hmck::CloudsApp::draw(int frameIndex, float elapsedTime, VkCommandBuffer co
 {
 	pipeline->bind(commandBuffer);
 
-	bufferData.projection = scene->camera.getProjection(),
-	bufferData.view = scene->camera.getView(),
-	bufferData.inverseView = scene->camera.getInverseView(),
+	bufferData.projection = scene->camera.getProjection();
+	bufferData.view = scene->camera.getView();
+	bufferData.inverseView = scene->camera.getInverseView();
 	
 	uniformBuffers[frameIndex]->writeToBuffer(&bufferData);
 
@@ -240,6 +239,14 @@ void Hmck::CloudsApp::ui()
 	float sunColor[4] = { bufferData.sunColor.x,bufferData.sunColor.y,bufferData.sunColor.z,bufferData.sunColor.w };
 	ImGui::ColorEdit4("Sun color", &sunColor[0]);
 	bufferData.sunColor = { sunColor[0],sunColor[1] ,sunColor[2] ,sunColor[3] };
+
+	float baseSkyColor[4] = { bufferData.baseSkyColor.x,bufferData.baseSkyColor.y,bufferData.baseSkyColor.z,bufferData.baseSkyColor.w };
+	ImGui::ColorEdit4("Base sky color", &baseSkyColor[0]);
+	bufferData.baseSkyColor = { baseSkyColor[0],baseSkyColor[1] ,baseSkyColor[2] ,baseSkyColor[3] };
+
+	float gradientSkyColor[4] = { bufferData.gradientSkyColor.x,bufferData.gradientSkyColor.y,bufferData.gradientSkyColor.z,bufferData.gradientSkyColor.w };
+	ImGui::ColorEdit4("Gradient sky color", &gradientSkyColor[0]);
+	bufferData.gradientSkyColor = { gradientSkyColor[0],gradientSkyColor[1] ,gradientSkyColor[2] ,gradientSkyColor[3] };
 
 	ImGui::DragFloat("Max steps", &pushData.maxSteps,1.0f, 0.001f);
 	ImGui::DragFloat("Max steps light", &pushData.maxStepsLight, 1.0f, 0.001f);

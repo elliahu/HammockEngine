@@ -114,10 +114,10 @@ void Hmck::RaymarchingDemoApp::run()
 
 			{
 				ui.beginUserInterface();
+				this->ui();
 				ui.showDebugStats(viewerObject);
 				ui.showWindowControls();
 				ui.showEntityInspector(scene->getRoot());
-				ui.showDemoWindow();
 				ui.endUserInterface(commandBuffer);
 			}
 
@@ -189,11 +189,11 @@ void Hmck::RaymarchingDemoApp::draw(int frameIndex, float elapsedTime, VkCommand
 {
 	pipeline->bind(commandBuffer);
 
-	BufferData bufferData{
-		.projection = scene->camera.getProjection(),
-		.view = scene->camera.getView(),
-		.inverseView = scene->camera.getInverseView(),
-	};
+	
+	bufferData.projection = scene->camera.getProjection();
+	bufferData.view = scene->camera.getView();
+	bufferData.inverseView = scene->camera.getInverseView();
+	
 	uniformBuffers[frameIndex]->writeToBuffer(&bufferData);
 
 	vkCmdBindDescriptorSets(
@@ -205,10 +205,9 @@ void Hmck::RaymarchingDemoApp::draw(int frameIndex, float elapsedTime, VkCommand
 		0,
 		nullptr);
 
-	PushData pushData{
-		.resolution = {IApp::WINDOW_WIDTH, IApp::WINDOW_HEIGHT},
-		.elapsedTime = elapsedTime
-	};
+
+	pushData.elapsedTime = elapsedTime;
+
 
 	vkCmdPushConstants(commandBuffer, pipeline->graphicsPipelineLayout, VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(PushData), &pushData);
 
@@ -218,4 +217,32 @@ void Hmck::RaymarchingDemoApp::draw(int frameIndex, float elapsedTime, VkCommand
 void Hmck::RaymarchingDemoApp::destroy()
 {
 	noiseTexture.destroy(device);
+}
+
+void Hmck::RaymarchingDemoApp::ui()
+{
+	const ImGuiWindowFlags window_flags = ImGuiWindowFlags_AlwaysAutoResize;
+	ImGui::Begin("Cloud editor", (bool*)false, ImGuiWindowFlags_AlwaysAutoResize);
+	ImGui::Text("Edit cloud properties", window_flags);
+
+	float sunPosition[4] = { bufferData.sunPosition.x,bufferData.sunPosition.y,bufferData.sunPosition.z,bufferData.sunPosition.w };
+	ImGui::DragFloat4("Sun position", &sunPosition[0], 0.1f);
+	bufferData.sunPosition = { sunPosition[0],sunPosition[1] ,sunPosition[2] ,sunPosition[3] };
+
+	float sunColor[4] = { bufferData.sunColor.x,bufferData.sunColor.y,bufferData.sunColor.z,bufferData.sunColor.w };
+	ImGui::ColorEdit4("Sun color", &sunColor[0]);
+	bufferData.sunColor = { sunColor[0],sunColor[1] ,sunColor[2] ,sunColor[3] };
+
+	float baseSkyColor[4] = { bufferData.baseSkyColor.x,bufferData.baseSkyColor.y,bufferData.baseSkyColor.z,bufferData.baseSkyColor.w };
+	ImGui::ColorEdit4("Base sky color", &baseSkyColor[0]);
+	bufferData.baseSkyColor = { baseSkyColor[0],baseSkyColor[1] ,baseSkyColor[2] ,baseSkyColor[3] };
+
+	float gradientSkyColor[4] = { bufferData.gradientSkyColor.x,bufferData.gradientSkyColor.y,bufferData.gradientSkyColor.z,bufferData.gradientSkyColor.w };
+	ImGui::ColorEdit4("Gradient sky color", &gradientSkyColor[0]);
+	bufferData.gradientSkyColor = { gradientSkyColor[0],gradientSkyColor[1] ,gradientSkyColor[2] ,gradientSkyColor[3] };
+
+	ImGui::DragFloat("Max steps", &pushData.maxSteps, 1.0f, 0.001f);
+	ImGui::DragFloat("March size", &pushData.marchSize, 0.01f, 0.001f);
+
+	ImGui::End();
 }

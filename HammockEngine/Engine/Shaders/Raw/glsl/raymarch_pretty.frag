@@ -11,16 +11,22 @@ layout (set = 0, binding = 0) uniform SceneUbo
     mat4 projection;
     mat4 view;
     mat4 inverseView;
-} scene;
+    vec4 sunPosition;
+    vec4 sunColor;
+    vec4 baseSkyColor;
+    vec4 gradientSkyColor;
+} data;
 
 layout(set = 0, binding = 1) uniform sampler2D noiseSampler;
 
 layout (push_constant) uniform PushConstants {
-    vec2 resolution;
+    float resX;
+    float resY;
     float elapsedTime;
+    float maxSteps;
+    float marchSize;
 } push;
 
-#define MAX_STEPS 100
 
 float noise(vec3 x ) {
   vec3 p = floor(x);
@@ -57,7 +63,7 @@ float sdSphere(vec3 p, float radius) {
 
 #define RADIUS 2.0
 
-float density(vec3 p) {
+float scene(vec3 p) {
  float distance = sdSphere(p, RADIUS);
 
   float f = fbm(p);
@@ -65,25 +71,22 @@ float density(vec3 p) {
   return -distance + f;
 }
 
-const vec3 SUN_POSITION = vec3(1.0, 0.0, 0.0);
-const float MARCH_SIZE = 0.08;
-const vec3 AMBIENT = vec3(1.0,1.0,1.0);//vec3(0.85,0.71,0.87);
 
 vec4 raymarch(vec3 rayOrigin, vec3 rayDirection) {
   float depth = 0.0;
   vec3 p = rayOrigin + depth * rayDirection;
-  vec3 sunDirection = normalize(SUN_POSITION);
+  vec3 sunDirection = normalize(data.sunPosition.rgb);
   
   vec4 res = vec4(0.0);
 
-  for (int i = 0; i < MAX_STEPS; i++) {
-    float transmittance = density(p);
+  for (int i = 0; i < push.maxSteps; i++) {
+    float transmittance = scene(p);
 
     // We only draw the transmittance if it's greater than 0
     if (transmittance > 0.0) {
       // Directional derivative
       // For fast diffuse lighting
-      float diffuse = clamp((density(p) - density(p + 0.3 * sunDirection)) / 0.3, 0.0, 1.0 );
+      float diffuse = clamp((scene(p) - scene(p + 0.3 * sunDirection)) / 0.3, 0.0, 1.0 );
       vec3 lin = vec3(0.60,0.60,0.75) * 1.1 + 0.8 * vec3(1.0,0.6,0.3) * diffuse;
       vec4 color = vec4(mix(vec3(1.0, 1.0, 1.0), vec3(0.0, 0.0, 0.0), transmittance), transmittance );
       color.rgb *= lin;
@@ -91,7 +94,7 @@ vec4 raymarch(vec3 rayOrigin, vec3 rayDirection) {
       res += color * (1.0 - res.a);
     }
 
-    depth += MARCH_SIZE;
+    depth += push.marchSize;
     p = rayOrigin + depth * rayDirection;
   }
 
@@ -99,27 +102,28 @@ vec4 raymarch(vec3 rayOrigin, vec3 rayDirection) {
 }
 
 void main() {
-   vec2 uv = gl_FragCoord.xy / push.resolution.xy;
+   vec2 uv = gl_FragCoord.xy / vec2(push.resX, push.resY);
   uv -= 0.5;
-  uv.x *= push.resolution.x / push.resolution.y;
+  uv.x *= push.resX / push.resY;
 
   // Ray Origin - camera
-  vec3 ro = scene.inverseView[3].xyz; // scene.inverseView[3].xyz is camera position
+  vec3 ro = data.inverseView[3].xyz; // scene.inverseView[3].xyz is camera position
   // Ray Direction
-    vec3 rd = normalize((scene.inverseView * vec4(vec3(uv, 1.0), 0.0)).xyz);
+    vec3 rd = normalize((data.inverseView * vec4(vec3(uv, 1.0), 0.0)).xyz);
 
 
   
   vec3 color = vec3(0.0);
   // Sun and Sky
-  vec3 sunDirection = normalize(SUN_POSITION);
+  vec3 sunDirection = normalize(data.sunPosition.xyz);
+  sunDirection.y *= -1;
   float sun = clamp(dot(sunDirection, rd), 0.0, 1.0 );
   // Base sky color
-  color = vec3(0.7,0.7,0.90);
+  color = data.baseSkyColor.rgb;
   // Add vertical gradient
-  color -= 0.8 * vec3(0.90,0.75,0.90) * rd.y;
+  color -= -data.gradientSkyColor.a * data.gradientSkyColor.rgb * rd.y;
   // Add sun color to sky
-  color += 0.5 * vec3(1.0,0.5,0.3) * pow(sun, 10.0);
+  color += 0.5 * data.sunColor.rgb * pow(sun, 10.0);
 // cloud
   vec4 res = raymarch(ro, rd);
   color = color * (1.0 - res.a) + res.rgb;
