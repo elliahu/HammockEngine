@@ -105,6 +105,9 @@
     <ClCompile Include="Apps\RaymarchingDemoApp.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="Apps\CloudsApp.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Apps\App.h">
@@ -231,6 +234,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="Apps\RaymarchingDemoApp.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Apps\CloudsApp.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

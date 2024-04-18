@@ -36,8 +36,6 @@ namespace Hmck
 {
 	class PBRApp : public IApp
 	{
-		// There is so much code in this class 
-		// TODO make more abstraction layers over the IApp
 	public:
 
 		PBRApp();

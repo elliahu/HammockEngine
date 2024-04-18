@@ -1,12 +1,13 @@
-#include "RaymarchingDemoApp.h"
+#include "CloudsApp.h"
 
-Hmck::RaymarchingDemoApp::RaymarchingDemoApp()
+
+Hmck::CloudsApp::CloudsApp()
 {
 	init();
 	load();
 }
 
-void Hmck::RaymarchingDemoApp::run()
+void Hmck::CloudsApp::run()
 {
 	Renderer renderer{ window, device, scene };
 
@@ -20,7 +21,7 @@ void Hmck::RaymarchingDemoApp::run()
 			},
 			.FS
 			{
-				.byteCode = Hmck::Filesystem::readFile("../../HammockEngine/Engine/Shaders/Compiled/raymarch_pretty.frag.spv"),
+				.byteCode = Hmck::Filesystem::readFile("../../HammockEngine/Engine/Shaders/Compiled/raymarch_pb.frag.spv"),
 				.entryFunc = "main"
 			},
 			.descriptorSetLayouts =
@@ -106,7 +107,7 @@ void Hmck::RaymarchingDemoApp::run()
 				1.75f);
 
 			renderer.beginSwapChainRenderPass(commandBuffer);
-			
+
 			renderer.bindVertexBuffer(commandBuffer);
 
 			draw(frameIndex, elapsedTime, commandBuffer);
@@ -114,6 +115,7 @@ void Hmck::RaymarchingDemoApp::run()
 
 			{
 				ui.beginUserInterface();
+				this->ui();
 				ui.showDebugStats(viewerObject);
 				ui.showWindowControls();
 				ui.showEntityInspector(scene->getRoot());
@@ -131,7 +133,7 @@ void Hmck::RaymarchingDemoApp::run()
 	destroy();
 }
 
-void Hmck::RaymarchingDemoApp::load()
+void Hmck::CloudsApp::load()
 {
 	Scene::SceneCreateInfo info = {
 		.device = device,
@@ -149,17 +151,23 @@ void Hmck::RaymarchingDemoApp::load()
 	noiseTexture.createSampler(device);
 	noiseTexture.updateDescriptor();
 
+	std::string blueNoiseFile = "../../Resources/Noise/blue_noise.jpg";
+	blueNoiseTexture.loadFromFile(noiseFile, device, VK_FORMAT_R8G8B8A8_UNORM);
+	blueNoiseTexture.createSampler(device);
+	blueNoiseTexture.updateDescriptor();
+
 	for (int i = 0; i < SwapChain::MAX_FRAMES_IN_FLIGHT; i++)
 	{
 		auto fbufferInfo = uniformBuffers[i]->descriptorInfo();
 		DescriptorWriter(*descriptorSetLayout, *descriptorPool)
 			.writeBuffer(0, &fbufferInfo)
-			.writeImage(1,&noiseTexture.descriptor)
+			.writeImage(1, &noiseTexture.descriptor)
+			.writeImage(2,&blueNoiseTexture.descriptor)
 			.build(descriptorSets[i]);
 	}
 }
 
-void Hmck::RaymarchingDemoApp::init()
+void Hmck::CloudsApp::init()
 {
 	descriptorPool = DescriptorPool::Builder(device)
 		.setMaxSets(100)
@@ -170,6 +178,7 @@ void Hmck::RaymarchingDemoApp::init()
 	descriptorSetLayout = DescriptorSetLayout::Builder(device)
 		.addBinding(0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_ALL_GRAPHICS)
 		.addBinding(1, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_ALL_GRAPHICS)
+		.addBinding(2, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_ALL_GRAPHICS)
 		.build();
 
 	for (int i = 0; i < SwapChain::MAX_FRAMES_IN_FLIGHT; i++)
@@ -185,15 +194,14 @@ void Hmck::RaymarchingDemoApp::init()
 	}
 }
 
-void Hmck::RaymarchingDemoApp::draw(int frameIndex, float elapsedTime, VkCommandBuffer commandBuffer)
+void Hmck::CloudsApp::draw(int frameIndex, float elapsedTime, VkCommandBuffer commandBuffer)
 {
 	pipeline->bind(commandBuffer);
 
-	BufferData bufferData{
-		.projection = scene->camera.getProjection(),
-		.view = scene->camera.getView(),
-		.inverseView = scene->camera.getInverseView(),
-	};
+	bufferData.projection = scene->camera.getProjection(),
+	bufferData.view = scene->camera.getView(),
+	bufferData.inverseView = scene->camera.getInverseView(),
+	
 	uniformBuffers[frameIndex]->writeToBuffer(&bufferData);
 
 	vkCmdBindDescriptorSets(
@@ -205,17 +213,39 @@ void Hmck::RaymarchingDemoApp::draw(int frameIndex, float elapsedTime, VkCommand
 		0,
 		nullptr);
 
-	PushData pushData{
-		.resolution = {IApp::WINDOW_WIDTH, IApp::WINDOW_HEIGHT},
-		.elapsedTime = elapsedTime
-	};
+
+	pushData.elapsedTime = elapsedTime;
 
 	vkCmdPushConstants(commandBuffer, pipeline->graphicsPipelineLayout, VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(PushData), &pushData);
 
 	vkCmdDraw(commandBuffer, 3, 1, 0, 0);
 }
 
-void Hmck::RaymarchingDemoApp::destroy()
+void Hmck::CloudsApp::destroy()
 {
 	noiseTexture.destroy(device);
+	blueNoiseTexture.destroy(device);
+}
+
+void Hmck::CloudsApp::ui()
+{
+	const ImGuiWindowFlags window_flags = ImGuiWindowFlags_AlwaysAutoResize;
+	ImGui::Begin("Cloud editor", (bool*)false, ImGuiWindowFlags_AlwaysAutoResize);
+	ImGui::Text("Edit cloud properties", window_flags);
+
+	float sunPosition[4] = { bufferData.sunPosition.x,bufferData.sunPosition.y,bufferData.sunPosition.z,bufferData.sunPosition.w };
+	ImGui::DragFloat4("Sun position", &sunPosition[0], 0.1f);
+	bufferData.sunPosition = { sunPosition[0],sunPosition[1] ,sunPosition[2] ,sunPosition[3] };
+
+	float sunColor[4] = { bufferData.sunColor.x,bufferData.sunColor.y,bufferData.sunColor.z,bufferData.sunColor.w };
+	ImGui::ColorEdit4("Sun color", &sunColor[0]);
+	bufferData.sunColor = { sunColor[0],sunColor[1] ,sunColor[2] ,sunColor[3] };
+
+	ImGui::DragFloat("Max steps", &pushData.maxSteps,1.0f, 0.001f);
+	ImGui::DragFloat("Max steps light", &pushData.maxStepsLight, 1.0f, 0.001f);
+	ImGui::DragFloat("March size", &pushData.marchSize,0.01f,0.001f);
+	ImGui::DragFloat("Absorbtion", &pushData.absorbtionCoef,0.01f, 0.001f, 1.0f);
+	ImGui::DragFloat("Scattering Anisotropy (g)", &pushData.scatteringAniso, 0.01f, 0.001f, 1.0f);
+
+	ImGui::End();
 }

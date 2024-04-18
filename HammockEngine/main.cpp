@@ -4,6 +4,7 @@
 
 #include "Apps/PBRApp.h"
 #include "Apps/RaymarchingDemoApp.h"
+#include "Apps/CloudsApp.h"
 #include "Utils/HmckLogger.h"
 #include "HmckEntity.h"
 
@@ -18,7 +19,7 @@ int main()
 		while (true) 
 		{
 			int demo;
-			std::cout << "Enter a demo ID:\n0 - Exit\n1 - PBR Demo\n2 - Raymarching Demo\n";
+			std::cout << "Enter a demo ID:\n0 - Exit\n1 - PBR Demo\n2 - Pretty clouds\n3 - Physicaly accurate clouds\n";
 			std::cin >> demo;
 
 			if (demo == 0) {
@@ -32,6 +33,11 @@ int main()
 			else if (demo == 2)
 			{
 				Hmck::RaymarchingDemoApp app{};
+				app.run();
+			}
+			else if (demo == 3)
+			{
+				Hmck::CloudsApp app{};
 				app.run();
 			}
 

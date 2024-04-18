@@ -29,6 +29,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Apps\App.cpp" />
+    <ClCompile Include="Apps\CloudsApp.cpp" />
     <ClCompile Include="Apps\RaymarchingDemoApp.cpp" />
     <ClCompile Include="Engine\Controllers\KeyboardMovementController.cpp" />
     <ClCompile Include="Engine\HmckBuffer.cpp" />
@@ -60,6 +61,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Apps\App.h" />
+    <ClInclude Include="Apps\CloudsApp.h" />
     <ClInclude Include="Apps\IApp.h" />
     <ClInclude Include="Apps\RaymarchingDemoApp.h" />
     <ClInclude Include="Engine\Controllers\KeyboardMovementController.h" />
