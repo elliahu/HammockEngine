@@ -10,19 +10,6 @@ layout (location = 4) in vec4 tangent;
 //outputs
 layout (location = 0) out vec2 _uv;
 
-layout (set = 1, binding = 0) uniform SceneUbo
-{
-    mat4 projection;
-    mat4 view;
-    mat4 inverseView;
-} scene;
-
-layout (set = 2, binding = 0) uniform TransformUbo
-{
-    mat4 model;
-    mat4 normal;
-} transform;
-
 out gl_PerVertex
 {
 	vec4 gl_Position;

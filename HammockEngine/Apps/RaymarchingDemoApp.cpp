@@ -2,43 +2,79 @@
 
 Hmck::RaymarchingDemoApp::RaymarchingDemoApp()
 {
+	init();
 	load();
 }
 
 void Hmck::RaymarchingDemoApp::run()
 {
-	// camera and movement
 	Renderer renderer{ window, device, scene };
 
+	pipeline = GraphicsPipeline::createGraphicsPipelinePtr({
+			.debugName = "standard_forward_pass",
+			.device = device,
+			.VS
+			{
+				.byteCode = Hmck::Filesystem::readFile("../../HammockEngine/Engine/Shaders/Compiled/fullscreen.vert.spv"),
+				.entryFunc = "main"
+			},
+			.FS
+			{
+				.byteCode = Hmck::Filesystem::readFile("../../HammockEngine/Engine/Shaders/Compiled/raymarch_pretty.frag.spv"),
+				.entryFunc = "main"
+			},
+			.descriptorSetLayouts =
+			{
+				descriptorSetLayout->getDescriptorSetLayout()
+			},
+			.pushConstantRanges {
+				{
+					.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT,
+					.offset = 0,
+					.size = sizeof(PushData)
+				}
+			},
+			.graphicsState
+			{
+				.depthTest = VK_TRUE,
+				.depthTestCompareOp = VK_COMPARE_OP_LESS_OR_EQUAL,
+				.blendAtaAttachmentStates {},
+				.vertexBufferBindings
+				{
+					.vertexBindingDescriptions =
+					{
+						{
+							.binding = 0,
+							.stride = sizeof(Vertex),
+							.inputRate = VK_VERTEX_INPUT_RATE_VERTEX
+						}
+					},
+					.vertexAttributeDescriptions =
+					{
+						{0, 0, VK_FORMAT_R32G32B32_SFLOAT, offsetof(Vertex, position)},
+						{1, 0, VK_FORMAT_R32G32B32_SFLOAT, offsetof(Vertex, color)},
+						{2, 0, VK_FORMAT_R32G32B32_SFLOAT, offsetof(Vertex, normal)},
+						{3, 0, VK_FORMAT_R32G32_SFLOAT, offsetof(Vertex, uv)},
+						{4, 0, VK_FORMAT_R32G32B32_SFLOAT, offsetof(Vertex, tangent)}
+					}
+				}
+			},
+			.renderPass = renderer.getSwapChainRenderPass()
+		});
+
+	// camera and movement
 	scene->camera.setViewTarget({ 1.f, 1.f, -1.f }, { 0.f, 0.f, 0.f });
 	auto viewerObject = std::make_shared<Entity>();
 	viewerObject->transform.translation = { 0.f, 0.f, -5.f };
 	viewerObject->name = "Viewer object";
 	scene->addChildOfRoot(viewerObject);
 
-	std::shared_ptr<OmniLight> light = std::make_shared<OmniLight>();
-	light->transform.translation = { 0.f, 10.f, 0.f };
-	light->name = "Point light";
-	scene->addChildOfRoot(light);
-
 
 	KeyboardMovementController cameraController{};
-
 	UserInterface ui{ device, renderer.getSwapChainRenderPass(), window };
 
 
-	renderer.writeEnvironmentData(scene->images, {
-		.omniLights = {{
-			.position = glm::vec4(light->transform.translation, 1.0f),
-			.color = glm::vec4(light->color, 1.0f)
-		}},
-		.numOmniLights = 1
-		},
-		scene->skyboxTexture
-	);
-
 	float elapsedTime = 0.f;
-
 	auto currentTime = std::chrono::high_resolution_clock::now();
 	while (!window.shouldClose())
 	{
@@ -69,16 +105,11 @@ void Hmck::RaymarchingDemoApp::run()
 				0.0f,
 				1.75f);
 
+			renderer.beginSwapChainRenderPass(commandBuffer);
+			
+			renderer.bindVertexBuffer(commandBuffer);
 
-			renderer.updateEnvironmentBuffer({
-				.omniLights = {{
-					.position = glm::vec4(light->transform.translation, 1.0f),
-					.color = glm::vec4(light->color, 1.0f)
-				}},
-				.numOmniLights = 1
-				});
-
-			renderer.renderForward(frameIndex, elapsedTime, commandBuffer);
+			draw(frameIndex, elapsedTime, commandBuffer);
 
 
 			{
@@ -96,6 +127,8 @@ void Hmck::RaymarchingDemoApp::run()
 
 		vkDeviceWaitIdle(device.device());
 	}
+
+	destroy();
 }
 
 void Hmck::RaymarchingDemoApp::load()
@@ -107,23 +140,83 @@ void Hmck::RaymarchingDemoApp::load()
 			{
 				.filename = std::string(MODELS_DIR) + "Sphere/Sphere.glb",
 			},
-		},
-		.loadSkybox = {
-			.textures = {
-				"../../Resources/env/skybox/right.jpg",
-				"../../Resources/env/skybox/left.jpg",
-				"../../Resources/env/skybox/bottom.jpg",
-				"../../Resources/env/skybox/top.jpg",
-				"../../Resources/env/skybox/front.jpg",
-				"../../Resources/env/skybox/back.jpg"
-			}
 		}
 	};
 	scene = std::make_unique<Scene>(info);
 
-	auto sphere = scene->getEntity(1);
-	if (sphere != nullptr)
+	std::string noiseFile = "../../Resources/Noise/noise2.png";
+	noiseTexture.loadFromFile(noiseFile, device, VK_FORMAT_R8G8B8A8_UNORM);
+	noiseTexture.createSampler(device);
+	noiseTexture.updateDescriptor();
+
+	for (int i = 0; i < SwapChain::MAX_FRAMES_IN_FLIGHT; i++)
 	{
-		sphere->transform.scale = { 3.0f, 3.0f ,3.0f };
+		auto fbufferInfo = uniformBuffers[i]->descriptorInfo();
+		DescriptorWriter(*descriptorSetLayout, *descriptorPool)
+			.writeBuffer(0, &fbufferInfo)
+			.writeImage(1,&noiseTexture.descriptor)
+			.build(descriptorSets[i]);
 	}
+}
+
+void Hmck::RaymarchingDemoApp::init()
+{
+	descriptorPool = DescriptorPool::Builder(device)
+		.setMaxSets(100)
+		.addPoolSize(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 50)
+		.addPoolSize(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 50)
+		.build();
+
+	descriptorSetLayout = DescriptorSetLayout::Builder(device)
+		.addBinding(0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_ALL_GRAPHICS)
+		.addBinding(1, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_ALL_GRAPHICS)
+		.build();
+
+	for (int i = 0; i < SwapChain::MAX_FRAMES_IN_FLIGHT; i++)
+	{
+		uniformBuffers[i] = std::make_unique<Buffer>(
+			device,
+			sizeof(BufferData),
+			1,
+			VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
+			VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT
+			);
+		uniformBuffers[i]->map();
+	}
+}
+
+void Hmck::RaymarchingDemoApp::draw(int frameIndex, float elapsedTime, VkCommandBuffer commandBuffer)
+{
+	
+	pipeline->bind(commandBuffer);
+
+	BufferData bufferData{
+		.projection = scene->camera.getProjection(),
+		.view = scene->camera.getView(),
+		.inverseView = scene->camera.getInverseView(),
+	};
+	uniformBuffers[frameIndex]->writeToBuffer(&bufferData);
+
+	vkCmdBindDescriptorSets(
+		commandBuffer,
+		VK_PIPELINE_BIND_POINT_GRAPHICS,
+		pipeline->graphicsPipelineLayout,
+		0, 1,
+		&descriptorSets[frameIndex],
+		0,
+		nullptr);
+
+	PushData pushData{
+		.resolution = {IApp::WINDOW_WIDTH, IApp::WINDOW_HEIGHT},
+		.elapsedTime = elapsedTime
+	};
+
+	vkCmdPushConstants(commandBuffer, pipeline->graphicsPipelineLayout, VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(Renderer::PushConstantData), &pushData);
+
+	vkCmdDraw(commandBuffer, 3, 1, 0, 0);
+}
+
+void Hmck::RaymarchingDemoApp::destroy()
+{
+	noiseTexture.destroy(device);
 }

@@ -1,8 +1,4 @@
 #version 450
-#extension GL_EXT_nonuniform_qualifier : enable
-
-#define INVALID_TEXTURE 4294967295
-
 
 // inputs
 layout (location = 0) in vec2 inUv;
@@ -10,49 +6,14 @@ layout (location = 0) in vec2 inUv;
 // outputs
 layout (location = 0) out vec4 outColor;
 
-
-struct OmniLight
-{
-    vec4 position;
-    vec4 color;
-};
-
-layout(set = 0, binding = 0) uniform Environment
-{
-    OmniLight omniLights[10];
-    uint numOmniLights;
-} env;
-
-layout(set = 0, binding = 1) uniform sampler2D textures[];
-
-layout (set = 1, binding = 0) uniform SceneUbo
+layout (set = 0, binding = 0) uniform SceneUbo
 {
     mat4 projection;
     mat4 view;
     mat4 inverseView;
 } scene;
 
-
-
-layout (set = 2, binding = 0) uniform TransformUbo
-{
-    mat4 model;
-    mat4 normal;
-} transform;
-
-layout (set = 3, binding = 0) uniform MaterialPropertyUbo
-{
-    vec4 baseColorFactor;
-    uint baseColorTextureIndex;
-    uint normalTextureIndex;
-    uint metallicRoughnessTextureIndex;
-    uint occlusionTextureIndex;
-    float alphaCutoff;
-	float metallicFactor;
-	float roughnessFactor;
-} material;
-
-layout(set = 4, binding = 0) uniform sampler2D noiseSampler;
+layout(set = 0, binding = 1) uniform sampler2D noiseSampler;
 
 layout (push_constant) uniform PushConstants {
     vec2 resolution;
@@ -106,9 +67,6 @@ float density(vec3 p) {
 
 const vec3 SUN_POSITION = vec3(1.0, 0.0, 0.0);
 const float MARCH_SIZE = 0.08;
-const float EXT_COEF = 0.04;
-const float SCAT_COEF = 0.01;
-const float ABS_COEF = 0.000005;
 const vec3 AMBIENT = vec3(1.0,1.0,1.0);//vec3(0.85,0.71,0.87);
 
 vec4 raymarch(vec3 rayOrigin, vec3 rayDirection) {

@@ -31,19 +31,6 @@ Hmck::Renderer::Renderer(Window& window, Device& device, std::unique_ptr<Scene>&
 		.addBinding(0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_ALL_GRAPHICS)
 		.build();
 
-	noiseDescriptorSetLayout = DescriptorSetLayout::Builder(device)
-		.addBinding(0, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_ALL_GRAPHICS)
-		.build();
-
-	std::string noiseFile = "../../Resources/Noise/noise2.png";
-	noiseTexture.loadFromFile(noiseFile, device, VK_FORMAT_R8G8B8A8_UNORM);
-	noiseTexture.createSampler(device);
-	noiseTexture.updateDescriptor();
-
-	DescriptorWriter(*noiseDescriptorSetLayout, *descriptorPool)
-		.writeImage(0, &noiseTexture.descriptor)
-		.build(noiseDescriptorSet);
-
 	// prepare buffers
 	environmentBuffer = std::make_unique<Buffer>(
 		device,
@@ -111,64 +98,6 @@ Hmck::Renderer::Renderer(Window& window, Device& device, std::unique_ptr<Scene>&
 	}
 
 	// create pipline
-	// TODO change this to per material pipeline
-	forwardPipeline = GraphicsPipeline::createGraphicsPipelinePtr({
-			.debugName = "standard_forward_pass",
-			.device = device,
-			.VS
-			{
-				.byteCode = Hmck::Filesystem::readFile("../../HammockEngine/Engine/Shaders/Compiled/fullscreen.vert.spv"),
-				.entryFunc = "main"
-			},
-			.FS 
-			{
-				.byteCode = Hmck::Filesystem::readFile("../../HammockEngine/Engine/Shaders/Compiled/raymarch.frag.spv"),
-				.entryFunc = "main"
-			},
-			.descriptorSetLayouts = 
-			{
-				environmentDescriptorSetLayout->getDescriptorSetLayout(),
-				frameDescriptorSetLayout->getDescriptorSetLayout(),
-				entityDescriptorSetLayout->getDescriptorSetLayout(),
-				primitiveDescriptorSetLayout->getDescriptorSetLayout(),
-				noiseDescriptorSetLayout->getDescriptorSetLayout()
-			},
-			.pushConstantRanges {
-				{
-					.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT,
-					.offset = 0,
-					.size = sizeof(Renderer::PushConstantData)
-				}
-			},
-			.graphicsState 
-			{
-				.depthTest = VK_TRUE,
-				.depthTestCompareOp = VK_COMPARE_OP_LESS_OR_EQUAL,
-				.blendAtaAttachmentStates {},
-				.vertexBufferBindings 
-				{
-					.vertexBindingDescriptions = 
-					{
-						{
-							.binding = 0,
-							.stride = sizeof(Vertex),
-							.inputRate = VK_VERTEX_INPUT_RATE_VERTEX
-						}
-					},
-					.vertexAttributeDescriptions = 
-					{
-						{0, 0, VK_FORMAT_R32G32B32_SFLOAT, offsetof(Vertex, position)},
-						{1, 0, VK_FORMAT_R32G32B32_SFLOAT, offsetof(Vertex, color)},
-						{2, 0, VK_FORMAT_R32G32B32_SFLOAT, offsetof(Vertex, normal)},
-						{3, 0, VK_FORMAT_R32G32_SFLOAT, offsetof(Vertex, uv)},
-						{4, 0, VK_FORMAT_R32G32B32_SFLOAT, offsetof(Vertex, tangent)}
-					}
-				}
-			},
-			.renderPass = getSwapChainRenderPass()
-	});
-
-	
 
 	auto depthFormat = device.findSupportedFormat(
 		{ VK_FORMAT_D32_SFLOAT, VK_FORMAT_D32_SFLOAT_S8_UINT, VK_FORMAT_D24_UNORM_S8_UINT },
@@ -407,7 +336,6 @@ Hmck::Renderer::Renderer(Window& window, Device& device, std::unique_ptr<Scene>&
 Hmck::Renderer::~Renderer()
 {
 	freeCommandBuffers();
-	noiseTexture.destroy(device);
 }
 
 
@@ -818,68 +746,6 @@ void Hmck::Renderer::endRenderPass(VkCommandBuffer commandBuffer)
 	vkCmdEndRenderPass(commandBuffer);
 }
 
-void Hmck::Renderer::renderForward(
-	uint32_t frameIndex,
-	float time,
-	VkCommandBuffer commandBuffer)
-{
-	beginSwapChainRenderPass(commandBuffer);
-	
-
-	VkDeviceSize offsets[] = { 0 };
-	VkBuffer buffers[] = { sceneVertexBuffer->getBuffer() };
-	vkCmdBindVertexBuffers(commandBuffer, 0, 1, buffers, offsets);
-	vkCmdBindIndexBuffer(commandBuffer, sceneIndexBuffer->getBuffer(), 0, VK_INDEX_TYPE_UINT32);
-
-	forwardPipeline->bind(commandBuffer);
-
-	// bind env
-	vkCmdBindDescriptorSets(
-		commandBuffer,
-		VK_PIPELINE_BIND_POINT_GRAPHICS,
-		forwardPipeline->graphicsPipelineLayout,
-		0, 1,
-		&environmentDescriptorSet,
-		0,
-		nullptr);
-
-	FrameBufferData data{
-		.projection = scene->camera.getProjection(),
-		.view = scene->camera.getView(),
-		.inverseView = scene->camera.getInverseView()
-	};
-	frameBuffers[frameIndex]->writeToBuffer(&data);
-
-	// bind per frame
-	vkCmdBindDescriptorSets(
-		commandBuffer,
-		VK_PIPELINE_BIND_POINT_GRAPHICS,
-		forwardPipeline->graphicsPipelineLayout,
-		1, 1,
-		&frameDescriptorSets[frameIndex],
-		0,
-		nullptr);
-	
-	
-	Renderer::PushConstantData pushdata 
-	{ 
-		.resolution = { IApp::WINDOW_WIDTH, IApp::WINDOW_HEIGHT },
-		.elapsedTime = time 
-	};
-	vkCmdPushConstants(commandBuffer, forwardPipeline->graphicsPipelineLayout, VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(Renderer::PushConstantData), &pushdata);
-
-	vkCmdBindDescriptorSets(
-		commandBuffer,
-		VK_PIPELINE_BIND_POINT_GRAPHICS,
-		forwardPipeline->graphicsPipelineLayout,
-		4, 1,
-		&noiseDescriptorSet,
-		0,
-		nullptr);
-
-	vkCmdDraw(commandBuffer, 3, 1, 0, 0);
-}
-
 void Hmck::Renderer::renderDeffered(uint32_t frameIndex, VkCommandBuffer commandBuffer)
 {
 	beginRenderPass(gbufferFramebuffer, commandBuffer, {
@@ -979,11 +845,18 @@ void Hmck::Renderer::writeEnvironmentData(std::vector<Image>& images, Environmen
 		.build(environmentDescriptorSet);
 }
 
+void Hmck::Renderer::bindVertexBuffer(VkCommandBuffer commandBuffer)
+{
+	VkDeviceSize offsets[] = { 0 };
+	VkBuffer buffers[] = { sceneVertexBuffer->getBuffer() };
+	vkCmdBindVertexBuffers(commandBuffer, 0, 1, buffers, offsets);
+	vkCmdBindIndexBuffer(commandBuffer, sceneIndexBuffer->getBuffer(), 0, VK_INDEX_TYPE_UINT32);
+}
+
 void Hmck::Renderer::updateEnvironmentBuffer(EnvironmentBufferData data)
 {
 	environmentBuffer->writeToBuffer(&data);
 }
-
 
 void Hmck::Renderer::updateFrameBuffer(uint32_t index, FrameBufferData data)
 {

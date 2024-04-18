@@ -41,18 +41,42 @@ namespace Hmck
 		// TODO make more abstraction layers over the IApp
 	public:
 
+		struct BufferData
+		{
+			glm::mat4 projection{};
+			glm::mat4 view{};
+			glm::mat4 inverseView{};
+		};
+
+		struct PushData
+		{
+			glm::vec2 resolution{};
+			float elapsedTime;
+		};
+
 		RaymarchingDemoApp();
 
 		// Inherited via IApp
 		virtual void run() override;
 		virtual void load() override;
 
-		std::unique_ptr<Scene> scene{};
+		void init();
+		void draw(int frameIndex, float elapsedTime, VkCommandBuffer commandBuffer);
+		void destroy();
 
 	private:
-		bool sceneDataBound = false;
+		std::unique_ptr<Scene> scene{};
+
+		// DESCRIPTORS
+		std::unique_ptr<DescriptorPool> descriptorPool{};
 		
-		
+		std::vector<VkDescriptorSet> descriptorSets{ SwapChain::MAX_FRAMES_IN_FLIGHT };
+		std::unique_ptr<DescriptorSetLayout> descriptorSetLayout;
+		std::vector<std::unique_ptr<Buffer>> uniformBuffers{ SwapChain::MAX_FRAMES_IN_FLIGHT };
+
+		std::unique_ptr<GraphicsPipeline> pipeline{}; // uses swapchain render pass
+
+		Texture2D noiseTexture;
 	};
 
 }

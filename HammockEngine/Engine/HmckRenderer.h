@@ -115,14 +115,11 @@ namespace Hmck
 			std::vector<VkClearValue> clearValues);
 		void endRenderPass(VkCommandBuffer commandBuffer);
 
-		void renderForward(
-			uint32_t frameIndex,
-			float time,
-			VkCommandBuffer commandBuffer);
-
 		void renderDeffered(
 			uint32_t frameIndex,
 			VkCommandBuffer commandBuffer);
+
+		void bindVertexBuffer(VkCommandBuffer commandBuffer);
 
 		void writeEnvironmentData(std::vector<Image>& images, EnvironmentBufferData data, TextureCubeMap skybox);
 		void updateEnvironmentBuffer(EnvironmentBufferData data);
@@ -189,14 +186,8 @@ namespace Hmck
 
 		// pipelines
 		std::unique_ptr<GraphicsPipeline> skyboxPipeline{}; // uses gbufferFramebuffer render pass
-		std::unique_ptr<GraphicsPipeline> forwardPipeline{}; // uses swapchain render pass
 		std::unique_ptr<GraphicsPipeline> gbufferPipeline{}; // uses gbufferFramebuffer render pass
 		std::unique_ptr<GraphicsPipeline> defferedPipeline{};// uses swapchain render pass
-
-		VkDescriptorSet noiseDescriptorSet;
-		std::unique_ptr<DescriptorSetLayout> noiseDescriptorSetLayout;
-
-		Texture2D noiseTexture;
 
 
 		uint32_t currentImageIndex;
