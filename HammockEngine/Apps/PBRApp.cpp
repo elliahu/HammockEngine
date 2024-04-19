@@ -37,7 +37,7 @@ void Hmck::PBRApp::run()
 	auto sceneBufferInfo = environmentBuffer->descriptorInfo();
 	auto result = DescriptorWriter(*environmentDescriptorSetLayout, *descriptorPool)
 		.writeBuffer(0, &sceneBufferInfo)
-		.writeImages(1, imageInfos)
+		.writeImageArray(1, imageInfos)
 		.writeImage(2, &scene->skyboxTexture.descriptor)
 		.build(environmentDescriptorSet);
 
@@ -150,7 +150,6 @@ void Hmck::PBRApp::run()
 				ui.showDebugStats(viewerObject);
 				ui.showWindowControls();
 				ui.showEntityInspector(scene->getRoot());
-				ui.showDemoWindow();
 				ui.endUserInterface(commandBuffer);
 			}
 
@@ -538,7 +537,7 @@ void Hmck::PBRApp::createPipelines(Renderer& renderer)
 		};
 
 		DescriptorWriter(*gbufferDescriptorSetLayout, *descriptorPool)
-			.writeImages(0, gbufferImageInfos)
+			.writeImageArray(0, gbufferImageInfos)
 			.build(gbufferDescriptorSets[i]);
 	}
 

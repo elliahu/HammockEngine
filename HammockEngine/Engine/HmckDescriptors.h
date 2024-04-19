@@ -97,9 +97,9 @@ namespace Hmck {
         DescriptorWriter(DescriptorSetLayout& setLayout, DescriptorPool& pool);
 
         DescriptorWriter& writeBuffer(uint32_t binding, VkDescriptorBufferInfo* bufferInfo);
-        DescriptorWriter& writeBuffers(uint32_t binding, std::vector<VkDescriptorBufferInfo>& bufferInfos);
+        DescriptorWriter& writeBufferArray(uint32_t binding, std::vector<VkDescriptorBufferInfo>& bufferInfos);
         DescriptorWriter& writeImage(uint32_t binding, VkDescriptorImageInfo* imageInfo);
-        DescriptorWriter& writeImages(uint32_t binding, std::vector<VkDescriptorImageInfo>& imageInfos);
+        DescriptorWriter& writeImageArray(uint32_t binding, std::vector<VkDescriptorImageInfo>& imageInfos);
 
         bool build(VkDescriptorSet& set);
         void overwrite(VkDescriptorSet& set);

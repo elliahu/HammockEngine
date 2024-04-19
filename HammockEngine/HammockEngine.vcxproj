@@ -38,6 +38,7 @@
     <ClCompile Include="Engine\HmckDevice.cpp" />
     <ClCompile Include="Engine\HmckEntity.cpp" />
     <ClCompile Include="Engine\HmckGLTF.cpp" />
+    <ClCompile Include="Engine\HmckMemory.cpp" />
     <ClCompile Include="Engine\HmckPipeline.cpp" />
     <ClCompile Include="Engine\HmckRenderer.cpp" />
     <ClCompile Include="Engine\HmckScene.cpp" />
@@ -73,6 +74,7 @@
     <ClInclude Include="Engine\HmckEntity3D.h" />
     <ClInclude Include="Engine\HmckFrameInfo.h" />
     <ClInclude Include="Engine\HmckEntityComponents.h" />
+    <ClInclude Include="Engine\HmckMemory.h" />
     <ClInclude Include="Engine\HmckPipeline.h" />
     <ClInclude Include="Engine\HmckRenderer.h" />
     <ClInclude Include="Engine\HmckScene.h" />

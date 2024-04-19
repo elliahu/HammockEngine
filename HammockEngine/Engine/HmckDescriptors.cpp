@@ -234,7 +234,7 @@ namespace Hmck
 		return *this;
 	}
 
-	DescriptorWriter& DescriptorWriter::writeImages(uint32_t binding, std::vector<VkDescriptorImageInfo>& imageInfos)
+	DescriptorWriter& DescriptorWriter::writeImageArray(uint32_t binding, std::vector<VkDescriptorImageInfo>& imageInfos)
 	{
 		assert(setLayout.bindings.count(binding) == 1 && "Layout does not contain specified binding");
 
