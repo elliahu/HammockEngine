@@ -111,6 +111,40 @@ Hmck::Texture2DHandle Hmck::MemoryManager::createTexture2DFromFile(Texture2DCrea
 	return handle;
 }
 
+Hmck::Texture2DHandle Hmck::MemoryManager::createTexture2DFromBuffer(Texture2DCreateFromBufferInfo createInfo)
+{
+	std::unique_ptr<Texture2D> texture = std::make_unique<Texture2D>();
+	texture->loadFromBuffer(
+		createInfo.buffer,
+		createInfo.bufferSize,
+		createInfo.width,createInfo.height,
+		device,
+		createInfo.format,
+		createInfo.imageLayout);
+	texture->createSampler(device);
+	texture->updateDescriptor();
+	texture2Ds.emplace(texture2DsLastHandle, std::move(texture));
+	Texture2DHandle handle = texture2DsLastHandle;
+	texture2DsLastHandle++;
+	return handle;
+}
+
+Hmck::TextureCubeMapHandle Hmck::MemoryManager::createTextureCubeMapFromFiles(TextureCubeMapCreateFromFilesInfo createInfo)
+{
+	std::unique_ptr<TextureCubeMap> texture = std::make_unique<TextureCubeMap>();
+	texture->loadFromFiles(
+		createInfo.filenames,
+		createInfo.format,
+		device,
+		createInfo.imageLayout);
+	texture->createSampler(device);
+	texture->updateDescriptor();
+	textureCubeMaps.emplace(textureCubeMapsLastHandle, std::move(texture));
+	TextureCubeMapHandle handle = textureCubeMapsLastHandle;
+	textureCubeMapsLastHandle++;
+	return handle;
+}
+
 Hmck::DescriptorSetLayout& Hmck::MemoryManager::getDescriptorSetLayout(DescriptorSetLayoutHandle handle)
 {
 	if (descriptorSetLayouts.contains(handle))
@@ -156,6 +190,21 @@ VkDescriptorImageInfo Hmck::MemoryManager::getTexture2DDescriptorImageInfo(Textu
 	return getTexture2D(handle)->descriptor;
 }
 
+std::unique_ptr<Hmck::TextureCubeMap>& Hmck::MemoryManager::getTextureCubeMap(TextureCubeMapHandle handle)
+{
+	if (textureCubeMaps.contains(handle))
+	{
+		return textureCubeMaps[handle];
+	}
+
+	throw std::runtime_error("TextureCubeMap with provided handle does not exist!");
+}
+
+VkDescriptorImageInfo Hmck::MemoryManager::getTextureCubeMapDescriptorImageInfo(TextureCubeMapHandle handle)
+{
+	return getTextureCubeMap(handle)->descriptor;
+}
+
 void Hmck::MemoryManager::bindDescriptorSet(
 	VkCommandBuffer commandBuffer, 
 	VkPipelineBindPoint bindPoint, 
@@ -192,6 +241,12 @@ void Hmck::MemoryManager::destroyTexture2D(Texture2DHandle handle)
 {
 	getTexture2D(handle)->destroy(device);
 	texture2Ds.erase(handle);
+}
+
+void Hmck::MemoryManager::destroyTextureCubeMap(TextureCubeMapHandle handle)
+{
+	getTextureCubeMap(handle)->destroy(device);
+	textureCubeMaps.erase(handle);
 }
 
 

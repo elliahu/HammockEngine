@@ -44,8 +44,6 @@ namespace Hmck
 
 		struct DescriptorSetLayoutCreateInfo
 		{
-			
-
 			struct DescriptorSetLayoutBindingCreateInfo
 			{
 				uint32_t binding;
@@ -107,14 +105,21 @@ namespace Hmck
 
 		struct Texture2DCreateFromBufferInfo
 		{
-
+			unsigned char* buffer;
+			uint32_t bufferSize;
+			uint32_t width;
+			uint32_t height;
+			VkFormat format;
+			VkImageLayout imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
 		};
 
 		Texture2DHandle createTexture2DFromBuffer(Texture2DCreateFromBufferInfo createInfo);
 
 		struct TextureCubeMapCreateFromFilesInfo
 		{
-
+			std::vector<std::string> filenames;
+			VkFormat format;
+			VkImageLayout imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
 		};
 
 		TextureCubeMapHandle createTextureCubeMapFromFiles(TextureCubeMapCreateFromFilesInfo createInfo);
@@ -125,6 +130,8 @@ namespace Hmck
 		std::unique_ptr<Buffer>& getUniformBuffer(UniformBufferHandle handle);
 		std::unique_ptr<Texture2D>& getTexture2D(Texture2DHandle handle);
 		VkDescriptorImageInfo getTexture2DDescriptorImageInfo(Texture2DHandle handle);
+		std::unique_ptr<TextureCubeMap>& getTextureCubeMap(TextureCubeMapHandle handle);
+		VkDescriptorImageInfo getTextureCubeMapDescriptorImageInfo(TextureCubeMapHandle handle);
 
 		void bindDescriptorSet(
 			VkCommandBuffer commandBuffer,
@@ -139,6 +146,7 @@ namespace Hmck
 		void destroyUniformBuffer(UniformBufferHandle handle);
 		void destroyDescriptorSetLayout(DescriptorSetLayoutHandle handle);
 		void destroyTexture2D(Texture2DHandle handle);
+		void destroyTextureCubeMap(TextureCubeMapHandle handle);
 
 
 	private:
