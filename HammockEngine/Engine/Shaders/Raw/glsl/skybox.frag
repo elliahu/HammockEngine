@@ -16,5 +16,5 @@ void main()
 
 	outPosition = vec4(inUVW,1);
 	outNormal = vec4(0);
-	outMaterial = vec4(0);
+	outMaterial = vec4(-1);
 }

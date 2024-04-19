@@ -17,7 +17,7 @@ void Hmck::PBRApp::run()
 	scene->addChildOfRoot(viewerObject);
 
 	std::shared_ptr<OmniLight> light = std::make_shared<OmniLight>();
-	light->transform.translation = { 0.f, 1.f, 0.f };
+	light->transform.translation = { 1.f, 1.f, -1.f };
 	light->name = "Point light";
 	scene->addChildOfRoot(light);
 
@@ -69,7 +69,7 @@ void Hmck::PBRApp::run()
 
 			renderer.updateEnvironmentBuffer({
 				.omniLights = {{
-					.position = glm::vec4(light->transform.translation, 1.0f),
+					.position = scene->camera.getView() * glm::vec4(light->transform.translation, 1.0f),
 					.color = glm::vec4(light->color, 1.0f)
 				}},
 				.numOmniLights = 1
@@ -102,8 +102,10 @@ void Hmck::PBRApp::load()
 		.name = "Volumetric scene",
 		.loadFiles = {
 			{
-				.filename = std::string(MODELS_DIR) + "helmet/helmet.glb",
-				//.filename = std::string(MODELS_DIR) + "sponza/sponza.glb",
+				//.filename = std::string(MODELS_DIR) + "helmet/helmet.glb",
+				.filename = std::string(MODELS_DIR) + "sponza/sponza.glb",
+				//.filename = std::string(MODELS_DIR) + "SunTemple/SunTemple.glb",
+				//.filename = std::string(MODELS_DIR) + "Bistro/BistroExterior.glb",
 			},
 			
 		},

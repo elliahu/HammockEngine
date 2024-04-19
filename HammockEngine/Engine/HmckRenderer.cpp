@@ -15,7 +15,7 @@ Hmck::Renderer::Renderer(Window& window, Device& device, std::unique_ptr<Scene>&
 	// prepare descriptor set layouts
 	environmentDescriptorSetLayout = DescriptorSetLayout::Builder(device)
 		.addBinding(0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_ALL_GRAPHICS)
-		.addBinding(1, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_ALL_GRAPHICS, 200, VK_DESCRIPTOR_BINDING_PARTIALLY_BOUND_BIT)
+		.addBinding(1, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_ALL_GRAPHICS, 2000, VK_DESCRIPTOR_BINDING_PARTIALLY_BOUND_BIT)
 		.addBinding(2, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_ALL_GRAPHICS)
 		.build();
 
@@ -290,7 +290,7 @@ Hmck::Renderer::Renderer(Window& window, Device& device, std::unique_ptr<Scene>&
 			.entryFunc = "main"
 		},
 		.FS {
-			.byteCode = Hmck::Filesystem::readFile("../../HammockEngine/Engine/Shaders/Compiled/deferred.frag.spv"),
+			.byteCode = Hmck::Filesystem::readFile("../../HammockEngine/Engine/Shaders/Compiled/phong.frag.spv"),
 			.entryFunc = "main"
 		},
 		.descriptorSetLayouts = {
