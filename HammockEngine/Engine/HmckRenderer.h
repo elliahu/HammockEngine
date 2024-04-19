@@ -115,17 +115,11 @@ namespace Hmck
 			std::vector<VkClearValue> clearValues);
 		void endRenderPass(VkCommandBuffer commandBuffer);
 
-		void renderDeffered(
-			uint32_t frameIndex,
-			VkCommandBuffer commandBuffer);
 
 		void bindVertexBuffer(VkCommandBuffer commandBuffer);
+		void bindSkyboxVertexBuffer(VkCommandBuffer commandBuffer);
 
-		void writeEnvironmentData(std::vector<Image>& images, EnvironmentBufferData data, TextureCubeMap skybox);
-		void updateEnvironmentBuffer(EnvironmentBufferData data);
-		void updateFrameBuffer(uint32_t index, FrameBufferData data);
-		void updateEntityBuffer(uint32_t index, EntityBufferData data);
-		void updatePrimitiveBuffer(uint32_t index, PrimitiveBufferData data);
+		
 
 
 	private:
@@ -134,11 +128,7 @@ namespace Hmck
 		void createVertexBuffer();
 		void createIndexBuffer();
 		void recreateSwapChain();
-		void renderEntity(
-			uint32_t frameIndex, 
-			VkCommandBuffer commandBuffer, 
-			std::unique_ptr<GraphicsPipeline>& pipeline,
-			std::shared_ptr<Entity>& entity);
+		
 
 		Window& window;
 		Device& device;
@@ -152,42 +142,6 @@ namespace Hmck
 		std::unique_ptr<Buffer> skyboxIndexBuffer;
 
 		std::unique_ptr<Scene>& scene;
-
-		// DESCRIPTORS
-		std::unique_ptr<DescriptorPool> descriptorPool{};
-
-		// per scene (bound once when scene is initialized)
-		VkDescriptorSet environmentDescriptorSet;
-		std::unique_ptr<DescriptorSetLayout> environmentDescriptorSetLayout;
-		std::unique_ptr<Buffer> environmentBuffer;
-
-		// per frame
-		std::vector<VkDescriptorSet> frameDescriptorSets{ SwapChain::MAX_FRAMES_IN_FLIGHT };
-		std::unique_ptr<DescriptorSetLayout> frameDescriptorSetLayout;
-		std::vector<std::unique_ptr<Buffer>> frameBuffers{ SwapChain::MAX_FRAMES_IN_FLIGHT }; // TODO this is misleading as these ara data buffers but name suggests these are actual framebbuffers
-
-		// per entity
-		std::vector<VkDescriptorSet> entityDescriptorSets{ SwapChain::MAX_FRAMES_IN_FLIGHT };
-		std::unique_ptr<DescriptorSetLayout> entityDescriptorSetLayout;
-		std::vector<std::unique_ptr<Buffer>> entityBuffers{ SwapChain::MAX_FRAMES_IN_FLIGHT };
-		
-		// per primitive
-		std::vector<VkDescriptorSet> primitiveDescriptorSets{ SwapChain::MAX_FRAMES_IN_FLIGHT };
-		std::unique_ptr<DescriptorSetLayout> primitiveDescriptorSetLayout;
-		std::vector<std::unique_ptr<Buffer>> primitiveBuffers{ SwapChain::MAX_FRAMES_IN_FLIGHT };
-
-		// gbuffer descriptors
-		std::vector<VkDescriptorSet> gbufferDescriptorSets{ SwapChain::MAX_FRAMES_IN_FLIGHT };
-		std::unique_ptr<DescriptorSetLayout> gbufferDescriptorSetLayout;
-
-
-		// renderpasses and framebuffers
-		std::unique_ptr<Framebuffer> gbufferFramebuffer{}; // TODO probably shoul be bufferd as well
-
-		// pipelines
-		std::unique_ptr<GraphicsPipeline> skyboxPipeline{}; // uses gbufferFramebuffer render pass
-		std::unique_ptr<GraphicsPipeline> gbufferPipeline{}; // uses gbufferFramebuffer render pass
-		std::unique_ptr<GraphicsPipeline> defferedPipeline{};// uses swapchain render pass
 
 
 		uint32_t currentImageIndex;
