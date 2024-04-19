@@ -1,7 +1,14 @@
 #include "HmckTexture.h"
 #include <stb_image.h>
 
-void Hmck::Texture2D::destroy(Device& device)
+void Hmck::ITexture::updateDescriptor()
+{
+	descriptor.sampler = sampler;
+	descriptor.imageView = view;
+	descriptor.imageLayout = layout;
+}
+
+void Hmck::ITexture::destroy(Device& device)
 {
 	// if image have sampler, destroy it
 	if (sampler != VK_NULL_HANDLE)
@@ -226,20 +233,6 @@ void Hmck::TextureCubeMap::createSampler(Device& device, VkFilter filter)
 	}
 }
 
-void Hmck::TextureCubeMap::destroy(Device& device)
-{
-	// if image have sampler, destroy it
-	if (sampler != VK_NULL_HANDLE)
-	{
-		vkDestroySampler(device.device(), sampler, nullptr);
-		sampler = VK_NULL_HANDLE;
-	}
-
-	vkDestroyImageView(device.device(), view, nullptr);
-	vkDestroyImage(device.device(), image, nullptr);
-	vkFreeMemory(device.device(), memory, nullptr);
-}
-
 void Hmck::Texture2D::loadFromBuffer(unsigned char* buffer, uint32_t bufferSize, uint32_t width, uint32_t height, Device& device, VkFormat format, VkImageLayout imageLayout)
 {
 	Buffer stagingBuffer
@@ -342,11 +335,6 @@ void Hmck::Texture2D::createSampler(Device& device, VkFilter filter)
 	}
 }
 
-void Hmck::ITexture::updateDescriptor()
-{
-	descriptor.sampler = sampler;
-	descriptor.imageView = view;
-	descriptor.imageLayout = layout;
-}
+
 
 

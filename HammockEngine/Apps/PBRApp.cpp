@@ -332,10 +332,10 @@ void Hmck::PBRApp::renderEntity(uint32_t frameIndex, VkCommandBuffer commandBuff
 
 					PrimitiveBufferData pData{
 					.baseColorFactor = material.baseColorFactor,
-					.baseColorTextureIndex = (material.baseColorTextureIndex != TextureHandle::Invalid) ? scene->textures[material.baseColorTextureIndex].imageIndex : TextureHandle::Invalid,
-					.normalTextureIndex = (material.normalTextureIndex != TextureHandle::Invalid) ? scene->textures[material.normalTextureIndex].imageIndex : TextureHandle::Invalid,
-					.metallicRoughnessTextureIndex = (material.metallicRoughnessTextureIndex != TextureHandle::Invalid) ? scene->textures[material.metallicRoughnessTextureIndex].imageIndex : TextureHandle::Invalid,
-					.occlusionTextureIndex = (material.occlusionTextureIndex != TextureHandle::Invalid) ? scene->textures[material.occlusionTextureIndex].imageIndex : TextureHandle::Invalid,
+					.baseColorTextureIndex = (material.baseColorTextureIndex != TextureIndex::Invalid) ? scene->textures[material.baseColorTextureIndex].imageIndex : TextureIndex::Invalid,
+					.normalTextureIndex = (material.normalTextureIndex != TextureIndex::Invalid) ? scene->textures[material.normalTextureIndex].imageIndex : TextureIndex::Invalid,
+					.metallicRoughnessTextureIndex = (material.metallicRoughnessTextureIndex != TextureIndex::Invalid) ? scene->textures[material.metallicRoughnessTextureIndex].imageIndex : TextureIndex::Invalid,
+					.occlusionTextureIndex = (material.occlusionTextureIndex != TextureIndex::Invalid) ? scene->textures[material.occlusionTextureIndex].imageIndex : TextureIndex::Invalid,
 					.alphaCutoff = material.alphaCutOff
 					};
 

@@ -29,6 +29,7 @@ namespace Hmck
 		VkDescriptorImageInfo descriptor;
 
 		void updateDescriptor();
+		void destroy(Device& device);
 	};
 
 
@@ -52,7 +53,6 @@ namespace Hmck
 		);
 
 		void createSampler(Device& device, VkFilter filter = VK_FILTER_LINEAR);
-		void destroy(Device& device);
 	};
 
 	class TextureCubeMap : public ITexture
@@ -65,6 +65,5 @@ namespace Hmck
 			VkImageLayout imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
 
 		void createSampler(Device& device, VkFilter filter = VK_FILTER_LINEAR);
-		void destroy(Device& device);
 	};
 }

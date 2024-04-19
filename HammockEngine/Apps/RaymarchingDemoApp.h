@@ -82,7 +82,7 @@ namespace Hmck
 
 		std::unique_ptr<GraphicsPipeline> pipeline{}; // uses swapchain render pass
 
-		Texture2D noiseTexture;
+		Texture2DHandle noiseTexture;
 
 		PushData pushData;
 		BufferData bufferData;

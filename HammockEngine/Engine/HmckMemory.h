@@ -13,20 +13,23 @@
 
 #include <HmckBuffer.h>
 #include <HmckDescriptors.h>
+#include <HmckTexture.h>
 
 namespace Hmck
 {
-	typedef int32_t UniformBufferHandle;
-	typedef int32_t DescriptorSetHandle;
-	typedef int32_t DescriptorSetLayoutHandle;
+	typedef uint32_t UniformBufferHandle;
+	typedef uint32_t DescriptorSetHandle;
+	typedef uint32_t DescriptorSetLayoutHandle;
+	typedef uint32_t Texture2DHandle;
+	typedef uint32_t TextureCubeMapHandle;
 
-	class DescriptorManager
+	class MemoryManager
 	{
 	public:
 
-		static const int32_t INVALID_HANDLE;
+		static const uint32_t INVALID_HANDLE;
 
-		DescriptorManager(Device& device);
+		MemoryManager(Device& device);
 
 		struct UniformBufferCreateInfo
 		{
@@ -93,9 +96,35 @@ namespace Hmck
 
 		DescriptorSetHandle createDescriptorSet(DescriptorSetCreateInfo createInfo);
 
-		DescriptorSetLayout& getDescriptorSetLayout(DescriptorSetLayoutHandle handle);
+		struct Texture2DCreateFromFileInfo
+		{
+			std::string filepath;
+			VkFormat format;
+			VkImageLayout imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+		};
+
+		Texture2DHandle createTexture2DFromFile(Texture2DCreateFromFileInfo createInfo);
+
+		struct Texture2DCreateFromBufferInfo
+		{
+
+		};
+
+		Texture2DHandle createTexture2DFromBuffer(Texture2DCreateFromBufferInfo createInfo);
+
+		struct TextureCubeMapCreateFromFilesInfo
+		{
+
+		};
+
+		TextureCubeMapHandle createTextureCubeMapFromFiles(TextureCubeMapCreateFromFilesInfo createInfo);
+
+
+		DescriptorSetLayout& getDescriptorSetLayout(DescriptorSetLayoutHandle handle); // TODO make it return pointer, do not dereference
 		VkDescriptorSet getDescriptorSet(DescriptorSetHandle handle);
 		std::unique_ptr<Buffer>& getUniformBuffer(UniformBufferHandle handle);
+		std::unique_ptr<Texture2D>& getTexture2D(Texture2DHandle handle);
+		VkDescriptorImageInfo getTexture2DDescriptorImageInfo(Texture2DHandle handle);
 
 		void bindDescriptorSet(
 			VkCommandBuffer commandBuffer,
@@ -109,6 +138,7 @@ namespace Hmck
 
 		void destroyUniformBuffer(UniformBufferHandle handle);
 		void destroyDescriptorSetLayout(DescriptorSetLayoutHandle handle);
+		void destroyTexture2D(Texture2DHandle handle);
 
 
 	private:
@@ -117,11 +147,16 @@ namespace Hmck
 
 		static std::unordered_map<UniformBufferHandle, std::unique_ptr<Buffer>> uniformBuffers;
 		static std::unordered_map<DescriptorSetHandle, VkDescriptorSet> descriptorSets;
-		static std::unordered_map< DescriptorSetLayoutHandle, std::unique_ptr<DescriptorSetLayout>> descriptorSetLayouts;
+		static std::unordered_map<DescriptorSetLayoutHandle, std::unique_ptr<DescriptorSetLayout>> descriptorSetLayouts;
+		static std::unordered_map<Texture2DHandle, std::unique_ptr<Texture2D>> texture2Ds;
+		static std::unordered_map<Texture2DHandle, std::unique_ptr<TextureCubeMap>> textureCubeMaps;
+
 
 		static uint32_t uniformBuffersLastHandle;
 		static uint32_t descriptorSetsLastHandle;
 		static uint32_t descriptorSetLayoutsLastHandle;
+		static uint32_t texture2DsLastHandle;
+		static uint32_t textureCubeMapsLastHandle;
 
 	};
 }

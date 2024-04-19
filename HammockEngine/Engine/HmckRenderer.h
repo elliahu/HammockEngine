@@ -59,10 +59,10 @@ namespace Hmck
 	struct PrimitiveBufferData
 	{
 		glm::vec4 baseColorFactor{ 1.0f,1.0f,1.0f,1.0f };
-		uint32_t baseColorTextureIndex = TextureHandle::Invalid;
-		uint32_t normalTextureIndex = TextureHandle::Invalid;
-		uint32_t metallicRoughnessTextureIndex = TextureHandle::Invalid;
-		uint32_t occlusionTextureIndex = TextureHandle::Invalid;
+		uint32_t baseColorTextureIndex = TextureIndex::Invalid;
+		uint32_t normalTextureIndex = TextureIndex::Invalid;
+		uint32_t metallicRoughnessTextureIndex = TextureIndex::Invalid;
+		uint32_t occlusionTextureIndex = TextureIndex::Invalid;
 		float alphaCutoff = 1.0f;
 	};
 

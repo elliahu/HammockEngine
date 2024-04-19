@@ -16,7 +16,7 @@
 namespace Hmck
 {
 
-	enum TextureHandle : uint32_t { Invalid = 4294967295 };
+	enum TextureIndex : uint32_t { Invalid = 4294967295 };
 
 	struct Image
 	{
@@ -35,10 +35,10 @@ namespace Hmck
 	{
 		std::string name;
 		glm::vec4 baseColorFactor = glm::vec4(1.0f);
-		uint32_t baseColorTextureIndex = TextureHandle::Invalid;
-		uint32_t normalTextureIndex = TextureHandle::Invalid;
-		uint32_t metallicRoughnessTextureIndex = TextureHandle::Invalid;
-		uint32_t occlusionTextureIndex = TextureHandle::Invalid;
+		uint32_t baseColorTextureIndex = TextureIndex::Invalid;
+		uint32_t normalTextureIndex = TextureIndex::Invalid;
+		uint32_t metallicRoughnessTextureIndex = TextureIndex::Invalid;
+		uint32_t occlusionTextureIndex = TextureIndex::Invalid;
 		std::string alphaMode = "OPAQUE";
 		float alphaCutOff;
 		float metallicFactor = 1.f;

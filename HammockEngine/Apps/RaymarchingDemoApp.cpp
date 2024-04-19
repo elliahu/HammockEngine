@@ -25,7 +25,7 @@ void Hmck::RaymarchingDemoApp::run()
 			},
 			.descriptorSetLayouts =
 			{
-				descriptorManager.getDescriptorSetLayout(descriptorSetLayout).getDescriptorSetLayout()
+				memoryManager.getDescriptorSetLayout(descriptorSetLayout).getDescriptorSetLayout()
 			},
 			.pushConstantRanges {
 				{
@@ -150,7 +150,7 @@ void Hmck::RaymarchingDemoApp::init()
 	descriptorSets.resize(SwapChain::MAX_FRAMES_IN_FLIGHT);
 	uniformBuffers.resize(SwapChain::MAX_FRAMES_IN_FLIGHT);
 
-	descriptorSetLayout = descriptorManager.createDescriptorSetLayout({
+	descriptorSetLayout = memoryManager.createDescriptorSetLayout({
 		.bindings = {
 			{.binding = 0, .descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, .stageFlags = VK_SHADER_STAGE_ALL_GRAPHICS},
 			{.binding = 1, .descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, .stageFlags = VK_SHADER_STAGE_ALL_GRAPHICS},
@@ -158,25 +158,26 @@ void Hmck::RaymarchingDemoApp::init()
 	});
 
 	for (int i = 0; i < SwapChain::MAX_FRAMES_IN_FLIGHT; i++)
-		uniformBuffers[i] = descriptorManager.createUniformBuffer({
+		uniformBuffers[i] = memoryManager.createUniformBuffer({
 			.instanceSize = sizeof(BufferData),
 			.instanceCount = 1,
 			.usageFlags = VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
 			.memoryPropertyFlags = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT
 		});
 
-	std::string noiseFile = "../../Resources/Noise/noise2.png";
-	noiseTexture.loadFromFile(noiseFile, device, VK_FORMAT_R8G8B8A8_UNORM);
-	noiseTexture.createSampler(device);
-	noiseTexture.updateDescriptor();
+	noiseTexture = memoryManager.createTexture2DFromFile({
+		.filepath = "../../Resources/Noise/noise2.png",
+		.format = VK_FORMAT_R8G8B8A8_UNORM
+	});
 
 	for (int i = 0; i < SwapChain::MAX_FRAMES_IN_FLIGHT; i++)
 	{
-		auto fbufferInfo = descriptorManager.getUniformBuffer(uniformBuffers[i])->descriptorInfo();
-		descriptorSets[i] = descriptorManager.createDescriptorSet({
+		auto fbufferInfo = memoryManager.getUniformBuffer(uniformBuffers[i])->descriptorInfo();
+		auto imageInfo = memoryManager.getTexture2DDescriptorImageInfo(noiseTexture);
+		descriptorSets[i] = memoryManager.createDescriptorSet({
 			.descriptorSetLayout = descriptorSetLayout,
 			.bufferWrites = {{0,fbufferInfo}},
-			.imageWrites = {{1,noiseTexture.descriptor}}
+			.imageWrites = {{1,imageInfo}}
 		});
 	}
 	
@@ -191,9 +192,9 @@ void Hmck::RaymarchingDemoApp::draw(int frameIndex, float elapsedTime, VkCommand
 	bufferData.view = scene->camera.getView();
 	bufferData.inverseView = scene->camera.getInverseView();
 	
-	descriptorManager.getUniformBuffer(uniformBuffers[frameIndex])->writeToBuffer(&bufferData);
+	memoryManager.getUniformBuffer(uniformBuffers[frameIndex])->writeToBuffer(&bufferData);
 
-	descriptorManager.bindDescriptorSet(
+	memoryManager.bindDescriptorSet(
 		commandBuffer,
 		VK_PIPELINE_BIND_POINT_GRAPHICS,
 		pipeline->graphicsPipelineLayout,
@@ -212,12 +213,12 @@ void Hmck::RaymarchingDemoApp::draw(int frameIndex, float elapsedTime, VkCommand
 
 void Hmck::RaymarchingDemoApp::destroy()
 {
-	noiseTexture.destroy(device);
+	memoryManager.destroyTexture2D(noiseTexture);
 
 	for (auto& uniformBuffer : uniformBuffers)
-		descriptorManager.destroyUniformBuffer(uniformBuffer);
+		memoryManager.destroyUniformBuffer(uniformBuffer);
 	
-	descriptorManager.destroyDescriptorSetLayout(descriptorSetLayout);
+	memoryManager.destroyDescriptorSetLayout(descriptorSetLayout);
 }
 
 void Hmck::RaymarchingDemoApp::ui()
