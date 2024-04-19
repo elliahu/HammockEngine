@@ -25,7 +25,7 @@ void Hmck::RaymarchingDemoApp::run()
 			},
 			.descriptorSetLayouts =
 			{
-				descriptorSetLayout->getDescriptorSetLayout()
+				descriptorManager.getDescriptorSetLayout(descriptorSetLayout).getDescriptorSetLayout()
 			},
 			.pushConstantRanges {
 				{
@@ -143,6 +143,27 @@ void Hmck::RaymarchingDemoApp::load()
 		}
 	};
 	scene = std::make_unique<Scene>(info);
+}
+
+void Hmck::RaymarchingDemoApp::init()
+{
+	descriptorSets.resize(SwapChain::MAX_FRAMES_IN_FLIGHT);
+	uniformBuffers.resize(SwapChain::MAX_FRAMES_IN_FLIGHT);
+
+	descriptorSetLayout = descriptorManager.createDescriptorSetLayout({
+		.bindings = {
+			{.binding = 0, .descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, .stageFlags = VK_SHADER_STAGE_ALL_GRAPHICS},
+			{.binding = 1, .descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, .stageFlags = VK_SHADER_STAGE_ALL_GRAPHICS},
+		}
+	});
+
+	for (int i = 0; i < SwapChain::MAX_FRAMES_IN_FLIGHT; i++)
+		uniformBuffers[i] = descriptorManager.createUniformBuffer({
+			.instanceSize = sizeof(BufferData),
+			.instanceCount = 1,
+			.usageFlags = VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
+			.memoryPropertyFlags = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT
+		});
 
 	std::string noiseFile = "../../Resources/Noise/noise2.png";
 	noiseTexture.loadFromFile(noiseFile, device, VK_FORMAT_R8G8B8A8_UNORM);
@@ -151,38 +172,14 @@ void Hmck::RaymarchingDemoApp::load()
 
 	for (int i = 0; i < SwapChain::MAX_FRAMES_IN_FLIGHT; i++)
 	{
-		auto fbufferInfo = uniformBuffers[i]->descriptorInfo();
-		DescriptorWriter(*descriptorSetLayout, *descriptorPool)
-			.writeBuffer(0, &fbufferInfo)
-			.writeImage(1,&noiseTexture.descriptor)
-			.build(descriptorSets[i]);
+		auto fbufferInfo = descriptorManager.getUniformBuffer(uniformBuffers[i])->descriptorInfo();
+		descriptorSets[i] = descriptorManager.createDescriptorSet({
+			.descriptorSetLayout = descriptorSetLayout,
+			.bufferWrites = {{0,fbufferInfo}},
+			.imageWrites = {{1,noiseTexture.descriptor}}
+		});
 	}
-}
-
-void Hmck::RaymarchingDemoApp::init()
-{
-	descriptorPool = DescriptorPool::Builder(device)
-		.setMaxSets(100)
-		.addPoolSize(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 50)
-		.addPoolSize(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 50)
-		.build();
-
-	descriptorSetLayout = DescriptorSetLayout::Builder(device)
-		.addBinding(0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_ALL_GRAPHICS)
-		.addBinding(1, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_ALL_GRAPHICS)
-		.build();
-
-	for (int i = 0; i < SwapChain::MAX_FRAMES_IN_FLIGHT; i++)
-	{
-		uniformBuffers[i] = std::make_unique<Buffer>(
-			device,
-			sizeof(BufferData),
-			1,
-			VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
-			VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT
-			);
-		uniformBuffers[i]->map();
-	}
+	
 }
 
 void Hmck::RaymarchingDemoApp::draw(int frameIndex, float elapsedTime, VkCommandBuffer commandBuffer)
@@ -194,17 +191,16 @@ void Hmck::RaymarchingDemoApp::draw(int frameIndex, float elapsedTime, VkCommand
 	bufferData.view = scene->camera.getView();
 	bufferData.inverseView = scene->camera.getInverseView();
 	
-	uniformBuffers[frameIndex]->writeToBuffer(&bufferData);
+	descriptorManager.getUniformBuffer(uniformBuffers[frameIndex])->writeToBuffer(&bufferData);
 
-	vkCmdBindDescriptorSets(
+	descriptorManager.bindDescriptorSet(
 		commandBuffer,
 		VK_PIPELINE_BIND_POINT_GRAPHICS,
 		pipeline->graphicsPipelineLayout,
 		0, 1,
-		&descriptorSets[frameIndex],
+		descriptorSets[frameIndex],
 		0,
 		nullptr);
-
 
 	pushData.elapsedTime = elapsedTime;
 
@@ -217,6 +213,11 @@ void Hmck::RaymarchingDemoApp::draw(int frameIndex, float elapsedTime, VkCommand
 void Hmck::RaymarchingDemoApp::destroy()
 {
 	noiseTexture.destroy(device);
+
+	for (auto& uniformBuffer : uniformBuffers)
+		descriptorManager.destroyUniformBuffer(uniformBuffer);
+	
+	descriptorManager.destroyDescriptorSetLayout(descriptorSetLayout);
 }
 
 void Hmck::RaymarchingDemoApp::ui()
@@ -246,3 +247,4 @@ void Hmck::RaymarchingDemoApp::ui()
 
 	ImGui::End();
 }
+

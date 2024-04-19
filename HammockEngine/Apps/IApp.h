@@ -2,6 +2,7 @@
 #include <Platform/HmckWindow.h>
 #include <HmckDevice.h>
 #include <HmckRenderer.h>
+#include <HmckMemory.h>
 
 namespace Hmck
 {
@@ -25,5 +26,6 @@ namespace Hmck
 
 		Window window{ WINDOW_WIDTH, WINDOW_HEIGHT, "Hammock Engine" };
 		Device device{ window }; // TODO this is wrong, device should not be dependent on window -> should be otherway around
+		DescriptorManager descriptorManager{ device };
 	};
 }

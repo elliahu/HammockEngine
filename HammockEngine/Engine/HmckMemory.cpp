@@ -6,9 +6,10 @@ namespace Hmck
 	std::unordered_map<DescriptorSetHandle, VkDescriptorSet> DescriptorManager::descriptorSets;
 	std::unordered_map<DescriptorSetLayoutHandle, std::unique_ptr<DescriptorSetLayout>> DescriptorManager::descriptorSetLayouts;
 
-	uint32_t DescriptorManager::uniformBuffersLastHandle = 0;
-	uint32_t DescriptorManager::descriptorSetsLastHandle = 0;
-	uint32_t DescriptorManager::descriptorSetLayoutsLastHandle = 0;
+	const int32_t DescriptorManager::INVALID_HANDLE = 0;
+	uint32_t DescriptorManager::uniformBuffersLastHandle = 1;
+	uint32_t DescriptorManager::descriptorSetsLastHandle = 1;
+	uint32_t DescriptorManager::descriptorSetLayoutsLastHandle = 1;
 }
 
 Hmck::DescriptorManager::DescriptorManager(Device& device) :device{ device }
@@ -19,6 +20,23 @@ Hmck::DescriptorManager::DescriptorManager(Device& device) :device{ device }
 		.addPoolSize(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 5000)
 		.build();
 }
+
+Hmck::UniformBufferHandle Hmck::DescriptorManager::createUniformBuffer(UniformBufferCreateInfo createInfo)
+{
+	auto buffer = std::make_unique<Buffer>(
+		device,
+		createInfo.instanceSize,
+		createInfo.instanceCount,
+		createInfo.usageFlags,
+		createInfo.memoryPropertyFlags);
+	buffer->map();
+
+	uniformBuffers.emplace(uniformBuffersLastHandle, std::move(buffer));
+	UniformBufferHandle handle = uniformBuffersLastHandle;
+	uniformBuffersLastHandle++;
+	return handle;
+}
+
 
 Hmck::DescriptorSetLayoutHandle Hmck::DescriptorManager::createDescriptorSetLayout(DescriptorSetLayoutCreateInfo createInfo)
 {
@@ -103,17 +121,35 @@ std::unique_ptr<Hmck::Buffer>& Hmck::DescriptorManager::getUniformBuffer(Uniform
 	throw std::runtime_error("Uniform buffer with provided handle does not exist!");
 }
 
-Hmck::UniformBufferHandle Hmck::DescriptorManager::createUniformBuffer(UniformBufferCreateInfo createInfo)
+void Hmck::DescriptorManager::bindDescriptorSet(
+	VkCommandBuffer commandBuffer, 
+	VkPipelineBindPoint bindPoint, 
+	VkPipelineLayout pipelineLayout, 
+	uint32_t firstSet, 
+	uint32_t descriptorCount, 
+	DescriptorSetHandle descriptorSet,
+	uint32_t dynamicOffsetCount, 
+	const uint32_t* pDynamicOffsets)
 {
-	auto buffer = std::make_unique<Buffer>(
-		device,
-		createInfo.instanceSize,
-		createInfo.instanceCount,
-		createInfo.usageFlags,
-		createInfo.memoryPropertyFlags);
+	auto descriptor = getDescriptorSet(descriptorSet);
 
-	uniformBuffers.emplace(uniformBuffersLastHandle, std::move(buffer));
-	UniformBufferHandle handle = uniformBuffersLastHandle;
-	uniformBuffersLastHandle++;
-	return handle;
+	vkCmdBindDescriptorSets(
+		commandBuffer,
+		bindPoint,
+		pipelineLayout,
+		firstSet, descriptorCount,
+		&descriptor,
+		dynamicOffsetCount,
+		pDynamicOffsets);
 }
+
+void Hmck::DescriptorManager::destroyUniformBuffer(UniformBufferHandle handle)
+{
+	uniformBuffers.erase(handle);
+}
+
+void Hmck::DescriptorManager::destroyDescriptorSetLayout(DescriptorSetLayoutHandle handle)
+{
+	descriptorSetLayouts.erase(handle);
+}
+

@@ -23,6 +23,7 @@
 #include "HmckScene.h"
 #include "HmckLights.h"
 #include "HmckTexture.h"
+#include "HmckMemory.h"
 
 #ifndef MODELS_DIR
 #define MODELS_DIR "../../Resources/Models/"
@@ -74,12 +75,10 @@ namespace Hmck
 	private:
 		std::unique_ptr<Scene> scene{};
 
-		// DESCRIPTORS
-		std::unique_ptr<DescriptorPool> descriptorPool{};
 		
-		std::vector<VkDescriptorSet> descriptorSets{ SwapChain::MAX_FRAMES_IN_FLIGHT };
-		std::unique_ptr<DescriptorSetLayout> descriptorSetLayout;
-		std::vector<std::unique_ptr<Buffer>> uniformBuffers{ SwapChain::MAX_FRAMES_IN_FLIGHT };
+		std::vector<DescriptorSetHandle> descriptorSets{};
+		DescriptorSetLayoutHandle descriptorSetLayout;
+		std::vector<UniformBufferHandle> uniformBuffers{};
 
 		std::unique_ptr<GraphicsPipeline> pipeline{}; // uses swapchain render pass
 

@@ -16,19 +16,20 @@
 
 namespace Hmck
 {
-	typedef uint32_t UniformBufferHandle;
-	typedef uint32_t DescriptorSetHandle;
-	typedef uint32_t DescriptorSetLayoutHandle;
+	typedef int32_t UniformBufferHandle;
+	typedef int32_t DescriptorSetHandle;
+	typedef int32_t DescriptorSetLayoutHandle;
 
 	class DescriptorManager
 	{
 	public:
 
+		static const int32_t INVALID_HANDLE;
+
 		DescriptorManager(Device& device);
 
 		struct UniformBufferCreateInfo
 		{
-			Device& device;
 			VkDeviceSize instanceSize;
 			uint32_t instanceCount;
 			VkBufferUsageFlags usageFlags;
@@ -47,7 +48,7 @@ namespace Hmck
 				uint32_t binding;
 				VkDescriptorType descriptorType;
 				VkShaderStageFlags stageFlags;
-				uint32_t count = 0;
+				uint32_t count = 1;
 				VkDescriptorBindingFlags bindingFlags = 0;
 			};
 
@@ -58,7 +59,6 @@ namespace Hmck
 
 		struct DescriptorSetCreateInfo
 		{
-			Device& device;
 			DescriptorSetLayoutHandle descriptorSetLayout;
 
 			struct DescriptorSetWriteBufferInfo
@@ -96,6 +96,19 @@ namespace Hmck
 		DescriptorSetLayout& getDescriptorSetLayout(DescriptorSetLayoutHandle handle);
 		VkDescriptorSet getDescriptorSet(DescriptorSetHandle handle);
 		std::unique_ptr<Buffer>& getUniformBuffer(UniformBufferHandle handle);
+
+		void bindDescriptorSet(
+			VkCommandBuffer commandBuffer,
+			VkPipelineBindPoint bindPoint,
+			VkPipelineLayout pipelineLayout,
+			uint32_t firstSet,
+			uint32_t descriptorCount,
+			DescriptorSetHandle descriptorSet,
+			uint32_t dynamicOffsetCount,
+			const uint32_t* pDynamicOffsets);
+
+		void destroyUniformBuffer(UniformBufferHandle handle);
+		void destroyDescriptorSetLayout(DescriptorSetLayoutHandle handle);
 
 
 	private:
