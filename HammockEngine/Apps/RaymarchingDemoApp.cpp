@@ -2,7 +2,6 @@
 
 Hmck::RaymarchingDemoApp::RaymarchingDemoApp()
 {
-	init();
 	load();
 }
 
@@ -106,8 +105,6 @@ void Hmck::RaymarchingDemoApp::run()
 				1.75f);
 
 			renderer.beginSwapChainRenderPass(commandBuffer);
-			
-			renderer.bindVertexBuffer(commandBuffer);
 
 			draw(frameIndex, elapsedTime, commandBuffer);
 
@@ -143,36 +140,33 @@ void Hmck::RaymarchingDemoApp::load()
 		}
 	};
 	scene = std::make_unique<Scene>(info);
-}
 
-void Hmck::RaymarchingDemoApp::init()
-{
 	descriptorSets.resize(SwapChain::MAX_FRAMES_IN_FLIGHT);
-	uniformBuffers.resize(SwapChain::MAX_FRAMES_IN_FLIGHT);
+	buffers.resize(SwapChain::MAX_FRAMES_IN_FLIGHT);
 
 	descriptorSetLayout = memoryManager.createDescriptorSetLayout({
 		.bindings = {
 			{.binding = 0, .descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, .stageFlags = VK_SHADER_STAGE_ALL_GRAPHICS},
 			{.binding = 1, .descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, .stageFlags = VK_SHADER_STAGE_ALL_GRAPHICS},
 		}
-	});
+		});
 
 	for (int i = 0; i < SwapChain::MAX_FRAMES_IN_FLIGHT; i++)
-		uniformBuffers[i] = memoryManager.createUniformBuffer({
+		buffers[i] = memoryManager.createBuffer({
 			.instanceSize = sizeof(BufferData),
 			.instanceCount = 1,
 			.usageFlags = VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
 			.memoryPropertyFlags = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT
-		});
+			});
 
 	noiseTexture = memoryManager.createTexture2DFromFile({
 		.filepath = "../../Resources/Noise/noise2.png",
 		.format = VK_FORMAT_R8G8B8A8_UNORM
-	});
+		});
 
 	for (int i = 0; i < SwapChain::MAX_FRAMES_IN_FLIGHT; i++)
 	{
-		auto fbufferInfo = memoryManager.getUniformBuffer(uniformBuffers[i])->descriptorInfo();
+		auto fbufferInfo = memoryManager.getBuffer(buffers[i])->descriptorInfo();
 		auto imageInfo = memoryManager.getTexture2DDescriptorImageInfo(noiseTexture);
 		descriptorSets[i] = memoryManager.createDescriptorSet({
 			.descriptorSetLayout = descriptorSetLayout,
@@ -180,19 +174,29 @@ void Hmck::RaymarchingDemoApp::init()
 			.imageWrites = {{1,imageInfo}}
 		});
 	}
-	
+
+	vertexBuffer = memoryManager.createVertexBuffer({
+		.vertexSize = sizeof(scene->vertices[0]),
+		.vertexCount = static_cast<uint32_t>(scene->vertices.size()),
+		.data = (void *)scene->vertices.data()});
+
+	indexBuffer = memoryManager.createIndexBuffer({
+		.indexSize = sizeof(scene->indices[0]),
+		.indexCount = static_cast<uint32_t>(scene->indices.size()),
+		.data = (void*)scene->indices.data() });
 }
 
 void Hmck::RaymarchingDemoApp::draw(int frameIndex, float elapsedTime, VkCommandBuffer commandBuffer)
 {
+	memoryManager.bindVertexBuffer(vertexBuffer, indexBuffer, commandBuffer);
+
 	pipeline->bind(commandBuffer);
 
-	
 	bufferData.projection = scene->camera.getProjection();
 	bufferData.view = scene->camera.getView();
 	bufferData.inverseView = scene->camera.getInverseView();
 	
-	memoryManager.getUniformBuffer(uniformBuffers[frameIndex])->writeToBuffer(&bufferData);
+	memoryManager.getBuffer(buffers[frameIndex])->writeToBuffer(&bufferData);
 
 	memoryManager.bindDescriptorSet(
 		commandBuffer,
@@ -205,7 +209,6 @@ void Hmck::RaymarchingDemoApp::draw(int frameIndex, float elapsedTime, VkCommand
 
 	pushData.elapsedTime = elapsedTime;
 
-
 	vkCmdPushConstants(commandBuffer, pipeline->graphicsPipelineLayout, VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(PushData), &pushData);
 
 	vkCmdDraw(commandBuffer, 3, 1, 0, 0);
@@ -215,10 +218,13 @@ void Hmck::RaymarchingDemoApp::destroy()
 {
 	memoryManager.destroyTexture2D(noiseTexture);
 
-	for (auto& uniformBuffer : uniformBuffers)
-		memoryManager.destroyUniformBuffer(uniformBuffer);
+	for (auto& uniformBuffer : buffers)
+		memoryManager.destroyBuffer(uniformBuffer);
 	
 	memoryManager.destroyDescriptorSetLayout(descriptorSetLayout);
+
+	memoryManager.destroyBuffer(vertexBuffer);
+	memoryManager.destroyBuffer(indexBuffer);
 }
 
 void Hmck::RaymarchingDemoApp::ui()

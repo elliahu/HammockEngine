@@ -67,7 +67,6 @@ namespace Hmck
 		virtual void run() override;
 		virtual void load() override;
 
-		void init();
 		void draw(int frameIndex, float elapsedTime, VkCommandBuffer commandBuffer);
 		void destroy();
 		void ui();
@@ -75,10 +74,12 @@ namespace Hmck
 	private:
 		std::unique_ptr<Scene> scene{};
 
+		BufferHandle vertexBuffer;
+		BufferHandle indexBuffer;
 		
 		std::vector<DescriptorSetHandle> descriptorSets{};
 		DescriptorSetLayoutHandle descriptorSetLayout;
-		std::vector<UniformBufferHandle> uniformBuffers{};
+		std::vector<BufferHandle> buffers{};
 
 		std::unique_ptr<GraphicsPipeline> pipeline{}; // uses swapchain render pass
 

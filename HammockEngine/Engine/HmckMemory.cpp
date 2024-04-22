@@ -2,14 +2,14 @@
 
 namespace Hmck
 {
-	std::unordered_map<UniformBufferHandle, std::unique_ptr<Buffer>> MemoryManager::uniformBuffers;
+	std::unordered_map<BufferHandle, std::unique_ptr<Buffer>> MemoryManager::buffers;
 	std::unordered_map<DescriptorSetHandle, VkDescriptorSet> MemoryManager::descriptorSets;
 	std::unordered_map<DescriptorSetLayoutHandle, std::unique_ptr<DescriptorSetLayout>> MemoryManager::descriptorSetLayouts;
 	std::unordered_map<Texture2DHandle, std::unique_ptr<Texture2D>> MemoryManager::texture2Ds;
 	std::unordered_map<Texture2DHandle, std::unique_ptr<TextureCubeMap>> MemoryManager::textureCubeMaps;
 
 	const uint32_t MemoryManager::INVALID_HANDLE = 0;
-	uint32_t MemoryManager::uniformBuffersLastHandle = 1;
+	uint32_t MemoryManager::buffersLastHandle = 1;
 	uint32_t MemoryManager::descriptorSetsLastHandle = 1;
 	uint32_t MemoryManager::descriptorSetLayoutsLastHandle = 1;
 	uint32_t MemoryManager::texture2DsLastHandle = 1;
@@ -25,7 +25,7 @@ Hmck::MemoryManager::MemoryManager(Device& device) :device{ device }
 		.build();
 }
 
-Hmck::UniformBufferHandle Hmck::MemoryManager::createUniformBuffer(UniformBufferCreateInfo createInfo)
+Hmck::BufferHandle Hmck::MemoryManager::createBuffer(BufferCreateInfo createInfo)
 {
 	auto buffer = std::make_unique<Buffer>(
 		device,
@@ -33,14 +33,65 @@ Hmck::UniformBufferHandle Hmck::MemoryManager::createUniformBuffer(UniformBuffer
 		createInfo.instanceCount,
 		createInfo.usageFlags,
 		createInfo.memoryPropertyFlags);
-	buffer->map();
 
-	uniformBuffers.emplace(uniformBuffersLastHandle, std::move(buffer));
-	UniformBufferHandle handle = uniformBuffersLastHandle;
-	uniformBuffersLastHandle++;
+	if(createInfo.map) buffer->map();
+
+	buffers.emplace(buffersLastHandle, std::move(buffer));
+	BufferHandle handle = buffersLastHandle;
+	buffersLastHandle++;
 	return handle;
 }
 
+
+Hmck::BufferHandle Hmck::MemoryManager::createVertexBuffer(VertexBufferCreateInfo createInfo)
+{
+	Buffer stagingBuffer{
+		device,
+		createInfo.vertexSize,
+		createInfo.vertexCount,
+		VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
+		VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
+	};
+
+	stagingBuffer.map();
+	stagingBuffer.writeToBuffer(createInfo.data);
+
+	BufferHandle handle = createBuffer({
+		.instanceSize = createInfo.vertexSize,
+		.instanceCount = createInfo.vertexCount,
+		.usageFlags = VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT,
+		.memoryPropertyFlags = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
+		.map = false});
+
+	device.copyBuffer(stagingBuffer.getBuffer(), getBuffer(handle)->getBuffer(), createInfo.vertexCount * createInfo.vertexSize);
+
+	return handle;
+}
+
+Hmck::BufferHandle Hmck::MemoryManager::createIndexBuffer(IndexBufferCreateInfo createInfo)
+{
+	Buffer stagingBuffer{
+		device,
+		createInfo.indexSize,
+		createInfo.indexCount,
+		VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
+		VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
+	};
+
+	stagingBuffer.map();
+	stagingBuffer.writeToBuffer(createInfo.data);
+
+	BufferHandle handle = createBuffer({
+		.instanceSize = createInfo.indexSize,
+		.instanceCount = createInfo.indexCount,
+		.usageFlags = VK_BUFFER_USAGE_INDEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT,
+		.memoryPropertyFlags = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
+		.map = false });
+
+	device.copyBuffer(stagingBuffer.getBuffer(), getBuffer(handle)->getBuffer(), createInfo.indexCount * createInfo.indexSize);
+
+	return handle;
+}
 
 Hmck::DescriptorSetLayoutHandle Hmck::MemoryManager::createDescriptorSetLayout(DescriptorSetLayoutCreateInfo createInfo)
 {
@@ -165,11 +216,11 @@ VkDescriptorSet Hmck::MemoryManager::getDescriptorSet(DescriptorSetHandle handle
 	throw std::runtime_error("Descriptor with provided handle does not exist!");
 }
 
-std::unique_ptr<Hmck::Buffer>& Hmck::MemoryManager::getUniformBuffer(UniformBufferHandle handle)
+std::unique_ptr<Hmck::Buffer>& Hmck::MemoryManager::getBuffer(BufferHandle handle)
 {
-	if (uniformBuffers.contains(handle))
+	if (buffers.contains(handle))
 	{
-		return uniformBuffers[handle];
+		return buffers[handle];
 	}
 
 	throw std::runtime_error("Uniform buffer with provided handle does not exist!");
@@ -227,9 +278,9 @@ void Hmck::MemoryManager::bindDescriptorSet(
 		pDynamicOffsets);
 }
 
-void Hmck::MemoryManager::destroyUniformBuffer(UniformBufferHandle handle)
+void Hmck::MemoryManager::destroyBuffer(BufferHandle handle)
 {
-	uniformBuffers.erase(handle);
+	buffers.erase(handle);
 }
 
 void Hmck::MemoryManager::destroyDescriptorSetLayout(DescriptorSetLayoutHandle handle)
@@ -243,10 +294,36 @@ void Hmck::MemoryManager::destroyTexture2D(Texture2DHandle handle)
 	texture2Ds.erase(handle);
 }
 
+void Hmck::MemoryManager::bindVertexBuffer(BufferHandle handle, VkCommandBuffer commandBuffer)
+{
+	VkDeviceSize offsets[] = { 0 };
+	VkBuffer buffers[] = { getBuffer(handle)->getBuffer()};
+	vkCmdBindVertexBuffers(commandBuffer, 0, 1, buffers, offsets);
+}
+
+void Hmck::MemoryManager::bindVertexBuffer(BufferHandle vertexBuffer, BufferHandle indexBuffer, VkCommandBuffer commandBuffer, VkIndexType indexType)
+{
+	bindVertexBuffer(vertexBuffer, commandBuffer);
+	bindIndexBuffer(indexBuffer, commandBuffer);
+}
+
+void Hmck::MemoryManager::bindIndexBuffer(BufferHandle handle, VkCommandBuffer commandBuffer, VkIndexType indexType)
+{
+	vkCmdBindIndexBuffer(commandBuffer, getBuffer(handle)->getBuffer(), 0, indexType);
+}
+
 void Hmck::MemoryManager::destroyTextureCubeMap(TextureCubeMapHandle handle)
 {
 	getTextureCubeMap(handle)->destroy(device);
 	textureCubeMaps.erase(handle);
+}
+
+void Hmck::MemoryManager::copyBuffer(BufferHandle from, BufferHandle to)
+{
+	auto& fromBuffer = getBuffer(from);
+	auto& toBuffer = getBuffer(to);
+
+	device.copyBuffer(fromBuffer->getBuffer(), toBuffer->getBuffer(), fromBuffer->getBufferSize());
 }
 
 
