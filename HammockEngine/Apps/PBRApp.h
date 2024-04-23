@@ -75,6 +75,7 @@ namespace Hmck
 		};
 
 		PBRApp();
+		~PBRApp();
 
 		// Inherited via IApp
 		virtual void run() override;

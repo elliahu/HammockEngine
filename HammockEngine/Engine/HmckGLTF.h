@@ -12,6 +12,7 @@
 #include "HmckEntity.h"
 #include "HmckEntity3D.h"
 #include "HmckFrameInfo.h"
+#include "HmckMemory.h"
 
 namespace gltf = tinygltf;
 namespace Hmck
@@ -37,9 +38,9 @@ namespace Hmck
 
 	private:
 
-		static void loadImages(gltf::Model& input, Device& device, std::vector<Image>& images, uint32_t imagesOffset);
-		static void loadMaterials(gltf::Model& input, Device& device,  std::vector<Material>& materials, uint32_t materialsOffset, uint32_t texturesOffset);
-		static void loadTextures(gltf::Model& input, Device& device,  std::vector<Texture>& textures, uint32_t texturesOffset);
+		static void loadImages(gltf::Model& input, Device& device, MemoryManager& memory, std::vector<Image>& images, uint32_t imagesOffset);
+		static void loadMaterials(gltf::Model& input, Device& device, MemoryManager& memory, std::vector<Material>& materials, uint32_t materialsOffset, uint32_t texturesOffset);
+		static void loadTextures(gltf::Model& input, Device& device, MemoryManager& memory, std::vector<Texture>& textures, uint32_t texturesOffset);
 		static std::shared_ptr<Entity> loadNode(
 			Device& device,
 			const tinygltf::Node& inputNode,

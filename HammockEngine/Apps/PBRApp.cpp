@@ -5,6 +5,11 @@ Hmck::PBRApp::PBRApp()
 	load();
 }
 
+Hmck::PBRApp::~PBRApp()
+{
+	clean();
+}
+
 void Hmck::PBRApp::run()
 {
 	Renderer renderer{ window, device };
@@ -139,14 +144,13 @@ void Hmck::PBRApp::run()
 
 		vkDeviceWaitIdle(device.device());
 	}
-
-	clean();
 }
 
 void Hmck::PBRApp::load()
 {
 	Scene::SceneCreateInfo info = {
 		.device = device,
+		.memory = memoryManager,
 		.name = "Volumetric scene",
 		.loadFiles = {
 			{
@@ -212,7 +216,7 @@ void Hmck::PBRApp::init()
 	std::vector<VkDescriptorImageInfo> imageInfos{ scene->images.size() };
 	for (int im = 0; im < scene->images.size(); im++)
 	{
-		imageInfos[im] = scene->images[im].texture.descriptor;
+		imageInfos[im] = memoryManager.getTexture2D(scene->images[im].texture)->descriptor;
 	}
 	auto sceneBufferInfo = memoryManager.getBuffer(environmentBuffer)->descriptorInfo();
 	environmentDescriptorSet = memoryManager.createDescriptorSet({

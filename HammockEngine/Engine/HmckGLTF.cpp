@@ -52,12 +52,14 @@ std::vector<std::shared_ptr<Hmck::Entity>> Hmck::Gltf::load(
 		std::cerr << "Failed to parse glTF\n";
 	}
 
+	MemoryManager memory{ device };
+
 	std::vector<std::shared_ptr<Entity>> roots{};
 	const gltf::Scene& scene = model.scenes[0];
 	for (size_t i = 0; i < scene.nodes.size(); i++) {
-		loadImages(model, device, images, imagesOffset);
-		loadMaterials(model, device, materials, materialsOffset, texturesOffset);
-		loadTextures(model, device, textures, texturesOffset);
+		loadImages(model, device, memory, images, imagesOffset);
+		loadMaterials(model, device, memory, materials, materialsOffset, texturesOffset);
+		loadTextures(model, device, memory, textures, texturesOffset);
 		const gltf::Node node = model.nodes[scene.nodes[i]];
 		auto r = loadNode(device, node, model, materialsOffset, nullptr, vertices, indices, root);
 		roots.push_back(r);
@@ -67,7 +69,7 @@ std::vector<std::shared_ptr<Hmck::Entity>> Hmck::Gltf::load(
 }
 
 
-void Hmck::Gltf::loadImages(gltf::Model& input,Device& device, std::vector<Image>& images, uint32_t imagesOffset)
+void Hmck::Gltf::loadImages(gltf::Model& input,Device& device, MemoryManager& memory, std::vector<Image>& images, uint32_t imagesOffset)
 {
 	// Images can be stored inside the glTF (which is the case for the sample model), so instead of directly
 	// loading them from disk, we fetch them from the glTF loader and upload the buffers
@@ -90,9 +92,13 @@ void Hmck::Gltf::loadImages(gltf::Model& input,Device& device, std::vector<Image
 		// Load texture from image buffer
 		images[i].uri = glTFImage.uri;
 		images[i].name = glTFImage.name;
-		images[i].texture.loadFromBuffer(buffer,bufferSize, glTFImage.width, glTFImage.height,device, VK_FORMAT_R8G8B8A8_UNORM);
-		images[i].texture.createSampler(device);
-		images[i].texture.updateDescriptor();
+		images[i].texture = memory.createTexture2DFromBuffer({
+			.buffer = buffer,
+			.bufferSize = bufferSize,
+			.width = static_cast<uint32_t>(glTFImage.width),
+			.height = static_cast<uint32_t>(glTFImage.height),
+			.format = VK_FORMAT_R8G8B8A8_UNORM
+		});
 		if (deleteBuffer) {
 			delete[] buffer;
 		}
@@ -100,7 +106,7 @@ void Hmck::Gltf::loadImages(gltf::Model& input,Device& device, std::vector<Image
 }
 
 
-void Hmck::Gltf::loadMaterials(gltf::Model& input, Device& device,  std::vector<Material>& materials, uint32_t materialsOffset, uint32_t texturesOffset)
+void Hmck::Gltf::loadMaterials(gltf::Model& input, Device& device, MemoryManager& memory, std::vector<Material>& materials, uint32_t materialsOffset, uint32_t texturesOffset)
 {
 	// if there is no material a default one will be created
 	if (input.materials.size() == 0)
@@ -156,7 +162,7 @@ void Hmck::Gltf::loadMaterials(gltf::Model& input, Device& device,  std::vector<
 	}
 }
 
-void Hmck::Gltf::loadTextures(gltf::Model& input, Device& device, std::vector<Texture>& textures, uint32_t texturesOffset)
+void Hmck::Gltf::loadTextures(gltf::Model& input, Device& device, MemoryManager& memory, std::vector<Texture>& textures, uint32_t texturesOffset)
 {
 	textures.resize(input.textures.size());
 	for (size_t i = texturesOffset; i < input.textures.size(); i++) {

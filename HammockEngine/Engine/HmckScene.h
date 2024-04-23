@@ -37,6 +37,7 @@ namespace Hmck
 		struct SceneCreateInfo
 		{
 			Device& device;
+			MemoryManager& memory;
 			std::string name;
 			std::vector<SceneLoadFileInfo> loadFiles;
 			SkyboxLoadSkyboxInfo loadSkybox;
@@ -86,5 +87,6 @@ namespace Hmck
 
 	private:
 		Device& device;
+		MemoryManager& memory;
 	};
 }

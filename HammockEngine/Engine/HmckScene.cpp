@@ -1,6 +1,6 @@
 #include "HmckScene.h"
 
-Hmck::Scene::Scene(SceneCreateInfo createInfo): device{createInfo.device}
+Hmck::Scene::Scene(SceneCreateInfo createInfo): device{createInfo.device}, memory{createInfo.memory}
 {
 	// create root
 	root = std::make_shared<Entity3D>();
@@ -49,7 +49,7 @@ void Hmck::Scene::destroy()
 {
 	for (unsigned int i = 0; i < images.size(); i++)
 	{
-		images[i].texture.destroy(device);
+		memory.destroyTexture2D(images[i].texture);
 	}
 
 	skyboxTexture.destroy(device);

@@ -132,6 +132,7 @@ void Hmck::RaymarchingDemoApp::load()
 {
 	Scene::SceneCreateInfo info = {
 		.device = device,
+		.memory = memoryManager,
 		.name = "Volumetric scene",
 		.loadFiles = {
 			{

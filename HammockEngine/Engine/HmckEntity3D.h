@@ -12,6 +12,7 @@
 #include "HmckEntity.h"
 #include "HmckPipeline.h"
 #include "HmckVertex.h"
+#include "HmckMemory.h"
 
 namespace Hmck
 {
@@ -22,7 +23,7 @@ namespace Hmck
 	{
 		std::string uri;
 		std::string name;
-		Texture2D texture{};
+		Texture2DHandle texture{};
 	};
 
 	struct Texture
@@ -58,6 +59,22 @@ namespace Hmck
 		std::string name;
 	};
 
+	struct BufferData
+	{
+		glm::mat4 model{ 1.f };
+		glm::mat4 normal{ 1.f };
+	};
+
+	struct PrimitiveBufferData
+	{
+		glm::vec4 baseColorFactor{ 1.0f,1.0f,1.0f,1.0f };
+		uint32_t baseColorTextureIndex = TextureIndex::Invalid;
+		uint32_t normalTextureIndex = TextureIndex::Invalid;
+		uint32_t metallicRoughnessTextureIndex = TextureIndex::Invalid;
+		uint32_t occlusionTextureIndex = TextureIndex::Invalid;
+		float alphaCutoff = 1.0f;
+	};
+
 
 	class Entity3D : public Entity
 	{
@@ -66,5 +83,9 @@ namespace Hmck
 		Entity3D() : Entity() { visible = true; };
 
 		Mesh mesh{};
+
+		BufferHandle buffer;
+		DescriptorSetHandle descriptorSet;
+
 	};
 }
