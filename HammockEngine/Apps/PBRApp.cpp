@@ -7,7 +7,7 @@ Hmck::PBRApp::PBRApp()
 
 void Hmck::PBRApp::run()
 {
-	Renderer renderer{ window, device, scene};
+	Renderer renderer{ window, device, scene };
 	KeyboardMovementController cameraController{};
 	UserInterface ui{ device, renderer.getSwapChainRenderPass(), window };
 
@@ -28,18 +28,8 @@ void Hmck::PBRApp::run()
 
 
 
+
 	
-	std::vector<VkDescriptorImageInfo> imageInfos{ scene->images.size() };
-	for (int im = 0; im < scene->images.size(); im++)
-	{
-		imageInfos[im] = scene->images[im].texture.descriptor;
-	}
-	auto sceneBufferInfo = environmentBuffer->descriptorInfo();
-	auto result = DescriptorWriter(*environmentDescriptorSetLayout, *descriptorPool)
-		.writeBuffer(0, &sceneBufferInfo)
-		.writeImageArray(1, imageInfos)
-		.writeImage(2, &scene->skyboxTexture.descriptor)
-		.build(environmentDescriptorSet);
 
 
 	auto currentTime = std::chrono::high_resolution_clock::now();
@@ -86,40 +76,38 @@ void Hmck::PBRApp::run()
 				}},
 				.numOmniLights = 1
 			};
-			environmentBuffer->writeToBuffer(&envData);
-			// bind env
-			vkCmdBindDescriptorSets(
+			memoryManager.getBuffer(environmentBuffer)->writeToBuffer(&envData);
+
+			memoryManager.bindDescriptorSet(
 				commandBuffer,
 				VK_PIPELINE_BIND_POINT_GRAPHICS,
 				skyboxPipeline->graphicsPipelineLayout,
 				0, 1,
-				&environmentDescriptorSet,
-				0,
-				nullptr);
-				
+				environmentDescriptorSet,
+				0, nullptr);
+
 
 			FrameBufferData data{
 				.projection = scene->camera.getProjection(),
 				.view = scene->camera.getView(),
 				.inverseView = scene->camera.getInverseView()
 			};
-			frameBuffers[frameIndex]->writeToBuffer(&data);
+			memoryManager.getBuffer(frameBuffers[frameIndex])->writeToBuffer(&data);
 
-			// bind per frame
-			vkCmdBindDescriptorSets(
+			memoryManager.bindDescriptorSet(
 				commandBuffer,
 				VK_PIPELINE_BIND_POINT_GRAPHICS,
 				skyboxPipeline->graphicsPipelineLayout,
 				1, 1,
-				&frameDescriptorSets[frameIndex],
-				0,
-				nullptr);
+				frameDescriptorSets[frameIndex],
+				0, nullptr);
 
-			renderer.bindSkyboxVertexBuffer(commandBuffer);
+			memoryManager.bindVertexBuffer(skyboxVertexBuffer, skyboxIndexBuffer, commandBuffer);
+
 			skyboxPipeline->bind(commandBuffer);
 			vkCmdDrawIndexed(commandBuffer, 36, 1, 0, 0, 0);
 
-			renderer.bindVertexBuffer(commandBuffer);
+			memoryManager.bindVertexBuffer(vertexBuffer, indexBuffer, commandBuffer);
 
 			gbufferPipeline->bind(commandBuffer);
 
@@ -131,15 +119,13 @@ void Hmck::PBRApp::run()
 
 			defferedPipeline->bind(commandBuffer);
 
-			//bind gbuffer descriptors
-			vkCmdBindDescriptorSets(
+			memoryManager.bindDescriptorSet(
 				commandBuffer,
 				VK_PIPELINE_BIND_POINT_GRAPHICS,
 				defferedPipeline->graphicsPipelineLayout,
 				4, 1,
-				&gbufferDescriptorSets[frameIndex],
-				0,
-				nullptr);
+				gbufferDescriptorSets[frameIndex],
+				0, nullptr);
 
 			// draw deffered
 			vkCmdDraw(commandBuffer, 3, 1, 0, 0);
@@ -159,6 +145,8 @@ void Hmck::PBRApp::run()
 
 		vkDeviceWaitIdle(device.device());
 	}
+
+	clean();
 }
 
 void Hmck::PBRApp::load()
@@ -173,7 +161,7 @@ void Hmck::PBRApp::load()
 				//.filename = std::string(MODELS_DIR) + "SunTemple/SunTemple.glb",
 				//.filename = std::string(MODELS_DIR) + "Bistro/BistroExterior.glb",
 			},
-			
+
 		},
 		.loadSkybox = {
 			.textures = {
@@ -187,107 +175,140 @@ void Hmck::PBRApp::load()
 		}
 	};
 	scene = std::make_unique<Scene>(info);
+
+	vertexBuffer = memoryManager.createVertexBuffer({
+		.vertexSize = sizeof(scene->vertices[0]),
+		.vertexCount = static_cast<uint32_t>(scene->vertices.size()),
+		.data = (void*)scene->vertices.data() });
+
+	indexBuffer = memoryManager.createIndexBuffer({
+		.indexSize = sizeof(scene->indices[0]),
+		.indexCount = static_cast<uint32_t>(scene->indices.size()),
+		.data = (void*)scene->indices.data() });
+
+	skyboxVertexBuffer = memoryManager.createVertexBuffer({
+		.vertexSize = sizeof(scene->skyboxVertices[0]),
+		.vertexCount = static_cast<uint32_t>(scene->skyboxVertices.size()),
+		.data = (void*)scene->skyboxVertices.data() });
+
+	skyboxIndexBuffer = memoryManager.createIndexBuffer({
+		.indexSize = sizeof(scene->skyboxIndices[0]),
+		.indexCount = static_cast<uint32_t>(scene->skyboxIndices.size()),
+		.data = (void*)scene->skyboxIndices.data() });
+
 }
 
 void Hmck::PBRApp::init()
 {
-	descriptorPool = DescriptorPool::Builder(device)
-		.setMaxSets(10000)
-		.addPoolSize(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 5000)
-		.addPoolSize(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 5000)
-		.build();
+	environmentDescriptorSetLayout = memoryManager.createDescriptorSetLayout({
+		.bindings = {
+			{.binding = 0, .descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, .stageFlags = VK_SHADER_STAGE_ALL_GRAPHICS},
+			{.binding = 1, .descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, .stageFlags = VK_SHADER_STAGE_ALL_GRAPHICS, .count = 200, .bindingFlags = VK_DESCRIPTOR_BINDING_PARTIALLY_BOUND_BIT},
+			{.binding = 2, .descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, .stageFlags = VK_SHADER_STAGE_ALL_GRAPHICS},
+		}
+		});
 
-	// prepare descriptor set layouts
-	environmentDescriptorSetLayout = DescriptorSetLayout::Builder(device)
-		.addBinding(0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_ALL_GRAPHICS)
-		.addBinding(1, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_ALL_GRAPHICS, 2000, VK_DESCRIPTOR_BINDING_PARTIALLY_BOUND_BIT)
-		.addBinding(2, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_ALL_GRAPHICS)
-		.build();
+	environmentBuffer = memoryManager.createBuffer({
+			.instanceSize = sizeof(EnvironmentBufferData),
+			.instanceCount = 1,
+			.usageFlags = VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
+			.memoryPropertyFlags = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT
+		});
 
-	frameDescriptorSetLayout = DescriptorSetLayout::Builder(device)
-		.addBinding(0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_ALL_GRAPHICS)
-		.build();
+	std::vector<VkDescriptorImageInfo> imageInfos{ scene->images.size() };
+	for (int im = 0; im < scene->images.size(); im++)
+	{
+		imageInfos[im] = scene->images[im].texture.descriptor;
+	}
+	auto sceneBufferInfo = memoryManager.getBuffer(environmentBuffer)->descriptorInfo();
+	environmentDescriptorSet = memoryManager.createDescriptorSet({
+			.descriptorSetLayout = environmentDescriptorSetLayout,
+			.bufferWrites = {{0,sceneBufferInfo}},
+			.imageWrites = {{2, scene->skyboxTexture.descriptor}},
+			.imageArrayWrites = {{1,imageInfos}}
+		});
 
-	entityDescriptorSetLayout = DescriptorSetLayout::Builder(device)
-		.addBinding(0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_ALL_GRAPHICS)
-		.build();
-
-	materialDescriptorSetLayout = DescriptorSetLayout::Builder(device)
-		.addBinding(0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_ALL_GRAPHICS)
-		.build();
-
-	gbufferDescriptorSetLayout = DescriptorSetLayout::Builder(device)
-		.addBinding(0, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT) // position
-		.addBinding(1, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT) // albedo
-		.addBinding(2, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT) // normal
-		.addBinding(3, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT) // material (roughness, metalness, ao)
-		.build();
-
-	// prepare buffers
-	environmentBuffer = std::make_unique<Buffer>(
-		device,
-		sizeof(EnvironmentBufferData),
-		1,
-		VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
-		VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT
-		);
-	environmentBuffer->map();
-
+	frameDescriptorSets.resize(SwapChain::MAX_FRAMES_IN_FLIGHT);
+	frameBuffers.resize(SwapChain::MAX_FRAMES_IN_FLIGHT);
+	frameDescriptorSetLayout = memoryManager.createDescriptorSetLayout({
+		.bindings = {
+			{.binding = 0, .descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, .stageFlags = VK_SHADER_STAGE_ALL_GRAPHICS},
+		}
+		});
 
 	for (int i = 0; i < SwapChain::MAX_FRAMES_IN_FLIGHT; i++)
 	{
-		frameBuffers[i] = std::make_unique<Buffer>(
-			device,
-			sizeof(FrameBufferData),
-			1,
-			VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
-			VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT
-			);
-		frameBuffers[i]->map();
+		frameBuffers[i] = memoryManager.createBuffer({
+			.instanceSize = sizeof(FrameBufferData),
+			.instanceCount = 1,
+			.usageFlags = VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
+			.memoryPropertyFlags = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT
+		});
 
-		auto fbufferInfo = frameBuffers[i]->descriptorInfo();
-		DescriptorWriter(*frameDescriptorSetLayout, *descriptorPool)
-			.writeBuffer(0, &fbufferInfo)
-			.build(frameDescriptorSets[i]);
+		auto fbufferInfo = memoryManager.getBuffer(frameBuffers[i])->descriptorInfo();
+		frameDescriptorSets[i] = memoryManager.createDescriptorSet({
+			.descriptorSetLayout = frameDescriptorSetLayout,
+			.bufferWrites = {{0,fbufferInfo}},
+			});
 	}
 
 	entityDescriptorSets.resize(scene->root->numberOfEntities());
 	entityBuffers.resize(scene->root->numberOfEntities());
+	entityDescriptorSetLayout = memoryManager.createDescriptorSetLayout({
+		.bindings = {
+			{.binding = 0, .descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, .stageFlags = VK_SHADER_STAGE_ALL_GRAPHICS},
+		}
+		});
+
 	for (size_t i = 0; i < entityDescriptorSets.size(); i++)
 	{
-		entityBuffers[i] = std::make_unique<Buffer>(
-			device,
-			sizeof(EntityBufferData),
-			1,
-			VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
-			VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT
-			);
-		entityBuffers[i]->map();
+		entityBuffers[i] = memoryManager.createBuffer({
+			.instanceSize = sizeof(EntityBufferData),
+			.instanceCount = 1,
+			.usageFlags = VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
+			.memoryPropertyFlags = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT
+			});
 
-		auto ebufferInfo = entityBuffers[i]->descriptorInfo();
-		DescriptorWriter(*entityDescriptorSetLayout, *descriptorPool)
-			.writeBuffer(0, &ebufferInfo)
-			.build(entityDescriptorSets[i]);
+		auto ebufferInfo = memoryManager.getBuffer(entityBuffers[i])->descriptorInfo();
+		entityDescriptorSets[i] = memoryManager.createDescriptorSet({
+			.descriptorSetLayout = entityDescriptorSetLayout,
+			.bufferWrites = {{0,ebufferInfo}},
+			});
 	}
 
 	materialDescriptorSets.resize(scene->materials.size());
 	materialBuffers.resize(scene->materials.size());
+	materialDescriptorSetLayout = memoryManager.createDescriptorSetLayout({
+		.bindings = {
+			{.binding = 0, .descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, .stageFlags = VK_SHADER_STAGE_ALL_GRAPHICS},
+		}
+		});
+
 	for (size_t i = 0; i < materialDescriptorSets.size(); i++)
 	{
-		materialBuffers[i] = std::make_unique<Buffer>(
-			device,
-			sizeof(PrimitiveBufferData),
-			1,
-			VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
-			VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT
-			);
-		materialBuffers[i]->map();
+		materialBuffers[i] = memoryManager.createBuffer({
+			.instanceSize = sizeof(PrimitiveBufferData),
+			.instanceCount = 1,
+			.usageFlags = VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
+			.memoryPropertyFlags = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT
+			});
 
-		auto pbufferInfo = materialBuffers[i]->descriptorInfo();
-		DescriptorWriter(*materialDescriptorSetLayout, *descriptorPool)
-			.writeBuffer(0, &pbufferInfo)
-			.build(materialDescriptorSets[i]);
+		auto pbufferInfo = memoryManager.getBuffer(materialBuffers[i])->descriptorInfo();
+		materialDescriptorSets[i] = memoryManager.createDescriptorSet({
+			.descriptorSetLayout = materialDescriptorSetLayout,
+			.bufferWrites = {{0,pbufferInfo}},
+			});
 	}
+
+	gbufferDescriptorSets.resize(SwapChain::MAX_FRAMES_IN_FLIGHT);
+	gbufferDescriptorSetLayout = memoryManager.createDescriptorSetLayout({
+		.bindings = {
+			{.binding = 0, .descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, .stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT}, // position
+			{.binding = 1, .descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, .stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT}, // albedo
+			{.binding = 2, .descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, .stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT}, // normal
+			{.binding = 3, .descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, .stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT}, // material (roughness, metalness, ao)
+		}
+		});
 }
 
 void Hmck::PBRApp::renderEntity(uint32_t frameIndex, VkCommandBuffer commandBuffer, std::unique_ptr<GraphicsPipeline>& pipeline, std::shared_ptr<Entity>& entity)
@@ -309,17 +330,15 @@ void Hmck::PBRApp::renderEntity(uint32_t frameIndex, VkCommandBuffer commandBuff
 			.model = model,
 			.normal = glm::transpose(glm::inverse(model))
 		};
-		entityBuffers[entity->id]->writeToBuffer(&entityData);
+		memoryManager.getBuffer(entityBuffers[entity->id])->writeToBuffer(&entityData);
 
-		// bind per entity
-		vkCmdBindDescriptorSets(
+		memoryManager.bindDescriptorSet(
 			commandBuffer,
 			VK_PIPELINE_BIND_POINT_GRAPHICS,
 			pipeline->graphicsPipelineLayout,
 			2, 1,
-			&entityDescriptorSets[entity->id],
-			0,
-			nullptr);
+			entityDescriptorSets[entity->id],
+			0, nullptr);
 
 		// TODO Reduce writes by checking if material changed
 		auto _entity = std::dynamic_pointer_cast<Entity3D>(entity);
@@ -339,18 +358,16 @@ void Hmck::PBRApp::renderEntity(uint32_t frameIndex, VkCommandBuffer commandBuff
 					.alphaCutoff = material.alphaCutOff
 					};
 
-					materialBuffers[primitive.materialIndex]->writeToBuffer(&pData);
+					memoryManager.getBuffer(materialBuffers[primitive.materialIndex])->writeToBuffer(&pData);
 				}
 
-				// bind per primitive
-				vkCmdBindDescriptorSets(
+				memoryManager.bindDescriptorSet(
 					commandBuffer,
 					VK_PIPELINE_BIND_POINT_GRAPHICS,
 					pipeline->graphicsPipelineLayout,
 					3, 1,
-					&materialDescriptorSets[(primitive.materialIndex >= 0 ? primitive.materialIndex : 0)],
-					0,
-					nullptr);
+					materialDescriptorSets[(primitive.materialIndex >= 0 ? primitive.materialIndex : 0)],
+					0, nullptr);
 
 				// draw
 				vkCmdDrawIndexed(commandBuffer, primitive.indexCount, 1, primitive.firstIndex, 0, 0);
@@ -410,7 +427,7 @@ void Hmck::PBRApp::createPipelines(Renderer& renderer)
 				.usage = VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,
 			},
 		}
-	});
+		});
 
 	skyboxPipeline = GraphicsPipeline::createGraphicsPipelinePtr({
 		.debugName = "skybox_pass",
@@ -424,8 +441,8 @@ void Hmck::PBRApp::createPipelines(Renderer& renderer)
 			.entryFunc = "main"
 		},
 		.descriptorSetLayouts = {
-			environmentDescriptorSetLayout->getDescriptorSetLayout(),
-			frameDescriptorSetLayout->getDescriptorSetLayout()
+			memoryManager.getDescriptorSetLayout(environmentDescriptorSetLayout).getDescriptorSetLayout(),
+			memoryManager.getDescriptorSetLayout(frameDescriptorSetLayout).getDescriptorSetLayout()
 		},
 		.pushConstantRanges {},
 		.graphicsState {
@@ -459,7 +476,7 @@ void Hmck::PBRApp::createPipelines(Renderer& renderer)
 				}
 		},
 		.renderPass = gbufferFramebuffer->renderPass
-	});
+		});
 
 	gbufferPipeline = GraphicsPipeline::createGraphicsPipelinePtr({
 		.debugName = "gbuffer_pass",
@@ -473,10 +490,10 @@ void Hmck::PBRApp::createPipelines(Renderer& renderer)
 			.entryFunc = "main"
 		},
 		.descriptorSetLayouts = {
-			environmentDescriptorSetLayout->getDescriptorSetLayout(),
-			frameDescriptorSetLayout->getDescriptorSetLayout(),
-			entityDescriptorSetLayout->getDescriptorSetLayout(),
-			materialDescriptorSetLayout->getDescriptorSetLayout()
+			memoryManager.getDescriptorSetLayout(environmentDescriptorSetLayout).getDescriptorSetLayout(),
+			memoryManager.getDescriptorSetLayout(frameDescriptorSetLayout).getDescriptorSetLayout(),
+			memoryManager.getDescriptorSetLayout(entityDescriptorSetLayout).getDescriptorSetLayout(),
+			memoryManager.getDescriptorSetLayout(materialDescriptorSetLayout).getDescriptorSetLayout()
 		},
 		.pushConstantRanges {},
 		.graphicsState {
@@ -509,7 +526,7 @@ void Hmck::PBRApp::createPipelines(Renderer& renderer)
 				}
 		},
 		.renderPass = gbufferFramebuffer->renderPass
-	});
+		});
 
 	for (int i = 0; i < gbufferDescriptorSets.size(); i++)
 	{
@@ -536,9 +553,10 @@ void Hmck::PBRApp::createPipelines(Renderer& renderer)
 			}
 		};
 
-		DescriptorWriter(*gbufferDescriptorSetLayout, *descriptorPool)
-			.writeImageArray(0, gbufferImageInfos)
-			.build(gbufferDescriptorSets[i]);
+		gbufferDescriptorSets[i] = memoryManager.createDescriptorSet({
+			.descriptorSetLayout = gbufferDescriptorSetLayout,
+			.imageArrayWrites = {{0,gbufferImageInfos}},
+			});
 	}
 
 	defferedPipeline = GraphicsPipeline::createGraphicsPipelinePtr({
@@ -553,11 +571,11 @@ void Hmck::PBRApp::createPipelines(Renderer& renderer)
 			.entryFunc = "main"
 		},
 		.descriptorSetLayouts = {
-			environmentDescriptorSetLayout->getDescriptorSetLayout(),
-			frameDescriptorSetLayout->getDescriptorSetLayout(),
-			entityDescriptorSetLayout->getDescriptorSetLayout(),
-			materialDescriptorSetLayout->getDescriptorSetLayout(),
-			gbufferDescriptorSetLayout->getDescriptorSetLayout()
+			memoryManager.getDescriptorSetLayout(environmentDescriptorSetLayout).getDescriptorSetLayout(),
+			memoryManager.getDescriptorSetLayout(frameDescriptorSetLayout).getDescriptorSetLayout(),
+			memoryManager.getDescriptorSetLayout(entityDescriptorSetLayout).getDescriptorSetLayout(),
+			memoryManager.getDescriptorSetLayout(materialDescriptorSetLayout).getDescriptorSetLayout(),
+			memoryManager.getDescriptorSetLayout(gbufferDescriptorSetLayout).getDescriptorSetLayout()
 		},
 		.pushConstantRanges {},
 		.graphicsState {
@@ -585,5 +603,30 @@ void Hmck::PBRApp::createPipelines(Renderer& renderer)
 				}
 		},
 		.renderPass = renderer.getSwapChainRenderPass()
-	});
+		});
+}
+
+void Hmck::PBRApp::clean()
+{
+	memoryManager.destroyBuffer(environmentBuffer);
+
+	for (int i = 0; i < frameBuffers.size(); i++)
+		memoryManager.destroyBuffer(frameBuffers[i]);
+
+	for (int i = 0; i < entityBuffers.size(); i++)
+		memoryManager.destroyBuffer(entityBuffers[i]);
+
+	for (int i = 0; i < materialBuffers.size(); i++)
+		memoryManager.destroyBuffer(materialBuffers[i]);
+
+	memoryManager.destroyDescriptorSetLayout(environmentDescriptorSetLayout);
+	memoryManager.destroyDescriptorSetLayout(frameDescriptorSetLayout);
+	memoryManager.destroyDescriptorSetLayout(entityDescriptorSetLayout);
+	memoryManager.destroyDescriptorSetLayout(materialDescriptorSetLayout);
+	memoryManager.destroyDescriptorSetLayout(gbufferDescriptorSetLayout);
+
+	memoryManager.destroyBuffer(vertexBuffer);
+	memoryManager.destroyBuffer(indexBuffer);
+	memoryManager.destroyBuffer(skyboxVertexBuffer);
+	memoryManager.destroyBuffer(skyboxIndexBuffer);
 }

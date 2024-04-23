@@ -22,6 +22,7 @@
 #include "HmckEntity.h"
 #include "HmckScene.h"
 #include "HmckLights.h"
+#include "HmckMemory.h"
 
 #ifndef MODELS_DIR
 #define MODELS_DIR "../../Resources/Models/"
@@ -56,32 +57,41 @@ namespace Hmck
 
 	private:
 		void createPipelines(Renderer& renderer);
+		void clean();
 
 
 		std::unique_ptr<Scene> scene{};
 
+		BufferHandle vertexBuffer;
+		BufferHandle indexBuffer;
+
+		BufferHandle skyboxVertexBuffer;
+		BufferHandle skyboxIndexBuffer;
+
 		// Descriptors
-		std::unique_ptr<DescriptorPool> descriptorPool{};
 		// per scene (bound once when scene is initialized)
-		VkDescriptorSet environmentDescriptorSet;
-		std::unique_ptr<DescriptorSetLayout> environmentDescriptorSetLayout;
-		std::unique_ptr<Buffer> environmentBuffer;
+		DescriptorSetHandle environmentDescriptorSet;
+		DescriptorSetLayoutHandle environmentDescriptorSetLayout;
+		BufferHandle environmentBuffer;
+		
 		// per frame
-		std::vector<VkDescriptorSet> frameDescriptorSets{ SwapChain::MAX_FRAMES_IN_FLIGHT };
-		std::unique_ptr<DescriptorSetLayout> frameDescriptorSetLayout;
-		std::vector<std::unique_ptr<Buffer>> frameBuffers{ SwapChain::MAX_FRAMES_IN_FLIGHT }; // TODO this is misleading as these ara data buffers but name suggests these are actual framebbuffers
+		std::vector<DescriptorSetHandle> frameDescriptorSets{};
+		DescriptorSetLayoutHandle frameDescriptorSetLayout;
+		std::vector<BufferHandle> frameBuffers{}; // TODO this is misleading as these ara data buffers but name suggests these are actual framebbuffers
+		
 		// per entity
-		std::vector<VkDescriptorSet> entityDescriptorSets{ SwapChain::MAX_FRAMES_IN_FLIGHT };
-		std::unique_ptr<DescriptorSetLayout> entityDescriptorSetLayout;
-		std::vector<std::unique_ptr<Buffer>> entityBuffers{ SwapChain::MAX_FRAMES_IN_FLIGHT };
+		std::vector<DescriptorSetHandle> entityDescriptorSets{};
+		DescriptorSetLayoutHandle entityDescriptorSetLayout;
+		std::vector<BufferHandle> entityBuffers{};
+
 		// per material
-		std::vector<VkDescriptorSet> materialDescriptorSets{ SwapChain::MAX_FRAMES_IN_FLIGHT };
-		std::unique_ptr<DescriptorSetLayout> materialDescriptorSetLayout;
-		std::vector<std::unique_ptr<Buffer>> materialBuffers{ SwapChain::MAX_FRAMES_IN_FLIGHT };
+		std::vector<DescriptorSetHandle> materialDescriptorSets{};
+		DescriptorSetLayoutHandle materialDescriptorSetLayout;
+		std::vector<BufferHandle> materialBuffers{};
 
 		// gbuffer descriptors
-		std::vector<VkDescriptorSet> gbufferDescriptorSets{ SwapChain::MAX_FRAMES_IN_FLIGHT };
-		std::unique_ptr<DescriptorSetLayout> gbufferDescriptorSetLayout;
+		std::vector<DescriptorSetHandle> gbufferDescriptorSets{};
+		DescriptorSetLayoutHandle gbufferDescriptorSetLayout;
 
 
 		// renderpasses and framebuffers
