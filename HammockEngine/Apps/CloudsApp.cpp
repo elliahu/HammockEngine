@@ -26,7 +26,7 @@ void Hmck::CloudsApp::run()
 			},
 			.descriptorSetLayouts =
 			{
-				descriptorSetLayout->getDescriptorSetLayout()
+				memoryManager.getDescriptorSetLayout(descriptorSetLayout).getDescriptorSetLayout()
 			},
 			.pushConstantRanges {
 				{
@@ -108,8 +108,6 @@ void Hmck::CloudsApp::run()
 
 			renderer.beginSwapChainRenderPass(commandBuffer);
 
-			renderer.bindVertexBuffer(commandBuffer);
-
 			draw(frameIndex, elapsedTime, commandBuffer);
 
 
@@ -145,70 +143,80 @@ void Hmck::CloudsApp::load()
 	};
 	scene = std::make_unique<Scene>(info);
 
-	std::string noiseFile = "../../Resources/Noise/noise2.png";
-	noiseTexture.loadFromFile(noiseFile, device, VK_FORMAT_R8G8B8A8_UNORM);
-	noiseTexture.createSampler(device);
-	noiseTexture.updateDescriptor();
+	vertexBuffer = memoryManager.createVertexBuffer({
+		.vertexSize = sizeof(scene->vertices[0]),
+		.vertexCount = static_cast<uint32_t>(scene->vertices.size()),
+		.data = (void*)scene->vertices.data() });
 
-	std::string blueNoiseFile = "../../Resources/Noise/blue_noise.jpg";
-	blueNoiseTexture.loadFromFile(noiseFile, device, VK_FORMAT_R8G8B8A8_UNORM);
-	blueNoiseTexture.createSampler(device);
-	blueNoiseTexture.updateDescriptor();
+	indexBuffer = memoryManager.createIndexBuffer({
+		.indexSize = sizeof(scene->indices[0]),
+		.indexCount = static_cast<uint32_t>(scene->indices.size()),
+		.data = (void*)scene->indices.data() });
+
+
+	noiseTexture = memoryManager.createTexture2DFromFile({
+		.filepath = "../../Resources/Noise/noise2.png",
+		.format = VK_FORMAT_R8G8B8A8_UNORM
+		});
+
+	blueNoiseTexture = memoryManager.createTexture2DFromFile({
+		.filepath = "../../Resources/Noise/blue_noise.jpg",
+		.format = VK_FORMAT_R8G8B8A8_UNORM
+		});
 
 	for (int i = 0; i < SwapChain::MAX_FRAMES_IN_FLIGHT; i++)
 	{
-		auto fbufferInfo = uniformBuffers[i]->descriptorInfo();
-		DescriptorWriter(*descriptorSetLayout, *descriptorPool)
-			.writeBuffer(0, &fbufferInfo)
-			.writeImage(1, &noiseTexture.descriptor)
-			.writeImage(2,&blueNoiseTexture.descriptor)
-			.build(descriptorSets[i]);
+		auto fbufferInfo = memoryManager.getBuffer(uniformBuffers[i])->descriptorInfo();
+		auto nimageInfo = memoryManager.getTexture2DDescriptorImageInfo(noiseTexture);
+		auto bnimageInfo = memoryManager.getTexture2DDescriptorImageInfo(blueNoiseTexture);
+		descriptorSets[i] = memoryManager.createDescriptorSet({
+			.descriptorSetLayout = descriptorSetLayout,
+			.bufferWrites = {{0,fbufferInfo}},
+			.imageWrites = {{1,nimageInfo},{2,bnimageInfo}}
+			});
 	}
 }
 
 void Hmck::CloudsApp::init()
 {
-	descriptorPool = DescriptorPool::Builder(device)
-		.setMaxSets(100)
-		.addPoolSize(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 50)
-		.addPoolSize(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 50)
-		.build();
+	descriptorSets.resize(SwapChain::MAX_FRAMES_IN_FLIGHT);
+	uniformBuffers.resize(SwapChain::MAX_FRAMES_IN_FLIGHT);
 
-	descriptorSetLayout = DescriptorSetLayout::Builder(device)
-		.addBinding(0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_ALL_GRAPHICS)
-		.addBinding(1, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_ALL_GRAPHICS)
-		.addBinding(2, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_ALL_GRAPHICS)
-		.build();
+	descriptorSetLayout = memoryManager.createDescriptorSetLayout({
+		.bindings = {
+			{.binding = 0, .descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, .stageFlags = VK_SHADER_STAGE_ALL_GRAPHICS},
+			{.binding = 1, .descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, .stageFlags = VK_SHADER_STAGE_ALL_GRAPHICS},
+			{.binding = 2, .descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, .stageFlags = VK_SHADER_STAGE_ALL_GRAPHICS},
+		}
+		});
 
 	for (int i = 0; i < SwapChain::MAX_FRAMES_IN_FLIGHT; i++)
-	{
-		uniformBuffers[i] = std::make_unique<Buffer>(
-			device,
-			sizeof(BufferData),
-			1,
-			VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
-			VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT
-			);
-		uniformBuffers[i]->map();
-	}
+		uniformBuffers[i] = memoryManager.createBuffer({
+			.instanceSize = sizeof(BufferData),
+			.instanceCount = 1,
+			.usageFlags = VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
+			.memoryPropertyFlags = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT
+			});
 }
 
 void Hmck::CloudsApp::draw(int frameIndex, float elapsedTime, VkCommandBuffer commandBuffer)
 {
+	memoryManager.bindVertexBuffer(vertexBuffer, indexBuffer, commandBuffer);
+
 	pipeline->bind(commandBuffer);
 
 	bufferData.projection = scene->camera.getProjection();
 	bufferData.view = scene->camera.getView();
 	bufferData.inverseView = scene->camera.getInverseView();
 	
-	uniformBuffers[frameIndex]->writeToBuffer(&bufferData);
+	memoryManager.getBuffer(uniformBuffers[frameIndex])->writeToBuffer(&bufferData);
 
-	vkCmdBindDescriptorSets(
+	memoryManager.bindDescriptorSet(
 		commandBuffer,
 		VK_PIPELINE_BIND_POINT_GRAPHICS,
 		pipeline->graphicsPipelineLayout,
 		0, 1,
-		&descriptorSets[frameIndex],
+		descriptorSets[frameIndex],
 		0,
 		nullptr);
 
@@ -222,8 +230,16 @@ void Hmck::CloudsApp::draw(int frameIndex, float elapsedTime, VkCommandBuffer co
 
 void Hmck::CloudsApp::destroy()
 {
-	noiseTexture.destroy(device);
-	blueNoiseTexture.destroy(device);
+	memoryManager.destroyTexture2D(noiseTexture);
+	memoryManager.destroyTexture2D(blueNoiseTexture);
+
+	for (auto& uniformBuffer : uniformBuffers)
+		memoryManager.destroyBuffer(uniformBuffer);
+
+	memoryManager.destroyDescriptorSetLayout(descriptorSetLayout);
+
+	memoryManager.destroyBuffer(vertexBuffer);
+	memoryManager.destroyBuffer(indexBuffer);
 }
 
 void Hmck::CloudsApp::ui()
