@@ -12,17 +12,11 @@ layout(set = 4, binding = 1) uniform sampler2D albedoSampler;
 layout(set = 4, binding = 2) uniform sampler2D normalSampler;
 layout(set = 4, binding = 3) uniform sampler2D materialPropertySampler;
 
-#define SHADOW_FACTOR 0.0
-#define SSAO_CLAMP .99
-#define EXPOSURE 3.5
-#define GAMMA .8
-
 struct OmniLight
 {
     vec4 position;
     vec4 color;
 };
-
 
 layout(set = 0, binding = 0) uniform Environment
 {
@@ -59,16 +53,16 @@ float G_SchlicksmithGGX(float dotNL, float dotNV, float roughness)
 }
 
 // Fresnel function ----------------------------------------------------
-vec3 F_Schlick(float cosTheta, float metallic, vec3 albedo)
+vec3 F_Schlick(float cosTheta, float metallic, vec3 materialcolor)
 {
-	vec3 F0 = mix(vec3(0.04), albedo, metallic); // * material.specular
+	vec3 F0 = mix(vec3(0.04), materialcolor, metallic); // * material.specular
 	vec3 F = F0 + (1.0 - F0) * pow(1.0 - cosTheta, 5.0); 
 	return F;    
 }
 
 // Specular BRDF composition --------------------------------------------
 
-vec3 BRDF(vec3 L, vec3 V, vec3 N,vec3 albedo, vec3 lightColor, float metallic, float roughness)
+vec3 BRDF(vec3 albedo, vec3 L, vec3 V, vec3 N, float metallic, float roughness)
 {
 	// Precalculate vectors and dot products	
 	vec3 H = normalize (V + L);
@@ -76,6 +70,9 @@ vec3 BRDF(vec3 L, vec3 V, vec3 N,vec3 albedo, vec3 lightColor, float metallic, f
 	float dotNL = clamp(dot(N, L), 0.0, 1.0);
 	float dotLH = clamp(dot(L, H), 0.0, 1.0);
 	float dotNH = clamp(dot(N, H), 0.0, 1.0);
+
+	// Light color fixed
+	vec3 lightColor = vec3(1.0);
 
 	vec3 color = vec3(0.0);
 
@@ -97,51 +94,38 @@ vec3 BRDF(vec3 L, vec3 V, vec3 N,vec3 albedo, vec3 lightColor, float metallic, f
 	return color;
 }
 
-// Tonemap -----------------------------------------------------
-vec3 Uncharted2Tonemap(vec3 x)
-{
-	float A = 0.15;
-	float B = 0.50;
-	float C = 0.10;
-	float D = 0.20;
-	float E = 0.02;
-	float F = 0.30;
-	return ((x*(A*x+C*B)+D*E)/(x*(A*x+B)+D*F))-E/F;
-}
 
 void main()
 {
     vec3 N = normalize(texture(normalSampler, uv).rgb);
-	vec3 position = texture(positionSampler, uv).rgb;
-	vec3 V = normalize(- position);
-	vec3 albedo = texture(albedoSampler, uv).rgb;
-	vec3 material = texture(materialPropertySampler, uv).rgb;
-	float roughness = material.r;
-	float metallic = material.g;
-	float ao = material.b;
+    vec3 position = texture(positionSampler, uv).rgb;
+    vec3 V = normalize(-position);
+    vec3 albedo = texture(albedoSampler, uv).rgb;
+    vec3 material = texture(materialPropertySampler, uv).rgb;
+    float roughness = material.r;
+    float metallic = material.g;
+    float ao = material.b;
 
-	//outColor = max(dot(N, env.omniLights[0].position.xyz - position), 0.0) * vec4(albedo, 1);
-	//return;
+	if(material == vec3(-1.0))
+	{
+		outColor = vec4(albedo, 1.0);
+		return;
+	}
+		
 
-	// Specular contribution
+    // Specular contribution
 	vec3 Lo = vec3(0.0);
 	for (int i = 0; i < env.numOmniLights; i++) {
 		vec3 L = normalize(env.omniLights[i].position.xyz - position);
-		Lo += BRDF(L, V, N,albedo,env.omniLights[i].color.rgb, metallic, roughness);
+		Lo += BRDF(albedo, L, V, N, metallic, roughness);
 	};
 
 	// Combine with ambient
-	vec3 color = albedo * 0.1;
+	vec3 color = albedo * 0.02;
 	color += Lo;
 
-	// apply occlution if exists
-	color *= 1.0 - ao;
-
-	// Tone mapping and gamma correct
-	color = Uncharted2Tonemap(color * EXPOSURE);
-	color = color * (1.0f / Uncharted2Tonemap(vec3(11.2f)));	
+	// Gamma correct
 	color = pow(color, vec3(0.4545));
 
 	outColor = vec4(color, 1.0);
-
 }
