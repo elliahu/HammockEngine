@@ -39,6 +39,41 @@ namespace Hmck
 	{
 	public:
 
+		struct EnvironmentBufferData
+		{
+			struct OmniLight
+			{
+				glm::vec4 position;
+				glm::vec4 color;
+			};
+
+			OmniLight omniLights[10]; // TODO lights should be in frame buffer data
+			uint32_t numOmniLights = 0;
+		};
+
+		struct FrameBufferData
+		{
+			glm::mat4 projection{ 1.f };
+			glm::mat4 view{ 1.f };
+			glm::mat4 inverseView{ 1.f };
+		};
+
+		struct EntityBufferData
+		{
+			glm::mat4 model{ 1.f };
+			glm::mat4 normal{ 1.f };
+		};
+
+		struct PrimitiveBufferData
+		{
+			glm::vec4 baseColorFactor{ 1.0f,1.0f,1.0f,1.0f };
+			uint32_t baseColorTextureIndex = TextureIndex::Invalid;
+			uint32_t normalTextureIndex = TextureIndex::Invalid;
+			uint32_t metallicRoughnessTextureIndex = TextureIndex::Invalid;
+			uint32_t occlusionTextureIndex = TextureIndex::Invalid;
+			float alphaCutoff = 1.0f;
+		};
+
 		PBRApp();
 
 		// Inherited via IApp

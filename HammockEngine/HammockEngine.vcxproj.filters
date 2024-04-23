@@ -21,9 +21,6 @@
     <ClCompile Include="main.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="Apps\App.cpp">
-      <Filter>Test Apps</Filter>
-    </ClCompile>
     <ClCompile Include="Engine\HmckPipeline.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -113,9 +110,6 @@
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="Apps\App.h">
-      <Filter>Test Apps</Filter>
-    </ClInclude>
     <ClInclude Include="Engine\HmckPipeline.h">
       <Filter>Header Files</Filter>
     </ClInclude>

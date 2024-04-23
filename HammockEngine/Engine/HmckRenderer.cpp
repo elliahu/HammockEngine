@@ -1,11 +1,9 @@
 #include "HmckRenderer.h"
 
-Hmck::Renderer::Renderer(Window& window, Device& device, std::unique_ptr<Scene>& scene) : window{ window }, device{ device }, scene{ scene }
+Hmck::Renderer::Renderer(Window& window, Device& device) : window{ window }, device{ device }
 {
 	recreateSwapChain();
 	createCommandBuffer();
-	createVertexBuffer();
-	createIndexBuffer();
 }
 
 Hmck::Renderer::~Renderer()
@@ -41,129 +39,6 @@ void Hmck::Renderer::freeCommandBuffers()
 	commandBuffers.clear();
 }
 
-void Hmck::Renderer::createVertexBuffer()
-{
-	// copy data to staging memory on device, then copy from staging to v/i memory
-	uint32_t vertexCount = static_cast<uint32_t>(scene->vertices.size());
-	assert(vertexCount >= 3 && "Vertex count must be at least 3");
-	VkDeviceSize bufferSize = sizeof(scene->vertices[0]) * vertexCount;
-	uint32_t vertexSize = sizeof(scene->vertices[0]);
-
-	Buffer stagingBuffer{
-		device,
-		vertexSize,
-		vertexCount,
-		VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
-		VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
-	};
-
-
-	stagingBuffer.map();
-	stagingBuffer.writeToBuffer((void*)scene->vertices.data());
-
-	sceneVertexBuffer = std::make_unique<Buffer>(
-		device,
-		vertexSize,
-		vertexCount,
-		VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT,
-		VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT
-		);
-
-	device.copyBuffer(stagingBuffer.getBuffer(), sceneVertexBuffer->getBuffer(), bufferSize);
-
-	if (scene->hasSkybox)
-	{
-		uint32_t vertexCount = static_cast<uint32_t>(scene->skyboxVertices.size());
-		assert(vertexCount >= 3 && "Vertex count must be at least 3");
-		VkDeviceSize bufferSize = sizeof(scene->skyboxVertices[0]) * vertexCount;
-		uint32_t vertexSize = sizeof(scene->skyboxVertices[0]);
-
-		Buffer stagingBuffer{
-			device,
-			vertexSize,
-			vertexCount,
-			VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
-			VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
-		};
-
-
-		stagingBuffer.map();
-		stagingBuffer.writeToBuffer((void*)scene->skyboxVertices.data());
-
-		skyboxVertexBuffer = std::make_unique<Buffer>(
-			device,
-			vertexSize,
-			vertexCount,
-			VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT,
-			VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT
-			);
-
-		device.copyBuffer(stagingBuffer.getBuffer(), skyboxVertexBuffer->getBuffer(), bufferSize);
-	}
-}
-
-void Hmck::Renderer::createIndexBuffer()
-{
-	uint32_t indexCount = static_cast<uint32_t>(scene->indices.size());
-
-	VkDeviceSize bufferSize = sizeof(scene->indices[0]) * indexCount;
-	uint32_t indexSize = sizeof(scene->indices[0]);
-
-	Buffer stagingBuffer{
-		device,
-		indexSize,
-		indexCount,
-		VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
-		VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT
-	};
-
-	stagingBuffer.map();
-	stagingBuffer.writeToBuffer((void*)scene->indices.data());
-
-	sceneIndexBuffer = std::make_unique<Buffer>(
-		device,
-		indexSize,
-		indexCount,
-		VK_BUFFER_USAGE_INDEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT,
-		VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT
-		);
-
-
-	device.copyBuffer(stagingBuffer.getBuffer(), sceneIndexBuffer->getBuffer(), bufferSize);
-
-	if (scene->hasSkybox)
-	{
-		uint32_t indexCount = static_cast<uint32_t>(scene->skyboxIndices.size());
-
-		VkDeviceSize bufferSize = sizeof(scene->skyboxIndices[0]) * indexCount;
-		uint32_t indexSize = sizeof(scene->skyboxIndices[0]);
-
-		Buffer stagingBuffer{
-			device,
-			indexSize,
-			indexCount,
-			VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
-			VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT
-		};
-
-		stagingBuffer.map();
-		stagingBuffer.writeToBuffer((void*)scene->skyboxIndices.data());
-
-		skyboxIndexBuffer = std::make_unique<Buffer>(
-			device,
-			indexSize,
-			indexCount,
-			VK_BUFFER_USAGE_INDEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT,
-			VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT
-			);
-
-
-		device.copyBuffer(stagingBuffer.getBuffer(), skyboxIndexBuffer->getBuffer(), bufferSize);
-	}
-}
-
-
-
 void Hmck::Renderer::recreateSwapChain()
 {
 	auto extent = window.getExtent();
@@ -190,7 +65,6 @@ void Hmck::Renderer::recreateSwapChain()
 
 	//
 }
-
 
 VkCommandBuffer Hmck::Renderer::beginFrame()
 {
@@ -344,21 +218,4 @@ void Hmck::Renderer::endRenderPass(VkCommandBuffer commandBuffer)
 	assert(commandBuffer == getCurrentCommandBuffer() && "Cannot end render pass on command buffer from a different frame");
 
 	vkCmdEndRenderPass(commandBuffer);
-}
-
-
-void Hmck::Renderer::bindSkyboxVertexBuffer(VkCommandBuffer commandBuffer)
-{
-	// skybox
-	VkDeviceSize offsets[] = { 0 };
-	VkBuffer buffers[] = { skyboxVertexBuffer->getBuffer() };
-	vkCmdBindVertexBuffers(commandBuffer, 0, 1, buffers, offsets);
-	vkCmdBindIndexBuffer(commandBuffer, skyboxIndexBuffer->getBuffer(), 0, VK_INDEX_TYPE_UINT32);
-}
-void Hmck::Renderer::bindVertexBuffer(VkCommandBuffer commandBuffer)
-{
-	VkDeviceSize offsets[] = { 0 };
-	VkBuffer buffers[] = { sceneVertexBuffer->getBuffer() };
-	vkCmdBindVertexBuffers(commandBuffer, 0, 1, buffers, offsets);
-	vkCmdBindIndexBuffer(commandBuffer, sceneIndexBuffer->getBuffer(), 0, VK_INDEX_TYPE_UINT32);
 }

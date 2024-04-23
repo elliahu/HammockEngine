@@ -31,54 +31,12 @@
 
 namespace Hmck
 {
-	struct EnvironmentBufferData
-	{
-		struct OmniLight
-		{
-			glm::vec4 position;
-			glm::vec4 color;
-		};
-
-		OmniLight omniLights[10]; // TODO lights should be in frame buffer data
-		uint32_t numOmniLights = 0;
-	};
-
-	struct FrameBufferData
-	{
-		glm::mat4 projection{ 1.f };
-		glm::mat4 view{ 1.f };
-		glm::mat4 inverseView{ 1.f };
-	};
-
-	struct EntityBufferData
-	{
-		glm::mat4 model{ 1.f };
-		glm::mat4 normal{ 1.f };
-	};
-
-	struct PrimitiveBufferData
-	{
-		glm::vec4 baseColorFactor{ 1.0f,1.0f,1.0f,1.0f };
-		uint32_t baseColorTextureIndex = TextureIndex::Invalid;
-		uint32_t normalTextureIndex = TextureIndex::Invalid;
-		uint32_t metallicRoughnessTextureIndex = TextureIndex::Invalid;
-		uint32_t occlusionTextureIndex = TextureIndex::Invalid;
-		float alphaCutoff = 1.0f;
-	};
-
 	class Renderer
 	{
 	public:
 
 
-		struct PushConstantData
-		{
-			glm::vec2 resolution;
-			float elapsedTime;
-		};
-
-
-		Renderer(Window& window, Device& device, std::unique_ptr<Scene>& scene);
+		Renderer(Window& window, Device& device);
 		~Renderer();
 
 		// delete copy constructor and copy destructor
@@ -116,17 +74,9 @@ namespace Hmck
 		void endRenderPass(VkCommandBuffer commandBuffer);
 
 
-		void bindVertexBuffer(VkCommandBuffer commandBuffer);
-		void bindSkyboxVertexBuffer(VkCommandBuffer commandBuffer);
-
-		
-
-
 	private:
 		void createCommandBuffer();
 		void freeCommandBuffers();
-		void createVertexBuffer();
-		void createIndexBuffer();
 		void recreateSwapChain();
 		
 
@@ -134,15 +84,6 @@ namespace Hmck
 		Device& device;
 		std::unique_ptr<SwapChain> hmckSwapChain;
 		std::vector<VkCommandBuffer> commandBuffers;
-
-		std::unique_ptr<Buffer> sceneVertexBuffer;
-		std::unique_ptr<Buffer> sceneIndexBuffer;
-
-		std::unique_ptr<Buffer> skyboxVertexBuffer;
-		std::unique_ptr<Buffer> skyboxIndexBuffer;
-
-		std::unique_ptr<Scene>& scene;
-
 
 		uint32_t currentImageIndex;
 		int currentFrameIndex{ 0 };

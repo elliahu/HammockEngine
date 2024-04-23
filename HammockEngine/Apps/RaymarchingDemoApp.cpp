@@ -7,7 +7,7 @@ Hmck::RaymarchingDemoApp::RaymarchingDemoApp()
 
 void Hmck::RaymarchingDemoApp::run()
 {
-	Renderer renderer{ window, device, scene };
+	Renderer renderer{ window, device };
 
 	pipeline = GraphicsPipeline::createGraphicsPipelinePtr({
 			.debugName = "standard_forward_pass",

@@ -7,7 +7,7 @@ Hmck::PBRApp::PBRApp()
 
 void Hmck::PBRApp::run()
 {
-	Renderer renderer{ window, device, scene };
+	Renderer renderer{ window, device };
 	KeyboardMovementController cameraController{};
 	UserInterface ui{ device, renderer.getSwapChainRenderPass(), window };
 
@@ -25,12 +25,6 @@ void Hmck::PBRApp::run()
 	light->transform.translation = { 1.f, 1.f, -1.f };
 	light->name = "Point light";
 	scene->addChildOfRoot(light);
-
-
-
-
-	
-
 
 	auto currentTime = std::chrono::high_resolution_clock::now();
 	while (!window.shouldClose())
