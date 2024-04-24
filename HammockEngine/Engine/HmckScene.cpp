@@ -72,6 +72,14 @@ void Hmck::Scene::loadFile(SceneLoadFileInfo loadInfo)
 		indices, 
 		root,
 		loadInfo.binary);
+
+	for (auto& r : roots)
+	{
+		r->transform.translation = loadInfo.translation;
+		r->transform.rotation = loadInfo.rotation;
+		r->transform.scale = loadInfo.scale;
+		r->name = loadInfo.name;
+	}
 }
 
 void Hmck::Scene::loadSkyboxTexture(SkyboxLoadSkyboxInfo loadInfo)

@@ -27,6 +27,10 @@ namespace Hmck
 		{
 			std::string filename;
 			bool binary = true;
+			std::string name{};
+			glm::vec3 translation{ 0 };
+			glm::vec3 rotation{ 0 };
+			glm::vec3 scale{ 1 };
 		};
 
 		struct SkyboxLoadSkyboxInfo

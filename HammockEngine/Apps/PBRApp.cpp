@@ -29,6 +29,7 @@ void Hmck::PBRApp::run()
 	std::shared_ptr<OmniLight> light = std::make_shared<OmniLight>();
 	light->transform.translation = { 0.f, 1.5f, 0.f };
 	light->name = "Point light";
+	light->color = { 1.0f, 0.5f, 0.3f };
 	scene->addChildOfRoot(light);
 
 	auto currentTime = std::chrono::high_resolution_clock::now();
@@ -160,6 +161,7 @@ void Hmck::PBRApp::load()
 			},
 			{
 				.filename = std::string(MODELS_DIR) + "helmet/helmet.glb",
+				.translation = {0.f,0.43f,0.f}
 			},
 		},
 		.loadSkybox = {
