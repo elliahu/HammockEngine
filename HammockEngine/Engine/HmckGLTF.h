@@ -40,7 +40,7 @@ namespace Hmck
 
 		static void loadImages(gltf::Model& input, Device& device, MemoryManager& memory, std::vector<Image>& images, uint32_t imagesOffset);
 		static void loadMaterials(gltf::Model& input, Device& device, MemoryManager& memory, std::vector<Material>& materials, uint32_t materialsOffset, uint32_t texturesOffset);
-		static void loadTextures(gltf::Model& input, Device& device, MemoryManager& memory, std::vector<Texture>& textures, uint32_t texturesOffset);
+		static void loadTextures(gltf::Model& input, Device& device, MemoryManager& memory, std::vector<Texture>& textures, uint32_t texturesOffset, uint32_t imagesOffset);
 		static std::shared_ptr<Entity> loadNode(
 			Device& device,
 			const tinygltf::Node& inputNode,

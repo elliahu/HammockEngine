@@ -158,9 +158,9 @@ void Hmck::PBRApp::load()
 				//.filename = std::string(MODELS_DIR) + "SunTemple/SunTemple.glb",
 				//.filename = std::string(MODELS_DIR) + "Bistro/BistroExterior.glb",
 			},
-			/*{
+			{
 				.filename = std::string(MODELS_DIR) + "helmet/helmet.glb",
-			},*/
+			},
 		},
 		.loadSkybox = {
 			.textures = {

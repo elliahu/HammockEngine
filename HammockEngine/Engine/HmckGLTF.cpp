@@ -59,7 +59,7 @@ std::vector<std::shared_ptr<Hmck::Entity>> Hmck::Gltf::load(
 	for (size_t i = 0; i < scene.nodes.size(); i++) {
 		loadImages(model, device, memory, images, imagesOffset);
 		loadMaterials(model, device, memory, materials, materialsOffset, texturesOffset);
-		loadTextures(model, device, memory, textures, texturesOffset);
+		loadTextures(model, device, memory, textures, texturesOffset, imagesOffset);
 		const gltf::Node node = model.nodes[scene.nodes[i]];
 		auto r = loadNode(device, node, model, materialsOffset, nullptr, vertices, indices, root);
 		roots.push_back(r);
@@ -73,8 +73,8 @@ void Hmck::Gltf::loadImages(gltf::Model& input,Device& device, MemoryManager& me
 {
 	// Images can be stored inside the glTF (which is the case for the sample model), so instead of directly
 	// loading them from disk, we fetch them from the glTF loader and upload the buffers
-	images.resize(input.images.size());
-	for (size_t i = imagesOffset; i < input.images.size(); i++) {
+	images.resize(input.images.size() + imagesOffset);
+	for (size_t i = imagesOffset; i < input.images.size() + imagesOffset; i++) {
 		gltf::Image& glTFImage = input.images[i - imagesOffset];
 		// Get the image data from the glTF loader
 		unsigned char* buffer = nullptr;
@@ -115,8 +115,8 @@ void Hmck::Gltf::loadMaterials(gltf::Model& input, Device& device, MemoryManager
 		return;
 	}
 
-	materials.resize(input.materials.size());
-	for (size_t i = materialsOffset; i < input.materials.size(); i++)
+	materials.resize(input.materials.size() + materialsOffset);
+	for (size_t i = materialsOffset; i < input.materials.size() + materialsOffset; i++)
 	{
 		// Only read the most basic properties required
 		tinygltf::Material glTFMaterial = input.materials[i - materialsOffset];
@@ -162,11 +162,11 @@ void Hmck::Gltf::loadMaterials(gltf::Model& input, Device& device, MemoryManager
 	}
 }
 
-void Hmck::Gltf::loadTextures(gltf::Model& input, Device& device, MemoryManager& memory, std::vector<Texture>& textures, uint32_t texturesOffset)
+void Hmck::Gltf::loadTextures(gltf::Model& input, Device& device, MemoryManager& memory, std::vector<Texture>& textures, uint32_t texturesOffset, uint32_t imagesOffset)
 {
-	textures.resize(input.textures.size());
-	for (size_t i = texturesOffset; i < input.textures.size(); i++) {
-		textures[i].imageIndex = input.textures[i - texturesOffset].source;
+	textures.resize(input.textures.size() + texturesOffset);
+	for (size_t i = texturesOffset; i < input.textures.size() + texturesOffset; i++) {
+		textures[i].imageIndex = input.textures[i - texturesOffset].source + imagesOffset;
 	}
 }
 

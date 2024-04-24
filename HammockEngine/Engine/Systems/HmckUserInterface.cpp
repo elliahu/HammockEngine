@@ -284,9 +284,9 @@ void Hmck::UserInterface::entityComponets(std::shared_ptr<Entity> entity)
 
 	if (ImGui::CollapsingHeader("Transform")) // Tranform
 	{
-		ImGui::DragFloat3("Translation", &entity->transform.translation.x);
-		ImGui::DragFloat3("Rotation", &entity->transform.rotation.x);
-		ImGui::DragFloat3("Scale", &entity->transform.scale.x);
+		ImGui::DragFloat3("Translation", &entity->transform.translation.x,0.01);
+		ImGui::DragFloat3("Rotation", &entity->transform.rotation.x, 0.01);
+		ImGui::DragFloat3("Scale", &entity->transform.scale.x, 0.01);
 	}
 	
 	if (isInstanceOf<Entity, ILight>(entity)) // If Light
