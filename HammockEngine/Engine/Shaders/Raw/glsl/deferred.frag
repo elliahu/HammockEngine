@@ -62,7 +62,7 @@ vec3 F_Schlick(float cosTheta, float metallic, vec3 materialcolor)
 
 // Specular BRDF composition --------------------------------------------
 
-vec3 BRDF(vec3 albedo, vec3 L, vec3 V, vec3 N, float metallic, float roughness)
+vec3 BRDF(vec3 albedo,vec3 lightColor, vec3 L, vec3 V, vec3 N, float metallic, float roughness)
 {
 	// Precalculate vectors and dot products	
 	vec3 H = normalize (V + L);
@@ -70,9 +70,6 @@ vec3 BRDF(vec3 albedo, vec3 L, vec3 V, vec3 N, float metallic, float roughness)
 	float dotNL = clamp(dot(N, L), 0.0, 1.0);
 	float dotLH = clamp(dot(L, H), 0.0, 1.0);
 	float dotNH = clamp(dot(N, H), 0.0, 1.0);
-
-	// Light color fixed
-	vec3 lightColor = vec3(1.0);
 
 	vec3 color = vec3(0.0);
 
@@ -117,7 +114,7 @@ void main()
 	vec3 Lo = vec3(0.0);
 	for (int i = 0; i < env.numOmniLights; i++) {
 		vec3 L = normalize(env.omniLights[i].position.xyz - position);
-		Lo += BRDF(albedo, L, V, N, metallic, roughness);
+		Lo += BRDF(albedo,env.omniLights[i].color.rgb, L, V, N, metallic, roughness);
 	};
 
 	// Combine with ambient

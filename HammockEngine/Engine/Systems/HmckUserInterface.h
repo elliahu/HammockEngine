@@ -11,6 +11,7 @@
 #include "HmckRenderer.h"
 #include "HmckUtils.h"
 #include "HmckLights.h"
+#include "HmckUtils.h"
 
 #include <exception>
 #include <deque>

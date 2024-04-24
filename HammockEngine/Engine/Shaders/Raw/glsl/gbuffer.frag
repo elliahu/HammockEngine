@@ -71,9 +71,9 @@ void main()
     _position = vec4(position, linearDepth(gl_FragCoord.z));
 
 	if(material.baseColorTextureIndex == INVALID_TEXTURE)
-		_albedo = vec4(material.baseColorFactor.rgb,1);
+		_albedo = material.baseColorFactor;
 	else 
-		_albedo = vec4(pow(texture(textures[material.baseColorTextureIndex], uv).rgb, vec3(2.2)),1);
+		_albedo = vec4(pow(texture(textures[material.baseColorTextureIndex], uv).rgb, vec3(1.0)),1);
 
     float roughness;
 	if(material.metallicRoughnessTextureIndex == INVALID_TEXTURE)
@@ -89,7 +89,7 @@ void main()
 
     _material = vec4(roughness, metallic, 0.0, 1.0);
 
-	if (_albedo.a < material.alphaCutoff) {
+	if (material.alphaCutoff < 0.5) {
 		discard;
 	}
 

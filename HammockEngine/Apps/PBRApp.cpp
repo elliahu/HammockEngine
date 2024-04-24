@@ -27,7 +27,7 @@ void Hmck::PBRApp::run()
 	scene->addChildOfRoot(viewerObject);
 
 	std::shared_ptr<OmniLight> light = std::make_shared<OmniLight>();
-	light->transform.translation = { 1.f, 1.f, -1.f };
+	light->transform.translation = { 0.f, 1.5f, 0.f };
 	light->name = "Point light";
 	scene->addChildOfRoot(light);
 
@@ -154,12 +154,13 @@ void Hmck::PBRApp::load()
 		.name = "Volumetric scene",
 		.loadFiles = {
 			{
-				//.filename = std::string(MODELS_DIR) + "helmet/helmet.glb",
 				.filename = std::string(MODELS_DIR) + "sponza/sponza.glb",
 				//.filename = std::string(MODELS_DIR) + "SunTemple/SunTemple.glb",
 				//.filename = std::string(MODELS_DIR) + "Bistro/BistroExterior.glb",
 			},
-
+			/*{
+				.filename = std::string(MODELS_DIR) + "helmet/helmet.glb",
+			},*/
 		},
 		.loadSkybox = {
 			.textures = {
@@ -307,6 +308,64 @@ void Hmck::PBRApp::init()
 			{.binding = 3, .descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, .stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT}, // material (roughness, metalness, ao)
 		}
 		});
+	/*
+	// Shadow cubemap
+	shadowCubeMap.width = offscreenImageSize;
+	shadowCubeMap.height = offscreenImageSize;
+
+	// Cube map image description
+	VkImageCreateInfo imageCreateInfo = Init::imageCreateInfo();
+	imageCreateInfo.imageType = VK_IMAGE_TYPE_2D;
+	imageCreateInfo.format = offscreenImageFormat;
+	imageCreateInfo.extent = { static_cast<uint32_t>(shadowCubeMap.width), static_cast<uint32_t>(shadowCubeMap.height), 1 };
+	imageCreateInfo.mipLevels = 1;
+	imageCreateInfo.arrayLayers = 6;
+	imageCreateInfo.samples = VK_SAMPLE_COUNT_1_BIT;
+	imageCreateInfo.tiling = VK_IMAGE_TILING_OPTIMAL;
+	imageCreateInfo.usage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT;
+	imageCreateInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+	imageCreateInfo.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+	imageCreateInfo.flags = VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT;
+
+	device.createImageWithInfo(imageCreateInfo, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, shadowCubeMap.image, shadowCubeMap.memory);
+
+	device.transitionImageLayout(
+		shadowCubeMap.image,
+		VK_IMAGE_LAYOUT_UNDEFINED,
+		VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+		6);
+
+	shadowCubeMap.createSampler(device);
+
+	// create image view
+	VkImageViewCreateInfo viewInfo{};
+	viewInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
+	viewInfo.image = VK_NULL_HANDLE;
+	viewInfo.viewType = VK_IMAGE_VIEW_TYPE_CUBE;
+	viewInfo.format = offscreenImageFormat;
+	viewInfo.components = { VK_COMPONENT_SWIZZLE_R };
+	viewInfo.subresourceRange = { VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1 };
+	viewInfo.subresourceRange.layerCount = 6;
+	viewInfo.image = shadowCubeMap.image;
+
+	if (vkCreateImageView(device.device(), &viewInfo, nullptr, &shadowCubeMap.view) != VK_SUCCESS)
+	{
+		throw std::runtime_error("Failed to create cubemap image view!");
+	}
+
+	viewInfo.viewType = VK_IMAGE_VIEW_TYPE_2D;
+	viewInfo.subresourceRange.layerCount = 1;
+	viewInfo.image = shadowCubeMap.image;
+
+	for (uint32_t i = 0; i < 6; i++)
+	{
+		viewInfo.subresourceRange.baseArrayLayer = i;
+		if (vkCreateImageView(device.device(), &viewInfo, nullptr, &shadowCubeMapFaceImageViews[i]) != VK_SUCCESS)
+		{
+			throw std::runtime_error("Failed to create cubemap image view!");
+		}
+	}
+	*/
 }
 
 void Hmck::PBRApp::renderEntity(uint32_t frameIndex, VkCommandBuffer commandBuffer, std::unique_ptr<GraphicsPipeline>& pipeline, std::shared_ptr<Entity>& entity)
@@ -384,6 +443,8 @@ void Hmck::PBRApp::createPipelines(Renderer& renderer)
 		{ VK_FORMAT_D32_SFLOAT, VK_FORMAT_D32_SFLOAT_S8_UINT, VK_FORMAT_D24_UNORM_S8_UINT },
 		VK_IMAGE_TILING_OPTIMAL,
 		VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT);
+
+
 
 	gbufferFramebuffer = Framebuffer::createFramebufferPtr({
 		.device = device,

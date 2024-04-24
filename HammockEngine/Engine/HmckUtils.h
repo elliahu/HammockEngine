@@ -31,10 +31,21 @@ namespace Hmck
 		assert(result == VK_SUCCESS && "Failed to check result. Result is not VK_SUCCESS!");
 	}
 
+	// Check if enity of type P is derived from T
 	template<typename T, typename P>
 	bool isInstanceOf(std::shared_ptr<T> entity) {
 		std::shared_ptr<P> derived = std::dynamic_pointer_cast<P>(entity);
 		return derived != nullptr;
+	}
+
+	// tries cast T to P
+	template<typename T, typename P>
+	std::shared_ptr<P> cast(std::shared_ptr<T> entity) {
+		std::shared_ptr<P> derived = std::dynamic_pointer_cast<P>(entity);
+		if (!derived) {
+			throw std::runtime_error("Dynamic cast failed: Cannot cast object to specified derived type.");
+		}
+		return derived;
 	}
 
 	namespace Init 

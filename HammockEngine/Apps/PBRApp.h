@@ -95,6 +95,14 @@ namespace Hmck
 		void createPipelines(Renderer& renderer);
 		void clean();
 
+		float zNear{ 0.1f };
+		float zFar{ 1024.0f };
+		const uint32_t offscreenImageSize{ 1024 };
+		const VkFormat offscreenImageFormat{ VK_FORMAT_R32_SFLOAT };
+		VkFormat offscreenDepthFormat{ VK_FORMAT_UNDEFINED }; // The depth format is selected at runtime
+
+		TextureCubeMap shadowCubeMap;
+		std::array<VkImageView, 6> shadowCubeMapFaceImageViews{};
 
 		std::unique_ptr<Scene> scene{};
 
@@ -132,8 +140,10 @@ namespace Hmck
 
 		// renderpasses and framebuffers
 		std::unique_ptr<Framebuffer> gbufferFramebuffer{}; // TODO probably shoul be bufferd as well
+		std::array<std::unique_ptr<Framebuffer>, 6> offscreenFramebuffers{};
 
 		// pipelines
+		std::unique_ptr<GraphicsPipeline> offscreenPipeline{};
 		std::unique_ptr<GraphicsPipeline> skyboxPipeline{}; // uses gbufferFramebuffer render pass
 		std::unique_ptr<GraphicsPipeline> gbufferPipeline{}; // uses gbufferFramebuffer render pass
 		std::unique_ptr<GraphicsPipeline> defferedPipeline{};// uses swapchain render pass

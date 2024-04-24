@@ -288,6 +288,16 @@ void Hmck::UserInterface::entityComponets(std::shared_ptr<Entity> entity)
 		ImGui::DragFloat3("Rotation", &entity->transform.rotation.x);
 		ImGui::DragFloat3("Scale", &entity->transform.scale.x);
 	}
+	
+	if (isInstanceOf<Entity, ILight>(entity)) // If Light
+	{
+		if (ImGui::CollapsingHeader("Color")) // Light
+		{
+			std::shared_ptr<ILight> light = cast<Entity, ILight>(entity);
+			ImGui::ColorEdit3("Color", &light->color.x);
+		}
+	}
+
 	ImGui::Separator();
 }
 
