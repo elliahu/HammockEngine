@@ -75,9 +75,9 @@ void Hmck::Scene::loadFile(SceneLoadFileInfo loadInfo)
 
 	for (auto& r : roots)
 	{
-		r->transform.translation = loadInfo.translation;
-		r->transform.rotation = loadInfo.rotation;
-		r->transform.scale = loadInfo.scale;
+		r->transform.translation = (loadInfo.translation == glm::vec3{0.0f, 0.0f, 0.0f}) ? r->transform.translation : loadInfo.translation;
+		r->transform.rotation = (loadInfo.rotation == glm::vec3{ 0.0f, 0.0f, 0.0f })? r->transform.rotation : loadInfo.rotation;
+		r->transform.scale = (loadInfo.scale == glm::vec3{ 1.0f, 1.0f, 1.0f })? r->transform.scale : loadInfo.scale;
 		r->name = loadInfo.name;
 	}
 }

@@ -155,14 +155,20 @@ void Hmck::PBRApp::load()
 		.name = "Volumetric scene",
 		.loadFiles = {
 			{
-				.filename = std::string(MODELS_DIR) + "sponza/sponza.glb",
+				.filename = std::string(MODELS_DIR) + "test.glb"
+				//.filename = std::string(MODELS_DIR) + "sponza/sponza_lights.glb",
 				//.filename = std::string(MODELS_DIR) + "SunTemple/SunTemple.glb",
-				//.filename = std::string(MODELS_DIR) + "Bistro/BistroExterior.glb",
+				//.filename = std::string(MODELS_DIR) + "Bistro/BistroInterior.glb",
+				
 			},
-			{
+			/*{
+				.filename = "../../Resources/data/models/plane.gltf",
+				.binary = false
+			},*/
+			/*{
 				.filename = std::string(MODELS_DIR) + "helmet/helmet.glb",
 				.translation = {0.f,0.43f,0.f}
-			},
+			},*/
 		},
 		.loadSkybox = {
 			.textures = {
@@ -628,7 +634,7 @@ void Hmck::PBRApp::createPipelines(Renderer& renderer)
 			.entryFunc = "main"
 		},
 		.FS {
-			.byteCode = Hmck::Filesystem::readFile("../../HammockEngine/Engine/Shaders/Compiled/deferred.frag.spv"),
+			.byteCode = Hmck::Filesystem::readFile("../../HammockEngine/Engine/Shaders/Compiled/phong.frag.spv"),
 			.entryFunc = "main"
 		},
 		.descriptorSetLayouts = {

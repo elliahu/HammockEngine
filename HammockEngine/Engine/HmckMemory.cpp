@@ -19,9 +19,9 @@ namespace Hmck
 Hmck::MemoryManager::MemoryManager(Device& device) :device{ device }
 {
 	descriptorPool = DescriptorPool::Builder(device)
-		.setMaxSets(10000)
-		.addPoolSize(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 5000)
-		.addPoolSize(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 5000)
+		.setMaxSets(20000)
+		.addPoolSize(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 10000)
+		.addPoolSize(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 10000)
 		.build();
 }
 

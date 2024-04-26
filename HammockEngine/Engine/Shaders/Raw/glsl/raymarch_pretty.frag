@@ -102,31 +102,37 @@ vec4 raymarch(vec3 rayOrigin, vec3 rayDirection) {
 }
 
 void main() {
-   vec2 uv = gl_FragCoord.xy / vec2(push.resX, push.resY);
-  uv -= 0.5;
-  uv.x *= push.resX / push.resY;
+    vec2 uv = gl_FragCoord.xy / vec2(push.resX, push.resY);
+    uv -= 0.5;
+    uv.x *= push.resX / push.resY;
 
-  // Ray Origin - camera
-  vec3 ro = data.inverseView[3].xyz; // scene.inverseView[3].xyz is camera position
-  // Ray Direction
-    vec3 rd = normalize((data.inverseView * vec4(vec3(uv, 1.0), 0.0)).xyz);
+    // Flip the Y-coordinate for Vulkan
+    uv.y *= -1.0;
 
+    // Ray Origin - camera
+    vec3 ro = data.inverseView[3].xyz; // scene.inverseView[3].xyz is camera position
+
+    // Ray Direction
+    vec3 rd = normalize(vec3(uv, 1.0));
+
+    // Transform ray direction by the camera's orientation
+    rd = (data.inverseView * vec4(rd, 0.0)).xyz;
 
   
-  vec3 color = vec3(0.0);
-  // Sun and Sky
-  vec3 sunDirection = normalize(data.sunPosition.xyz);
-  sunDirection.y *= -1;
-  float sun = clamp(dot(sunDirection, rd), 0.0, 1.0 );
-  // Base sky color
-  color = data.baseSkyColor.rgb;
-  // Add vertical gradient
-  color -= -data.gradientSkyColor.a * data.gradientSkyColor.rgb * rd.y;
-  // Add sun color to sky
-  color += 0.5 * data.sunColor.rgb * pow(sun, 10.0);
-// cloud
-  vec4 res = raymarch(ro, rd);
-  color = color * (1.0 - res.a) + res.rgb;
+    vec3 color = vec3(0.0);
+    // Sun and Sky
+    vec3 sunDirection = normalize(data.sunPosition.xyz);
+    sunDirection.y *= -1;
+    float sun = clamp(dot(sunDirection, rd), 0.0, 1.0 );
+    // Base sky color
+    color = data.baseSkyColor.rgb;
+    // Add vertical gradient
+    color -= data.gradientSkyColor.a * data.gradientSkyColor.rgb * rd.y;
+    // Add sun color to sky
+    color += 0.5 * data.sunColor.rgb * pow(sun, 10.0);
+    // cloud
+    vec4 res = raymarch(ro, rd);
+    color = color * (1.0 - res.a) + res.rgb;
 
-  outColor = vec4(color, 1.0);
+    outColor = vec4(color, 1.0);
 }
