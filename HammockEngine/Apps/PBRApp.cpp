@@ -379,68 +379,73 @@ void Hmck::PBRApp::init()
 void Hmck::PBRApp::renderEntity(uint32_t frameIndex, VkCommandBuffer commandBuffer, std::unique_ptr<GraphicsPipeline>& pipeline, std::shared_ptr<Entity>& entity)
 {
 	// don't render invisible nodes
-	if (!entity->visible) { return; }
+	if (isInstanceOf<Entity, Entity3D>(entity) && entity->visible)
+	{
+		auto _entity = cast<Entity, Entity3D>(entity);
 
-	if (std::dynamic_pointer_cast<Entity3D>(entity)->mesh.primitives.size() > 0) {
-		// Pass the node's matrix via push constants
-		// Traverse the node hierarchy to the top-most parent to get the final matrix of the current node
-		glm::mat4 model = entity->transform.mat4();
-		std::shared_ptr<Entity> currentParent = entity->parent;
-		while (currentParent) {
-			model = currentParent->transform.mat4() * model;
-			currentParent = currentParent->parent;
-		}
+		if (_entity->mesh.primitives.size() > 0) 
+		{
+			glm::mat4 model = entity->transform.mat4();
+			std::shared_ptr<Entity> currentParent = entity->parent;
+			while (currentParent) 
+			{
+				model = currentParent->transform.mat4() * model;
+				currentParent = currentParent->parent;
+			}
 
-		EntityBufferData entityData{
-			.model = model,
-			.normal = glm::transpose(glm::inverse(model))
-		};
-		memoryManager.getBuffer(entityBuffers[entity->id])->writeToBuffer(&entityData);
+			EntityBufferData entityData{
+				.model = model,
+				.normal = glm::transpose(glm::inverse(model))
+			};
+			memoryManager.getBuffer(entityBuffers[entity->id])->writeToBuffer(&entityData);
 
-		memoryManager.bindDescriptorSet(
-			commandBuffer,
-			VK_PIPELINE_BIND_POINT_GRAPHICS,
-			pipeline->graphicsPipelineLayout,
-			2, 1,
-			entityDescriptorSets[entity->id],
-			0, nullptr);
+			memoryManager.bindDescriptorSet(
+				commandBuffer,
+				VK_PIPELINE_BIND_POINT_GRAPHICS,
+				pipeline->graphicsPipelineLayout,
+				2, 1,
+				entityDescriptorSets[entity->id],
+				0, nullptr);
 
-		// TODO Reduce writes by checking if material changed
-		auto _entity = std::dynamic_pointer_cast<Entity3D>(entity);
-		for (Primitive& primitive : _entity->mesh.primitives) {
-			if (primitive.indexCount > 0) {
-
-				if (primitive.materialIndex >= 0)
+			// TODO Reduce writes by checking if material changed
+			
+			for (Primitive& primitive : _entity->mesh.primitives) 
+			{
+				if (primitive.indexCount > 0) 
 				{
-					Material& material = scene->materials[primitive.materialIndex];
 
-					PrimitiveBufferData pData{
-					.baseColorFactor = material.baseColorFactor,
-					.baseColorTextureIndex = (material.baseColorTextureIndex != TextureIndex::Invalid) ? scene->textures[material.baseColorTextureIndex].imageIndex : TextureIndex::Invalid,
-					.normalTextureIndex = (material.normalTextureIndex != TextureIndex::Invalid) ? scene->textures[material.normalTextureIndex].imageIndex : TextureIndex::Invalid,
-					.metallicRoughnessTextureIndex = (material.metallicRoughnessTextureIndex != TextureIndex::Invalid) ? scene->textures[material.metallicRoughnessTextureIndex].imageIndex : TextureIndex::Invalid,
-					.occlusionTextureIndex = (material.occlusionTextureIndex != TextureIndex::Invalid) ? scene->textures[material.occlusionTextureIndex].imageIndex : TextureIndex::Invalid,
-					.alphaCutoff = material.alphaCutOff
-					};
+					if (primitive.materialIndex >= 0)
+					{
+						Material& material = scene->materials[primitive.materialIndex];
 
-					memoryManager.getBuffer(materialBuffers[primitive.materialIndex])->writeToBuffer(&pData);
+						PrimitiveBufferData pData{
+						.baseColorFactor = material.baseColorFactor,
+						.baseColorTextureIndex = (material.baseColorTextureIndex != TextureIndex::Invalid) ? scene->textures[material.baseColorTextureIndex].imageIndex : TextureIndex::Invalid,
+						.normalTextureIndex = (material.normalTextureIndex != TextureIndex::Invalid) ? scene->textures[material.normalTextureIndex].imageIndex : TextureIndex::Invalid,
+						.metallicRoughnessTextureIndex = (material.metallicRoughnessTextureIndex != TextureIndex::Invalid) ? scene->textures[material.metallicRoughnessTextureIndex].imageIndex : TextureIndex::Invalid,
+						.occlusionTextureIndex = (material.occlusionTextureIndex != TextureIndex::Invalid) ? scene->textures[material.occlusionTextureIndex].imageIndex : TextureIndex::Invalid,
+						.alphaCutoff = material.alphaCutOff
+						};
+
+						memoryManager.getBuffer(materialBuffers[primitive.materialIndex])->writeToBuffer(&pData);
+					}
+
+					memoryManager.bindDescriptorSet(
+						commandBuffer,
+						VK_PIPELINE_BIND_POINT_GRAPHICS,
+						pipeline->graphicsPipelineLayout,
+						3, 1,
+						materialDescriptorSets[(primitive.materialIndex >= 0 ? primitive.materialIndex : 0)],
+						0, nullptr);
+
+					// draw
+					vkCmdDrawIndexed(commandBuffer, primitive.indexCount, 1, primitive.firstIndex, 0, 0);
 				}
-
-				memoryManager.bindDescriptorSet(
-					commandBuffer,
-					VK_PIPELINE_BIND_POINT_GRAPHICS,
-					pipeline->graphicsPipelineLayout,
-					3, 1,
-					materialDescriptorSets[(primitive.materialIndex >= 0 ? primitive.materialIndex : 0)],
-					0, nullptr);
-
-				// draw
-				vkCmdDrawIndexed(commandBuffer, primitive.indexCount, 1, primitive.firstIndex, 0, 0);
 			}
 		}
-	}
-	for (auto& child : entity->children) {
-		renderEntity(frameIndex, commandBuffer, pipeline, child);
+		for (auto& child : entity->children) {
+			renderEntity(frameIndex, commandBuffer, pipeline, child);
+		}
 	}
 }
 
@@ -634,7 +639,7 @@ void Hmck::PBRApp::createPipelines(Renderer& renderer)
 			.entryFunc = "main"
 		},
 		.FS {
-			.byteCode = Hmck::Filesystem::readFile("../../HammockEngine/Engine/Shaders/Compiled/phong.frag.spv"),
+			.byteCode = Hmck::Filesystem::readFile("../../HammockEngine/Engine/Shaders/Compiled/deferred.frag.spv"),
 			.entryFunc = "main"
 		},
 		.descriptorSetLayouts = {
