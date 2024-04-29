@@ -23,6 +23,7 @@
 #include "HmckScene.h"
 #include "HmckLights.h"
 #include "HmckMemory.h"
+#include "HmckGLTF.h"
 
 #ifndef MODELS_DIR
 #define MODELS_DIR "../../Resources/Models/"
@@ -101,8 +102,8 @@ namespace Hmck
 		const VkFormat offscreenImageFormat{ VK_FORMAT_R32_SFLOAT };
 		VkFormat offscreenDepthFormat{ VK_FORMAT_UNDEFINED }; // The depth format is selected at runtime
 
-		TextureCubeMap shadowCubeMap;
-		std::array<VkImageView, 6> shadowCubeMapFaceImageViews{};
+		//TextureCubeMap shadowCubeMap;
+		//std::array<VkImageView, 6> shadowCubeMapFaceImageViews{};
 
 		std::unique_ptr<Scene> scene{};
 
@@ -121,12 +122,12 @@ namespace Hmck
 		// per frame
 		std::vector<DescriptorSetHandle> frameDescriptorSets{};
 		DescriptorSetLayoutHandle frameDescriptorSetLayout;
-		std::vector<BufferHandle> frameBuffers{}; // TODO this is misleading as these ara data buffers but name suggests these are actual framebbuffers
+		std::vector<BufferHandle> frameBuffers{}; // TODO this is misleading as these are data buffers but name suggests these are actual framebbuffers
 		
 		// per entity
-		std::vector<DescriptorSetHandle> entityDescriptorSets{};
+		std::unordered_map<EntityId, DescriptorSetHandle> entityDescriptorSets{};
 		DescriptorSetLayoutHandle entityDescriptorSetLayout;
-		std::vector<BufferHandle> entityBuffers{};
+		std::unordered_map<EntityId, BufferHandle> entityBuffers{};
 
 		// per material
 		std::vector<DescriptorSetHandle> materialDescriptorSets{};

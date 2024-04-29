@@ -24,6 +24,7 @@
 #include "HmckLights.h"
 #include "HmckTexture.h"
 #include "HmckMemory.h"
+#include "HmckGLTF.h"
 
 #ifndef MODELS_DIR
 #define MODELS_DIR "../../Resources/Models/"

@@ -92,7 +92,7 @@ void Hmck::UserInterface::showEntityComponents(std::shared_ptr<Entity>& entity, 
 	endWindow();
 }
 
-void Hmck::UserInterface::showEntityInspector(std::shared_ptr<Entity> entity)
+void Hmck::UserInterface::showEntityInspector(std::unique_ptr<Scene>& scene)
 {
 	const ImGuiWindowFlags window_flags = ImGuiWindowFlags_AlwaysAutoResize;
 	ImGui::SetNextWindowPos({ 10, 130 }, ImGuiCond_Once, { 0,0 });
@@ -100,7 +100,7 @@ void Hmck::UserInterface::showEntityInspector(std::shared_ptr<Entity> entity)
 	beginWindow("Entity Inspector", (bool*)false, ImGuiWindowFlags_AlwaysAutoResize);
 	ImGui::Text("Inspect all entities in the scene", window_flags);
 
-	inspectEntity(entity);
+	inspectEntity(scene->getRoot(),scene);
 
 	endWindow();
 }
@@ -301,7 +301,7 @@ void Hmck::UserInterface::entityComponets(std::shared_ptr<Entity> entity)
 	ImGui::Separator();
 }
 
-void Hmck::UserInterface::inspectEntity(std::shared_ptr<Entity> entity)
+void Hmck::UserInterface::inspectEntity(std::shared_ptr<Entity> entity, std::unique_ptr<Scene>& scene)
 {
 	std::string name = entity->name + " # " + std::to_string(entity->id);
 	std::string prefix = "";
@@ -321,7 +321,7 @@ void Hmck::UserInterface::inspectEntity(std::shared_ptr<Entity> entity)
 		ImGui::Text("Children:");
 		for (auto& child : entity->children)
 		{
-			inspectEntity(child);
+			inspectEntity(scene->getEntity(child), scene);
 		}
 
 		ImGui::TreePop();

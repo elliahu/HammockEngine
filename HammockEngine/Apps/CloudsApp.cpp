@@ -68,7 +68,7 @@ void Hmck::CloudsApp::run()
 	auto viewerObject = std::make_shared<Entity>();
 	viewerObject->transform.translation = { 0.f, 0.f, -5.f };
 	viewerObject->name = "Viewer object";
-	scene->addChildOfRoot(viewerObject);
+	scene->add(viewerObject);
 
 
 	KeyboardMovementController cameraController{};
@@ -116,7 +116,7 @@ void Hmck::CloudsApp::run()
 				this->ui();
 				ui.showDebugStats(viewerObject);
 				ui.showWindowControls();
-				ui.showEntityInspector(scene->getRoot());
+				ui.showEntityInspector(scene);
 				ui.endUserInterface(commandBuffer);
 			}
 
@@ -136,13 +136,16 @@ void Hmck::CloudsApp::load()
 		.device = device,
 		.memory = memoryManager,
 		.name = "Volumetric scene",
-		.loadFiles = {
-			{
-				.filename = std::string(MODELS_DIR) + "Sphere/Sphere.glb",
-			},
-		}
 	};
 	scene = std::make_unique<Scene>(info);
+
+	GltfLoader::GltfLoaderCreateInfo gltfinfo{
+		.device = device,
+		.memory = memoryManager,
+		.scene = scene
+	};
+	GltfLoader gltfloader{ gltfinfo };
+	gltfloader.load(std::string(MODELS_DIR) + "Sphere/Sphere.glb");
 
 	vertexBuffer = memoryManager.createVertexBuffer({
 		.vertexSize = sizeof(scene->vertices[0]),

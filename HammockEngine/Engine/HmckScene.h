@@ -11,7 +11,6 @@
 #include "HmckTexture.h"
 #include "HmckDescriptors.h"
 #include "HmckEntity3D.h"
-#include "HmckGLTF.h"
 #include "HmckSwapChain.h"
 #include "HmckFrameInfo.h"
 #include "HmckCamera.h"
@@ -26,7 +25,6 @@ namespace Hmck
 		struct SceneLoadFileInfo
 		{
 			std::string filename;
-			bool binary = true;
 			std::string name{};
 			glm::vec3 translation{ 0 };
 			glm::vec3 rotation{ 0 };
@@ -43,7 +41,6 @@ namespace Hmck
 			Device& device;
 			MemoryManager& memory;
 			std::string name;
-			std::vector<SceneLoadFileInfo> loadFiles;
 			SkyboxLoadSkyboxInfo loadSkybox;
 		};
 
@@ -57,20 +54,26 @@ namespace Hmck
 		Scene(const Scene&) = delete;
 		Scene& operator=(const Scene&) = delete;
 
-		std::shared_ptr<Entity> getRoot() { return root; }
-		Device& getDevice() { return device; }
-		void addChildOfRoot(std::shared_ptr<Entity> child)
+		std::shared_ptr<Entity> getRoot() { return entities[0]; }
+		std::shared_ptr<Entity> getEntity(EntityId id)
 		{
-			child->parent = getRoot();
-			getRoot()->children.push_back(child);
+			for (const auto& entity : entities) {
+				if (entity && entity->id == id) {
+					return entity;
+				}
+			}
+			return nullptr;
 		}
+		Device& getDevice() { return device; }
 
-		void loadFile(SceneLoadFileInfo loadInfo);
+		void add(std::shared_ptr<Entity> entity);
+
+
 		void loadSkyboxTexture(SkyboxLoadSkyboxInfo loadInfo);
 
-		std::shared_ptr<Entity> getEntity(Hmck::Id id);
+		
 
-		std::shared_ptr<Entity> root;
+		std::vector<std::shared_ptr<Entity>> entities{};
 		std::vector<Image> images;
 		std::vector<Texture> textures;
 		std::vector<Material> materials;

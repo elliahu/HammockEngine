@@ -3,14 +3,10 @@
 Hmck::Scene::Scene(SceneCreateInfo createInfo): device{createInfo.device}, memory{createInfo.memory}
 {
 	// create root
-	root = std::make_shared<Entity3D>();
-	root->name = "Scene root";
-
-	// load all files
-	for (auto& fileInfo : createInfo.loadFiles)
-	{
-		loadFile(fileInfo);
-	}
+	auto e = std::make_shared<Entity3D>();
+	e->name = "Root";
+	entities.push_back(e);
+	
 	
 	// load skybox
 	if (createInfo.loadSkybox.textures.size() > 0)
@@ -56,30 +52,10 @@ void Hmck::Scene::destroy()
 }
 
 
-void Hmck::Scene::loadFile(SceneLoadFileInfo loadInfo)
+void Hmck::Scene::add(std::shared_ptr<Entity> entity)
 {
-	// load the entity tree
-	std::vector<std::shared_ptr<Entity>> roots = Gltf::load(
-		loadInfo.filename, 
-		device, 
-		images,
-		static_cast<uint32_t>(images.size()),
-		materials, 
-		static_cast<uint32_t>(materials.size()),
-		textures, 
-		static_cast<uint32_t>(textures.size()),
-		vertices, 
-		indices, 
-		root,
-		loadInfo.binary);
-
-	for (auto& r : roots)
-	{
-		r->transform.translation = (loadInfo.translation == glm::vec3{0.0f, 0.0f, 0.0f}) ? r->transform.translation : loadInfo.translation;
-		r->transform.rotation = (loadInfo.rotation == glm::vec3{ 0.0f, 0.0f, 0.0f })? r->transform.rotation : loadInfo.rotation;
-		r->transform.scale = (loadInfo.scale == glm::vec3{ 1.0f, 1.0f, 1.0f })? r->transform.scale : loadInfo.scale;
-		r->name = loadInfo.name;
-	}
+	entities.push_back(entity);
+	getRoot()->children.push_back(entity->id);
 }
 
 void Hmck::Scene::loadSkyboxTexture(SkyboxLoadSkyboxInfo loadInfo)
@@ -92,12 +68,5 @@ void Hmck::Scene::loadSkyboxTexture(SkyboxLoadSkyboxInfo loadInfo)
 	skyboxTexture.createSampler(device);
 	skyboxTexture.updateDescriptor();
 	hasSkybox = true;
-}
-
-std::shared_ptr<Hmck::Entity> Hmck::Scene::getEntity(Hmck::Id id)
-{
-	if (id == 0)
-		return root;
-	return root->getChild(id);
 }
 

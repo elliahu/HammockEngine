@@ -16,43 +16,21 @@
 
 namespace Hmck
 {
-	typedef unsigned int Id;
+	typedef uint32_t EntityId;
 
 	class Entity
 	{
 	public:
 
-		Entity() : id{ currentId++ }
-		{
-		}
-
-		virtual ~Entity() 
-		{
-			// ensures that before parent Entity is deleted, all of its children are deleted as well
-			for (auto& child : children) {
-				child = nullptr;
-			}
-		}
-
-		uint32_t numberOfEntities()
-		{
-			uint32_t total = 1;
-			for (auto& child : children)
-			{
-				total += child->numberOfEntities();
-			}
-
-			return total;
-		}
-
-		std::shared_ptr<Entity> getChild(Id id);
+		Entity() : id{ currentId++ }{}
+		virtual ~Entity(){}
 
 
-		static Id currentId;
-		Id id;
-		std::string name{};
-		std::shared_ptr<Entity> parent{};
-		std::vector<std::shared_ptr<Entity>> children{};
+		static EntityId currentId;
+		EntityId id;
+		std::string name = "";
+		EntityId parent{};
+		std::vector<EntityId> children{};
 		TransformComponent transform{};
 		bool visible = false;
 

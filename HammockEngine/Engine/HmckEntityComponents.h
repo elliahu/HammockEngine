@@ -85,6 +85,7 @@ namespace Hmck
 	};
 
 	/*
+	* @deprecated
 		PointLightComponent
 		If this component is set, model should NOT be set
 		Set this component to make a spot light from the GameObject
@@ -100,6 +101,7 @@ namespace Hmck
 	};
 
 	/*
+	* @deprecated
 		DirectionalLightComponent
 		If this component is set, model should NOT be set
 		Set this component to make a dorectional light from the GameObject
@@ -116,6 +118,7 @@ namespace Hmck
 
 
 	/*
+	* @deprecated
 		BoundingBoxComponent
 		Axis-Aligned Bounding Box is used for collision detection
 		TODO make sure to resize when scale changes

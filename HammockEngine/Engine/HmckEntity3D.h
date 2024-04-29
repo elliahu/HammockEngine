@@ -81,6 +81,7 @@ namespace Hmck
 	public:
 
 		Entity3D() : Entity() { visible = true; };
+		~Entity3D() {}
 
 		Mesh mesh{};
 

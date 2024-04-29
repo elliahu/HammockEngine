@@ -36,7 +36,7 @@ namespace Hmck
 		void showDebugStats(std::shared_ptr<Entity> camera);
 		void showWindowControls();
 		void showEntityComponents(std::shared_ptr<Entity>& entity, bool* close = (bool*)0);
-		void showEntityInspector(std::shared_ptr<Entity> entity);
+		void showEntityInspector(std::unique_ptr<Scene>& scene);
 		void showLog();
 
 		// forwarding events to ImGUI
@@ -52,7 +52,7 @@ namespace Hmck
 		void beginWindow(const char* title,bool * open = (bool*) 0, ImGuiWindowFlags flags = 0);
 		void endWindow();
 		void entityComponets(std::shared_ptr<Entity> entity);
-		void inspectEntity(std::shared_ptr<Entity> entity);
+		void inspectEntity(std::shared_ptr<Entity> entity, std::unique_ptr<Scene>& scene);
 
 		Device& device;
 		Window& window;

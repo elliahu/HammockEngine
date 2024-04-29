@@ -21,6 +21,7 @@ namespace Hmck
 	{
 	public:
 		OmniLight() : ILight() {};
+		~OmniLight(){}
 	};
 
 }

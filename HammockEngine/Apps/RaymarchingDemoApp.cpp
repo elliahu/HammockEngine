@@ -66,7 +66,7 @@ void Hmck::RaymarchingDemoApp::run()
 	auto viewerObject = std::make_shared<Entity>();
 	viewerObject->transform.translation = { 0.f, 0.f, -5.f };
 	viewerObject->name = "Viewer object";
-	scene->addChildOfRoot(viewerObject);
+	scene->add(viewerObject);
 
 
 	KeyboardMovementController cameraController{};
@@ -114,7 +114,7 @@ void Hmck::RaymarchingDemoApp::run()
 				this->ui();
 				ui.showDebugStats(viewerObject);
 				ui.showWindowControls();
-				ui.showEntityInspector(scene->getRoot());
+				ui.showEntityInspector(scene);
 				ui.endUserInterface(commandBuffer);
 			}
 
@@ -134,13 +134,16 @@ void Hmck::RaymarchingDemoApp::load()
 		.device = device,
 		.memory = memoryManager,
 		.name = "Volumetric scene",
-		.loadFiles = {
-			{
-				.filename = std::string(MODELS_DIR) + "Sphere/Sphere.glb",
-			},
-		}
 	};
 	scene = std::make_unique<Scene>(info);
+
+	GltfLoader::GltfLoaderCreateInfo gltfinfo{
+		.device = device,
+		.memory = memoryManager,
+		.scene = scene
+	};
+	GltfLoader gltfloader{ gltfinfo };
+	gltfloader.load(std::string(MODELS_DIR) + "Sphere/Sphere.glb");
 
 	descriptorSets.resize(SwapChain::MAX_FRAMES_IN_FLIGHT);
 	buffers.resize(SwapChain::MAX_FRAMES_IN_FLIGHT);

@@ -13,45 +13,49 @@
 #include "HmckEntity3D.h"
 #include "HmckFrameInfo.h"
 #include "HmckMemory.h"
+#include "HmckLights.h"
+#include "HmckScene.h"
 
 namespace gltf = tinygltf;
 namespace Hmck
 {
-	class Gltf
+	class GltfLoader
 	{
 	public:
 
-		static std::vector<std::shared_ptr<Entity>> load(
-			std::string filename,
-			Device& device,
-			std::vector<Image>& images,
-			uint32_t imagesOffset,
-			std::vector<Material>& materials,
-			uint32_t materialsOffset,
-			std::vector<Texture>& textures,
-			uint32_t texturesOffset,
-			std::vector<Vertex>& vertices,
-			std::vector<uint32_t>& indices,
-			std::shared_ptr<Entity>& root,
-			bool binary = true
-		);
+		struct GltfLoaderCreateInfo
+		{
+			Device& device;
+			MemoryManager& memory;
+			std::unique_ptr<Scene>& scene;
+		};
+		
+		GltfLoader(GltfLoaderCreateInfo createInfo);
+
+		void load(std::string filename);
 
 	private:
+		Device& device;
+		MemoryManager& memory;
+		std::unique_ptr<Scene>& scene;
 
-		static void loadImages(gltf::Model& input, Device& device, MemoryManager& memory, std::vector<Image>& images, uint32_t imagesOffset);
-		static void loadMaterials(gltf::Model& input, Device& device, MemoryManager& memory, std::vector<Material>& materials, uint32_t materialsOffset, uint32_t texturesOffset);
-		static void loadTextures(gltf::Model& input, Device& device, MemoryManager& memory, std::vector<Texture>& textures, uint32_t texturesOffset, uint32_t imagesOffset);
-		static std::shared_ptr<Entity> loadNode(
-			Device& device,
-			const tinygltf::Node& inputNode,
-			const tinygltf::Model& input, 
-			uint32_t materialsOffset,
-			std::shared_ptr<Entity> parent,
-			std::vector<Vertex>& vertices,
-			std::vector<uint32_t>& indices,
-			std::shared_ptr<Entity>& root
-			);
+		uint32_t imagesOffset;
+		uint32_t texturesOffset;
+		uint32_t materialsOffset;
 
+		bool isBinary(std::string& filename);
+		bool isLight(gltf::Node& node, gltf::Model& model);
+		bool isSolid(gltf::Node& node);
+
+		void loadImages(gltf::Model& model);
+		void loadTextures(gltf::Model& model);
+		void loadMaterials(gltf::Model& model);
+
+		void loadEntities(gltf::Model& model);
+
+		void loadEntity(gltf::Node& node, gltf::Model& model, EntityId parent);
+		void loadEntity3D(gltf::Node& node, gltf::Model& model, EntityId parent);
+		void loadIOmniLight(gltf::Node& node, gltf::Model& model, EntityId parent);
 		
 	};
 }
