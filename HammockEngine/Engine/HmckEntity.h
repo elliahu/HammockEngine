@@ -25,6 +25,7 @@ namespace Hmck
 		Entity() : id{ currentId++ }{}
 		virtual ~Entity(){}
 
+		static void restIds() { currentId == 1; };
 
 		static EntityId currentId;
 		EntityId id;

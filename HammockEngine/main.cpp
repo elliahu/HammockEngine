@@ -41,7 +41,7 @@ int main()
 				app.run();
 			}
 
-			Hmck::Entity::currentId = 0;
+			Hmck::Entity::restIds();
 		}
 	}
 	catch (const std::exception& e)
