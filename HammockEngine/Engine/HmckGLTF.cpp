@@ -198,23 +198,33 @@ void Hmck::GltfLoader::loadMaterials(gltf::Model& model)
 void Hmck::GltfLoader::loadEntities(gltf::Model& model)
 {
 	const gltf::Scene& s = model.scenes[0];
-	for (size_t i = 0; i < s.nodes.size(); i++)
+	for (size_t i = 0; i < s.nodes.size(); i++) 
 	{
 		gltf::Node& node = model.nodes[s.nodes[i]];
+		loadEntitiesRecursive(node, model, scene->getRoot()->id);
+	}
+}
 
-		// Entity3D
-		if (isSolid(node))
-		{
-			loadEntity3D(node, model, scene->getRoot()->id);
-		}
+void Hmck::GltfLoader::loadEntitiesRecursive(gltf::Node& node, gltf::Model& model, EntityId parent)
+{
+	// Load the current node
+	if (isSolid(node)) 
+	{
+		loadEntity3D(node, model, parent);
+	}
+	else if (isLight(node, model)) 
+	{
+		loadIOmniLight(node, model, parent);
+	}
+	else 
+	{
+		loadEntity(node, model, parent);
+	}
 
-		// OmniLight
-		else if (isLight(node, model))
-		{
-			loadIOmniLight(node, model, scene->getRoot()->id);
-		}
-
-		else loadEntity(node, model, scene->getRoot()->id);
+	// Load children recursively
+	for (size_t i = 0; i < node.children.size(); i++) {
+		gltf::Node& childNode = model.nodes[node.children[i]];
+		loadEntitiesRecursive(childNode, model, scene->entities.back()->id);
 	}
 }
 
@@ -256,30 +266,6 @@ void Hmck::GltfLoader::loadEntity(gltf::Node& node, gltf::Model& model, EntityId
 		entity->transform.rotation = glm::eulerAngles(rotation);
 		entity->transform.translation = translation;
 	};
-
-
-	// Load entity's children
-	if (node.children.size() > 0)
-	{
-		for (size_t i = 0; i < node.children.size(); i++)
-		{
-			gltf::Node& childNode = model.nodes[node.children[i]];
-
-			// Entity3D
-			if (isSolid(childNode))
-			{
-				loadEntity3D(childNode, model, entity->id);
-			}
-
-			// OmniLight
-			else if (isLight(node, model))
-			{
-				loadIOmniLight(childNode, model, entity->id);
-			}
-
-			else loadEntity(childNode, model, entity->id);
-		}
-	}
 
 	if (parent > 0) {
 		scene->getEntity(parent)->children.push_back(entity->id);
@@ -326,30 +312,6 @@ void Hmck::GltfLoader::loadEntity3D(gltf::Node& node, gltf::Model& model, Entity
 		entity->transform.rotation = glm::eulerAngles(rotation);
 		entity->transform.translation = translation;
 	};
-
-
-	// Load entity's children
-	if (node.children.size() > 0)
-	{
-		for (size_t i = 0; i < node.children.size(); i++)
-		{
-			gltf::Node& childNode = model.nodes[node.children[i]];
-
-			// Entity3D
-			if (isSolid(childNode))
-			{
-				loadEntity3D(childNode, model, entity->id);
-			}
-
-			// OmniLight
-			else if (isLight(childNode, model))
-			{
-				loadIOmniLight(childNode, model, entity->id);
-			}
-
-			else loadEntity(childNode, model, entity->id);
-		}
-	}
 
 	const gltf::Mesh mesh = model.meshes[node.mesh];
 	// Iterate through all primitives of this entity's mesh
@@ -501,30 +463,6 @@ void Hmck::GltfLoader::loadIOmniLight(gltf::Node& node, gltf::Model& model, Enti
 		light->transform.rotation = glm::eulerAngles(rotation);
 		light->transform.translation = translation;
 	};
-
-
-	// Load entity's children
-	if (node.children.size() > 0)
-	{
-		for (size_t i = 0; i < node.children.size(); i++)
-		{
-			gltf::Node& childNode = model.nodes[node.children[i]];
-
-			// Entity3D
-			if (isSolid(childNode))
-			{
-				loadEntity3D(childNode, model, light->id);
-			}
-
-			// OmniLight
-			else if (isLight(childNode, model))
-			{
-				loadIOmniLight(childNode, model, light->id);
-			}
-
-			else loadEntity(childNode, model, light->id);
-		}
-	}
 
 	for (const auto& l : model.lights)
 	{

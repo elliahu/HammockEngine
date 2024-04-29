@@ -52,6 +52,7 @@ namespace Hmck
 		void loadMaterials(gltf::Model& model);
 
 		void loadEntities(gltf::Model& model);
+		void loadEntitiesRecursive(gltf::Node& node, gltf::Model& model, EntityId parent);
 
 		void loadEntity(gltf::Node& node, gltf::Model& model, EntityId parent);
 		void loadEntity3D(gltf::Node& node, gltf::Model& model, EntityId parent);
