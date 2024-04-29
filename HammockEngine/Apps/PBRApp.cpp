@@ -49,6 +49,8 @@ void Hmck::PBRApp::run()
 		{
 			int frameIndex = renderer.getFrameIndex();
 
+			scene->update();
+
 			vkCmdSetDepthBias(
 				commandBuffer,
 				1.25f,
@@ -263,17 +265,16 @@ void Hmck::PBRApp::init()
 		}
 		});
 
-	for (size_t i = 0; i < scene->entities.size(); i++)
+	for (const auto& ep : scene->entities)
 	{
-		entityBuffers[scene->entities[i]->id] = memoryManager.createBuffer({
+		entityBuffers[ep.first] = memoryManager.createBuffer({
 			.instanceSize = sizeof(EntityBufferData),
 			.instanceCount = 1,
 			.usageFlags = VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
 			.memoryPropertyFlags = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT
 			});
-
-		auto ebufferInfo = memoryManager.getBuffer(entityBuffers[scene->entities[i]->id])->descriptorInfo();
-		entityDescriptorSets[scene->entities[i]->id] = memoryManager.createDescriptorSet({
+		auto ebufferInfo = memoryManager.getBuffer(entityBuffers[ep.first])->descriptorInfo();
+		entityDescriptorSets[ep.first] = memoryManager.createDescriptorSet({
 			.descriptorSetLayout = entityDescriptorSetLayout,
 			.bufferWrites = {{0,ebufferInfo}},
 			});

@@ -95,6 +95,11 @@ bool Hmck::GltfLoader::isSolid(gltf::Node& node)
 	return node.mesh > -1;
 }
 
+bool Hmck::GltfLoader::isCamera(gltf::Node& node)
+{
+	return node.camera > -1;
+}
+
 void Hmck::GltfLoader::loadImages(gltf::Model& model)
 {
 	// Images can be stored inside the glTF, so instead of directly
@@ -224,7 +229,7 @@ void Hmck::GltfLoader::loadEntitiesRecursive(gltf::Node& node, gltf::Model& mode
 	// Load children recursively
 	for (size_t i = 0; i < node.children.size(); i++) {
 		gltf::Node& childNode = model.nodes[node.children[i]];
-		loadEntitiesRecursive(childNode, model, scene->entities.back()->id);
+		loadEntitiesRecursive(childNode, model, scene->getLastAdded());
 	}
 }
 
@@ -234,7 +239,7 @@ void Hmck::GltfLoader::loadEntity(gltf::Node& node, gltf::Model& model, EntityId
 	entity->parent = parent;
 	entity->name = node.name;
 
-	scene->entities.push_back(entity);
+	scene->add(entity);
 
 
 	// Get the local entity matrix
@@ -280,7 +285,7 @@ void Hmck::GltfLoader::loadEntity3D(gltf::Node& node, gltf::Model& model, Entity
 	std::shared_ptr<Entity3D> entity = std::make_shared<Entity3D>();
 	entity->parent = parent;
 	entity->name = node.name;
-	scene->entities.push_back(entity);
+	scene->add(entity);
 
 
 	// Get the local entity matrix
@@ -434,7 +439,7 @@ void Hmck::GltfLoader::loadIOmniLight(gltf::Node& node, gltf::Model& model, Enti
 	light->parent = parent;
 	light->name = node.name;
 
-	scene->entities.push_back(light);
+	scene->add(light);
 
 	if (node.translation.size() == 3) {
 		light->transform.translation = glm::vec3(glm::make_vec3(node.translation.data()));
@@ -476,6 +481,13 @@ void Hmck::GltfLoader::loadIOmniLight(gltf::Node& node, gltf::Model& model, Enti
 		scene->getEntity(parent)->children.push_back(light->id);
 		light->parent = parent;
 	}
+}
+
+void Hmck::GltfLoader::loadCamera(gltf::Node& node, gltf::Model& model, EntityId parent)
+{
+	const auto& camera = model.cameras[node.camera];
+	
+	scene->camera.setPerspectiveProjection(camera.perspective.yfov, camera.perspective.aspectRatio, camera.perspective.znear, camera.perspective.zfar);
 }
 
 

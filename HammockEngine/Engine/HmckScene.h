@@ -54,17 +54,22 @@ namespace Hmck
 		Scene(const Scene&) = delete;
 		Scene& operator=(const Scene&) = delete;
 
-		std::shared_ptr<Entity> getRoot() { return entities[0]; }
+		void update(); // TODO
+
+
+		std::shared_ptr<Entity> getRoot() { return entities[root]; }
 		std::shared_ptr<Entity> getEntity(EntityId id)
 		{
-			for (const auto& entity : entities) {
-				if (entity && entity->id == id) {
-					return entity;
-				}
+			if (entities.contains(id))
+			{
+				return entities[id];
 			}
-			return nullptr;
+
+			throw std::runtime_error("Entity with provided handle does not exist!");
 		}
 		Device& getDevice() { return device; }
+
+		EntityId getLastAdded() { return lastAdded; };
 
 		void add(std::shared_ptr<Entity> entity);
 
@@ -73,7 +78,13 @@ namespace Hmck
 
 		
 
-		std::vector<std::shared_ptr<Entity>> entities{};
+		std::unordered_map<EntityId, std::shared_ptr<Entity>> entities{}; // TODO change EntityId to EntityHandle
+
+		
+
+		std::vector<EntityId> cameras;
+		
+
 		std::vector<Image> images;
 		std::vector<Texture> textures;
 		std::vector<Material> materials;
@@ -91,9 +102,15 @@ namespace Hmck
 
 		Camera camera{};
 		bool hasSkybox = false;
+		
 
 	private:
 		Device& device;
 		MemoryManager& memory;
+
+		EntityId lastAdded = 0;
+
+		EntityId root;
+		uint32_t activeCamera;
 	};
 }

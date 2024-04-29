@@ -43,9 +43,11 @@ namespace Hmck
 		uint32_t texturesOffset;
 		uint32_t materialsOffset;
 
+
 		bool isBinary(std::string& filename);
 		bool isLight(gltf::Node& node, gltf::Model& model);
 		bool isSolid(gltf::Node& node);
+		bool isCamera(gltf::Node& node);
 
 		void loadImages(gltf::Model& model);
 		void loadTextures(gltf::Model& model);
@@ -57,6 +59,7 @@ namespace Hmck
 		void loadEntity(gltf::Node& node, gltf::Model& model, EntityId parent);
 		void loadEntity3D(gltf::Node& node, gltf::Model& model, EntityId parent);
 		void loadIOmniLight(gltf::Node& node, gltf::Model& model, EntityId parent);
+		void loadCamera(gltf::Node& node, gltf::Model& model, EntityId parent);
 		
 	};
 }

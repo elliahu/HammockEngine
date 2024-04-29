@@ -9,9 +9,11 @@
 #include <cassert>
 #include <limits>
 
+#include "HmckEntity.h"
+
 namespace Hmck
 {
-	class Camera
+	class Camera : public Entity
 	{
 	public:
 		void setOrthographicProjection(float left, float right, float top, float bottom, float near, float far);

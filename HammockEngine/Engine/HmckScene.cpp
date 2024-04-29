@@ -5,8 +5,8 @@ Hmck::Scene::Scene(SceneCreateInfo createInfo): device{createInfo.device}, memor
 	// create root
 	auto e = std::make_shared<Entity3D>();
 	e->name = "Root";
-	entities.push_back(e);
-	
+	root = e->id;
+	entities.emplace(e->id, std::move(e));
 	
 	// load skybox
 	if (createInfo.loadSkybox.textures.size() > 0)
@@ -51,11 +51,17 @@ void Hmck::Scene::destroy()
 	skyboxTexture.destroy(device);
 }
 
+void Hmck::Scene::update()
+{
+
+}
+
 
 void Hmck::Scene::add(std::shared_ptr<Entity> entity)
 {
-	entities.push_back(entity);
+	entities.emplace(entity->id, entity);
 	getRoot()->children.push_back(entity->id);
+	lastAdded = entity->id;
 }
 
 void Hmck::Scene::loadSkyboxTexture(SkyboxLoadSkyboxInfo loadInfo)
