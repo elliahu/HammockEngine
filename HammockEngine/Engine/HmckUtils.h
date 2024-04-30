@@ -48,6 +48,15 @@ namespace Hmck
 		return derived;
 	}
 
+	inline bool hasExtension(std::string fullString, std::string ending) {
+		if (fullString.length() >= ending.length()) {
+			return (0 == fullString.compare(fullString.length() - ending.length(), ending.length(), ending));
+		}
+		else {
+			return false;
+		}
+	}
+
 	namespace Init 
 	{
 		inline VkImageCreateInfo imageCreateInfo()

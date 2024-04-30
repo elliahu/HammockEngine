@@ -13,7 +13,14 @@ Hmck::Scene::Scene(SceneCreateInfo createInfo): device{createInfo.device}, memor
 		environment = std::make_shared<Environment>();
 
 		EnvironmentLoader loader{ device, memory, environment };
-		loader.load(createInfo.environment);
+		if (hasExtension(createInfo.environment, ".hdr"))
+		{
+			loader.loadHDR(createInfo.environment);
+		}
+		else
+		{
+			loader.load(createInfo.environment);
+		}
 	}
 }
 

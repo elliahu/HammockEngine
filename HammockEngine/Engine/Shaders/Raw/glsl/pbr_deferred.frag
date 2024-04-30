@@ -88,7 +88,10 @@ void main()
 
 	if(material == vec3(-1.0)) // background pixels are skipped
 	{
-		outColor = vec4(albedo, 1.0);
+        // apply tone mapping
+        vec3 color = albedo / (albedo + vec3(1.0));
+        color = pow(color, vec3(1.0/2.2)); 
+		outColor = vec4(color, 1.0);
 		return;
 	}
 		

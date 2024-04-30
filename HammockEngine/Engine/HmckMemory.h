@@ -134,6 +134,19 @@ namespace Hmck
 
 		Texture2DHandle createTexture2DFromBuffer(Texture2DCreateFromBufferInfo createInfo);
 
+		struct HDRTexture2DCreateFromBufferInfo
+		{
+			float* buffer;
+			uint32_t bufferSize;
+			uint32_t width;
+			uint32_t height;
+			VkFormat format;
+			VkImageLayout imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+		};
+
+		Texture2DHandle createHDRTexture2DFromBuffer(HDRTexture2DCreateFromBufferInfo createInfo);
+
+
 		struct TextureCubeMapCreateFromFilesInfo
 		{
 			std::vector<std::string> filenames;

@@ -29,6 +29,7 @@ namespace Hmck
 		EnvironmentLoader(Device& device, MemoryManager& memory, std::shared_ptr<Environment> environment) :device{ device }, memory{ memory }, environment { environment } {}
 
 		void load(std::string filepath);
+		void loadHDR(std::string filepath);
 
 	private:
 		Device& device;

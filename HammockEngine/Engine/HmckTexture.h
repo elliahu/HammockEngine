@@ -52,6 +52,15 @@ namespace Hmck
 			VkImageLayout imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL
 		);
 
+		void loadFromBuffer(
+			float* buffer,
+			uint32_t bufferSize,
+			uint32_t width, uint32_t height,
+			Device& device,
+			VkFormat format,
+			VkImageLayout imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL
+		);
+
 		void createSampler(Device& device, VkFilter filter = VK_FILTER_LINEAR);
 	};
 

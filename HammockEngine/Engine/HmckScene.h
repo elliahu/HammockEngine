@@ -15,6 +15,7 @@
 #include "HmckFrameInfo.h"
 #include "HmckCamera.h"
 #include "HmckHDR.h"
+#include "HmckUtils.h"
 
 namespace Hmck
 {

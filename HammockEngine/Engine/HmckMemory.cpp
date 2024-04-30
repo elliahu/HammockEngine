@@ -180,6 +180,24 @@ Hmck::Texture2DHandle Hmck::MemoryManager::createTexture2DFromBuffer(Texture2DCr
 	return handle;
 }
 
+Hmck::Texture2DHandle Hmck::MemoryManager::createHDRTexture2DFromBuffer(HDRTexture2DCreateFromBufferInfo createInfo)
+{
+	std::unique_ptr<Texture2D> texture = std::make_unique<Texture2D>();
+	texture->loadFromBuffer(
+		createInfo.buffer,
+		createInfo.bufferSize,
+		createInfo.width, createInfo.height,
+		device,
+		createInfo.format,
+		createInfo.imageLayout);
+	texture->createSampler(device);
+	texture->updateDescriptor();
+	texture2Ds.emplace(texture2DsLastHandle, std::move(texture));
+	Texture2DHandle handle = texture2DsLastHandle;
+	texture2DsLastHandle++;
+	return handle;
+}
+
 Hmck::TextureCubeMapHandle Hmck::MemoryManager::createTextureCubeMapFromFiles(TextureCubeMapCreateFromFilesInfo createInfo)
 {
 	std::unique_ptr<TextureCubeMap> texture = std::make_unique<TextureCubeMap>();

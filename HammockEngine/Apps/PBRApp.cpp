@@ -152,7 +152,7 @@ void Hmck::PBRApp::load()
 		.device = device,
 		.memory = memoryManager,
 		.name = "Volumetric scene",
-		.environment = "../../Resources/env/ibl/1.jpg"
+		.environment = "../../Resources/env/ibl/small_empty_room_1_4k.hdr"
 	};
 	scene = std::make_unique<Scene>(info);
 
@@ -423,7 +423,7 @@ void Hmck::PBRApp::createPipelines(Renderer& renderer)
 			.entryFunc = "main"
 		},
 		.FS {
-			.byteCode = Hmck::Filesystem::readFile("../../HammockEngine/Engine/Shaders/Compiled/skybox.frag.spv"),
+			.byteCode = Hmck::Filesystem::readFile("../../HammockEngine/Engine/Shaders/Compiled/environment.frag.spv"),
 			.entryFunc = "main"
 		},
 		.descriptorSetLayouts = {
