@@ -162,8 +162,9 @@ void Hmck::PBRApp::load()
 			.scene = scene
 		};
 	GltfLoader gltfloader{ gltfinfo };
-	gltfloader.load(std::string(MODELS_DIR) + "helmet/helmet.glb");
 	//gltfloader.load(std::string(MODELS_DIR) + "sponza/sponza_lights.glb");
+	gltfloader.load(std::string(MODELS_DIR) + "helmet/helmet.glb");
+	
 	scene->update();
 	
 
@@ -204,7 +205,7 @@ void Hmck::PBRApp::init()
 	environmentDescriptorSet = memoryManager.createDescriptorSet({
 			.descriptorSetLayout = environmentDescriptorSetLayout,
 			.bufferWrites = {{0,sceneBufferInfo}},
-			.imageWrites = {{2, scene->environment.descriptor}},
+			.imageWrites = {{2, memoryManager.getTexture2DDescriptorImageInfo(scene->environment->evironmentMap)}},
 			.imageArrayWrites = {{1,imageInfos}}
 		});
 
@@ -611,6 +612,4 @@ void Hmck::PBRApp::clean()
 
 	memoryManager.destroyBuffer(vertexBuffer);
 	memoryManager.destroyBuffer(indexBuffer);
-
-	scene->environment.destroy(device);
 }

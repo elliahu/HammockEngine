@@ -10,9 +10,10 @@ Hmck::Scene::Scene(SceneCreateInfo createInfo): device{createInfo.device}, memor
 
 	if (!createInfo.environment.empty())
 	{
-		environment.loadFromFile(createInfo.environment, device, VK_FORMAT_R8G8B8A8_UNORM);
-		environment.createSampler(device);
-		environment.updateDescriptor();
+		environment = std::make_shared<Environment>();
+
+		EnvironmentLoader loader{ device, memory, environment };
+		loader.load(createInfo.environment);
 	}
 }
 
@@ -27,6 +28,8 @@ void Hmck::Scene::destroy()
 	{
 		memory.destroyTexture2D(images[i].texture);
 	}
+
+	environment->destroy(memory);
 }
 
 void Hmck::Scene::update()

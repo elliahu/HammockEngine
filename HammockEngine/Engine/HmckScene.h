@@ -14,6 +14,7 @@
 #include "HmckSwapChain.h"
 #include "HmckFrameInfo.h"
 #include "HmckCamera.h"
+#include "HmckHDR.h"
 
 namespace Hmck
 {
@@ -83,7 +84,7 @@ namespace Hmck
 		uint32_t vertexCount;
 		uint32_t indexCount;
 
-		Texture2D environment;
+		std::shared_ptr<Environment> environment;
 
 		EntityHandle activeCamera = 0;
 		
