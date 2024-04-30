@@ -31,17 +31,12 @@ namespace Hmck
 			glm::vec3 scale{ 1 };
 		};
 
-		struct SkyboxLoadSkyboxInfo
-		{
-			std::vector<std::string> textures;
-		};
-
 		struct SceneCreateInfo
 		{
 			Device& device;
 			MemoryManager& memory;
 			std::string name;
-			SkyboxLoadSkyboxInfo loadSkybox;
+			std::string environment = "";
 		};
 
 		// TODO make builder as well
@@ -77,14 +72,6 @@ namespace Hmck
 		
 		void setActiveCamera(EntityHandle handle) { activeCamera = activeCamera; }
 
-
-
-		void loadSkyboxTexture(SkyboxLoadSkyboxInfo loadInfo); // TODO put this into separate loader
-
-	
-
-		
-
 		std::unordered_map<EntityHandle, std::shared_ptr<Entity>> entities{}; 
 
 		std::vector<Image> images;
@@ -96,13 +83,8 @@ namespace Hmck
 		uint32_t vertexCount;
 		uint32_t indexCount;
 
-		TextureCubeMap skyboxTexture;
-		std::vector<Vertex> skyboxVertices{};
-		std::vector<uint32_t> skyboxIndices{};
-		uint32_t skyboxVertexCount;
-		uint32_t skyboxIndexCount;
+		Texture2D environment;
 
-		bool hasSkybox = false;
 		EntityHandle activeCamera = 0;
 		
 

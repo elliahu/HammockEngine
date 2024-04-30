@@ -2,6 +2,7 @@
 #include <stb_image.h>
 
 
+
 void Hmck::ITexture::updateDescriptor()
 {
 	descriptor.sampler = sampler;

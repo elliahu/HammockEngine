@@ -2,9 +2,11 @@
 
 //inputs
 layout (location = 0) in vec2 uv;
-
+ 
 // outputs
 layout (location = 0) out vec4 outColor;
+
+layout(set = 0, binding = 2) uniform sampler2D environmentSampler;
 
 // gbuffer attachments  
 layout(set = 4, binding = 0) uniform sampler2D positionSampler;
@@ -116,6 +118,7 @@ void main()
 		vec3 L = normalize(env.omniLights[i].position.xyz - position);
 		Lo += BRDF(albedo,env.omniLights[i].color.rgb, L, V, N, metallic, roughness);
 	};
+
 
 	// Combine with ambient
 	vec3 color = albedo * 0.02;

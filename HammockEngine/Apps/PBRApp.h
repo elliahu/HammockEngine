@@ -110,9 +110,6 @@ namespace Hmck
 		BufferHandle vertexBuffer;
 		BufferHandle indexBuffer;
 
-		BufferHandle skyboxVertexBuffer;
-		BufferHandle skyboxIndexBuffer;
-
 		// Descriptors
 		// per scene (bound once when scene is initialized)
 		DescriptorSetHandle environmentDescriptorSet;

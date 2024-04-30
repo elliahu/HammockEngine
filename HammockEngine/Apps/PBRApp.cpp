@@ -102,12 +102,10 @@ void Hmck::PBRApp::run()
 				frameDescriptorSets[frameIndex],
 				0, nullptr);
 
-			memoryManager.bindVertexBuffer(skyboxVertexBuffer, skyboxIndexBuffer, commandBuffer);
+			memoryManager.bindVertexBuffer(vertexBuffer, indexBuffer, commandBuffer);
 
 			skyboxPipeline->bind(commandBuffer);
-			vkCmdDrawIndexed(commandBuffer, 36, 1, 0, 0, 0);
-
-			memoryManager.bindVertexBuffer(vertexBuffer, indexBuffer, commandBuffer);
+			vkCmdDraw(commandBuffer, 3, 1, 0, 0);
 
 			gbufferPipeline->bind(commandBuffer);
 
@@ -154,16 +152,7 @@ void Hmck::PBRApp::load()
 		.device = device,
 		.memory = memoryManager,
 		.name = "Volumetric scene",
-		.loadSkybox = {
-			.textures = {
-				"../../Resources/env/skybox/right.jpg",
-				"../../Resources/env/skybox/left.jpg",
-				"../../Resources/env/skybox/bottom.jpg",
-				"../../Resources/env/skybox/top.jpg",
-				"../../Resources/env/skybox/front.jpg",
-				"../../Resources/env/skybox/back.jpg"
-			}
-		}
+		.environment = "../../Resources/env/ibl/1.jpg"
 	};
 	scene = std::make_unique<Scene>(info);
 
@@ -173,8 +162,8 @@ void Hmck::PBRApp::load()
 			.scene = scene
 		};
 	GltfLoader gltfloader{ gltfinfo };
-	//gltfloader.load(std::string(MODELS_DIR) + "test.glb");
-	gltfloader.load(std::string(MODELS_DIR) + "sponza/sponza_lights.glb");
+	gltfloader.load(std::string(MODELS_DIR) + "helmet/helmet.glb");
+	//gltfloader.load(std::string(MODELS_DIR) + "sponza/sponza_lights.glb");
 	scene->update();
 	
 
@@ -187,17 +176,6 @@ void Hmck::PBRApp::load()
 		.indexSize = sizeof(scene->indices[0]),
 		.indexCount = static_cast<uint32_t>(scene->indices.size()),
 		.data = (void*)scene->indices.data() });
-
-	skyboxVertexBuffer = memoryManager.createVertexBuffer({
-		.vertexSize = sizeof(scene->skyboxVertices[0]),
-		.vertexCount = static_cast<uint32_t>(scene->skyboxVertices.size()),
-		.data = (void*)scene->skyboxVertices.data() });
-
-	skyboxIndexBuffer = memoryManager.createIndexBuffer({
-		.indexSize = sizeof(scene->skyboxIndices[0]),
-		.indexCount = static_cast<uint32_t>(scene->skyboxIndices.size()),
-		.data = (void*)scene->skyboxIndices.data() });
-
 }
 
 void Hmck::PBRApp::init()
@@ -226,7 +204,7 @@ void Hmck::PBRApp::init()
 	environmentDescriptorSet = memoryManager.createDescriptorSet({
 			.descriptorSetLayout = environmentDescriptorSetLayout,
 			.bufferWrites = {{0,sceneBufferInfo}},
-			.imageWrites = {{2, scene->skyboxTexture.descriptor}},
+			.imageWrites = {{2, scene->environment.descriptor}},
 			.imageArrayWrites = {{1,imageInfos}}
 		});
 
@@ -308,64 +286,7 @@ void Hmck::PBRApp::init()
 			{.binding = 3, .descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, .stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT}, // material (roughness, metalness, ao)
 		}
 		});
-	/*
-	// Shadow cubemap
-	shadowCubeMap.width = offscreenImageSize;
-	shadowCubeMap.height = offscreenImageSize;
-
-	// Cube map image description
-	VkImageCreateInfo imageCreateInfo = Init::imageCreateInfo();
-	imageCreateInfo.imageType = VK_IMAGE_TYPE_2D;
-	imageCreateInfo.format = offscreenImageFormat;
-	imageCreateInfo.extent = { static_cast<uint32_t>(shadowCubeMap.width), static_cast<uint32_t>(shadowCubeMap.height), 1 };
-	imageCreateInfo.mipLevels = 1;
-	imageCreateInfo.arrayLayers = 6;
-	imageCreateInfo.samples = VK_SAMPLE_COUNT_1_BIT;
-	imageCreateInfo.tiling = VK_IMAGE_TILING_OPTIMAL;
-	imageCreateInfo.usage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT;
-	imageCreateInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
-	imageCreateInfo.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-	imageCreateInfo.flags = VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT;
-
-	device.createImageWithInfo(imageCreateInfo, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, shadowCubeMap.image, shadowCubeMap.memory);
-
-	device.transitionImageLayout(
-		shadowCubeMap.image,
-		VK_IMAGE_LAYOUT_UNDEFINED,
-		VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
-		6);
-
-	shadowCubeMap.createSampler(device);
-
-	// create image view
-	VkImageViewCreateInfo viewInfo{};
-	viewInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
-	viewInfo.image = VK_NULL_HANDLE;
-	viewInfo.viewType = VK_IMAGE_VIEW_TYPE_CUBE;
-	viewInfo.format = offscreenImageFormat;
-	viewInfo.components = { VK_COMPONENT_SWIZZLE_R };
-	viewInfo.subresourceRange = { VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1 };
-	viewInfo.subresourceRange.layerCount = 6;
-	viewInfo.image = shadowCubeMap.image;
-
-	if (vkCreateImageView(device.device(), &viewInfo, nullptr, &shadowCubeMap.view) != VK_SUCCESS)
-	{
-		throw std::runtime_error("Failed to create cubemap image view!");
-	}
-
-	viewInfo.viewType = VK_IMAGE_VIEW_TYPE_2D;
-	viewInfo.subresourceRange.layerCount = 1;
-	viewInfo.image = shadowCubeMap.image;
-
-	for (uint32_t i = 0; i < 6; i++)
-	{
-		viewInfo.subresourceRange.baseArrayLayer = i;
-		if (vkCreateImageView(device.device(), &viewInfo, nullptr, &shadowCubeMapFaceImageViews[i]) != VK_SUCCESS)
-		{
-			throw std::runtime_error("Failed to create cubemap image view!");
-		}
-	}
-	*/
+	
 }
 
 void Hmck::PBRApp::renderEntity(uint32_t frameIndex, VkCommandBuffer commandBuffer, std::unique_ptr<GraphicsPipeline>& pipeline, std::shared_ptr<Entity>& entity)
@@ -497,7 +418,7 @@ void Hmck::PBRApp::createPipelines(Renderer& renderer)
 		.debugName = "skybox_pass",
 		.device = device,
 		.VS {
-			.byteCode = Hmck::Filesystem::readFile("../../HammockEngine/Engine/Shaders/Compiled/skybox.vert.spv"),
+			.byteCode = Hmck::Filesystem::readFile("../../HammockEngine/Engine/Shaders/Compiled/fullscreen.vert.spv"),
 			.entryFunc = "main"
 		},
 		.FS {
@@ -512,7 +433,6 @@ void Hmck::PBRApp::createPipelines(Renderer& renderer)
 		.graphicsState {
 			.depthTest = VK_FALSE,
 			.depthTestCompareOp = VK_COMPARE_OP_LESS_OR_EQUAL,
-			.cullMode = VK_CULL_MODE_FRONT_BIT,
 			.blendAtaAttachmentStates {
 				Hmck::Init::pipelineColorBlendAttachmentState(0xf, VK_FALSE),
 				Hmck::Init::pipelineColorBlendAttachmentState(0xf, VK_FALSE),
@@ -631,7 +551,7 @@ void Hmck::PBRApp::createPipelines(Renderer& renderer)
 			.entryFunc = "main"
 		},
 		.FS {
-			.byteCode = Hmck::Filesystem::readFile("../../HammockEngine/Engine/Shaders/Compiled/phong.frag.spv"),
+			.byteCode = Hmck::Filesystem::readFile("../../HammockEngine/Engine/Shaders/Compiled/deferred.frag.spv"),
 			.entryFunc = "main"
 		},
 		.descriptorSetLayouts = {
@@ -691,6 +611,6 @@ void Hmck::PBRApp::clean()
 
 	memoryManager.destroyBuffer(vertexBuffer);
 	memoryManager.destroyBuffer(indexBuffer);
-	memoryManager.destroyBuffer(skyboxVertexBuffer);
-	memoryManager.destroyBuffer(skyboxIndexBuffer);
+
+	scene->environment.destroy(device);
 }

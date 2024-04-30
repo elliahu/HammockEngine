@@ -7,32 +7,12 @@ Hmck::Scene::Scene(SceneCreateInfo createInfo): device{createInfo.device}, memor
 	e->name = "Root";
 	root = e->id;
 	entities.emplace(e->id, std::move(e));
-	
-	// load skybox
-	if (createInfo.loadSkybox.textures.size() > 0)
-	{
-		loadSkyboxTexture(createInfo.loadSkybox);
-		skyboxVertices = {
-			{{-0.5f, -0.5f, -0.5f}},
-			{{0.5f, -0.5f, -0.5f}},
-			{{0.5f, 0.5f, -0.5f}},
-			{{-0.5f, 0.5f, -0.5f}},
-			{{-0.5f, -0.5f, 0.5f}},
-			{{0.5f, -0.5f, 0.5f}},
-			{{0.5f, 0.5f, 0.5f}},
-			{{-0.5f, 0.5f, 0.5f}}
-		};
-		skyboxVertexCount = skyboxVertices.size();
 
-		skyboxIndices = {
-			2, 1, 0, 0, 3, 2, // Front face
-			4, 5, 6, 6, 7, 4, // Back face
-			6, 5, 1, 1, 2, 6, // Right face
-			0, 4, 7, 7, 3, 0, // Left face
-			6, 2, 3, 3, 7, 6, // Top face
-			0, 1, 5, 5, 4, 0  // Bottom face
-		};
-		skyboxIndexCount = 36;
+	if (!createInfo.environment.empty())
+	{
+		environment.loadFromFile(createInfo.environment, device, VK_FORMAT_R8G8B8A8_UNORM);
+		environment.createSampler(device);
+		environment.updateDescriptor();
 	}
 }
 
@@ -47,8 +27,6 @@ void Hmck::Scene::destroy()
 	{
 		memory.destroyTexture2D(images[i].texture);
 	}
-
-	skyboxTexture.destroy(device);
 }
 
 void Hmck::Scene::update()
@@ -69,18 +47,6 @@ void Hmck::Scene::add(std::shared_ptr<Entity> entity)
 	entities.emplace(entity->id, entity);
 	getRoot()->children.push_back(entity->id);
 	lastAdded = entity->id;
-}
-
-void Hmck::Scene::loadSkyboxTexture(SkyboxLoadSkyboxInfo loadInfo)
-{
-	skyboxTexture.loadFromFiles(
-		loadInfo.textures,
-		VK_FORMAT_R8G8B8A8_UNORM,
-		device
-	);
-	skyboxTexture.createSampler(device);
-	skyboxTexture.updateDescriptor();
-	hasSkybox = true;
 }
 
 void Hmck::Scene::addDefaultCamera()
