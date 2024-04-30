@@ -19,13 +19,7 @@ void Hmck::PBRApp::run()
 	init();
 	createPipelines(renderer);
 
-
-	scene->camera.setViewTarget({ 1.f, 1.f, -1.f }, { 0.f, 0.f, 0.f });
-	auto viewerObject = std::make_shared<Entity>();
-	viewerObject->transform.translation = { 0.f, 0.f, -2.f };
-	viewerObject->name = "Viewer object";
-	scene->add(viewerObject);
-
+	//scene->getActiveCamera()->setViewTarget({1.f, 1.f, -1.f}, {0.f, 0.f, 0.f});
 
 	auto currentTime = std::chrono::high_resolution_clock::now();
 	while (!window.shouldClose())
@@ -39,17 +33,17 @@ void Hmck::PBRApp::run()
 		currentTime = newTime;
 
 		// camera
-		cameraController.moveInPlaneXZ(window, frameTime, viewerObject);
-		scene->camera.setViewYXZ(viewerObject->transform.translation, viewerObject->transform.rotation);
+		cameraController.moveInPlaneXZ(window, frameTime, scene->getActiveCamera());
 		float aspect = renderer.getAspectRatio();
-		scene->camera.setPerspectiveProjection(glm::radians(50.0f), aspect, 0.1f, 1000.f);
+		scene->getActiveCamera()->setPerspectiveProjection(glm::radians(50.0f), aspect, 0.1f, 1000.f);
+		scene->update();
 
 		// start a new frame
 		if (auto commandBuffer = renderer.beginFrame())
 		{
 			int frameIndex = renderer.getFrameIndex();
 
-			scene->update();
+			
 
 			vkCmdSetDepthBias(
 				commandBuffer,
@@ -77,7 +71,7 @@ void Hmck::PBRApp::run()
 				if (isInstanceOf<Entity, OmniLight>(scene->entities[i]))
 				{
 					auto l = cast<Entity, OmniLight>(scene->entities[i]);
-					envData.omniLights[ldx] = { .position = scene->camera.getView() * glm::vec4(l->transform.translation,1.0f), .color = glm::vec4(l->color,1.0f) };
+					envData.omniLights[ldx] = { .position = scene->getActiveCamera()->getView() * glm::vec4(l->transform.translation,1.0f), .color = glm::vec4(l->color,1.0f) };
 					ldx++;
 				}
 			}
@@ -94,9 +88,9 @@ void Hmck::PBRApp::run()
 
 
 			FrameBufferData data{
-				.projection = scene->camera.getProjection(),
-				.view = scene->camera.getView(),
-				.inverseView = scene->camera.getInverseView()
+				.projection = scene->getActiveCamera()->getProjection(),
+				.view = scene->getActiveCamera()->getView(),
+				.inverseView = scene->getActiveCamera()->getInverseView()
 			};
 			memoryManager.getBuffer(frameBuffers[frameIndex])->writeToBuffer(&data);
 
@@ -140,7 +134,7 @@ void Hmck::PBRApp::run()
 
 			{
 				ui.beginUserInterface();
-				ui.showDebugStats(viewerObject);
+				ui.showDebugStats(scene->getActiveCamera());
 				ui.showWindowControls();
 				ui.showEntityInspector(scene);
 				ui.endUserInterface(commandBuffer);
@@ -181,6 +175,7 @@ void Hmck::PBRApp::load()
 	GltfLoader gltfloader{ gltfinfo };
 	//gltfloader.load(std::string(MODELS_DIR) + "test.glb");
 	gltfloader.load(std::string(MODELS_DIR) + "sponza/sponza_lights.glb");
+	scene->update();
 	
 
 	vertexBuffer = memoryManager.createVertexBuffer({

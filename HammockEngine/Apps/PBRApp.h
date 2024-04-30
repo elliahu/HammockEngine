@@ -125,9 +125,9 @@ namespace Hmck
 		std::vector<BufferHandle> frameBuffers{}; // TODO this is misleading as these are data buffers but name suggests these are actual framebbuffers
 		
 		// per entity
-		std::unordered_map<EntityId, DescriptorSetHandle> entityDescriptorSets{};
+		std::unordered_map<EntityHandle, DescriptorSetHandle> entityDescriptorSets{};
 		DescriptorSetLayoutHandle entityDescriptorSetLayout;
-		std::unordered_map<EntityId, BufferHandle> entityBuffers{};
+		std::unordered_map<EntityHandle, BufferHandle> entityBuffers{};
 
 		// per material
 		std::vector<DescriptorSetHandle> materialDescriptorSets{};

@@ -210,7 +210,7 @@ void Hmck::GltfLoader::loadEntities(gltf::Model& model)
 	}
 }
 
-void Hmck::GltfLoader::loadEntitiesRecursive(gltf::Node& node, gltf::Model& model, EntityId parent)
+void Hmck::GltfLoader::loadEntitiesRecursive(gltf::Node& node, gltf::Model& model, EntityHandle parent)
 {
 	// Load the current node
 	if (isSolid(node)) 
@@ -233,7 +233,7 @@ void Hmck::GltfLoader::loadEntitiesRecursive(gltf::Node& node, gltf::Model& mode
 	}
 }
 
-void Hmck::GltfLoader::loadEntity(gltf::Node& node, gltf::Model& model, EntityId parent)
+void Hmck::GltfLoader::loadEntity(gltf::Node& node, gltf::Model& model, EntityHandle parent)
 {
 	std::shared_ptr<Entity> entity = std::make_shared<Entity>();
 	entity->parent = parent;
@@ -280,7 +280,7 @@ void Hmck::GltfLoader::loadEntity(gltf::Node& node, gltf::Model& model, EntityId
 
 }
 
-void Hmck::GltfLoader::loadEntity3D(gltf::Node& node, gltf::Model& model, EntityId parent)
+void Hmck::GltfLoader::loadEntity3D(gltf::Node& node, gltf::Model& model, EntityHandle parent)
 {
 	std::shared_ptr<Entity3D> entity = std::make_shared<Entity3D>();
 	entity->parent = parent;
@@ -433,7 +433,7 @@ void Hmck::GltfLoader::loadEntity3D(gltf::Node& node, gltf::Model& model, Entity
 
 }
 
-void Hmck::GltfLoader::loadIOmniLight(gltf::Node& node, gltf::Model& model, EntityId parent)
+void Hmck::GltfLoader::loadIOmniLight(gltf::Node& node, gltf::Model& model, EntityHandle parent)
 {
 	std::shared_ptr<OmniLight> light = std::make_shared<OmniLight>();
 	light->parent = parent;
@@ -483,11 +483,91 @@ void Hmck::GltfLoader::loadIOmniLight(gltf::Node& node, gltf::Model& model, Enti
 	}
 }
 
-void Hmck::GltfLoader::loadCamera(gltf::Node& node, gltf::Model& model, EntityId parent)
+void Hmck::GltfLoader::loadCamera(gltf::Node& node, gltf::Model& model, EntityHandle parent)
 {
-	const auto& camera = model.cameras[node.camera];
+	const auto& cameraNode = model.cameras[node.camera];
 	
-	scene->camera.setPerspectiveProjection(camera.perspective.yfov, camera.perspective.aspectRatio, camera.perspective.znear, camera.perspective.zfar);
+	std::shared_ptr<Camera> camera = std::make_shared<Camera>();
+	camera->parent = parent;
+	camera->name = node.name;
+
+	scene->add(camera);
+
+
+	if (node.translation.size() == 3) {
+		camera->transform.translation = glm::vec3(glm::make_vec3(node.translation.data()));
+	}
+	if (node.rotation.size() == 4) {
+		camera->transform.rotation = glm::eulerAngles(glm::make_quat(node.rotation.data()));
+	}
+	if (node.scale.size() == 3) {
+		camera->transform.scale = glm::vec3(glm::make_vec3(node.scale.data()));
+	}
+	if (node.matrix.size() == 16) {
+		glm::mat4 transform = glm::make_mat4x4(node.matrix.data());
+		glm::vec3 scale;
+		glm::quat rotation;
+		glm::vec3 translation;
+		glm::vec3 skew;
+		glm::vec4 perspective;
+		glm::decompose(
+			transform,
+			scale,
+			rotation,
+			translation,
+			skew,
+			perspective);
+		camera->transform.scale = scale;
+		camera->transform.rotation = glm::eulerAngles(rotation);
+		camera->transform.translation = translation;
+	};
+
+	if (scene->activeCamera == 0)
+	{
+		scene->setActiveCamera(camera->id);
+	}
+	
+	if (cameraNode.type == "perspective")
+	{
+		camera->setPerspectiveProjection(cameraNode.perspective.yfov, cameraNode.perspective.aspectRatio, cameraNode.perspective.znear, cameraNode.perspective.zfar);
+		glm::vec3 position = camera->transform.translation;
+		// Get camera rotation (Euler angles)
+		glm::vec3 rotation = camera->transform.rotation;
+
+		// Get up vector (0, 1, 0)
+		glm::vec3 upVector(0.0f, 1.0f, 0.0f);
+
+		// Convert rotation to rotation matrix
+		glm::mat4 rotationMatrix = glm::eulerAngleYXZ(rotation.y, rotation.x, rotation.z);
+
+		// Multiply rotation matrix by up vector to get camera's forward direction
+		glm::vec3 forwardDirection = glm::normalize(glm::vec3(rotationMatrix * glm::vec4(0.0f, 0.0f, -1.0f, 0.0f)));
+
+		// Compute target point by adding forward direction to position
+		glm::vec3 target = position + forwardDirection;
+		camera->setViewTarget(camera->transform.translation, target);
+	}
+
+	if (cameraNode.type == "orthographic")
+	{
+		// Get the orthographic parameters
+		const gltf::OrthographicCamera& ortho = cameraNode.orthographic;
+
+		// Extract the bounds
+		float left = ortho.xmag * -1.0f; // Left bound
+		float right = ortho.xmag;        // Right bound
+		float top = ortho.ymag;          // Top bound
+		float bottom = ortho.ymag * -1.0f;// Bottom bound
+		float _near = ortho.znear;        // Near bound
+		float _far = ortho.zfar;          // Far bound
+		camera->setOrthographicProjection(left, right, top, bottom, _near, _far);
+	}
+	
+
+	if (parent > 0) {
+		scene->getEntity(parent)->children.push_back(camera->id);
+		camera->parent = parent;
+	}
 }
 
 

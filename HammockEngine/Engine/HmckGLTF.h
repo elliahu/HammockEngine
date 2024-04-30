@@ -7,6 +7,8 @@
 #define GLM_FORCE_DEPTH_ZERO_TO_ONE
 #include <glm/glm.hpp>
 #include <glm/gtc/type_ptr.hpp>
+#include <glm/gtc/matrix_transform.hpp>
+#include <glm/gtx/euler_angles.hpp> // Include for glm::eulerAngleYXZ function
 #include <tiny_gltf.h>
 #include "HmckTexture.h"
 #include "HmckEntity.h"
@@ -54,12 +56,12 @@ namespace Hmck
 		void loadMaterials(gltf::Model& model);
 
 		void loadEntities(gltf::Model& model);
-		void loadEntitiesRecursive(gltf::Node& node, gltf::Model& model, EntityId parent);
+		void loadEntitiesRecursive(gltf::Node& node, gltf::Model& model, EntityHandle parent);
 
-		void loadEntity(gltf::Node& node, gltf::Model& model, EntityId parent);
-		void loadEntity3D(gltf::Node& node, gltf::Model& model, EntityId parent);
-		void loadIOmniLight(gltf::Node& node, gltf::Model& model, EntityId parent);
-		void loadCamera(gltf::Node& node, gltf::Model& model, EntityId parent);
+		void loadEntity(gltf::Node& node, gltf::Model& model, EntityHandle parent);
+		void loadEntity3D(gltf::Node& node, gltf::Model& model, EntityHandle parent);
+		void loadIOmniLight(gltf::Node& node, gltf::Model& model, EntityHandle parent);
+		void loadCamera(gltf::Node& node, gltf::Model& model, EntityHandle parent);
 		
 	};
 }

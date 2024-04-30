@@ -1,4 +1,4 @@
 #include "HmckEntity.h"
 
-Hmck::EntityId Hmck::Entity::currentId = 1;
+Hmck::EntityHandle Hmck::Entity::currentId = 1;
 

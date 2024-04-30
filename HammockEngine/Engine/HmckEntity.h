@@ -16,7 +16,7 @@
 
 namespace Hmck
 {
-	typedef uint32_t EntityId;
+	typedef uint32_t EntityHandle;
 
 	class Entity
 	{
@@ -27,11 +27,11 @@ namespace Hmck
 
 		static void restIds() { currentId == 1; };
 
-		static EntityId currentId;
-		EntityId id;
+		static EntityHandle currentId;
+		EntityHandle id;
 		std::string name = "";
-		EntityId parent{};
-		std::vector<EntityId> children{};
+		EntityHandle parent{};
+		std::vector<EntityHandle> children{};
 		TransformComponent transform{};
 		bool visible = false;
 

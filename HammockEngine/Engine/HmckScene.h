@@ -55,10 +55,11 @@ namespace Hmck
 		Scene& operator=(const Scene&) = delete;
 
 		void update(); // TODO
+		void add(std::shared_ptr<Entity> entity);
 
 
 		std::shared_ptr<Entity> getRoot() { return entities[root]; }
-		std::shared_ptr<Entity> getEntity(EntityId id)
+		std::shared_ptr<Entity> getEntity(EntityHandle id)
 		{
 			if (entities.contains(id))
 			{
@@ -68,22 +69,23 @@ namespace Hmck
 			throw std::runtime_error("Entity with provided handle does not exist!");
 		}
 		Device& getDevice() { return device; }
+		EntityHandle getLastAdded() { return lastAdded; };
+		std::shared_ptr<Camera> getCamera(EntityHandle handle) { return cast<Entity, Camera>(getEntity(handle)); }
+		std::shared_ptr<Camera> getActiveCamera() { return getCamera(activeCamera); }
 
-		EntityId getLastAdded() { return lastAdded; };
 
-		void add(std::shared_ptr<Entity> entity);
+		
+		void setActiveCamera(EntityHandle handle) { activeCamera = activeCamera; }
 
 
-		void loadSkyboxTexture(SkyboxLoadSkyboxInfo loadInfo);
+
+		void loadSkyboxTexture(SkyboxLoadSkyboxInfo loadInfo); // TODO put this into separate loader
+
+	
 
 		
 
-		std::unordered_map<EntityId, std::shared_ptr<Entity>> entities{}; // TODO change EntityId to EntityHandle
-
-		
-
-		std::vector<EntityId> cameras;
-		
+		std::unordered_map<EntityHandle, std::shared_ptr<Entity>> entities{}; 
 
 		std::vector<Image> images;
 		std::vector<Texture> textures;
@@ -100,17 +102,18 @@ namespace Hmck
 		uint32_t skyboxVertexCount;
 		uint32_t skyboxIndexCount;
 
-		Camera camera{};
 		bool hasSkybox = false;
+		EntityHandle activeCamera = 0;
 		
 
 	private:
+		void addDefaultCamera();
+
 		Device& device;
 		MemoryManager& memory;
 
-		EntityId lastAdded = 0;
-
-		EntityId root;
-		uint32_t activeCamera;
+		std::vector<EntityHandle> cameras{};
+		EntityHandle lastAdded = 0;
+		EntityHandle root;
 	};
 }

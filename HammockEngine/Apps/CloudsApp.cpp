@@ -64,13 +64,8 @@ void Hmck::CloudsApp::run()
 		});
 
 	// camera and movement
-	scene->camera.setViewTarget({ 1.f, 1.f, -1.f }, { 0.f, 0.f, 0.f });
-	auto viewerObject = std::make_shared<Entity>();
-	viewerObject->transform.translation = { 0.f, 0.f, -5.f };
-	viewerObject->name = "Viewer object";
-	scene->add(viewerObject);
-
-
+	scene->getActiveCamera()->setViewTarget({ 0.f, 0.f, -6.f }, { 0.f, 0.f, 0.f });
+	
 	KeyboardMovementController cameraController{};
 	UserInterface ui{ device, renderer.getSwapChainRenderPass(), window };
 
@@ -89,10 +84,10 @@ void Hmck::CloudsApp::run()
 		elapsedTime += frameTime;
 
 		// camera
-		cameraController.moveInPlaneXZ(window, frameTime, viewerObject);
-		scene->camera.setViewYXZ(viewerObject->transform.translation, viewerObject->transform.rotation);
+		cameraController.moveInPlaneXZ(window, frameTime, scene->getActiveCamera());
 		float aspect = renderer.getAspectRatio();
-		scene->camera.setPerspectiveProjection(glm::radians(50.0f), aspect, 0.1f, 1000.f);
+		scene->getActiveCamera()->setPerspectiveProjection(glm::radians(50.0f), aspect, 0.1f, 1000.f);
+		scene->update();
 
 
 		// start a new frame
@@ -114,7 +109,7 @@ void Hmck::CloudsApp::run()
 			{
 				ui.beginUserInterface();
 				this->ui();
-				ui.showDebugStats(viewerObject);
+				ui.showDebugStats(scene->getActiveCamera());
 				ui.showWindowControls();
 				ui.showEntityInspector(scene);
 				ui.endUserInterface(commandBuffer);
@@ -146,6 +141,7 @@ void Hmck::CloudsApp::load()
 	};
 	GltfLoader gltfloader{ gltfinfo };
 	gltfloader.load(std::string(MODELS_DIR) + "Sphere/Sphere.glb");
+	scene->update();
 
 	vertexBuffer = memoryManager.createVertexBuffer({
 		.vertexSize = sizeof(scene->vertices[0]),
@@ -209,9 +205,9 @@ void Hmck::CloudsApp::draw(int frameIndex, float elapsedTime, VkCommandBuffer co
 
 	pipeline->bind(commandBuffer);
 
-	bufferData.projection = scene->camera.getProjection();
-	bufferData.view = scene->camera.getView();
-	bufferData.inverseView = scene->camera.getInverseView();
+	bufferData.projection = scene->getActiveCamera()->getProjection();
+	bufferData.view = scene->getActiveCamera()->getView();
+	bufferData.inverseView = scene->getActiveCamera()->getInverseView();
 	
 	memoryManager.getBuffer(uniformBuffers[frameIndex])->writeToBuffer(&bufferData);
 
