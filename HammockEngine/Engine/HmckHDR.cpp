@@ -12,9 +12,11 @@ void Hmck::EnvironmentLoader::load(std::string filepath)
 		throw std::runtime_error("Failed to load image from disk");
 	}
 
+	channels = 4;
+
 	environment->evironmentMap = memory.createTexture2DFromBuffer({
 		.buffer = pixels,
-		.bufferSize = static_cast<uint32_t>(width * height * 4),
+		.bufferSize = static_cast<uint32_t>(width * height * channels),
 		.width = static_cast<uint32_t>(width), .height = static_cast<uint32_t>(height),
 		.format = VK_FORMAT_R8G8B8A8_UNORM
 		});
@@ -26,6 +28,8 @@ void Hmck::EnvironmentLoader::load(std::string filepath)
 
 void Hmck::EnvironmentLoader::calculateIrradianceMap(unsigned char* buffer)
 {
+	// TODO implement the irradiance map calculation
+	// buffer is environment map buffer
 }
 
 void Hmck::EnvironmentLoader::calculatePrefilterMap(unsigned char* buffer)
