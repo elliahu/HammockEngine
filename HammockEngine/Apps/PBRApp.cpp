@@ -19,7 +19,11 @@ void Hmck::PBRApp::run()
 	init();
 	createPipelines(renderer);
 
-	//scene->getActiveCamera()->setViewTarget({1.f, 1.f, -1.f}, {0.f, 0.f, 0.f});
+	scene->getActiveCamera()->setViewTarget({0.f, 0.f, -1.f}, {0.f, 0.f, 0.f});
+
+	std::shared_ptr<OmniLight> light = std::make_shared<OmniLight>();
+	light->transform.translation = { 0.0f, 2.0f, -2.0f };
+	scene->add(light);
 
 	auto currentTime = std::chrono::high_resolution_clock::now();
 	while (!window.shouldClose())
@@ -152,7 +156,7 @@ void Hmck::PBRApp::load()
 		.device = device,
 		.memory = memoryManager,
 		.name = "Volumetric scene",
-		.environment = "../../Resources/env/ibl/small_empty_room_1_4k.hdr"
+		.environment = "../../Resources/env/ibl/kloppenheim_02_4k.hdr"
 	};
 	scene = std::make_unique<Scene>(info);
 

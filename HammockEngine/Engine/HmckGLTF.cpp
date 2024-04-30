@@ -273,8 +273,6 @@ void Hmck::GltfLoader::loadEntity(gltf::Node& node, gltf::Model& model, EntityHa
 	};
 
 	if (parent > 0) {
-		scene->getEntity(parent)->children.push_back(entity->id);
-		entity->parent = parent;
 	}
 
 
@@ -426,8 +424,6 @@ void Hmck::GltfLoader::loadEntity3D(gltf::Node& node, gltf::Model& model, Entity
 	entity->mesh.name = mesh.name;
 
 	if (parent > 0) {
-		scene->getEntity(parent)->children.push_back(entity->id);
-		entity->parent = parent;
 	}
 
 
@@ -478,8 +474,6 @@ void Hmck::GltfLoader::loadIOmniLight(gltf::Node& node, gltf::Model& model, Enti
 	}
 
 	if (parent > 0) {
-		scene->getEntity(parent)->children.push_back(light->id);
-		light->parent = parent;
 	}
 }
 

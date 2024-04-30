@@ -37,9 +37,9 @@ namespace Hmck
 		std::shared_ptr<Environment> environment;
 		int width, height, channels;
 
-		void calculateIrradianceMap(unsigned char* buffer);
-		void calculatePrefilterMap(unsigned char* buffer);
-		void calculateBrdfLUT(unsigned char* buffer);
+		void calculateIrradianceMap(float* buffer);
+		void calculatePrefilterMap(float* buffer);
+		void calculateBrdfLUT(float* buffer);
 	};
 
 	
