@@ -24,7 +24,6 @@ void Hmck::GltfLoader::load(std::string filename)
 	std::string err;
 	std::string warn;
 
-
 	bool loaded = false;
 	if (isBinary(filename))
 	{
@@ -49,12 +48,13 @@ void Hmck::GltfLoader::load(std::string filename)
 		std::cerr << "Failed to parse glTF\n";
 	}
 
+	imagesOffset = scene->images.size();
+	texturesOffset = scene->textures.size();
+	materialsOffset = scene->materials.size();
 
 	loadImages(model);
 	loadTextures(model);
 	loadMaterials(model);
-
-
 	loadEntities(model);
 }
 
@@ -238,7 +238,6 @@ void Hmck::GltfLoader::loadEntity(gltf::Node& node, gltf::Model& model, EntityHa
 	std::shared_ptr<Entity> entity = std::make_shared<Entity>();
 	entity->parent = parent;
 	entity->name = node.name;
-
 	scene->add(entity);
 
 
@@ -271,11 +270,6 @@ void Hmck::GltfLoader::loadEntity(gltf::Node& node, gltf::Model& model, EntityHa
 		entity->transform.rotation = glm::eulerAngles(rotation);
 		entity->transform.translation = translation;
 	};
-
-	if (parent > 0) {
-	}
-
-
 }
 
 void Hmck::GltfLoader::loadEntity3D(gltf::Node& node, gltf::Model& model, EntityHandle parent)
@@ -422,11 +416,6 @@ void Hmck::GltfLoader::loadEntity3D(gltf::Node& node, gltf::Model& model, Entity
 		entity->mesh.primitives.push_back(primitive);
 	}
 	entity->mesh.name = mesh.name;
-
-	if (parent > 0) {
-	}
-
-
 }
 
 void Hmck::GltfLoader::loadIOmniLight(gltf::Node& node, gltf::Model& model, EntityHandle parent)
@@ -434,7 +423,6 @@ void Hmck::GltfLoader::loadIOmniLight(gltf::Node& node, gltf::Model& model, Enti
 	std::shared_ptr<OmniLight> light = std::make_shared<OmniLight>();
 	light->parent = parent;
 	light->name = node.name;
-
 	scene->add(light);
 
 	if (node.translation.size() == 3) {
@@ -472,9 +460,6 @@ void Hmck::GltfLoader::loadIOmniLight(gltf::Node& node, gltf::Model& model, Enti
 			light->color = { l.color[0], l.color[1], l.color[2] };
 		}
 	}
-
-	if (parent > 0) {
-	}
 }
 
 void Hmck::GltfLoader::loadCamera(gltf::Node& node, gltf::Model& model, EntityHandle parent)
@@ -484,7 +469,6 @@ void Hmck::GltfLoader::loadCamera(gltf::Node& node, gltf::Model& model, EntityHa
 	std::shared_ptr<Camera> camera = std::make_shared<Camera>();
 	camera->parent = parent;
 	camera->name = node.name;
-
 	scene->add(camera);
 
 
@@ -555,12 +539,6 @@ void Hmck::GltfLoader::loadCamera(gltf::Node& node, gltf::Model& model, EntityHa
 		float _near = ortho.znear;        // Near bound
 		float _far = ortho.zfar;          // Far bound
 		camera->setOrthographicProjection(left, right, top, bottom, _near, _far);
-	}
-	
-
-	if (parent > 0) {
-		scene->getEntity(parent)->children.push_back(camera->id);
-		camera->parent = parent;
 	}
 }
 

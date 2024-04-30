@@ -310,6 +310,8 @@ void Hmck::UserInterface::inspectEntity(std::shared_ptr<Entity> entity, std::uni
 		prefix = "3D";
 	else if (isInstanceOf<Entity, OmniLight>(entity))
 		prefix = "L";
+	else if (isInstanceOf<Entity, Camera>(entity))
+		prefix = "C";
 	else prefix = "O";
 
 	name = prefix + " | " + name;
