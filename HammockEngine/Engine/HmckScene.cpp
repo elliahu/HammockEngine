@@ -39,18 +39,6 @@ void Hmck::Scene::destroy()
 	environment->destroy(memory);
 }
 
-void Hmck::Scene::update()
-{
-	if (cameras.size() == 0) addDefaultCamera();
-	if (activeCamera == 0) activeCamera = cameras[0];
-
-	for (auto& idx : cameras)
-	{
-		auto camera = getCamera(idx);
-		camera->setViewYXZ(camera->transform.translation, camera->transform.rotation);
-	}
-}
-
 
 void Hmck::Scene::add(std::shared_ptr<Entity> entity)
 {
@@ -59,12 +47,4 @@ void Hmck::Scene::add(std::shared_ptr<Entity> entity)
 	lastAdded = entity->id;
 }
 
-void Hmck::Scene::addDefaultCamera()
-{
-	auto camera = std::make_shared<Camera>();
-	camera->setViewYXZ(camera->transform.translation, camera->transform.rotation);
-	camera->setPerspectiveProjection(glm::radians(50.0f), 16.f / 9.f, 0.1f, 1000.f);
-	add(camera);
-	cameras.push_back(camera->id);
-}
 

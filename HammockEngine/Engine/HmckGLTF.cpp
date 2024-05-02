@@ -221,6 +221,10 @@ void Hmck::GltfLoader::loadEntitiesRecursive(gltf::Node& node, gltf::Model& mode
 	{
 		loadIOmniLight(node, model, parent);
 	}
+	else if (isCamera(node))
+	{
+		loadCamera(node, model, parent);
+	}
 	else 
 	{
 		loadEntity(node, model, parent);
@@ -470,7 +474,7 @@ void Hmck::GltfLoader::loadCamera(gltf::Node& node, gltf::Model& model, EntityHa
 	camera->parent = parent;
 	camera->name = node.name;
 	scene->add(camera);
-
+	scene->cameras.push_back(camera->id);
 
 	if (node.translation.size() == 3) {
 		camera->transform.translation = glm::vec3(glm::make_vec3(node.translation.data()));
@@ -508,22 +512,6 @@ void Hmck::GltfLoader::loadCamera(gltf::Node& node, gltf::Model& model, EntityHa
 	if (cameraNode.type == "perspective")
 	{
 		camera->setPerspectiveProjection(cameraNode.perspective.yfov, cameraNode.perspective.aspectRatio, cameraNode.perspective.znear, cameraNode.perspective.zfar);
-		glm::vec3 position = camera->transform.translation;
-		// Get camera rotation (Euler angles)
-		glm::vec3 rotation = camera->transform.rotation;
-
-		// Get up vector (0, 1, 0)
-		glm::vec3 upVector(0.0f, 1.0f, 0.0f);
-
-		// Convert rotation to rotation matrix
-		glm::mat4 rotationMatrix = glm::eulerAngleYXZ(rotation.y, rotation.x, rotation.z);
-
-		// Multiply rotation matrix by up vector to get camera's forward direction
-		glm::vec3 forwardDirection = glm::normalize(glm::vec3(rotationMatrix * glm::vec4(0.0f, 0.0f, -1.0f, 0.0f)));
-
-		// Compute target point by adding forward direction to position
-		glm::vec3 target = position + forwardDirection;
-		camera->setViewTarget(camera->transform.translation, target);
 	}
 
 	if (cameraNode.type == "orthographic")

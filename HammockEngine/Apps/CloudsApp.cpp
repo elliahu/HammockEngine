@@ -65,6 +65,7 @@ void Hmck::CloudsApp::run()
 
 	// camera and movement
 	scene->getActiveCamera()->setViewTarget({ 0.f, 0.f, -6.f }, { 0.f, 0.f, 0.f });
+	scene->getActiveCamera()->setPerspectiveProjection(glm::radians(50.0f), renderer.getAspectRatio(), 0.1f, 1000.f);
 	
 	KeyboardMovementController cameraController{};
 	UserInterface ui{ device, renderer.getSwapChainRenderPass(), window };
@@ -85,9 +86,7 @@ void Hmck::CloudsApp::run()
 
 		// camera
 		cameraController.moveInPlaneXZ(window, frameTime, scene->getActiveCamera());
-		float aspect = renderer.getAspectRatio();
-		scene->getActiveCamera()->setPerspectiveProjection(glm::radians(50.0f), aspect, 0.1f, 1000.f);
-		scene->update();
+		scene->getActiveCamera()->update();
 
 
 		// start a new frame
@@ -141,7 +140,6 @@ void Hmck::CloudsApp::load()
 	};
 	GltfLoader gltfloader{ gltfinfo };
 	gltfloader.load(std::string(MODELS_DIR) + "Sphere/Sphere.glb");
-	scene->update();
 
 	vertexBuffer = memoryManager.createVertexBuffer({
 		.vertexSize = sizeof(scene->vertices[0]),

@@ -19,7 +19,8 @@ void Hmck::PBRApp::run()
 	init();
 	createPipelines(renderer);
 
-	scene->getActiveCamera()->setViewTarget({0.f, 0.f, -1.f}, {0.f, 0.f, 0.f});
+
+	scene->getActiveCamera()->setPerspectiveProjection(glm::radians(50.0f), renderer.getAspectRatio(), 0.1f, 1000.f);
 
 	std::shared_ptr<OmniLight> light = std::make_shared<OmniLight>();
 	light->transform.translation = { 0.0f, 2.0f, -2.0f };
@@ -38,23 +39,14 @@ void Hmck::PBRApp::run()
 
 		// camera
 		cameraController.moveInPlaneXZ(window, frameTime, scene->getActiveCamera());
-		float aspect = renderer.getAspectRatio();
-		scene->getActiveCamera()->setPerspectiveProjection(glm::radians(50.0f), aspect, 0.1f, 1000.f);
-		scene->update();
+		scene->getActiveCamera()->update();
 
 		// start a new frame
 		if (auto commandBuffer = renderer.beginFrame())
 		{
 			int frameIndex = renderer.getFrameIndex();
 
-			
-
-			vkCmdSetDepthBias(
-				commandBuffer,
-				1.25f,
-				0.0f,
-				1.75f);
-
+			vkCmdSetDepthBias(commandBuffer, 1.25f, 0.0f, 1.75f);
 
 			renderer.beginRenderPass(gbufferFramebuffer, commandBuffer, {
 					{.color = { 0.0f, 0.0f, 0.0f, 0.0f } },
@@ -63,11 +55,7 @@ void Hmck::PBRApp::run()
 					{.color = { 0.0f, 0.0f, 0.0f, 0.0f } },
 					{.depthStencil = { 1.0f, 0 }} });
 
-			
-
-			
 			// write env data
-			
 			EnvironmentBufferData envData{};
 			uint32_t ldx = 0;
 			for (int i = 0; i < scene->entities.size(); i++)
@@ -168,8 +156,6 @@ void Hmck::PBRApp::load()
 	GltfLoader gltfloader{ gltfinfo };
 	gltfloader.load(std::string(MODELS_DIR) + "sponza/sponza_lights.glb");
 	gltfloader.load(std::string(MODELS_DIR) + "helmet/helmet.glb");
-	
-	scene->update();
 	
 
 	vertexBuffer = memoryManager.createVertexBuffer({

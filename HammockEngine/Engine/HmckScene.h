@@ -51,7 +51,6 @@ namespace Hmck
 		Scene(const Scene&) = delete;
 		Scene& operator=(const Scene&) = delete;
 
-		void update(); // TODO
 		void add(std::shared_ptr<Entity> entity);
 
 
@@ -72,7 +71,7 @@ namespace Hmck
 
 
 		
-		void setActiveCamera(EntityHandle handle) { activeCamera = activeCamera; }
+		void setActiveCamera(EntityHandle handle) { activeCamera = handle; }
 
 		std::unordered_map<EntityHandle, std::shared_ptr<Entity>> entities{}; 
 
@@ -88,15 +87,13 @@ namespace Hmck
 		std::shared_ptr<Environment> environment;
 
 		EntityHandle activeCamera = 0;
+		std::vector<EntityHandle> cameras{};
 		
 
 	private:
-		void addDefaultCamera();
 
 		Device& device;
 		MemoryManager& memory;
-
-		std::vector<EntityHandle> cameras{};
 		EntityHandle lastAdded = 0;
 		EntityHandle root;
 	};

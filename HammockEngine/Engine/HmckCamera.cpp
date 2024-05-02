@@ -9,6 +9,13 @@ void Hmck::Camera::setOrthographicProjection(float left, float right, float top,
 	projectionMatrix[3][0] = -(right + left) / (right - left);
 	projectionMatrix[3][1] = -(bottom + top) / (bottom - top);
 	projectionMatrix[3][2] = -_near / (_far - _near);
+
+	this->left = left;
+	this->right = right;
+	this->top = top;
+	this->bottom = bottom;
+	this->_near = _near;
+	this->_far = _far;
 }
 
 void Hmck::Camera::setPerspectiveProjection(float fovy, float aspect, float _near, float _far)
@@ -25,11 +32,27 @@ void Hmck::Camera::setPerspectiveProjection(float fovy, float aspect, float _nea
 	{
 		projectionMatrix[1][1] *= -1.0f;
 	}
+	
+	this->fovy = fovy;
+	this->aspect = aspect;
+	this->_near = _near;
+	this->_far = _far;
 }
 
 void Hmck::Camera::setViewDirection(
 	glm::vec3 position, glm::vec3 direction, glm::vec3 up)
 {
+	transform.translation = position;
+
+	viewMatrix = glm::lookAt(position, position + direction, up);
+	inverseViewMatrix = glm::inverse(viewMatrix);
+
+	// Convert rotation matrix to euler angles
+	glm::vec3 euler = glm::degrees(glm::eulerAngles(glm::quat_cast(viewMatrix)));
+
+	// Set the transform.rotation
+	transform.rotation = euler;
+
 	const glm::vec3 w{ glm::normalize(direction) };
 	const glm::vec3 u{ glm::normalize(glm::cross(w, up)) };
 	const glm::vec3 v{ glm::cross(w, u) };
@@ -73,6 +96,9 @@ void Hmck::Camera::setViewTarget(
 
 void Hmck::Camera::setViewYXZ(glm::vec3 position, glm::vec3 rotation)
 {
+	transform.translation = position;
+	transform.rotation = rotation;
+
 	const float c3 = glm::cos(rotation.z);
 	const float s3 = glm::sin(rotation.z);
 	const float c2 = glm::cos(rotation.x);
@@ -109,5 +135,20 @@ void Hmck::Camera::setViewYXZ(glm::vec3 position, glm::vec3 rotation)
 	inverseViewMatrix[3][0] = position.x;
 	inverseViewMatrix[3][1] = position.y;
 	inverseViewMatrix[3][2] = position.z;
+}
+
+void Hmck::Camera::update()
+{
+	// Update projectionMatrix
+	if (projectionType == ProjectionType::Orthographic)
+	{
+		setOrthographicProjection(left, right, top, bottom, _near, _far);
+	}
+	else if (projectionType == ProjectionType::Perspective)
+	{
+		setPerspectiveProjection(fovy, aspect, _near, _far);
+	}
+
+	setViewYXZ(transform.translation, transform.rotation);
 }
 
