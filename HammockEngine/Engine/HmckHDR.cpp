@@ -1,6 +1,18 @@
 #include "HmckHDR.h"
 
-
+void Hmck::EnvironmentLoader::load(EnvironmentCreateInfo createInfo)
+{
+    if (!createInfo.prefilteredMapPath.empty())
+    {
+        loadHDR(createInfo.prefilteredMapPath, EnvironmentLoader::MapUsage::Prefiltered);
+        loadHDR(createInfo.irradianceMapPath, EnvironmentLoader::MapUsage::Irradiance);
+        loadHDR(createInfo.brdfLUTPath, EnvironmentLoader::MapUsage::BRDFLUT);
+    }
+    else if (!createInfo.environmentMapPath.empty())
+    {
+        load(createInfo.environmentMapPath);
+    }
+}
 
 void Hmck::EnvironmentLoader::load(std::string filepath)
 {

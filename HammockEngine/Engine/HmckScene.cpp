@@ -8,19 +8,6 @@ Hmck::Scene::Scene(SceneCreateInfo createInfo): device{createInfo.device}, memor
 	root = e->id;
 	entities.emplace(e->id, std::move(e));
 	environment = std::make_shared<Environment>();
-
-	EnvironmentLoader loader{ device, memory, environment };
-
-	if (!createInfo.environmentInfo.prefilteredMapPath.empty())
-	{
-		loader.loadHDR(createInfo.environmentInfo.prefilteredMapPath, EnvironmentLoader::MapUsage::Prefiltered);
-		loader.loadHDR(createInfo.environmentInfo.irradianceMapPath, EnvironmentLoader::MapUsage::Irradiance);
-		loader.loadHDR(createInfo.environmentInfo.brdfLUTPath, EnvironmentLoader::MapUsage::BRDFLUT);
-	}
-	else if (!createInfo.environmentInfo.environmentMapPath.empty())
-	{
-		loader.load(createInfo.environmentInfo.environmentMapPath);
-	}
 }
 
 Hmck::Scene::~Scene()

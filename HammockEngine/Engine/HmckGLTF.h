@@ -24,15 +24,7 @@ namespace Hmck
 	class GltfLoader
 	{
 	public:
-
-		struct GltfLoaderCreateInfo
-		{
-			Device& device;
-			MemoryManager& memory;
-			std::unique_ptr<Scene>& scene;
-		};
-		
-		GltfLoader(GltfLoaderCreateInfo createInfo);
+		GltfLoader(Device& device, MemoryManager& memory, std::unique_ptr<Scene>& scene);
 
 		void load(std::string filename);
 

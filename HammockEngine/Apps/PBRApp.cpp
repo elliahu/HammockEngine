@@ -142,24 +142,18 @@ void Hmck::PBRApp::run()
 
 void Hmck::PBRApp::load()
 {
-	Scene::SceneCreateInfo info = {
+	scene = std::make_unique<Scene>(Scene::SceneCreateInfo{
 		.device = device,
 		.memory = memoryManager,
-		.name = "Volumetric scene",
-		.environmentInfo = {
+		.name = "Physically based rendering demo",});
+
+	EnvironmentLoader loader{ device, memoryManager, scene->environment };
+	loader.load({
 			.prefilteredMapPath = "../../Resources/env/ibl/precomp/lebombo_prefiltered_map.hdr",
 			.irradianceMapPath = "../../Resources/env/ibl/precomp/lebombo_irradiance_map.hdr",
-			.brdfLUTPath = "../../Resources/env/ibl/precomp/brdf_integration_map_ct_ggx.hdr",
-		}
-	};
-	scene = std::make_unique<Scene>(info);
+			.brdfLUTPath = "../../Resources/env/ibl/precomp/brdf_integration_map_ct_ggx.hdr",});
 
-	GltfLoader::GltfLoaderCreateInfo gltfinfo{
-			.device = device,
-			.memory = memoryManager,
-			.scene = scene
-		};
-	GltfLoader gltfloader{ gltfinfo };
+	GltfLoader gltfloader{ device, memoryManager, scene };
 	//gltfloader.load(std::string(MODELS_DIR) + "sponza/sponza_lights.glb");
 	gltfloader.load(std::string(MODELS_DIR) + "helmet/DamagedHelmet.glb");
 	//gltfloader.load(std::string(MODELS_DIR) + "helmet/helmet.glb");

@@ -136,12 +136,7 @@ void Hmck::CloudsApp::load()
 	};
 	scene = std::make_unique<Scene>(info);
 
-	GltfLoader::GltfLoaderCreateInfo gltfinfo{
-		.device = device,
-		.memory = memoryManager,
-		.scene = scene
-	};
-	GltfLoader gltfloader{ gltfinfo };
+	GltfLoader gltfloader{ device, memoryManager, scene };
 	gltfloader.load(std::string(MODELS_DIR) + "Sphere/Sphere.glb");
 
 	vertexBuffer = memoryManager.createVertexBuffer({

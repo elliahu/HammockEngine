@@ -7,10 +7,10 @@
 
 namespace gltf = tinygltf;
 
-Hmck::GltfLoader::GltfLoader(GltfLoaderCreateInfo createInfo) :
-	device{ createInfo.device },
-	memory{ createInfo.memory },
-	scene{ createInfo.scene }
+Hmck::GltfLoader::GltfLoader(Device& device, MemoryManager& memory, std::unique_ptr<Scene>& scene) :
+	device{ device },
+	memory{ memory },
+	scene{ scene }
 {
 	imagesOffset = scene->images.size();
 	texturesOffset = scene->textures.size();

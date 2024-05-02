@@ -33,6 +33,15 @@ namespace Hmck
 		
 		EnvironmentLoader(Device& device, MemoryManager& memory, std::shared_ptr<Environment> environment) :device{ device }, memory{ memory }, environment { environment } {}
 
+		struct EnvironmentCreateInfo
+		{
+			std::string environmentMapPath = "";
+			std::string prefilteredMapPath = "";
+			std::string irradianceMapPath = "";
+			std::string brdfLUTPath = "";
+		};
+		void load(EnvironmentCreateInfo createInfo);
+
 		void load(std::string filepath);
 		void loadHDR(std::string filepath, MapUsage mapUsage);
 

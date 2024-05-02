@@ -135,12 +135,7 @@ void Hmck::RaymarchingDemoApp::load()
 	};
 	scene = std::make_unique<Scene>(info);
 
-	GltfLoader::GltfLoaderCreateInfo gltfinfo{
-		.device = device,
-		.memory = memoryManager,
-		.scene = scene
-	};
-	GltfLoader gltfloader{ gltfinfo };
+	GltfLoader gltfloader{ device, memoryManager, scene };
 	gltfloader.load(std::string(MODELS_DIR) + "Sphere/Sphere.glb");
 
 	descriptorSets.resize(SwapChain::MAX_FRAMES_IN_FLIGHT);

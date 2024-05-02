@@ -24,29 +24,11 @@ namespace Hmck
 	{
 	public:
 
-		struct SceneLoadFileInfo
-		{
-			std::string filename;
-			std::string name{};
-			glm::vec3 translation{ 0 };
-			glm::vec3 rotation{ 0 };
-			glm::vec3 scale{ 1 };
-		};
-
-		struct EnvironmentCreateInfo
-		{
-			std::string environmentMapPath = "";
-			std::string prefilteredMapPath = "";
-			std::string irradianceMapPath = "";
-			std::string brdfLUTPath = "";
-		};
-
 		struct SceneCreateInfo
 		{
 			Device& device;
 			MemoryManager& memory;
 			std::string name;
-			EnvironmentCreateInfo environmentInfo{};
 		};
 
 		// TODO make builder as well
