@@ -57,14 +57,14 @@ float fbm(vec3 p) {
   return f;
 }
 
-float sdSphere(vec3 p, float radius) {
+float SDF(vec3 p, float radius) {
     return length(p) - radius;
 }
 
 #define RADIUS 2.0
 
-float scene(vec3 p) {
- float distance = sdSphere(p, RADIUS);
+float density(vec3 p) {
+ float distance = SDF(p, RADIUS);
 
   float f = fbm(p);
 
@@ -80,13 +80,11 @@ vec4 raymarch(vec3 rayOrigin, vec3 rayDirection) {
   vec4 res = vec4(0.0);
 
   for (int i = 0; i < push.maxSteps; i++) {
-    float transmittance = scene(p);
+    float transmittance = density(p);
 
-    // We only draw the transmittance if it's greater than 0
     if (transmittance > 0.0) {
-      // Directional derivative
-      // For fast diffuse lighting
-      float diffuse = clamp((scene(p) - scene(p + 0.3 * sunDirection)) / 0.3, 0.0, 1.0 );
+      // Directional derivative for fast diffuse lighting
+      float diffuse = clamp((density(p) - density(p + 0.3 * sunDirection)) / 0.3, 0.0, 1.0 );
       vec3 lin = vec3(0.60,0.60,0.75) * 1.1 + 0.8 * vec3(1.0,0.6,0.3) * diffuse;
       vec4 color = vec4(mix(vec3(1.0, 1.0, 1.0), vec3(0.0, 0.0, 0.0), transmittance), transmittance );
       color.rgb *= lin;
@@ -110,7 +108,7 @@ void main() {
     uv.y *= -1.0;
 
     // Ray Origin - camera
-    vec3 ro = data.inverseView[3].xyz; // scene.inverseView[3].xyz is camera position
+    vec3 ro = data.inverseView[3].xyz; // data.inverseView[3].xyz is camera position
 
     // Ray Direction
     vec3 rd = normalize(vec3(uv, 1.0));

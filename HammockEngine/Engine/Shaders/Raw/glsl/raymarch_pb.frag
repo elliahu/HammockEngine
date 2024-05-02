@@ -73,7 +73,7 @@ float SDF(vec3 p, float radius) {
     return length(p) - radius;
 }
 
-float scene(vec3 p, bool lowRes) {
+float density(vec3 p, bool lowRes) {
   float distance = SDF(p, 1.2);
 
   float f = fbm(p, lowRes);
@@ -93,7 +93,7 @@ float lightmarch(vec3 position, vec3 rayDirection) {
   for (int step = 0; step < push.maxStepsLight; step++) {
       position += lightDirection * marchSize * float(step);
 
-      float lightSample = scene(position, true);
+      float lightSample = density(position, true);
       totalDensity += lightSample;
   }
 
@@ -118,7 +118,7 @@ float raymarch(vec3 rayOrigin, vec3 rayDirection, float offset) {
   float phase = HenyeyGreenstein(push.scatteringAniso, dot(rayDirection, sunDirection));
 
   for (int i = 0; i < push.maxSteps; i++) {
-    float density = scene(p, false);
+    float density = density(p, false);
 
     // We only draw the transmittance if it's greater than 0
     if (density > 0.0) {
