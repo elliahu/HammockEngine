@@ -164,8 +164,12 @@ void Hmck::EnvironmentLoader::calculateBrdfLUT(float* buffer)
 
 void Hmck::Environment::destroy(MemoryManager& memory)
 {
-	//memory.destroyTexture2D(evironmentMap);
-    memory.destroyTexture2D(prefilterMap);
-    memory.destroyTexture2D(irradianceMap);
-    memory.destroyTexture2D(brdfLUT);
+    if(evironmentMap > 0)
+	    memory.destroyTexture2D(evironmentMap);
+    if (prefilterMap > 0)
+        memory.destroyTexture2D(prefilterMap);
+    if (irradianceMap > 0)
+        memory.destroyTexture2D(irradianceMap);
+    if (brdfLUT > 0)
+        memory.destroyTexture2D(brdfLUT);
 }

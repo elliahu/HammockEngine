@@ -32,15 +32,11 @@ The following NuGet packages are used:
 - [GLM](https://github.com/g-truc/glm) - Linear algebra lib for matrix and vector operations (may switch to handmade math later as it is much lighter)
 - [GLFW](https://www.glfw.org/) - Window creation and input handling
 
-![Sponza](https://raw.githubusercontent.com/elliahu/HammockEngine/master/Img/sponza.png)
-![Sponza2](https://raw.githubusercontent.com/elliahu/HammockEngine/master/Img/sponza2.png)
-![Sponza3](https://raw.githubusercontent.com/elliahu/HammockEngine/master/Img/sponza3.png)
-![Sponza4](https://raw.githubusercontent.com/elliahu/HammockEngine/master/Img/sponza4.png)
-### Screen space ambient occlusion
-![SSAO](https://raw.githubusercontent.com/elliahu/HammockEngine/master/Img/ssao.png)
-### glTF 2.0 model
+
 ![glTF 2.0](https://raw.githubusercontent.com/elliahu/HammockEngine/master/Img/IBL.png)
-### Vulumetrics
-![Volumetrics](https://raw.githubusercontent.com/elliahu/HammockEngine/master/Img/clouds.png)
+![Cloud](https://raw.githubusercontent.com/elliahu/HammockEngine/master/Img/cloud.png)
+![Smoke](https://raw.githubusercontent.com/elliahu/HammockEngine/master/Img/smoke.png)
+![Sponza4](https://raw.githubusercontent.com/elliahu/HammockEngine/master/Img/sponza4.png)
+![SSAO](https://raw.githubusercontent.com/elliahu/HammockEngine/master/Img/ssao.png)
 
 

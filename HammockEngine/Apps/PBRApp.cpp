@@ -161,8 +161,8 @@ void Hmck::PBRApp::load()
 		};
 	GltfLoader gltfloader{ gltfinfo };
 	//gltfloader.load(std::string(MODELS_DIR) + "sponza/sponza_lights.glb");
-	//gltfloader.load(std::string(MODELS_DIR) + "helmet/DamagedHelmet.glb");
-	gltfloader.load(std::string(MODELS_DIR) + "helmet/helmet.glb");
+	gltfloader.load(std::string(MODELS_DIR) + "helmet/DamagedHelmet.glb");
+	//gltfloader.load(std::string(MODELS_DIR) + "helmet/helmet.glb");
 	
 
 	vertexBuffer = memoryManager.createVertexBuffer({

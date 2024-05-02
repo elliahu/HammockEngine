@@ -62,7 +62,10 @@ void Hmck::RaymarchingDemoApp::run()
 		});
 
 	// camera and movement
-	scene->getActiveCamera()->setViewTarget({ 0.f, 0.f, -6.f }, { 0.f, 0.f, 0.f });
+	auto camera = std::make_shared<Camera>();
+	camera->transform.translation = { 0.f, 0.f, -6.f };
+	scene->add(camera);
+	scene->setActiveCamera(camera->id);
 	scene->getActiveCamera()->setPerspectiveProjection(glm::radians(50.0f), renderer.getAspectRatio(), 0.1f, 1000.f);
 
 	KeyboardMovementController cameraController{};
