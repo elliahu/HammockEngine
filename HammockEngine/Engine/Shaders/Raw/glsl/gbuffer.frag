@@ -87,7 +87,13 @@ void main()
 	else
 		metallic = texture(textures[material.metallicRoughnessTextureIndex], uv).b;
 
-    _material = vec4(roughness, metallic, 0.0, 1.0);
+	float ao;
+	if(material.occlusionTextureIndex == INVALID_TEXTURE)
+		ao = 1.0;
+	else 
+		ao = texture(textures[material.occlusionTextureIndex], uv).r;
+
+    _material = vec4(roughness, metallic, ao, 1.0);
 
 	if (material.alphaCutoff < 0.5) {
 		discard;

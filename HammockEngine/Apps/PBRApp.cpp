@@ -160,7 +160,7 @@ void Hmck::PBRApp::load()
 			.scene = scene
 		};
 	GltfLoader gltfloader{ gltfinfo };
-	//gltfloader.load(std::string(MODELS_DIR) + "sponza/sponza_lights.glb");
+	gltfloader.load(std::string(MODELS_DIR) + "sponza/sponza_lights.glb");
 	gltfloader.load(std::string(MODELS_DIR) + "helmet/DamagedHelmet.glb");
 	//gltfloader.load(std::string(MODELS_DIR) + "helmet/helmet.glb");
 	

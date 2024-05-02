@@ -174,7 +174,7 @@ void main()
 	// Ambient part
 	vec3 kD = 1.0 - F;
 	kD *= 1.0 - metallic;	  
-	vec3 ambient = (kD * diffuse + specular);
+	vec3 ambient = (kD * diffuse + specular) * vec3(ao);;
 	
 	vec3 color = ambient + Lo;
 

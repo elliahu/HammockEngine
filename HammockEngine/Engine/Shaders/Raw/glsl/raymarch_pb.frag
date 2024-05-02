@@ -69,12 +69,12 @@ float fbm(vec3 p, bool lowRes) {
   return f;
 }
 
-float sdSphere(vec3 p, float radius) {
+float SDF(vec3 p, float radius) {
     return length(p) - radius;
 }
 
 float scene(vec3 p, bool lowRes) {
-  float distance = sdSphere(p, 1.2);
+  float distance = SDF(p, 1.2);
 
   float f = fbm(p, lowRes);
 
