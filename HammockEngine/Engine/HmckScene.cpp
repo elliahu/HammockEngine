@@ -7,20 +7,19 @@ Hmck::Scene::Scene(SceneCreateInfo createInfo): device{createInfo.device}, memor
 	e->name = "Root";
 	root = e->id;
 	entities.emplace(e->id, std::move(e));
+	environment = std::make_shared<Environment>();
 
-	if (!createInfo.environment.empty())
+	EnvironmentLoader loader{ device, memory, environment };
+
+	if (!createInfo.environmentInfo.prefilteredMapPath.empty())
 	{
-		environment = std::make_shared<Environment>();
-
-		EnvironmentLoader loader{ device, memory, environment };
-		if (hasExtension(createInfo.environment, ".hdr"))
-		{
-			loader.loadHDR(createInfo.environment);
-		}
-		else
-		{
-			loader.load(createInfo.environment);
-		}
+		loader.loadHDR(createInfo.environmentInfo.prefilteredMapPath, EnvironmentLoader::MapUsage::Prefiltered);
+		loader.loadHDR(createInfo.environmentInfo.irradianceMapPath, EnvironmentLoader::MapUsage::Irradiance);
+		loader.loadHDR(createInfo.environmentInfo.brdfLUTPath, EnvironmentLoader::MapUsage::BRDFLUT);
+	}
+	else if (!createInfo.environmentInfo.environmentMapPath.empty())
+	{
+		loader.load(createInfo.environmentInfo.environmentMapPath);
 	}
 }
 
@@ -45,6 +44,10 @@ void Hmck::Scene::add(std::shared_ptr<Entity> entity)
 	entities.emplace(entity->id, entity);
 	getRoot()->children.push_back(entity->id);
 	lastAdded = entity->id;
+	if (isInstanceOf<Entity, Camera>(entity))
+	{
+		cameras.push_back(entity->id);
+	}
 }
 
 

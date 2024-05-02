@@ -38,7 +38,7 @@ The following NuGet packages are used:
 ### Screen space ambient occlusion
 ![SSAO](https://raw.githubusercontent.com/elliahu/HammockEngine/master/Img/ssao.png)
 ### glTF 2.0 model
-![glTF 2.0](https://raw.githubusercontent.com/elliahu/HammockEngine/master/Img/pbr2.png)
+![glTF 2.0](https://raw.githubusercontent.com/elliahu/HammockEngine/master/Img/IBL.png)
 ### Vulumetrics
 ![Volumetrics](https://raw.githubusercontent.com/elliahu/HammockEngine/master/Img/clouds.png)
 

@@ -19,12 +19,14 @@ void Hmck::PBRApp::run()
 	init();
 	createPipelines(renderer);
 
-
-	scene->getActiveCamera()->setPerspectiveProjection(glm::radians(50.0f), renderer.getAspectRatio(), 0.1f, 1000.f);
+	auto camera = std::make_shared<Camera>();
+	scene->add(camera);
+	scene->setActiveCamera(camera->id);
+	scene->getActiveCamera()->setPerspectiveProjection(glm::radians(50.f), renderer.getAspectRatio(), 0.1f, 1000.f);
 
 	std::shared_ptr<OmniLight> light = std::make_shared<OmniLight>();
 	light->transform.translation = { 0.0f, 2.0f, -2.0f };
-	scene->add(light);
+	//scene->add(light);
 
 	auto currentTime = std::chrono::high_resolution_clock::now();
 	while (!window.shouldClose())
@@ -144,7 +146,11 @@ void Hmck::PBRApp::load()
 		.device = device,
 		.memory = memoryManager,
 		.name = "Volumetric scene",
-		.environment = "../../Resources/env/ibl/kloppenheim_02_4k.hdr"
+		.environmentInfo = {
+			.prefilteredMapPath = "../../Resources/env/ibl/precomp/lebombo_prefiltered_map.hdr",
+			.irradianceMapPath = "../../Resources/env/ibl/precomp/lebombo_irradiance_map.hdr",
+			.brdfLUTPath = "../../Resources/env/ibl/precomp/brdf_integration_map_ct_ggx.hdr",
+		}
 	};
 	scene = std::make_unique<Scene>(info);
 
@@ -154,7 +160,8 @@ void Hmck::PBRApp::load()
 			.scene = scene
 		};
 	GltfLoader gltfloader{ gltfinfo };
-	gltfloader.load(std::string(MODELS_DIR) + "sponza/sponza_lights.glb");
+	//gltfloader.load(std::string(MODELS_DIR) + "sponza/sponza_lights.glb");
+	//gltfloader.load(std::string(MODELS_DIR) + "helmet/DamagedHelmet.glb");
 	gltfloader.load(std::string(MODELS_DIR) + "helmet/helmet.glb");
 	
 
@@ -174,8 +181,10 @@ void Hmck::PBRApp::init()
 	environmentDescriptorSetLayout = memoryManager.createDescriptorSetLayout({
 		.bindings = {
 			{.binding = 0, .descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, .stageFlags = VK_SHADER_STAGE_ALL_GRAPHICS},
-			{.binding = 1, .descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, .stageFlags = VK_SHADER_STAGE_ALL_GRAPHICS, .count = 200, .bindingFlags = VK_DESCRIPTOR_BINDING_PARTIALLY_BOUND_BIT},
-			{.binding = 2, .descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, .stageFlags = VK_SHADER_STAGE_ALL_GRAPHICS},
+			{.binding = 1, .descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, .stageFlags = VK_SHADER_STAGE_ALL_GRAPHICS, .count = 200, .bindingFlags = VK_DESCRIPTOR_BINDING_PARTIALLY_BOUND_BIT}, // bindless textures
+			{.binding = 2, .descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, .stageFlags = VK_SHADER_STAGE_ALL_GRAPHICS}, // prefiltered env map
+			{.binding = 3, .descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, .stageFlags = VK_SHADER_STAGE_ALL_GRAPHICS}, //  brdfLUT
+			{.binding = 4, .descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, .stageFlags = VK_SHADER_STAGE_ALL_GRAPHICS}, //  irradiance map
 		}
 		});
 
@@ -195,7 +204,11 @@ void Hmck::PBRApp::init()
 	environmentDescriptorSet = memoryManager.createDescriptorSet({
 			.descriptorSetLayout = environmentDescriptorSetLayout,
 			.bufferWrites = {{0,sceneBufferInfo}},
-			.imageWrites = {{2, memoryManager.getTexture2DDescriptorImageInfo(scene->environment->evironmentMap)}},
+			.imageWrites = {
+				{2, memoryManager.getTexture2DDescriptorImageInfo(scene->environment->prefilterMap)},
+				{3, memoryManager.getTexture2DDescriptorImageInfo(scene->environment->brdfLUT)},
+				{4, memoryManager.getTexture2DDescriptorImageInfo(scene->environment->irradianceMap)},
+			},
 			.imageArrayWrites = {{1,imageInfos}}
 		});
 
@@ -542,7 +555,7 @@ void Hmck::PBRApp::createPipelines(Renderer& renderer)
 			.entryFunc = "main"
 		},
 		.FS {
-			.byteCode = Hmck::Filesystem::readFile("../../HammockEngine/Engine/Shaders/Compiled/pbr_deferred.frag.spv"),
+			.byteCode = Hmck::Filesystem::readFile("../../HammockEngine/Engine/Shaders/Compiled/pbr_ibl_deferred.frag.spv"),
 			.entryFunc = "main"
 		},
 		.descriptorSetLayouts = {

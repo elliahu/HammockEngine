@@ -26,7 +26,7 @@ void Hmck::EnvironmentLoader::load(std::string filepath)
 	stbi_image_free(pixels);
 }
 
-void Hmck::EnvironmentLoader::loadHDR(std::string filepath)
+void Hmck::EnvironmentLoader::loadHDR(std::string filepath, MapUsage mapUsage)
 {
 	stbi_set_flip_vertically_on_load(true);
 	float* pixels = stbi_loadf(filepath.c_str(), &width, &height, &channels, STBI_rgb_alpha);
@@ -38,14 +38,45 @@ void Hmck::EnvironmentLoader::loadHDR(std::string filepath)
 
 	channels = 4;
 
-	environment->evironmentMap = memory.createHDRTexture2DFromBuffer({
-		.buffer = pixels,
-		.bufferSize = static_cast<uint32_t>(width * height * channels),
-		.width = static_cast<uint32_t>(width), .height = static_cast<uint32_t>(height),
-		.format = VK_FORMAT_R32G32B32A32_SFLOAT
-		});
+    if (mapUsage == MapUsage::Envirinment)
+    {
+        environment->evironmentMap = memory.createHDRTexture2DFromBuffer({
+                .buffer = pixels,
+                .bufferSize = static_cast<uint32_t>(width * height * channels),
+                .width = static_cast<uint32_t>(width), .height = static_cast<uint32_t>(height),
+                .format = VK_FORMAT_R32G32B32A32_SFLOAT
+            });
+    }
 
-    //calculateIrradianceMap(pixels);
+    else if (mapUsage == MapUsage::Prefiltered)
+    {
+        environment->prefilterMap = memory.createHDRTexture2DFromBuffer({
+                .buffer = pixels,
+                .bufferSize = static_cast<uint32_t>(width * height * channels),
+                .width = static_cast<uint32_t>(width), .height = static_cast<uint32_t>(height),
+                .format = VK_FORMAT_R32G32B32A32_SFLOAT
+            });
+    }
+
+    else if (mapUsage == MapUsage::Irradiance)
+    {
+        environment->irradianceMap = memory.createHDRTexture2DFromBuffer({
+                .buffer = pixels,
+                .bufferSize = static_cast<uint32_t>(width * height * channels),
+                .width = static_cast<uint32_t>(width), .height = static_cast<uint32_t>(height),
+                .format = VK_FORMAT_R32G32B32A32_SFLOAT
+            });
+    }
+
+    else if (mapUsage == MapUsage::BRDFLUT)
+    {
+        environment->brdfLUT = memory.createHDRTexture2DFromBuffer({
+                .buffer = pixels,
+                .bufferSize = static_cast<uint32_t>(width * height * channels),
+                .width = static_cast<uint32_t>(width), .height = static_cast<uint32_t>(height),
+                .format = VK_FORMAT_R32G32B32A32_SFLOAT
+            });
+    }
 
 	// Free the memory allocated by stb_image
 	stbi_image_free(pixels);
@@ -134,5 +165,7 @@ void Hmck::EnvironmentLoader::calculateBrdfLUT(float* buffer)
 void Hmck::Environment::destroy(MemoryManager& memory)
 {
 	//memory.destroyTexture2D(evironmentMap);
-    //memory.destroyTexture2D(irradianceMap);
+    memory.destroyTexture2D(prefilterMap);
+    memory.destroyTexture2D(irradianceMap);
+    memory.destroyTexture2D(brdfLUT);
 }

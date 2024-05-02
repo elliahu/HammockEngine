@@ -6,7 +6,9 @@ layout (location = 0) in vec2 uv;
 // outputs
 layout (location = 0) out vec4 outColor;
 
-layout(set = 0, binding = 2) uniform sampler2D environmentSampler;
+layout(set = 0, binding = 2) uniform sampler2D prefilteredSampler;
+layout(set = 0, binding = 3) uniform sampler2D brdfLUTSampler;
+layout(set = 0, binding = 4) uniform sampler2D irradinaceSampler;
 
 // gbuffer attachments  
 layout(set = 4, binding = 0) uniform sampler2D positionSampler;
@@ -74,6 +76,11 @@ vec3 fresnelSchlick(float cosTheta, vec3 F0)
 {
     return F0 + (1.0 - F0) * pow(1.0 - cosTheta, 5.0);
 }
+vec3 F_SchlickR(float cosTheta, vec3 F0, float roughness)
+{
+	return F0 + (max(vec3(1.0 - roughness), F0) - F0) * pow(1.0 - cosTheta, 5.0);
+}
+
 
 // Function to calculate spherical UV coordinates from a direction vector
 vec2 toSphericalUV(vec3 direction)
@@ -85,11 +92,27 @@ vec2 toSphericalUV(vec3 direction)
     return vec2(u, -v);
 }
 
+// From http://filmicgames.com/archives/75
+vec3 Uncharted2Tonemap(vec3 x)
+{
+	float A = 0.15;
+	float B = 0.50;
+	float C = 0.10;
+	float D = 0.20;
+	float E = 0.02;
+	float F = 0.30;
+	return ((x*(A*x+C*B)+D*E)/(x*(A*x+B)+D*F))-E/F;
+}
+
+const float EXPOSURE = 4.5;
+const float GAMMA = 2.2;
+
 void main()
 {
     vec3 N = normalize(texture(normalSampler, uv).rgb);
     vec3 position = texture(positionSampler, uv).rgb;
     vec3 V = normalize(-position);
+    vec3 R = reflect(V, N); 
     vec3 albedo = texture(albedoSampler, uv).rgb;
     vec3 material = texture(materialPropertySampler, uv).rgb;
     float roughness = material.r;
@@ -97,35 +120,20 @@ void main()
     float ao = material.b;
 
     if(material == vec3(-1.0)) // background pixels are skipped
-	{
-        // apply tone mapping
-        vec3 color = albedo / (albedo + vec3(1.0));
-        color = pow(color, vec3(1.0/2.2)); 
-		outColor = vec4(color, 1.0);
-		return;
-	}
+    {
+        // Tone mapping
+        vec3 color = Uncharted2Tonemap(albedo * EXPOSURE);
+        color = color * (1.0f / Uncharted2Tonemap(vec3(11.2f)));	
+        // Gamma correction
+        color = pow(color, vec3(1.0f / GAMMA));
+        outColor = vec4(color, 1.0);
+        return;
+    }
+
+    vec3 F0 = vec3(0.04); 
+	F0 = mix(F0, albedo, metallic);
 
     vec3 Lo = vec3(0);
-
-    // Dynamically compute reflection vector based on current view direction
-    vec3 R = reflect(-V, N);
-
-    // Sample the environment map using reflection vector
-    vec2 sphericalUV = toSphericalUV(R);
-    vec3 envMapColor = texture(environmentSampler, sphericalUV).rgb;
-
-    // Apply Cook-Torrance BRDF
-    float NDF = DistributionGGX(N, V, roughness);   
-    float G   = GeometrySmith(N, V, V, roughness);    
-    vec3 F    = fresnelSchlick(max(dot(N, V), 0.0), vec3(0.04));     
-
-    vec3 nominator    = NDF * G * F;
-    float denominator = 4 * max(dot(N, V), 0.0) * max(dot(N, V), 0.0) + 0.001; // prevent division by zero
-    vec3 specular = nominator / denominator;
-
-    // Add to outgoing radiance Lo
-    Lo += (specular + albedo / PI) * envMapColor;
-
     // Add contribution from other point lights
     for(int i = 0; i < env.numOmniLights; ++i) {
         vec3 L = normalize(env.omniLights[i].position.xyz - position);
@@ -135,25 +143,46 @@ void main()
         vec3 radiance     = env.omniLights[i].color.rgb * attenuation;
 
         // Cook-Torrance BRDF
-        NDF = DistributionGGX(N, H, roughness);   
-        G   = GeometrySmith(N, V, L, roughness);    
-        F    = fresnelSchlick(max(dot(H, V), 0.0), vec3(0.04));     
+        float NDF = DistributionGGX(N, H, roughness);   
+        float G   = GeometrySmith(N, V, L, roughness);    
+        vec3 F    = fresnelSchlick(max(dot(H, V), 0.0), F0);     
 
-        nominator    = NDF * G * F;
-        denominator = 4 * max(dot(N, V), 0.0) * max(dot(N, L), 0.0) + 0.001; // prevent division by zero
-        specular = nominator / denominator;
+        vec3 nominator    = NDF * G * F;
+        float denominator = 4 * max(dot(N, V), 0.0) * max(dot(N, L), 0.0) + 0.001; // prevent division by zero
+        vec3 specular = nominator / denominator;
 
         // Add to outgoing radiance Lo
         float NdotL = max(dot(N, L), 0.0);
         Lo += (specular + albedo / PI) * radiance * NdotL;
     }
 
-    vec3 ambient = vec3(0.03) * albedo * ao;
-    vec3 color = ambient + Lo;
 
-    // Apply tone mapping
-    color = color / (color + vec3(1.0));
-    color = pow(color, vec3(1.0/2.2)); 
+    vec2 brdf = texture(brdfLUTSampler, vec2(max(dot(N, V), 0.0), roughness)).rg;
+	vec3 reflection = texture(prefilteredSampler, toSphericalUV(R)).rgb;
+	vec3 irradiance = texture(irradinaceSampler, toSphericalUV(N)).rgb;
 
-    outColor = vec4(color, 1.0);
+	// Diffuse based on irradiance
+	vec3 diffuse = irradiance * albedo;	
+
+    
+
+	vec3 F = F_SchlickR(max(dot(N, V), 0.0), F0, roughness);
+
+	// Specular reflectance
+	vec3 specular = reflection * (F * brdf.x + brdf.y);
+
+	// Ambient part
+	vec3 kD = 1.0 - F;
+	kD *= 1.0 - metallic;	  
+	vec3 ambient = (kD * diffuse + specular);
+	
+	vec3 color = ambient + Lo;
+
+    // Tone mapping
+	color = Uncharted2Tonemap(color * EXPOSURE);
+	color = color * (1.0f / Uncharted2Tonemap(vec3(11.2f)));	
+	// Gamma correction
+	color = pow(color, vec3(1.0f / GAMMA));
+
+    outColor = vec4(ambient, 1.0);
 }

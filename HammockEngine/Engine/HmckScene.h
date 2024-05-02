@@ -33,12 +33,20 @@ namespace Hmck
 			glm::vec3 scale{ 1 };
 		};
 
+		struct EnvironmentCreateInfo
+		{
+			std::string environmentMapPath = "";
+			std::string prefilteredMapPath = "";
+			std::string irradianceMapPath = "";
+			std::string brdfLUTPath = "";
+		};
+
 		struct SceneCreateInfo
 		{
 			Device& device;
 			MemoryManager& memory;
 			std::string name;
-			std::string environment = "";
+			EnvironmentCreateInfo environmentInfo{};
 		};
 
 		// TODO make builder as well
