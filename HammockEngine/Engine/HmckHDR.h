@@ -9,52 +9,53 @@
 #include "HmckTexture.h"
 #include "HmckDevice.h"
 #include "HmckMemory.h"
+#include "HmckPipeline.h"
+#include "HmckFramebuffer.h"
 
 namespace Hmck
 {
-	struct Environment
+	class Environment
 	{
+	public:
+		// environment map
 		Texture2DHandle evironmentMap;
+
+		// irradiance map
 		Texture2DHandle irradianceMap;
-		Texture2DHandle prefilterMap;
+
+		// prefiltered map
+		Texture2DHandle prefilteredMap;
+
+		// BRDFLUT
 		Texture2DHandle brdfLUT;
+		void generateBRDFLUT(Device& device, MemoryManager& memory);
 
 		void destroy(MemoryManager& memory);
+
+	private:
+
+		// BRDFLUT
+		const VkFormat brdfLUTformat = VK_FORMAT_R16G16_SFLOAT;	// R16G16 is supported pretty much everywhere
+		const int32_t brdfLUTdim = 512;
+		std::unique_ptr<GraphicsPipeline> brdfLUTPipeline{}; 
+		std::unique_ptr<Framebuffer> brdfLUTframebuffer{};
+
+		
 	};
 
 	class EnvironmentLoader
 	{
 	public:
+		// TODO totaly change this haha
+		EnvironmentLoader(Device& device, MemoryManager& memory) :device{ device }, memory{ memory } {}
 
-		enum class MapUsage
-		{
-			Envirinment, Prefiltered, Irradiance, BRDFLUT
-		};
 		
-		EnvironmentLoader(Device& device, MemoryManager& memory, std::shared_ptr<Environment> environment) :device{ device }, memory{ memory }, environment { environment } {}
-
-		struct EnvironmentCreateInfo
-		{
-			std::string environmentMapPath = "";
-			std::string prefilteredMapPath = "";
-			std::string irradianceMapPath = "";
-			std::string brdfLUTPath = "";
-		};
-		void load(EnvironmentCreateInfo createInfo);
-
-		void load(std::string filepath);
-		void loadHDR(std::string filepath, MapUsage mapUsage);
+		void load(std::string filepath, Texture2DHandle& texture, VkFormat format);
+		void loadHDR(std::string filepath, Texture2DHandle& texture, VkFormat format);
 
 	private:
 		Device& device;
 		MemoryManager& memory;
-		std::shared_ptr<Environment> environment;
 		int width, height, channels;
-
-		void calculateIrradianceMap(float* buffer);
-		void calculatePrefilterMap(float* buffer);
-		void calculateBrdfLUT(float* buffer);
 	};
-
-	
 }

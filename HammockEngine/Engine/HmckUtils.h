@@ -28,7 +28,7 @@ namespace Hmck
 
 	inline void checkResult(VkResult result)
 	{
-		assert(result == VK_SUCCESS && "Failed to check result. Result is not VK_SUCCESS!");
+		assert(result == VK_SUCCESS && "Vulkan API assertion fail");
 	}
 
 	// Check if enity of type P is derived from T

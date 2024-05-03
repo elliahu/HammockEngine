@@ -147,11 +147,10 @@ void Hmck::PBRApp::load()
 		.memory = memoryManager,
 		.name = "Physically based rendering demo",});
 
-	EnvironmentLoader loader{ device, memoryManager, scene->environment };
-	loader.load({
-			.prefilteredMapPath = "../../Resources/env/ibl/precomp/lebombo_prefiltered_map.hdr",
-			.irradianceMapPath = "../../Resources/env/ibl/precomp/lebombo_irradiance_map.hdr",
-			.brdfLUTPath = "../../Resources/env/ibl/precomp/brdf_integration_map_ct_ggx.hdr",});
+	EnvironmentLoader loader{ device, memoryManager};
+	loader.loadHDR("../../Resources/env/ibl/precomp/lebombo_prefiltered_map.hdr", scene->environment->prefilteredMap, VK_FORMAT_R32G32B32A32_SFLOAT);
+	loader.loadHDR("../../Resources/env/ibl/precomp/lebombo_irradiance_map.hdr", scene->environment->irradianceMap, VK_FORMAT_R32G32B32A32_SFLOAT);
+	loader.loadHDR("../../Resources/env/ibl/precomp/brdf_integration_map_ct_ggx.hdr", scene->environment->brdfLUT, VK_FORMAT_R32G32B32A32_SFLOAT);
 
 	GltfLoader gltfloader{ device, memoryManager, scene };
 	//gltfloader.load(std::string(MODELS_DIR) + "sponza/sponza_lights.glb");
@@ -199,7 +198,7 @@ void Hmck::PBRApp::init()
 			.descriptorSetLayout = environmentDescriptorSetLayout,
 			.bufferWrites = {{0,sceneBufferInfo}},
 			.imageWrites = {
-				{2, memoryManager.getTexture2DDescriptorImageInfo(scene->environment->prefilterMap)},
+				{2, memoryManager.getTexture2DDescriptorImageInfo(scene->environment->prefilteredMap)},
 				{3, memoryManager.getTexture2DDescriptorImageInfo(scene->environment->brdfLUT)},
 				{4, memoryManager.getTexture2DDescriptorImageInfo(scene->environment->irradianceMap)},
 			},

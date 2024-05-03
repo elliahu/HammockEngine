@@ -145,6 +145,15 @@ namespace Hmck
 		std::unique_ptr<GraphicsPipeline> skyboxPipeline{}; // uses gbufferFramebuffer render pass
 		std::unique_ptr<GraphicsPipeline> gbufferPipeline{}; // uses gbufferFramebuffer render pass
 		std::unique_ptr<GraphicsPipeline> defferedPipeline{};// uses swapchain render pass
+
+
+		// BRDFLUT
+		
+		
+		Texture2DHandle brdfLUT; 
+		
+
+
 	};
 
 }
