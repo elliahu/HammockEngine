@@ -26,7 +26,7 @@ void Hmck::PBRApp::run()
 
 	std::shared_ptr<OmniLight> light = std::make_shared<OmniLight>();
 	light->transform.translation = { 0.0f, 2.0f, -2.0f };
-	//scene->add(light);
+	scene->add(light);
 
 	auto currentTime = std::chrono::high_resolution_clock::now();
 	while (!window.shouldClose())
@@ -149,13 +149,16 @@ void Hmck::PBRApp::load()
 
 	EnvironmentLoader loader{ device, memoryManager};
 	loader.loadHDR("../../Resources/env/ibl/precomp/lebombo/lebombo_prefiltered_map.hdr", scene->environment->environmentSphere, VK_FORMAT_R32G32B32A32_SFLOAT);
+	scene->environment->generatePrefilteredSphere(device, memoryManager);
 	scene->environment->generateIrradianceSphere(device, memoryManager);
 	scene->environment->generateBRDFLUT(device, memoryManager);
 
 	GltfLoader gltfloader{ device, memoryManager, scene };
-	//gltfloader.load(std::string(MODELS_DIR) + "sponza/sponza_lights.glb");
+	//gltfloader.load(std::string(MODELS_DIR) + "sponza/sponza.glb");
 	//gltfloader.load(std::string(MODELS_DIR) + "helmet/DamagedHelmet.glb");
 	gltfloader.load(std::string(MODELS_DIR) + "helmet/helmet.glb");
+	//gltfloader.load(std::string(MODELS_DIR) + "Sphere/Sphere.glb");
+
 	
 
 	vertexBuffer = memoryManager.createVertexBuffer({
@@ -198,7 +201,7 @@ void Hmck::PBRApp::init()
 			.descriptorSetLayout = environmentDescriptorSetLayout,
 			.bufferWrites = {{0,sceneBufferInfo}},
 			.imageWrites = {
-				{2, memoryManager.getTexture2DDescriptorImageInfo(scene->environment->environmentSphere)},
+				{2, memoryManager.getTexture2DDescriptorImageInfo(scene->environment->prefilteredSphere)},
 				{3, memoryManager.getTexture2DDescriptorImageInfo(scene->environment->brdfLUT)},
 				{4, memoryManager.getTexture2DDescriptorImageInfo(scene->environment->irradianceSphere)},
 			},

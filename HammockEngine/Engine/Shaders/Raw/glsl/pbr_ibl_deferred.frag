@@ -123,7 +123,7 @@ void main()
     vec3 N = normalize(texture(normalSampler, uv).rgb);
     vec3 position = texture(positionSampler, uv).rgb;
     vec3 V = normalize(-position);
-    vec3 R = reflect(V, N); 
+    vec3 R = reflect(-V, N); 
     vec3 albedo = texture(albedoSampler, uv).rgb;
     vec3 material = texture(materialPropertySampler, uv).rgb;
     float roughness = material.r;
@@ -170,8 +170,6 @@ void main()
 	// Diffuse based on irradiance
 	vec3 diffuse = irradiance * albedo;	
 
-    
-
 	vec3 F = F_SchlickR(max(dot(N, V), 0.0), F0, roughness);
 
 	// Specular reflectance
@@ -180,9 +178,9 @@ void main()
 	// Ambient part
 	vec3 kD = 1.0 - F;
 	kD *= 1.0 - metallic;	  
-	vec3 ambient = (kD * diffuse + specular) * vec3(ao);
+	vec3 ambient = (kD * diffuse + specular + Lo) * vec3(ao);
 	
-	vec3 color = ambient + Lo;
+	vec3 color = ambient;
 
     // Tone mapping
 	color = Uncharted2Tonemap(color * EXPOSURE);

@@ -21,6 +21,9 @@ namespace Hmck
 		// environment map
 		Texture2DHandle environmentSphere;
 
+		Texture2DHandle prefilteredSphere;
+		void generatePrefilteredSphere(Device& device, MemoryManager& memory, VkFormat format = VK_FORMAT_R32G32B32A32_SFLOAT);
+
 		// irradiance map
 		Texture2DHandle irradianceSphere;
 		void generateIrradianceSphere(Device& device, MemoryManager& memory, VkFormat format = VK_FORMAT_R32G32B32A32_SFLOAT);
