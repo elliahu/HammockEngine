@@ -148,16 +148,14 @@ void Hmck::PBRApp::load()
 		.name = "Physically based rendering demo",});
 
 	EnvironmentLoader loader{ device, memoryManager};
-	loader.loadHDR("../../Resources/env/ibl/precomp/lebombo_prefiltered_map.hdr", scene->environment->environmentSphere, VK_FORMAT_R32G32B32A32_SFLOAT);
-	//loader.loadHDR("../../Resources/env/ibl/precomp/lebombo_irradiance_map.hdr", scene->environment->irradianceSphere, VK_FORMAT_R32G32B32A32_SFLOAT);
+	loader.loadHDR("../../Resources/env/ibl/precomp/lebombo/lebombo_prefiltered_map.hdr", scene->environment->environmentSphere, VK_FORMAT_R32G32B32A32_SFLOAT);
 	scene->environment->generateIrradianceSphere(device, memoryManager);
-	//loader.loadHDR("../../Resources/env/ibl/precomp/brdf_integration_map_ct_ggx.hdr", scene->environment->brdfLUT, VK_FORMAT_R32G32B32A32_SFLOAT);
 	scene->environment->generateBRDFLUT(device, memoryManager);
 
 	GltfLoader gltfloader{ device, memoryManager, scene };
 	//gltfloader.load(std::string(MODELS_DIR) + "sponza/sponza_lights.glb");
-	gltfloader.load(std::string(MODELS_DIR) + "helmet/DamagedHelmet.glb");
-	//gltfloader.load(std::string(MODELS_DIR) + "helmet/helmet.glb");
+	//gltfloader.load(std::string(MODELS_DIR) + "helmet/DamagedHelmet.glb");
+	gltfloader.load(std::string(MODELS_DIR) + "helmet/helmet.glb");
 	
 
 	vertexBuffer = memoryManager.createVertexBuffer({

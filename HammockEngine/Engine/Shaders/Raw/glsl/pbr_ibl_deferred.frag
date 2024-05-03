@@ -104,8 +104,19 @@ vec3 Uncharted2Tonemap(vec3 x)
 	return ((x*(A*x+C*B)+D*E)/(x*(A*x+B)+D*F))-E/F;
 }
 
-const float EXPOSURE = 4.5;
+const float EXPOSURE = 4.0;
 const float GAMMA = 2.2;
+
+vec3 prefilteredReflection(vec2 R, float roughness)
+{
+	const float MAX_REFLECTION_LOD = 9.0; // todo: param/const
+	float lod = roughness * MAX_REFLECTION_LOD;
+	float lodf = floor(lod);
+	float lodc = ceil(lod);
+	vec3 a = textureLod(prefilteredSampler, R, lodf).rgb;
+	vec3 b = textureLod(prefilteredSampler, R, lodc).rgb;
+	return mix(a, b, lod - lodf);
+}
 
 void main()
 {
@@ -121,12 +132,7 @@ void main()
 
     if(material == vec3(-1.0)) // background pixels are skipped
     {
-        // Tone mapping
-        vec3 color = Uncharted2Tonemap(albedo * EXPOSURE);
-        color = color * (1.0f / Uncharted2Tonemap(vec3(11.2f)));	
-        // Gamma correction
-        color = pow(color, vec3(1.0f / GAMMA));
-        outColor = vec4(color, 1.0);
+        outColor = vec4(albedo, 1.0);
         return;
     }
 
@@ -158,7 +164,7 @@ void main()
 
 
     vec2 brdf = texture(brdfLUTSampler, vec2(max(dot(N, V), 0.0), roughness)).rg;
-	vec3 reflection = texture(prefilteredSampler, toSphericalUV(R)).rgb;
+    vec3 reflection = prefilteredReflection(toSphericalUV(R), roughness).rgb;	
 	vec3 irradiance = texture(irradinaceSampler, toSphericalUV(N)).rgb;
 
 	// Diffuse based on irradiance

@@ -16,6 +16,22 @@ layout(set = 1, binding = 0) uniform SceneUbo
     mat4 inverseView;
 } scene;
 
+// From http://filmicworlds.com/blog/filmic-tonemapping-operators/
+vec3 Uncharted2Tonemap(vec3 color)
+{
+	float A = 0.15;
+	float B = 0.50;
+	float C = 0.10;
+	float D = 0.20;
+	float E = 0.02;
+	float F = 0.30;
+	float W = 11.2;
+	return ((color*(A*color+C*B)+D*E)/(color*(A*color+B)+D*F))-E/F;
+}
+
+const float EXPOSURE = 4.0;
+const float GAMMA = 2.2;
+
 void main() 
 {
     // Transform UV coordinates to a direction in view space
@@ -28,10 +44,15 @@ void main()
     uv.y = asin(direction.y) / 3.14159265358979323846 + 0.5;
     
     // Sample the environment map in the calculated direction
-    vec3 environmentColor = texture(environmentSampler, uv).rgb;
+    vec3 color = texture(environmentSampler, uv).rgb;
+    // Tone mapping
+	color = Uncharted2Tonemap(color * EXPOSURE);
+	color = color * (1.0f / Uncharted2Tonemap(vec3(11.2f)));	
+	// Gamma correction
+	color = pow(color, vec3(1.0f / GAMMA));
 
     // Output the environment color as fragment color
-    outFragColor = vec4(environmentColor, 1.0);
+    outFragColor = vec4(color, 1.0);
 
     outPosition = vec4(0);
     outNormal = vec4(0);
