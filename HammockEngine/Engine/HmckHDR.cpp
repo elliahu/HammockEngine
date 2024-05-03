@@ -47,15 +47,14 @@ void Hmck::EnvironmentLoader::loadHDR(std::string filepath, Texture2DHandle& tex
 	stbi_image_free(pixels);
 }
 
-void Hmck::Environment::generateIrradianceMap(Device& device, MemoryManager& memory)
+void Hmck::Environment::generateIrradianceSphere(Device& device, MemoryManager& memory, VkFormat format)
 {
-	assert(evironmentMap > 0 && "Env map not set");
+	assert(environmentSphere > 0 && "Env map not set");
 	auto tStart = std::chrono::high_resolution_clock::now();
-	const VkFormat format = VK_FORMAT_R32G32B32A32_SFLOAT;
-	uint32_t width = memory.getTexture2D(evironmentMap)->width;
-	uint32_t height = memory.getTexture2D(evironmentMap)->height;
+	uint32_t width = memory.getTexture2D(environmentSphere)->width;
+	uint32_t height = memory.getTexture2D(environmentSphere)->height;
 	std::unique_ptr<GraphicsPipeline> pipeline{};
-	irradianceMap = memory.createTexture2D();
+	irradianceSphere = memory.createTexture2D();
 
 	// image, view, sampler
 	VkImageCreateInfo imageCI = Init::imageCreateInfo();
@@ -69,7 +68,7 @@ void Hmck::Environment::generateIrradianceMap(Device& device, MemoryManager& mem
 	imageCI.samples = VK_SAMPLE_COUNT_1_BIT;
 	imageCI.tiling = VK_IMAGE_TILING_OPTIMAL;
 	imageCI.usage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT;
-	device.createImageWithInfo(imageCI, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, memory.getTexture2D(irradianceMap)->image, memory.getTexture2D(irradianceMap)->memory);
+	device.createImageWithInfo(imageCI, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, memory.getTexture2D(irradianceSphere)->image, memory.getTexture2D(irradianceSphere)->memory);
 
 	VkImageViewCreateInfo viewCI = Init::imageViewCreateInfo();
 	viewCI.viewType = VK_IMAGE_VIEW_TYPE_2D;
@@ -78,12 +77,12 @@ void Hmck::Environment::generateIrradianceMap(Device& device, MemoryManager& mem
 	viewCI.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
 	viewCI.subresourceRange.levelCount = 1;
 	viewCI.subresourceRange.layerCount = 1;
-	viewCI.image = memory.getTexture2D(irradianceMap)->image;
-	checkResult(vkCreateImageView(device.device(), &viewCI, nullptr, &memory.getTexture2D(irradianceMap)->view));
+	viewCI.image = memory.getTexture2D(irradianceSphere)->image;
+	checkResult(vkCreateImageView(device.device(), &viewCI, nullptr, &memory.getTexture2D(irradianceSphere)->view));
 
-	memory.getTexture2D(irradianceMap)->createSampler(device, VK_FILTER_LINEAR);
-	memory.getTexture2D(irradianceMap)->layout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-	memory.getTexture2D(irradianceMap)->updateDescriptor();
+	memory.getTexture2D(irradianceSphere)->createSampler(device, VK_FILTER_LINEAR);
+	memory.getTexture2D(irradianceSphere)->layout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+	memory.getTexture2D(irradianceSphere)->updateDescriptor();
 
 	// FB, RP , Att
 	VkAttachmentDescription attDesc = {};
@@ -135,7 +134,7 @@ void Hmck::Environment::generateIrradianceMap(Device& device, MemoryManager& mem
 	VkFramebufferCreateInfo framebufferCI = Init::framebufferCreateInfo();
 	framebufferCI.renderPass = renderpass;
 	framebufferCI.attachmentCount = 1;
-	framebufferCI.pAttachments = &memory.getTexture2D(irradianceMap)->view;
+	framebufferCI.pAttachments = &memory.getTexture2D(irradianceSphere)->view;
 	framebufferCI.width = width;
 	framebufferCI.height = height;
 	framebufferCI.layers = 1;
@@ -161,7 +160,7 @@ void Hmck::Environment::generateIrradianceMap(Device& device, MemoryManager& mem
 	VkDescriptorSet descriptorset;
 	VkDescriptorSetAllocateInfo allocInfo = Init::descriptorSetAllocateInfo(descriptorpool, &descriptorsetlayout, 1);
 	checkResult(vkAllocateDescriptorSets(device.device(), &allocInfo, &descriptorset));
-	VkWriteDescriptorSet writeDescriptorSet = Init::writeDescriptorSet(descriptorset, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 0, &memory.getTexture2D(evironmentMap)->descriptor);
+	VkWriteDescriptorSet writeDescriptorSet = Init::writeDescriptorSet(descriptorset, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 0, &memory.getTexture2D(environmentSphere)->descriptor);
 	vkUpdateDescriptorSets(device.device(), 1, &writeDescriptorSet, 0, nullptr);
 
 	pipeline = GraphicsPipeline::createGraphicsPipelinePtr({
@@ -244,20 +243,18 @@ void Hmck::Environment::generateIrradianceMap(Device& device, MemoryManager& mem
 	Logger::log(LogLevel::HMCK_LOG_LEVEL_DEBUG, "Generating irradiance sphere took %f ms\n", tDiff);
 }
 
-void Hmck::Environment::generateBRDFLUT(Device& device, MemoryManager& memory)
+void Hmck::Environment::generateBRDFLUT(Device& device, MemoryManager& memory, uint32_t dim, VkFormat format)
 {
 	auto tStart = std::chrono::high_resolution_clock::now();
-	const VkFormat brdfLUTformat = VK_FORMAT_R16G16_SFLOAT;	// R16G16 is supported pretty much everywhere
-	const int32_t brdfLUTdim = 512;
 	std::unique_ptr<GraphicsPipeline> brdfLUTPipeline{};
 	brdfLUT = memory.createTexture2D();
 
 	// image, view, sampler
     VkImageCreateInfo imageCI = Init::imageCreateInfo();
     imageCI.imageType = VK_IMAGE_TYPE_2D;
-    imageCI.format = brdfLUTformat;
-    imageCI.extent.width = brdfLUTdim;
-    imageCI.extent.height = brdfLUTdim;
+    imageCI.format = format;
+    imageCI.extent.width = dim;
+    imageCI.extent.height = dim;
     imageCI.extent.depth = 1;
     imageCI.mipLevels = 1;
     imageCI.arrayLayers = 1;
@@ -268,7 +265,7 @@ void Hmck::Environment::generateBRDFLUT(Device& device, MemoryManager& memory)
 
 	VkImageViewCreateInfo viewCI = Init::imageViewCreateInfo();
 	viewCI.viewType = VK_IMAGE_VIEW_TYPE_2D;
-	viewCI.format = brdfLUTformat;
+	viewCI.format = format;
 	viewCI.subresourceRange = {};
 	viewCI.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
 	viewCI.subresourceRange.levelCount = 1;
@@ -282,7 +279,7 @@ void Hmck::Environment::generateBRDFLUT(Device& device, MemoryManager& memory)
 
 	// FB, RP , Att
 	VkAttachmentDescription attDesc = {};
-	attDesc.format = brdfLUTformat;
+	attDesc.format = format;
 	attDesc.samples = VK_SAMPLE_COUNT_1_BIT;
 	attDesc.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
 	attDesc.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
@@ -331,8 +328,8 @@ void Hmck::Environment::generateBRDFLUT(Device& device, MemoryManager& memory)
 	framebufferCI.renderPass = renderpass;
 	framebufferCI.attachmentCount = 1;
 	framebufferCI.pAttachments = &memory.getTexture2D(brdfLUT)->view;
-	framebufferCI.width = brdfLUTdim;
-	framebufferCI.height = brdfLUTdim;
+	framebufferCI.width = dim;
+	framebufferCI.height = dim;
 	framebufferCI.layers = 1;
 
 	VkFramebuffer framebuffer;
@@ -385,16 +382,16 @@ void Hmck::Environment::generateBRDFLUT(Device& device, MemoryManager& memory)
 
 	VkRenderPassBeginInfo renderPassBeginInfo = Init::renderPassBeginInfo();
 	renderPassBeginInfo.renderPass = renderpass;
-	renderPassBeginInfo.renderArea.extent.width = brdfLUTdim;
-	renderPassBeginInfo.renderArea.extent.height = brdfLUTdim;
+	renderPassBeginInfo.renderArea.extent.width = dim;
+	renderPassBeginInfo.renderArea.extent.height = dim;
 	renderPassBeginInfo.clearValueCount = 1;
 	renderPassBeginInfo.pClearValues = clearValues;
 	renderPassBeginInfo.framebuffer = framebuffer;
 
 	VkCommandBuffer commandBuffer = device.beginSingleTimeCommands();
 	vkCmdBeginRenderPass(commandBuffer, &renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
-	VkViewport viewport = Init::viewport((float)brdfLUTdim, (float)brdfLUTdim, 0.0f, 1.0f);
-	VkRect2D scissor = Init::rect2D(brdfLUTdim, brdfLUTdim, 0, 0);
+	VkViewport viewport = Init::viewport((float)dim, (float)dim, 0.0f, 1.0f);
+	VkRect2D scissor = Init::rect2D(dim, dim, 0, 0);
 	vkCmdSetViewport(commandBuffer, 0, 1, &viewport);
 	vkCmdSetScissor(commandBuffer, 0, 1, &scissor);
 	brdfLUTPipeline->bind(commandBuffer);
@@ -416,10 +413,10 @@ void Hmck::Environment::generateBRDFLUT(Device& device, MemoryManager& memory)
 
 void Hmck::Environment::destroy(MemoryManager& memory)
 {
-    if(evironmentMap > 0)
-	    memory.destroyTexture2D(evironmentMap);
-    if (irradianceMap > 0)
-        memory.destroyTexture2D(irradianceMap);
+    if(environmentSphere > 0)
+	    memory.destroyTexture2D(environmentSphere);
+    if (irradianceSphere > 0)
+        memory.destroyTexture2D(irradianceSphere);
     if (brdfLUT > 0)
         memory.destroyTexture2D(brdfLUT);
 }

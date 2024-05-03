@@ -19,15 +19,15 @@ namespace Hmck
 	{
 	public:
 		// environment map
-		Texture2DHandle evironmentMap;
+		Texture2DHandle environmentSphere;
 
 		// irradiance map
-		Texture2DHandle irradianceMap;
-		void generateIrradianceMap(Device& device, MemoryManager& memory);
+		Texture2DHandle irradianceSphere;
+		void generateIrradianceSphere(Device& device, MemoryManager& memory, VkFormat format = VK_FORMAT_R32G32B32A32_SFLOAT);
 
 		// BRDFLUT
 		Texture2DHandle brdfLUT;
-		void generateBRDFLUT(Device& device, MemoryManager& memory);
+		void generateBRDFLUT(Device& device, MemoryManager& memory, uint32_t dim = 512, VkFormat format = VK_FORMAT_R16G16_SFLOAT);
 
 		void destroy(MemoryManager& memory);
 
