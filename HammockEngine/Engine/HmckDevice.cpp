@@ -617,5 +617,24 @@ namespace Hmck {
         endSingleTimeCommands(commandBuffer);
     }
 
+    //VkCommandBuffer Device::createCommandBuffer(VkCommandBufferLevel level, VkCommandPool pool, bool begin)
+    //{
+    //    VkCommandBufferAllocateInfo cmdBufAllocateInfo = Init::commandBufferAllocateInfo(pool, level, 1);
+    //    VkCommandBuffer cmdBuffer;
+    //    VK_CHECK_RESULT(vkAllocateCommandBuffers(logicalDevice, &cmdBufAllocateInfo, &cmdBuffer));
+    //    // If requested, also start recording for the new command buffer
+    //    if (begin)
+    //    {
+    //        VkCommandBufferBeginInfo cmdBufInfo = Init::commandBufferBeginInfo();
+    //        checkResult(vkBeginCommandBuffer(cmdBuffer, &cmdBufInfo));
+    //    }
+    //    return cmdBuffer;
+    //}
+
+    //VkCommandBuffer Device::createCommandBuffer(VkCommandBufferLevel level, bool begin)
+    //{
+    //    return createCommandBuffer(level, commandPool, begin);
+    //}
+
 
 }

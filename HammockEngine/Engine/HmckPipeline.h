@@ -60,6 +60,11 @@ namespace Hmck
 
 			}graphicsState;
 
+			struct DynamixStateInfo
+			{
+				std::vector<VkDynamicState> dynamicStateEnables{ VK_DYNAMIC_STATE_VIEWPORT, VK_DYNAMIC_STATE_SCISSOR };
+			}dynamicState;
+
 			VkRenderPass renderPass;
 			uint32_t subpass = 0;
 		};

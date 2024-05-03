@@ -113,6 +113,8 @@ namespace Hmck
 
 		DescriptorSetHandle createDescriptorSet(DescriptorSetCreateInfo createInfo);
 
+		Texture2DHandle createTexture2D();
+
 		struct Texture2DCreateFromFileInfo
 		{
 			std::string filepath;

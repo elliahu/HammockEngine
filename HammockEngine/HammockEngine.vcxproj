@@ -54,7 +54,6 @@
     <ClCompile Include="External\imgui_tables.cpp" />
     <ClCompile Include="External\imgui_widgets.cpp" />
     <ClCompile Include="External\misc\cpp\imgui_stdlib.cpp" />
-    <ClCompile Include="Engine\Utils\HmckLogger.cpp" />
     <ClCompile Include="Engine\Platform\HmckInputHandler.cpp" />
     <ClCompile Include="Engine\HmckLights.cpp" />
     <ClCompile Include="main.cpp" />

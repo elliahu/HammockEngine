@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Platform/HmckWindow.h"
+//#include "HmckUtils.h"
 
 // std lib headers
 #include <string>
@@ -79,6 +80,10 @@ namespace Hmck {
 			VkImageLayout layoutNew,
 			uint32_t layerCount = 1
 		);
+
+		// headless rendering
+		/*VkCommandBuffer createCommandBuffer(VkCommandBufferLevel level, VkCommandPool pool, bool begin);
+		VkCommandBuffer createCommandBuffer(VkCommandBufferLevel level, bool begin);*/
 
 		VkPhysicalDeviceProperties properties;
 

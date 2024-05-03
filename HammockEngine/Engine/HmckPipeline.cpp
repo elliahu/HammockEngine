@@ -47,6 +47,14 @@ Hmck::GraphicsPipeline::GraphicsPipeline(Hmck::GraphicsPipeline::GraphicsPipelin
 	configInfo.depthStencilInfo.depthTestEnable = createInfo.graphicsState.depthTest;
 	configInfo.depthStencilInfo.depthWriteEnable = createInfo.graphicsState.depthTest;
 	configInfo.rasterizationInfo.cullMode = createInfo.graphicsState.cullMode;
+
+	configInfo.dynamicStateEnables = createInfo.dynamicState.dynamicStateEnables;
+	configInfo.dynamicStateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO;
+	configInfo.dynamicStateInfo.pDynamicStates = configInfo.dynamicStateEnables.data();
+	configInfo.dynamicStateInfo.dynamicStateCount =
+		static_cast<uint32_t>(configInfo.dynamicStateEnables.size());
+	configInfo.dynamicStateInfo.flags = 0;
+
 	createShaderModule(createInfo.VS.byteCode, &vertShaderModule);
 	createShaderModule(createInfo.FS.byteCode, &fragShaderModule);
 
@@ -95,6 +103,8 @@ Hmck::GraphicsPipeline::GraphicsPipeline(Hmck::GraphicsPipeline::GraphicsPipelin
 
 	pipelineInfo.basePipelineIndex = -1;
 	pipelineInfo.basePipelineHandle = VK_NULL_HANDLE;
+
+	
 
 	if (vkCreateGraphicsPipelines(
 		createInfo.device.device(),
@@ -169,7 +179,7 @@ void Hmck::GraphicsPipeline::defaultRenderPipelineConfig(GraphicsPipelineConfig&
 	configInfo.depthStencilInfo.front = {};  // Optional
 	configInfo.depthStencilInfo.back = {};   // Optional
 
-	configInfo.dynamicStateEnables = { VK_DYNAMIC_STATE_VIEWPORT, VK_DYNAMIC_STATE_SCISSOR , VK_DYNAMIC_STATE_DEPTH_BIAS };
+	configInfo.dynamicStateEnables = { VK_DYNAMIC_STATE_VIEWPORT, VK_DYNAMIC_STATE_SCISSOR };
 	configInfo.dynamicStateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO;
 	configInfo.dynamicStateInfo.pDynamicStates = configInfo.dynamicStateEnables.data();
 	configInfo.dynamicStateInfo.dynamicStateCount =

@@ -150,7 +150,8 @@ void Hmck::PBRApp::load()
 	EnvironmentLoader loader{ device, memoryManager};
 	loader.loadHDR("../../Resources/env/ibl/precomp/lebombo_prefiltered_map.hdr", scene->environment->prefilteredMap, VK_FORMAT_R32G32B32A32_SFLOAT);
 	loader.loadHDR("../../Resources/env/ibl/precomp/lebombo_irradiance_map.hdr", scene->environment->irradianceMap, VK_FORMAT_R32G32B32A32_SFLOAT);
-	loader.loadHDR("../../Resources/env/ibl/precomp/brdf_integration_map_ct_ggx.hdr", scene->environment->brdfLUT, VK_FORMAT_R32G32B32A32_SFLOAT);
+	//loader.loadHDR("../../Resources/env/ibl/precomp/brdf_integration_map_ct_ggx.hdr", scene->environment->brdfLUT, VK_FORMAT_R32G32B32A32_SFLOAT);
+	scene->environment->generateBRDFLUT(device, memoryManager);
 
 	GltfLoader gltfloader{ device, memoryManager, scene };
 	//gltfloader.load(std::string(MODELS_DIR) + "sponza/sponza_lights.glb");

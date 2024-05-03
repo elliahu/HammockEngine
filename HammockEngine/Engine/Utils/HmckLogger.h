@@ -1,35 +1,34 @@
 #pragma once
-
-#include <string>
 #include <iostream>
-#include <chrono>
-#include <sstream>
+#include <cstdarg>
 
 namespace Hmck
 {
 
+	enum LogLevel
+	{
+		HMCK_LOG_LEVEL_DEBUG,
+		HMCK_LOG_LEVEL_WARN,
+		HMCK_LOG_LEVEL_ERROR
+	};
+
 	class Logger
 	{
-		enum LogLevel
-		{
-			HMCK_LOG_LEVEL_DEBUG,
-			HMCK_LOG_LEVEL_WARN,
-			HMCK_LOG_LEVEL_ERROR
-		};
+		
 
 	public:
-		Logger();
-		~Logger();
+		static inline LogLevel hmckMinLogLevel = LogLevel::HMCK_LOG_LEVEL_DEBUG;
 
-		static LogLevel hmckMinLogLevel;
-
-		static void log(LogLevel level, std::string message);
-		static void debug(std::string message);
-		static void warn(std::string message);
-		static void error(std::string message);
-
-	private:
-
-		static std::string createLogMessage(LogLevel level, std::string message);
+		// Create a method that works as a printf function and writes to a console log message if the level of message is same or higher as the hmckMinLogLevel;
+		static inline void log(LogLevel level, const char* format, ...)
+		{
+			if (level >= hmckMinLogLevel)
+			{
+				va_list args;
+				va_start(args, format);
+				vprintf(format, args);
+				va_end(args);
+			}
+		}
 	};
 }

@@ -49,6 +49,13 @@ void Hmck::EnvironmentLoader::loadHDR(std::string filepath, Texture2DHandle& tex
 
 void Hmck::Environment::generateBRDFLUT(Device& device, MemoryManager& memory)
 {
+	auto tStart = std::chrono::high_resolution_clock::now();
+	const VkFormat brdfLUTformat = VK_FORMAT_R16G16_SFLOAT;	// R16G16 is supported pretty much everywhere
+	const int32_t brdfLUTdim = 512;
+	std::unique_ptr<GraphicsPipeline> brdfLUTPipeline{};
+	brdfLUT = memory.createTexture2D();
+
+	// image, view, sampler
     VkImageCreateInfo imageCI = Init::imageCreateInfo();
     imageCI.imageType = VK_IMAGE_TYPE_2D;
     imageCI.format = brdfLUTformat;
@@ -60,8 +67,154 @@ void Hmck::Environment::generateBRDFLUT(Device& device, MemoryManager& memory)
     imageCI.samples = VK_SAMPLE_COUNT_1_BIT;
     imageCI.tiling = VK_IMAGE_TILING_OPTIMAL;
     imageCI.usage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT;
+	device.createImageWithInfo(imageCI, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, memory.getTexture2D(brdfLUT)->image, memory.getTexture2D(brdfLUT)->memory);
 
-    //checkResult(vkCreateImage(device.device(), &imageCI, nullptr, &textures.lutBrdf.image))
+	VkImageViewCreateInfo viewCI = Init::imageViewCreateInfo();
+	viewCI.viewType = VK_IMAGE_VIEW_TYPE_2D;
+	viewCI.format = brdfLUTformat;
+	viewCI.subresourceRange = {};
+	viewCI.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+	viewCI.subresourceRange.levelCount = 1;
+	viewCI.subresourceRange.layerCount = 1;
+	viewCI.image = memory.getTexture2D(brdfLUT)->image;
+	checkResult(vkCreateImageView(device.device(), &viewCI, nullptr, &memory.getTexture2D(brdfLUT)->view));
+
+	memory.getTexture2D(brdfLUT)->createSampler(device, VK_FILTER_LINEAR);
+	memory.getTexture2D(brdfLUT)->layout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+	memory.getTexture2D(brdfLUT)->updateDescriptor();
+
+	// FB, RP , Att
+	VkAttachmentDescription attDesc = {};
+	attDesc.format = brdfLUTformat;
+	attDesc.samples = VK_SAMPLE_COUNT_1_BIT;
+	attDesc.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
+	attDesc.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
+	attDesc.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+	attDesc.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+	attDesc.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+	attDesc.finalLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+	VkAttachmentReference colorReference = { 0, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL };
+
+	VkSubpassDescription subpassDescription = {};
+	subpassDescription.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
+	subpassDescription.colorAttachmentCount = 1;
+	subpassDescription.pColorAttachments = &colorReference;
+
+	// Use subpass dependencies for layout transitions
+	std::array<VkSubpassDependency, 2> dependencies;
+	dependencies[0].srcSubpass = VK_SUBPASS_EXTERNAL;
+	dependencies[0].dstSubpass = 0;
+	dependencies[0].srcStageMask = VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT;
+	dependencies[0].dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+	dependencies[0].srcAccessMask = VK_ACCESS_MEMORY_READ_BIT;
+	dependencies[0].dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_READ_BIT | VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+	dependencies[0].dependencyFlags = VK_DEPENDENCY_BY_REGION_BIT;
+	dependencies[1].srcSubpass = 0;
+	dependencies[1].dstSubpass = VK_SUBPASS_EXTERNAL;
+	dependencies[1].srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+	dependencies[1].dstStageMask = VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT;
+	dependencies[1].srcAccessMask = VK_ACCESS_COLOR_ATTACHMENT_READ_BIT | VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+	dependencies[1].dstAccessMask = VK_ACCESS_MEMORY_READ_BIT;
+	dependencies[1].dependencyFlags = VK_DEPENDENCY_BY_REGION_BIT;
+
+	// Create the actual renderpass
+
+	VkRenderPassCreateInfo renderPassCI = Init::renderPassCreateInfo();
+	renderPassCI.attachmentCount = 1;
+	renderPassCI.pAttachments = &attDesc;
+	renderPassCI.subpassCount = 1;
+	renderPassCI.pSubpasses = &subpassDescription;
+	renderPassCI.dependencyCount = 2;
+	renderPassCI.pDependencies = dependencies.data();
+
+	VkRenderPass renderpass;
+	checkResult(vkCreateRenderPass(device.device(), &renderPassCI, nullptr, &renderpass));
+
+	VkFramebufferCreateInfo framebufferCI = Init::framebufferCreateInfo();
+	framebufferCI.renderPass = renderpass;
+	framebufferCI.attachmentCount = 1;
+	framebufferCI.pAttachments = &memory.getTexture2D(brdfLUT)->view;
+	framebufferCI.width = brdfLUTdim;
+	framebufferCI.height = brdfLUTdim;
+	framebufferCI.layers = 1;
+
+	VkFramebuffer framebuffer;
+	checkResult(vkCreateFramebuffer(device.device(), &framebufferCI, nullptr, &framebuffer));
+
+	// Descriptors
+	VkDescriptorSetLayout descriptorsetlayout;
+	std::vector<VkDescriptorSetLayoutBinding> setLayoutBindings = {};
+	VkDescriptorSetLayoutCreateInfo descriptorsetlayoutCI = Init::descriptorSetLayoutCreateInfo(setLayoutBindings);
+	checkResult(vkCreateDescriptorSetLayout(device.device(), &descriptorsetlayoutCI, nullptr, &descriptorsetlayout));
+
+	// Descriptor Pool
+	std::vector<VkDescriptorPoolSize> poolSizes = { Init::descriptorPoolSize(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1) };
+	VkDescriptorPoolCreateInfo descriptorPoolCI = Init::descriptorPoolCreateInfo(poolSizes, 2);
+	VkDescriptorPool descriptorpool;
+	checkResult(vkCreateDescriptorPool(device.device(), &descriptorPoolCI, nullptr, &descriptorpool));
+
+	// Descriptor sets
+	VkDescriptorSet descriptorset;
+	VkDescriptorSetAllocateInfo allocInfo = Init::descriptorSetAllocateInfo(descriptorpool, &descriptorsetlayout, 1);
+	checkResult(vkAllocateDescriptorSets(device.device(), &allocInfo, &descriptorset));
+
+	brdfLUTPipeline = GraphicsPipeline::createGraphicsPipelinePtr({
+		.debugName = "BRDFLUT_generation",
+		.device = device,
+		.VS {
+			.byteCode = Hmck::Filesystem::readFile("../../HammockEngine/Engine/Shaders/Compiled/generate_brdflut.vert.spv"),
+			.entryFunc = "main"
+		},
+		.FS {
+			.byteCode = Hmck::Filesystem::readFile("../../HammockEngine/Engine/Shaders/Compiled/generate_brdflut.frag.spv"),
+			.entryFunc = "main"
+		},
+		.descriptorSetLayouts = {
+			descriptorsetlayout
+		},
+		.pushConstantRanges {},
+		.graphicsState {
+			.depthTest = VK_FALSE,
+			.cullMode = VK_CULL_MODE_NONE,
+			.blendAtaAttachmentStates {},
+			.vertexBufferBindings{}
+		},
+		.renderPass = renderpass
+	});
+
+	// Render
+	VkClearValue clearValues[1];
+	clearValues[0].color = { { 0.0f, 0.0f, 0.0f, 1.0f } };
+
+	VkRenderPassBeginInfo renderPassBeginInfo = Init::renderPassBeginInfo();
+	renderPassBeginInfo.renderPass = renderpass;
+	renderPassBeginInfo.renderArea.extent.width = brdfLUTdim;
+	renderPassBeginInfo.renderArea.extent.height = brdfLUTdim;
+	renderPassBeginInfo.clearValueCount = 1;
+	renderPassBeginInfo.pClearValues = clearValues;
+	renderPassBeginInfo.framebuffer = framebuffer;
+
+	VkCommandBuffer commandBuffer = device.beginSingleTimeCommands();
+	vkCmdBeginRenderPass(commandBuffer, &renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
+	VkViewport viewport = Init::viewport((float)brdfLUTdim, (float)brdfLUTdim, 0.0f, 1.0f);
+	VkRect2D scissor = Init::rect2D(brdfLUTdim, brdfLUTdim, 0, 0);
+	vkCmdSetViewport(commandBuffer, 0, 1, &viewport);
+	vkCmdSetScissor(commandBuffer, 0, 1, &scissor);
+	brdfLUTPipeline->bind(commandBuffer);
+	vkCmdDraw(commandBuffer, 3, 1, 0, 0);
+	vkCmdEndRenderPass(commandBuffer);
+	device.endSingleTimeCommands(commandBuffer);
+
+	vkQueueWaitIdle(device.graphicsQueue());
+
+	vkDestroyRenderPass(device.device(), renderpass, nullptr);
+	vkDestroyFramebuffer(device.device(), framebuffer, nullptr);
+	vkDestroyDescriptorSetLayout(device.device(), descriptorsetlayout, nullptr);
+	vkDestroyDescriptorPool(device.device(), descriptorpool, nullptr);
+
+	auto tEnd = std::chrono::high_resolution_clock::now();
+	auto tDiff = std::chrono::duration<double, std::milli>(tEnd - tStart).count();
+	Logger::log(LogLevel::HMCK_LOG_LEVEL_DEBUG, "Generating BRDF LUT took %f ms", tDiff);
 }
 
 void Hmck::Environment::destroy(MemoryManager& memory)
