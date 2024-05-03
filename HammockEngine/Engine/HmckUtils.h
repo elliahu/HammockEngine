@@ -19,45 +19,7 @@
 
 namespace Hmck
 {
-	// dark magic from: https://stackoverflow.com/a/57595105
-	template <typename T, typename... Rest>
-	void hashCombine(std::size_t& seed, const T& v, const Rest&... rest) {
-		seed ^= std::hash<T>{}(v)+0x9e3779b9 + (seed << 6) + (seed >> 2);
-		(hashCombine(seed, rest), ...);
-	};
-
-	inline void checkResult(VkResult result)
-	{
-		assert(result == VK_SUCCESS && "Vulkan API assertion fail");
-	}
-
-	// Check if enity of type P is derived from T
-	template<typename T, typename P>
-	bool isInstanceOf(std::shared_ptr<T> entity) {
-		std::shared_ptr<P> derived = std::dynamic_pointer_cast<P>(entity);
-		return derived != nullptr;
-	}
-
-	// tries cast T to P
-	template<typename T, typename P>
-	std::shared_ptr<P> cast(std::shared_ptr<T> entity) {
-		std::shared_ptr<P> derived = std::dynamic_pointer_cast<P>(entity);
-		if (!derived) {
-			throw std::runtime_error("Dynamic cast failed: Cannot cast object to specified derived type.");
-		}
-		return derived;
-	}
-
-	inline bool hasExtension(std::string fullString, std::string ending) {
-		if (fullString.length() >= ending.length()) {
-			return (0 == fullString.compare(fullString.length() - ending.length(), ending.length(), ending));
-		}
-		else {
-			return false;
-		}
-	}
-
-	namespace Init 
+	namespace Init
 	{
 		inline VkImageCreateInfo imageCreateInfo()
 		{
@@ -79,6 +41,17 @@ namespace Hmck
 			imageViewCreateInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
 			return imageViewCreateInfo;
 		}
+
+		/** @brief Initialize an image memory barrier with no image transfer ownership */
+		inline VkImageMemoryBarrier imageMemoryBarrier()
+		{
+			VkImageMemoryBarrier imageMemoryBarrier{};
+			imageMemoryBarrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
+			imageMemoryBarrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+			imageMemoryBarrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+			return imageMemoryBarrier;
+		}
+
 
 		inline VkSamplerCreateInfo samplerCreateInfo()
 		{
@@ -283,7 +256,235 @@ namespace Hmck
 			return cmdBufferInheritanceInfo;
 		}
 
+		inline VkDescriptorSetLayoutBinding descriptorSetLayoutBinding(
+			VkDescriptorType type,
+			VkShaderStageFlags stageFlags,
+			uint32_t binding,
+			uint32_t descriptorCount = 1)
+		{
+			VkDescriptorSetLayoutBinding setLayoutBinding{};
+			setLayoutBinding.descriptorType = type;
+			setLayoutBinding.stageFlags = stageFlags;
+			setLayoutBinding.binding = binding;
+			setLayoutBinding.descriptorCount = descriptorCount;
+			return setLayoutBinding;
+		}
+
+		inline VkWriteDescriptorSet writeDescriptorSet(
+			VkDescriptorSet dstSet,
+			VkDescriptorType type,
+			uint32_t binding,
+			VkDescriptorBufferInfo* bufferInfo,
+			uint32_t descriptorCount = 1)
+		{
+			VkWriteDescriptorSet writeDescriptorSet{};
+			writeDescriptorSet.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+			writeDescriptorSet.dstSet = dstSet;
+			writeDescriptorSet.descriptorType = type;
+			writeDescriptorSet.dstBinding = binding;
+			writeDescriptorSet.pBufferInfo = bufferInfo;
+			writeDescriptorSet.descriptorCount = descriptorCount;
+			return writeDescriptorSet;
+		}
+
+		inline VkWriteDescriptorSet writeDescriptorSet(
+			VkDescriptorSet dstSet,
+			VkDescriptorType type,
+			uint32_t binding,
+			VkDescriptorImageInfo* imageInfo,
+			uint32_t descriptorCount = 1)
+		{
+			VkWriteDescriptorSet writeDescriptorSet{};
+			writeDescriptorSet.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+			writeDescriptorSet.dstSet = dstSet;
+			writeDescriptorSet.descriptorType = type;
+			writeDescriptorSet.dstBinding = binding;
+			writeDescriptorSet.pImageInfo = imageInfo;
+			writeDescriptorSet.descriptorCount = descriptorCount;
+			return writeDescriptorSet;
+		}
+
 	} // namespace Init
+
+	// dark magic from: https://stackoverflow.com/a/57595105
+	template <typename T, typename... Rest>
+	void hashCombine(std::size_t& seed, const T& v, const Rest&... rest) {
+		seed ^= std::hash<T>{}(v)+0x9e3779b9 + (seed << 6) + (seed >> 2);
+		(hashCombine(seed, rest), ...);
+	};
+
+	inline void checkResult(VkResult result)
+	{
+		assert(result == VK_SUCCESS && "Vulkan API assertion fail");
+	}
+
+	// Check if enity of type P is derived from T
+	template<typename T, typename P>
+	bool isInstanceOf(std::shared_ptr<T> entity) {
+		std::shared_ptr<P> derived = std::dynamic_pointer_cast<P>(entity);
+		return derived != nullptr;
+	}
+
+	// tries cast T to P
+	template<typename T, typename P>
+	std::shared_ptr<P> cast(std::shared_ptr<T> entity) {
+		std::shared_ptr<P> derived = std::dynamic_pointer_cast<P>(entity);
+		if (!derived) {
+			throw std::runtime_error("Dynamic cast failed: Cannot cast object to specified derived type.");
+		}
+		return derived;
+	}
+
+	inline bool hasExtension(std::string fullString, std::string ending) {
+		if (fullString.length() >= ending.length()) {
+			return (0 == fullString.compare(fullString.length() - ending.length(), ending.length(), ending));
+		}
+		else {
+			return false;
+		}
+	}
+
+	inline void setImageLayout(
+		VkCommandBuffer cmdbuffer,
+		VkImage image,
+		VkImageLayout oldImageLayout,
+		VkImageLayout newImageLayout,
+		VkImageSubresourceRange subresourceRange,
+		VkPipelineStageFlags srcStageMask = VK_PIPELINE_STAGE_ALL_COMMANDS_BIT,
+		VkPipelineStageFlags dstStageMask = VK_PIPELINE_STAGE_ALL_COMMANDS_BIT)
+	{
+		// Create an image barrier object
+		VkImageMemoryBarrier imageMemoryBarrier = Init::imageMemoryBarrier();
+		imageMemoryBarrier.oldLayout = oldImageLayout;
+		imageMemoryBarrier.newLayout = newImageLayout;
+		imageMemoryBarrier.image = image;
+		imageMemoryBarrier.subresourceRange = subresourceRange;
+
+		// Source layouts (old)
+		// Source access mask controls actions that have to be finished on the old layout
+		// before it will be transitioned to the new layout
+		switch (oldImageLayout)
+		{
+		case VK_IMAGE_LAYOUT_UNDEFINED:
+			// Image layout is undefined (or does not matter)
+			// Only valid as initial layout
+			// No flags required, listed only for completeness
+			imageMemoryBarrier.srcAccessMask = 0;
+			break;
+
+		case VK_IMAGE_LAYOUT_PREINITIALIZED:
+			// Image is preinitialized
+			// Only valid as initial layout for linear images, preserves memory contents
+			// Make sure host writes have been finished
+			imageMemoryBarrier.srcAccessMask = VK_ACCESS_HOST_WRITE_BIT;
+			break;
+
+		case VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL:
+			// Image is a color attachment
+			// Make sure any writes to the color buffer have been finished
+			imageMemoryBarrier.srcAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+			break;
+
+		case VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL:
+			// Image is a depth/stencil attachment
+			// Make sure any writes to the depth/stencil buffer have been finished
+			imageMemoryBarrier.srcAccessMask = VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
+			break;
+
+		case VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL:
+			// Image is a transfer source
+			// Make sure any reads from the image have been finished
+			imageMemoryBarrier.srcAccessMask = VK_ACCESS_TRANSFER_READ_BIT;
+			break;
+
+		case VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL:
+			// Image is a transfer destination
+			// Make sure any writes to the image have been finished
+			imageMemoryBarrier.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
+			break;
+
+		case VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL:
+			// Image is read by a shader
+			// Make sure any shader reads from the image have been finished
+			imageMemoryBarrier.srcAccessMask = VK_ACCESS_SHADER_READ_BIT;
+			break;
+		default:
+			// Other source layouts aren't handled (yet)
+			break;
+		}
+
+		// Target layouts (new)
+		// Destination access mask controls the dependency for the new image layout
+		switch (newImageLayout)
+		{
+		case VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL:
+			// Image will be used as a transfer destination
+			// Make sure any writes to the image have been finished
+			imageMemoryBarrier.dstAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
+			break;
+
+		case VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL:
+			// Image will be used as a transfer source
+			// Make sure any reads from the image have been finished
+			imageMemoryBarrier.dstAccessMask = VK_ACCESS_TRANSFER_READ_BIT;
+			break;
+
+		case VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL:
+			// Image will be used as a color attachment
+			// Make sure any writes to the color buffer have been finished
+			imageMemoryBarrier.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+			break;
+
+		case VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL:
+			// Image layout will be used as a depth/stencil attachment
+			// Make sure any writes to depth/stencil buffer have been finished
+			imageMemoryBarrier.dstAccessMask = imageMemoryBarrier.dstAccessMask | VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
+			break;
+
+		case VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL:
+			// Image will be read in a shader (sampler, input attachment)
+			// Make sure any writes to the image have been finished
+			if (imageMemoryBarrier.srcAccessMask == 0)
+			{
+				imageMemoryBarrier.srcAccessMask = VK_ACCESS_HOST_WRITE_BIT | VK_ACCESS_TRANSFER_WRITE_BIT;
+			}
+			imageMemoryBarrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
+			break;
+		default:
+			// Other source layouts aren't handled (yet)
+			break;
+		}
+
+		// Put barrier inside setup command buffer
+		vkCmdPipelineBarrier(
+			cmdbuffer,
+			srcStageMask,
+			dstStageMask,
+			0,
+			0, nullptr,
+			0, nullptr,
+			1, &imageMemoryBarrier);
+	}
+
+	// Fixed sub resource on first mip level and layer
+	inline void setImageLayout(
+		VkCommandBuffer cmdbuffer,
+		VkImage image,
+		VkImageAspectFlags aspectMask,
+		VkImageLayout oldImageLayout,
+		VkImageLayout newImageLayout,
+		VkPipelineStageFlags srcStageMask = VK_PIPELINE_STAGE_ALL_COMMANDS_BIT,
+		VkPipelineStageFlags dstStageMask = VK_PIPELINE_STAGE_ALL_COMMANDS_BIT)
+	{
+		VkImageSubresourceRange subresourceRange = {};
+		subresourceRange.aspectMask = aspectMask;
+		subresourceRange.baseMipLevel = 0;
+		subresourceRange.levelCount = 1;
+		subresourceRange.layerCount = 1;
+		setImageLayout(cmdbuffer, image, oldImageLayout, newImageLayout, subresourceRange, srcStageMask, dstStageMask);
+	}
+
+	
 
 	namespace Filesystem
 	{

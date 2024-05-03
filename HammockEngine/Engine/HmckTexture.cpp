@@ -237,6 +237,8 @@ void Hmck::TextureCubeMap::createSampler(Device& device, VkFilter filter)
 
 void Hmck::Texture2D::loadFromBuffer(unsigned char* buffer, uint32_t bufferSize, uint32_t width, uint32_t height, Device& device, VkFormat format, VkImageLayout imageLayout)
 {
+	this->width = width;
+	this->height = height;
 	Buffer stagingBuffer
 	{
 		device,
@@ -308,6 +310,8 @@ void Hmck::Texture2D::loadFromBuffer(unsigned char* buffer, uint32_t bufferSize,
 
 void Hmck::Texture2D::loadFromBuffer(float* buffer, uint32_t bufferSize, uint32_t width, uint32_t height, Device& device, VkFormat format, VkImageLayout imageLayout)
 {
+	this->width = width;
+	this->height = height;
 	Buffer stagingBuffer
 	{
 		device,

@@ -23,9 +23,7 @@ namespace Hmck
 
 		// irradiance map
 		Texture2DHandle irradianceMap;
-
-		// prefiltered map
-		Texture2DHandle prefilteredMap;
+		void generateIrradianceMap(Device& device, MemoryManager& memory);
 
 		// BRDFLUT
 		Texture2DHandle brdfLUT;

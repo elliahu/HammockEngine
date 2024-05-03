@@ -148,8 +148,9 @@ void Hmck::PBRApp::load()
 		.name = "Physically based rendering demo",});
 
 	EnvironmentLoader loader{ device, memoryManager};
-	loader.loadHDR("../../Resources/env/ibl/precomp/lebombo_prefiltered_map.hdr", scene->environment->prefilteredMap, VK_FORMAT_R32G32B32A32_SFLOAT);
-	loader.loadHDR("../../Resources/env/ibl/precomp/lebombo_irradiance_map.hdr", scene->environment->irradianceMap, VK_FORMAT_R32G32B32A32_SFLOAT);
+	loader.loadHDR("../../Resources/env/ibl/precomp/lebombo_prefiltered_map.hdr", scene->environment->evironmentMap, VK_FORMAT_R32G32B32A32_SFLOAT);
+	//loader.loadHDR("../../Resources/env/ibl/precomp/lebombo_irradiance_map.hdr", scene->environment->irradianceMap, VK_FORMAT_R32G32B32A32_SFLOAT);
+	scene->environment->generateIrradianceMap(device, memoryManager);
 	//loader.loadHDR("../../Resources/env/ibl/precomp/brdf_integration_map_ct_ggx.hdr", scene->environment->brdfLUT, VK_FORMAT_R32G32B32A32_SFLOAT);
 	scene->environment->generateBRDFLUT(device, memoryManager);
 
@@ -199,7 +200,7 @@ void Hmck::PBRApp::init()
 			.descriptorSetLayout = environmentDescriptorSetLayout,
 			.bufferWrites = {{0,sceneBufferInfo}},
 			.imageWrites = {
-				{2, memoryManager.getTexture2DDescriptorImageInfo(scene->environment->prefilteredMap)},
+				{2, memoryManager.getTexture2DDescriptorImageInfo(scene->environment->evironmentMap)},
 				{3, memoryManager.getTexture2DDescriptorImageInfo(scene->environment->brdfLUT)},
 				{4, memoryManager.getTexture2DDescriptorImageInfo(scene->environment->irradianceMap)},
 			},
