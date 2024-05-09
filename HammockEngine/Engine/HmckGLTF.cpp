@@ -56,6 +56,8 @@ void Hmck::GltfLoader::load(std::string filename)
 	loadTextures(model);
 	loadMaterials(model);
 	loadEntities(model);
+
+	
 }
 
 bool Hmck::GltfLoader::isBinary(std::string& filename)

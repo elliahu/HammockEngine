@@ -25,7 +25,7 @@ void Hmck::PBRApp::run()
 	scene->getActiveCamera()->setPerspectiveProjection(glm::radians(50.f), renderer.getAspectRatio(), 0.1f, 1000.f);
 
 	std::shared_ptr<OmniLight> light = std::make_shared<OmniLight>();
-	light->transform.translation = { 0.0f, 2.0f, -2.0f };
+	light->transform.translation = { 0.0f, 2.0f, 0.0f };
 	//scene->add(light);
 
 	auto currentTime = std::chrono::high_resolution_clock::now();
@@ -149,15 +149,19 @@ void Hmck::PBRApp::load()
 
 	EnvironmentLoader loader{ device, memoryManager};
 	loader.loadHDR("../../Resources/env/ibl/precomp/lebombo/lebombo_prefiltered_map.hdr", scene->environment->environmentSphere, VK_FORMAT_R32G32B32A32_SFLOAT);
+	//loader.loadHDR("../../Resources/env/ibl/studio.hdr", scene->environment->environmentSphere, VK_FORMAT_R32G32B32A32_SFLOAT);
 	scene->environment->generatePrefilteredSphere(device, memoryManager);
 	scene->environment->generateIrradianceSphere(device, memoryManager);
 	scene->environment->generateBRDFLUT(device, memoryManager);
 
 	GltfLoader gltfloader{ device, memoryManager, scene };
-	//gltfloader.load(std::string(MODELS_DIR) + "sponza/sponza.glb");
+	//gltfloader.load(std::string(MODELS_DIR) + "sponza/sponza_lights.glb");
 	gltfloader.load(std::string(MODELS_DIR) + "helmet/DamagedHelmet.glb");
+	//gltfloader.load(std::string(MODELS_DIR) + "SunTemple/SunTemple.glb");
+	//gltfloader.load(std::string(MODELS_DIR) + "Bistro/BistroExterior.glb");
 	//gltfloader.load(std::string(MODELS_DIR) + "helmet/helmet.glb");
 	//gltfloader.load(std::string(MODELS_DIR) + "Sphere/Sphere.glb");
+	//gltfloader.load(std::string(MODELS_DIR) + "Sphere/LambertSphere.glb");
 
 	vertexBuffer = memoryManager.createVertexBuffer({
 		.vertexSize = sizeof(scene->vertices[0]),
@@ -175,7 +179,7 @@ void Hmck::PBRApp::init()
 	environmentDescriptorSetLayout = memoryManager.createDescriptorSetLayout({
 		.bindings = {
 			{.binding = 0, .descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, .stageFlags = VK_SHADER_STAGE_ALL_GRAPHICS},
-			{.binding = 1, .descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, .stageFlags = VK_SHADER_STAGE_ALL_GRAPHICS, .count = 200, .bindingFlags = VK_DESCRIPTOR_BINDING_PARTIALLY_BOUND_BIT}, // bindless textures
+			{.binding = 1, .descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, .stageFlags = VK_SHADER_STAGE_ALL_GRAPHICS, .count = 2000, .bindingFlags = VK_DESCRIPTOR_BINDING_PARTIALLY_BOUND_BIT}, // bindless textures
 			{.binding = 2, .descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, .stageFlags = VK_SHADER_STAGE_ALL_GRAPHICS}, // prefiltered env map
 			{.binding = 3, .descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, .stageFlags = VK_SHADER_STAGE_ALL_GRAPHICS}, //  brdfLUT
 			{.binding = 4, .descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, .stageFlags = VK_SHADER_STAGE_ALL_GRAPHICS}, //  irradiance map
@@ -328,12 +332,14 @@ void Hmck::PBRApp::renderEntity(uint32_t frameIndex, VkCommandBuffer commandBuff
 						Material& material = scene->materials[primitive.materialIndex];
 
 						PrimitiveBufferData pData{
-						.baseColorFactor = material.baseColorFactor,
-						.baseColorTextureIndex = (material.baseColorTextureIndex != TextureIndex::Invalid) ? scene->textures[material.baseColorTextureIndex].imageIndex : TextureIndex::Invalid,
-						.normalTextureIndex = (material.normalTextureIndex != TextureIndex::Invalid) ? scene->textures[material.normalTextureIndex].imageIndex : TextureIndex::Invalid,
-						.metallicRoughnessTextureIndex = (material.metallicRoughnessTextureIndex != TextureIndex::Invalid) ? scene->textures[material.metallicRoughnessTextureIndex].imageIndex : TextureIndex::Invalid,
-						.occlusionTextureIndex = (material.occlusionTextureIndex != TextureIndex::Invalid) ? scene->textures[material.occlusionTextureIndex].imageIndex : TextureIndex::Invalid,
-						.alphaCutoff = material.alphaCutOff
+							.baseColorFactor = material.baseColorFactor,
+							.baseColorTextureIndex = (material.baseColorTextureIndex != TextureIndex::Invalid) ? scene->textures[material.baseColorTextureIndex].imageIndex : TextureIndex::Invalid,
+							.normalTextureIndex = (material.normalTextureIndex != TextureIndex::Invalid) ? scene->textures[material.normalTextureIndex].imageIndex : TextureIndex::Invalid,
+							.metallicRoughnessTextureIndex = (material.metallicRoughnessTextureIndex != TextureIndex::Invalid) ? scene->textures[material.metallicRoughnessTextureIndex].imageIndex : TextureIndex::Invalid,
+							.occlusionTextureIndex = (material.occlusionTextureIndex != TextureIndex::Invalid) ? scene->textures[material.occlusionTextureIndex].imageIndex : TextureIndex::Invalid,
+							.alphaCutoff = material.alphaCutOff,
+							.metallicFactor = material.metallicFactor,
+							.roughnessFactor = material.roughnessFactor
 						};
 
 						memoryManager.getBuffer(materialBuffers[primitive.materialIndex])->writeToBuffer(&pData);

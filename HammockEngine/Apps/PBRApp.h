@@ -73,6 +73,8 @@ namespace Hmck
 			uint32_t metallicRoughnessTextureIndex = TextureIndex::Invalid;
 			uint32_t occlusionTextureIndex = TextureIndex::Invalid;
 			float alphaCutoff = 1.0f;
+			float metallicFactor = 0.0f;
+			float roughnessFactor = 1.0f;
 		};
 
 		PBRApp();

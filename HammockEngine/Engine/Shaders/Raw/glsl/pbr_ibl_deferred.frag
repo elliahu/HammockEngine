@@ -37,50 +37,62 @@ layout (set = 1, binding = 0) uniform SceneUbo
 
 const float PI = 3.14159265359;
 
-float DistributionGGX(vec3 N, vec3 H, float roughness)
+// Normal Distribution function --------------------------------------
+float D_GGX(float dotNH, float roughness)
 {
-    float a = roughness*roughness;
-    float a2 = a*a;
-    float NdotH = max(dot(N, H), 0.0);
-    float NdotH2 = NdotH*NdotH;
-
-    float nom = a2;
-    float denom = (NdotH2 * (a2 - 1.0) + 1.0);
-    denom = PI * denom * denom;
-
-    return nom / denom;
+	float alpha = roughness * roughness;
+	float alpha2 = alpha * alpha;
+	float denom = dotNH * dotNH * (alpha2 - 1.0) + 1.0;
+	return (alpha2)/(PI * denom*denom); 
 }
 
-float GeometrySchlickGGX(float NdotV, float roughness)
+// Geometric Shadowing function --------------------------------------
+float G_SchlicksmithGGX(float dotNL, float dotNV, float roughness)
 {
-    float r = (roughness + 1.0);
-    float k = (r*r) / 8.0;
-
-    float nom = NdotV;
-    float denom = NdotV * (1.0 - k) + k;
-
-    return nom / denom;
+	float r = (roughness + 1.0);
+	float k = (r*r) / 8.0;
+	float GL = dotNL / (dotNL * (1.0 - k) + k);
+	float GV = dotNV / (dotNV * (1.0 - k) + k);
+	return GL * GV;
 }
 
-float GeometrySmith(vec3 N, vec3 V, vec3 L, float roughness)
+// Fresnel function ----------------------------------------------------
+vec3 F_Schlick(float cosTheta, vec3 F0)
 {
-    float NdotV = max(dot(N, V), 0.0);
-    float NdotL = max(dot(N, L), 0.0);
-    float ggx2 = GeometrySchlickGGX(NdotV, roughness);
-    float ggx1 = GeometrySchlickGGX(NdotL, roughness);
-
-    return ggx1 * ggx2;
-}
-
-vec3 fresnelSchlick(float cosTheta, vec3 F0)
-{
-    return F0 + (1.0 - F0) * pow(1.0 - cosTheta, 5.0);
+	return F0 + (1.0 - F0) * pow(1.0 - cosTheta, 5.0);
 }
 vec3 F_SchlickR(float cosTheta, vec3 F0, float roughness)
 {
 	return F0 + (max(vec3(1.0 - roughness), F0) - F0) * pow(1.0 - cosTheta, 5.0);
 }
 
+vec3 specularContribution(vec3 L, vec3 V, vec3 N, vec3 F0, vec3 albedo, float metallic, float roughness)
+{
+	// Precalculate vectors and dot products	
+	vec3 H = normalize (V + L);
+	float dotNH = clamp(dot(N, H), 0.0, 1.0);
+	float dotNV = clamp(dot(N, V), 0.0, 1.0);
+	float dotNL = clamp(dot(N, L), 0.0, 1.0);
+
+	// Light color fixed
+	vec3 lightColor = vec3(1.0);
+
+	vec3 color = vec3(0.0);
+
+	if (dotNL > 0.0) {
+		// D = Normal distribution (Distribution of the microfacets)
+		float D = D_GGX(dotNH, roughness); 
+		// G = Geometric shadowing term (Microfacets shadowing)
+		float G = G_SchlicksmithGGX(dotNL, dotNV, roughness);
+		// F = Fresnel factor (Reflectance depending on angle of incidence)
+		vec3 F = F_Schlick(dotNV, F0);		
+		vec3 spec = D * F * G / (4.0 * dotNL * dotNV + 0.001);		
+		vec3 kD = (vec3(1.0) - F) * (1.0 - metallic);			
+		color += (kD * albedo / PI + spec) * dotNL;
+	}
+
+	return color;
+}
 
 // Function to calculate spherical UV coordinates from a direction vector
 vec2 toSphericalUV(vec3 direction)
@@ -89,7 +101,7 @@ vec2 toSphericalUV(vec3 direction)
     float theta = acos(direction.y);
     float u = phi / (2.0 * PI) + 0.5;
     float v = theta / PI;
-    return vec2(u, -v);
+    return vec2(u, v);
 }
 
 // From http://filmicgames.com/archives/75
@@ -124,7 +136,6 @@ void main()
     vec3 position = texture(positionSampler, uv).rgb;
     vec3 V = normalize(-position);
     vec3 R = reflect(-V, N); 
-    // TODO transform the ray R into the view space
     R = mat3(scene.inverseView) * R;
     vec3 albedo = texture(albedoSampler, uv).rgb;
     vec3 material = texture(materialPropertySampler, uv).rgb;
@@ -135,39 +146,23 @@ void main()
     if(material == vec3(-1.0)) // background pixels are skipped
     {
         outColor = vec4(albedo, 1.0);
+		//outColor = texture(irradinaceSampler, uv);
         return;
     }
 
     vec3 F0 = vec3(0.04); 
 	F0 = mix(F0, albedo, metallic);
 
-    vec3 Lo = vec3(0);
-    // Add contribution from other point lights
-    for(int i = 0; i < env.numOmniLights; ++i) {
-        vec3 L = normalize(env.omniLights[i].position.xyz - position);
-        vec3 H = normalize(V + L);
-        float distance    = length(env.omniLights[i].position.xyz - position);
-        float attenuation = 1.0 / (distance * distance);
-        vec3 radiance     = env.omniLights[i].color.rgb * attenuation;
-
-        // Cook-Torrance BRDF
-        float NDF = DistributionGGX(N, H, roughness);   
-        float G   = GeometrySmith(N, V, L, roughness);    
-        vec3 F    = fresnelSchlick(max(dot(H, V), 0.0), F0);     
-
-        vec3 nominator    = NDF * G * F;
-        float denominator = 4 * max(dot(N, V), 0.0) * max(dot(N, L), 0.0) + 0.001; // prevent division by zero
-        vec3 specular = nominator / denominator;
-
-        // Add to outgoing radiance Lo
-        float NdotL = max(dot(N, L), 0.0);
-        Lo += (specular + albedo / PI) * radiance * NdotL;
-    }
+    vec3 Lo = vec3(0.0);
+	 for(int i = 0; i < env.numOmniLights; ++i) {
+		vec3 L = normalize(env.omniLights[i].position.xyz - position);
+		Lo += specularContribution(L, V, N, F0, albedo, metallic, roughness);
+	}   
 
 
     vec2 brdf = texture(brdfLUTSampler, vec2(max(dot(N, V), 0.0), roughness)).rg;
     vec3 reflection = prefilteredReflection(toSphericalUV(R), roughness).rgb;	
-	vec3 irradiance = texture(irradinaceSampler, toSphericalUV(N)).rgb;
+	vec3 irradiance = texture(irradinaceSampler, toSphericalUV(mat3(scene.inverseView) * N)).rgb;
 
 	// Diffuse based on irradiance
 	vec3 diffuse = irradiance * albedo;	
@@ -182,7 +177,7 @@ void main()
 	kD *= 1.0 - metallic;	  
 	vec3 ambient = (kD * diffuse + specular + Lo) * vec3(ao);
 	
-	vec3 color = ambient;
+	vec3 color = ambient * ao;
 
     // Tone mapping
 	color = Uncharted2Tonemap(color * EXPOSURE);

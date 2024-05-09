@@ -107,7 +107,7 @@ void main()
 		vec3 T = normalize(tangent).xyz;
 		vec3 B = cross(normal, tangent.xyz) * tangent.w;
 		mat3 TBN = mat3(T, B, N);
-		_normal = vec4(TBN * normalize(texture(textures[material.normalTextureIndex], uv).xyz * 2.0 - vec3(1.0)),1.0);
+		_normal = vec4(TBN * normalize(texture(textures[material.normalTextureIndex], uv).xyz * 2.0 - 1.0),1.0);
 	}
 	else
 	{

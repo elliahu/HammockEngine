@@ -87,13 +87,10 @@ void main()
     float ao = material.b;
 
 	if(material == vec3(-1.0)) // background pixels are skipped
-	{
-        // apply tone mapping
-        vec3 color = albedo / (albedo + vec3(1.0));
-        color = pow(color, vec3(1.0/2.2)); 
-		outColor = vec4(color, 1.0);
-		return;
-	}
+    {
+        outColor = vec4(albedo, 1.0);
+        return;
+    }
 		
     vec3 F0 = vec3(0.04); 
     F0 = mix(F0, albedo, metallic);

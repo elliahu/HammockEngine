@@ -42,7 +42,7 @@ void main()
     vec2 uv;
     uv.x = atan(direction.z, direction.x) / (2.0 * 3.14159265358979323846) + 0.5;
     uv.y = asin(direction.y) / 3.14159265358979323846 + 0.5;
-    
+    uv.y *= -1;
     // Sample the environment map in the calculated direction
     vec3 color = texture(environmentSampler, uv).rgb;
     // Tone mapping

@@ -62,7 +62,7 @@ vec2 toSphericalUV(vec3 direction)
     float theta = acos(direction.y);
     float u = phi / (2.0 * PI) + 0.5;
     float v = theta / PI;
-    return vec2(u, -v);
+    return vec2(u, v);
 }
 
 
