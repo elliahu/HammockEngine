@@ -124,6 +124,8 @@ void main()
     vec3 position = texture(positionSampler, uv).rgb;
     vec3 V = normalize(-position);
     vec3 R = reflect(-V, N); 
+    // TODO transform the ray R into the view space
+    R = mat3(scene.inverseView) * R;
     vec3 albedo = texture(albedoSampler, uv).rgb;
     vec3 material = texture(materialPropertySampler, uv).rgb;
     float roughness = material.r;

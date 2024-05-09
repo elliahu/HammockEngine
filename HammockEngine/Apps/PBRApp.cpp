@@ -26,7 +26,7 @@ void Hmck::PBRApp::run()
 
 	std::shared_ptr<OmniLight> light = std::make_shared<OmniLight>();
 	light->transform.translation = { 0.0f, 2.0f, -2.0f };
-	scene->add(light);
+	//scene->add(light);
 
 	auto currentTime = std::chrono::high_resolution_clock::now();
 	while (!window.shouldClose())
@@ -155,11 +155,9 @@ void Hmck::PBRApp::load()
 
 	GltfLoader gltfloader{ device, memoryManager, scene };
 	//gltfloader.load(std::string(MODELS_DIR) + "sponza/sponza.glb");
-	//gltfloader.load(std::string(MODELS_DIR) + "helmet/DamagedHelmet.glb");
-	gltfloader.load(std::string(MODELS_DIR) + "helmet/helmet.glb");
+	gltfloader.load(std::string(MODELS_DIR) + "helmet/DamagedHelmet.glb");
+	//gltfloader.load(std::string(MODELS_DIR) + "helmet/helmet.glb");
 	//gltfloader.load(std::string(MODELS_DIR) + "Sphere/Sphere.glb");
-
-	
 
 	vertexBuffer = memoryManager.createVertexBuffer({
 		.vertexSize = sizeof(scene->vertices[0]),
@@ -369,7 +367,6 @@ void Hmck::PBRApp::createPipelines(Renderer& renderer)
 		{ VK_FORMAT_D32_SFLOAT, VK_FORMAT_D32_SFLOAT_S8_UINT, VK_FORMAT_D24_UNORM_S8_UINT },
 		VK_IMAGE_TILING_OPTIMAL,
 		VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT);
-
 
 
 	gbufferFramebuffer = Framebuffer::createFramebufferPtr({
