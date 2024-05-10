@@ -155,31 +155,6 @@ void Hmck::Renderer::beginRenderPass(
 	vkCmdSetScissor(commandBuffer, 0, 1, &scissor);
 }
 
-void Hmck::Renderer::beginRenderPass(Framebuffer& framebuffer, VkCommandBuffer commandBuffer, std::vector<VkClearValue> clearValues)
-{
-	assert(isFrameInProgress() && "Cannot call beginRenderPass if frame is not in progress");
-	assert(commandBuffer == getCurrentCommandBuffer() && "Cannot begin render pass on command buffer from a different frame");
-	assert(framebuffer.renderPass && "Provided framebuffer doesn't have a render pass");
-
-	VkRenderPassBeginInfo renderPassInfo{};
-	renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
-	renderPassInfo.renderPass = framebuffer.renderPass;
-	renderPassInfo.framebuffer = framebuffer.framebuffer;
-	renderPassInfo.renderArea.offset = { 0, 0 };
-	renderPassInfo.renderArea.extent = { framebuffer.width, framebuffer.height };
-	renderPassInfo.clearValueCount = static_cast<uint32_t>(clearValues.size());
-	renderPassInfo.pClearValues = clearValues.data();
-
-	vkCmdBeginRenderPass(commandBuffer, &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
-
-	VkViewport viewport = Hmck::Init::viewport(
-		static_cast<float>(framebuffer.width),
-		static_cast<float>(framebuffer.height),
-		0.0f, 1.0f);
-	VkRect2D scissor{ {0,0}, { framebuffer.width, framebuffer.height} };
-	vkCmdSetViewport(commandBuffer, 0, 1, &viewport);
-	vkCmdSetScissor(commandBuffer, 0, 1, &scissor);
-}
 
 void Hmck::Renderer::beginSwapChainRenderPass(VkCommandBuffer commandBuffer)
 {

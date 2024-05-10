@@ -67,10 +67,6 @@ namespace Hmck
 			std::unique_ptr<Framebuffer>& framebuffer,
 			VkCommandBuffer commandBuffer,
 			std::vector<VkClearValue> clearValues);
-		void beginRenderPass(
-			Framebuffer& framebuffer,
-			VkCommandBuffer commandBuffer,
-			std::vector<VkClearValue> clearValues);
 		void endRenderPass(VkCommandBuffer commandBuffer);
 
 

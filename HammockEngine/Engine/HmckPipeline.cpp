@@ -47,6 +47,7 @@ Hmck::GraphicsPipeline::GraphicsPipeline(Hmck::GraphicsPipeline::GraphicsPipelin
 	configInfo.depthStencilInfo.depthTestEnable = createInfo.graphicsState.depthTest;
 	configInfo.depthStencilInfo.depthWriteEnable = createInfo.graphicsState.depthTest;
 	configInfo.rasterizationInfo.cullMode = createInfo.graphicsState.cullMode;
+	configInfo.rasterizationInfo.frontFace = createInfo.graphicsState.frontFace;
 
 	configInfo.dynamicStateEnables = createInfo.dynamicState.dynamicStateEnables;
 	configInfo.dynamicStateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO;

@@ -286,6 +286,7 @@ void Hmck::UserInterface::entityComponets(std::shared_ptr<Entity> entity, std::u
 {
 	glm::vec3 translation = entity->transform.translation;
 	glm::vec3 rotation = entity->transform.rotation;
+	glm::vec3 scale = entity->transform.scale;
 
 	if (ImGui::CollapsingHeader("Transform")) // Tranform
 	{
@@ -303,7 +304,7 @@ void Hmck::UserInterface::entityComponets(std::shared_ptr<Entity> entity, std::u
 		}
 	}
 
-	if (translation != entity->transform.translation || rotation != entity->transform.rotation)
+	if (translation != entity->transform.translation || rotation != entity->transform.rotation || scale != entity->transform.scale)
 	{
 		// Data changed
 		dataChanged[entity->id] = true;

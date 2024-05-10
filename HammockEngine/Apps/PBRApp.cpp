@@ -162,9 +162,9 @@ void Hmck::PBRApp::load()
 	GltfLoader gltfloader{ device, memoryManager, scene };
 	//gltfloader.load(std::string(MODELS_DIR) + "sponza/sponza_lights.glb");
 	//gltfloader.load(std::string(MODELS_DIR) + "helmet/DamagedHelmet.glb");
-	//gltfloader.load(std::string(MODELS_DIR) + "helmet/helmet.glb");
+	gltfloader.load(std::string(MODELS_DIR) + "helmet/helmet.glb");
 	//gltfloader.load(std::string(MODELS_DIR) + "Bistro/BistroInterior.glb");
-	gltfloader.load(std::string(MODELS_DIR) + "Bistro/BistroExterior.glb");
+	//gltfloader.load(std::string(MODELS_DIR) + "Bistro/BistroExterior.glb");
 	//gltfloader.load(std::string(MODELS_DIR) + "Sphere/LambertSphere.glb");
 
 	vertexBuffer = memoryManager.createVertexBuffer({
@@ -306,7 +306,7 @@ void Hmck::PBRApp::renderEntity(uint32_t frameIndex, VkCommandBuffer commandBuff
 
 		if (_entity->mesh.primitives.size() > 0)
 		{
-			if (entityDataUpdated[_entity->id])
+			if (entityDataUpdated[_entity->id] || true) // for now
 			{
 				glm::mat4 model = entity->transform.mat4();
 				std::shared_ptr<Entity> currentParent = scene->getEntity(entity->parent);
@@ -569,7 +569,7 @@ void Hmck::PBRApp::createPipelines(Renderer& renderer)
 			.entryFunc = "main"
 		},
 		.FS {
-			.byteCode = Hmck::Filesystem::readFile("../../HammockEngine/Engine/Shaders/Compiled/pbr_deferred.frag.spv"),
+			.byteCode = Hmck::Filesystem::readFile("../../HammockEngine/Engine/Shaders/Compiled/pbr_ibl_deferred.frag.spv"),
 			.entryFunc = "main"
 		},
 		.descriptorSetLayouts = {
