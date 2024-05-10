@@ -26,7 +26,13 @@ void Hmck::PBRApp::run()
 
 	std::shared_ptr<OmniLight> light = std::make_shared<OmniLight>();
 	light->transform.translation = { 0.0f, 2.0f, 0.0f };
-	//scene->add(light);
+	scene->add(light);
+
+	FrameBufferData data{
+		.projection = scene->getActiveCamera()->getProjection(),
+		.view = scene->getActiveCamera()->getView(),
+		.inverseView = scene->getActiveCamera()->getInverseView()
+	};
 
 	auto currentTime = std::chrono::high_resolution_clock::now();
 	while (!window.shouldClose())
@@ -81,11 +87,10 @@ void Hmck::PBRApp::run()
 				0, nullptr);
 
 
-			FrameBufferData data{
-				.projection = scene->getActiveCamera()->getProjection(),
-				.view = scene->getActiveCamera()->getView(),
-				.inverseView = scene->getActiveCamera()->getInverseView()
-			};
+			data.projection = scene->getActiveCamera()->getProjection();
+			data.view = scene->getActiveCamera()->getView();
+			data.inverseView = scene->getActiveCamera()->getInverseView();
+
 			memoryManager.getBuffer(frameBuffers[frameIndex])->writeToBuffer(&data);
 
 			memoryManager.bindDescriptorSet(
@@ -129,6 +134,7 @@ void Hmck::PBRApp::run()
 				ui.showDebugStats(scene->getActiveCamera());
 				ui.showWindowControls();
 				ui.showEntityInspector(scene);
+				ui.showColorSettings(&data.exposure, &data.gamma, &data.whitePoint);
 				ui.endUserInterface(commandBuffer);
 			}
 
@@ -148,19 +154,20 @@ void Hmck::PBRApp::load()
 		.name = "Physically based rendering demo",});
 
 	EnvironmentLoader loader{ device, memoryManager};
-	loader.loadHDR("../../Resources/env/ibl/precomp/lebombo/lebombo_prefiltered_map.hdr", scene->environment->environmentSphere, VK_FORMAT_R32G32B32A32_SFLOAT);
-	//loader.loadHDR("../../Resources/env/ibl/studio.hdr", scene->environment->environmentSphere, VK_FORMAT_R32G32B32A32_SFLOAT);
+	//loader.loadHDR("../../Resources/env/ibl/precomp/lebombo/lebombo_prefiltered_map.hdr", scene->environment->environmentSphere, VK_FORMAT_R32G32B32A32_SFLOAT);
+	//loader.loadHDR("../../Resources/env/ibl/room.hdr", scene->environment->environmentSphere, VK_FORMAT_R32G32B32A32_SFLOAT);
+	loader.loadHDR("../../Resources/env/ibl/sunset.hdr", scene->environment->environmentSphere, VK_FORMAT_R32G32B32A32_SFLOAT);
 	scene->environment->generatePrefilteredSphere(device, memoryManager);
 	scene->environment->generateIrradianceSphere(device, memoryManager);
 	scene->environment->generateBRDFLUT(device, memoryManager);
 
 	GltfLoader gltfloader{ device, memoryManager, scene };
 	//gltfloader.load(std::string(MODELS_DIR) + "sponza/sponza_lights.glb");
-	gltfloader.load(std::string(MODELS_DIR) + "helmet/DamagedHelmet.glb");
+	//gltfloader.load(std::string(MODELS_DIR) + "helmet/DamagedHelmet.glb");
 	//gltfloader.load(std::string(MODELS_DIR) + "SunTemple/SunTemple.glb");
 	//gltfloader.load(std::string(MODELS_DIR) + "Bistro/BistroExterior.glb");
-	//gltfloader.load(std::string(MODELS_DIR) + "helmet/helmet.glb");
-	//gltfloader.load(std::string(MODELS_DIR) + "Sphere/Sphere.glb");
+	gltfloader.load(std::string(MODELS_DIR) + "helmet/helmet.glb");
+	//gltfloader.load(std::string(MODELS_DIR) + "BrassCookware/brass_vase_03_4k.gltf");
 	//gltfloader.load(std::string(MODELS_DIR) + "Sphere/LambertSphere.glb");
 
 	vertexBuffer = memoryManager.createVertexBuffer({

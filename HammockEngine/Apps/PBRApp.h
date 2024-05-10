@@ -57,6 +57,9 @@ namespace Hmck
 			glm::mat4 projection{ 1.f };
 			glm::mat4 view{ 1.f };
 			glm::mat4 inverseView{ 1.f };
+			float exposure = 4.5f;
+			float gamma = 2.2f;
+			float whitePoint = 11.2f;
 		};
 
 		struct EntityBufferData

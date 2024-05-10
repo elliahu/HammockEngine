@@ -98,10 +98,19 @@ void Hmck::UserInterface::showEntityInspector(std::unique_ptr<Scene>& scene)
 	ImGui::SetNextWindowPos({ 10, 130 }, ImGuiCond_Once, { 0,0 });
 	ImGui::SetNextWindowSizeConstraints({ 300, 200 }, ImVec2(static_cast<float>(window.getExtent().width), 500));
 	beginWindow("Entity Inspector", (bool*)false, ImGuiWindowFlags_AlwaysAutoResize);
+	ImGui::Text("Scene props");
 	ImGui::Text("Inspect all entities in the scene", window_flags);
-
 	inspectEntity(scene->getRoot(),scene);
+	endWindow();
+}
 
+void Hmck::UserInterface::showColorSettings(float* exposure, float* gamma, float * whitePoint)
+{
+	const ImGuiWindowFlags window_flags = ImGuiWindowFlags_AlwaysAutoResize;
+	beginWindow("Color settings", (bool*)false, ImGuiWindowFlags_AlwaysAutoResize);
+	ImGui::DragFloat("Exposure", exposure, 0.01f, 0.01f);
+	ImGui::DragFloat("Gamma", gamma, 0.01f, 0.01f);
+	ImGui::DragFloat("White point", whitePoint, 0.01f, 0.01f);
 	endWindow();
 }
 
@@ -211,27 +220,29 @@ void Hmck::UserInterface::setupStyle()
 	style.WindowTitleAlign = { .5f, .5f };
 
 	// colors
-	style.Colors[ImGuiCol_TitleBg] = ImVec4(15 / 255.0f, 15 / 255.0f, 15 / 255.0f, 146 / 240.0f);
-	style.Colors[ImGuiCol_FrameBg] = ImVec4(60 / 255.0f, 60 / 255.0f, 60 / 255.0f, 170 / 255.0f);
-	style.Colors[ImGuiCol_FrameBgHovered] = ImVec4(60 / 255.0f, 60 / 255.0f, 60 / 255.0f, 255 / 255.0f);
-	style.Colors[ImGuiCol_FrameBgActive] = ImVec4(60 / 255.0f, 60 / 255.0f, 60 / 255.0f, 255 / 255.0f);
+	style.Colors[ImGuiCol_TitleBg] = ImVec4(241 / 255.0f, 135 / 255.0f, 1 / 255.0f, 170 / 255.0f);
+	style.Colors[ImGuiCol_TitleBgActive] = ImVec4(241 / 255.0f, 135 / 255.0f, 1 / 255.0f, 255 / 255.0f);
+	style.Colors[ImGuiCol_TitleBgCollapsed] = ImVec4(241 / 255.0f, 135 / 255.0f, 1 / 255.0f, 170 / 255.0f);
+	style.Colors[ImGuiCol_FrameBg] = ImVec4(48 / 255.0f, 48 / 255.0f, 54 / 255.0f, 255 / 255.0f);
+	style.Colors[ImGuiCol_FrameBgHovered] = ImVec4(48 / 255.0f, 48 / 255.0f, 54 / 255.0f, 255 / 255.0f);
+	style.Colors[ImGuiCol_FrameBgActive] = ImVec4(48 / 255.0f, 48 / 255.0f, 54 / 255.0f, 255 / 255.0f);
 	style.Colors[ImGuiCol_MenuBarBg] = ImVec4(33 / 255.0f, 33 / 255.0f, 33 / 255.0f, 50 / 255.0f);
 	style.Colors[ImGuiCol_CheckMark] = ImVec4(200 / 255.0f, 200 / 255.0f, 200 / 255.0f, 255 / 255.0f);
 	style.Colors[ImGuiCol_SliderGrab] = ImVec4(200 / 255.0f, 200 / 255.0f, 200 / 255.0f, 255 / 255.0f);
 	style.Colors[ImGuiCol_SliderGrabActive] = ImVec4(255 / 255.0f, 255 / 255.0f, 255 / 255.0f, 255 / 255.0f);
-	style.Colors[ImGuiCol_Header] = ImVec4(60 / 255.0f, 60 / 255.0f, 60 / 255.0f, 79 / 255.0f);
-	style.Colors[ImGuiCol_HeaderHovered] = ImVec4(60 / 255.0f, 60 / 255.0f, 60 / 255.0f, 170 / 255.0f);
-	style.Colors[ImGuiCol_HeaderActive] = ImVec4(60 / 255.0f, 60 / 255.0f, 60 / 255.0f, 170 / 255.0f);
+	style.Colors[ImGuiCol_Header] = ImVec4(60 / 255.0f, 60 / 255.0f, 60 / 255.0f, 170 / 255.0f);
+	style.Colors[ImGuiCol_HeaderHovered] = ImVec4(241 / 255.0f, 135 / 255.0f, 1 / 255.0f, 255 / 255.0f);
+	style.Colors[ImGuiCol_HeaderActive] = ImVec4(241 / 255.0f, 135 / 255.0f, 1 / 255.0f, 255 / 255.0f);
 	style.Colors[ImGuiCol_Separator] = ImVec4(60 / 255.0f, 60 / 255.0f, 60 / 255.0f, 170 / 255.0f);
 	style.Colors[ImGuiCol_ResizeGrip] = ImVec4(60 / 255.0f, 60 / 255.0f, 60 / 255.0f, 79 / 255.0f);
 	style.Colors[ImGuiCol_ResizeGripHovered] = ImVec4(60 / 255.0f, 60 / 255.0f, 60 / 255.0f, 170 / 255.0f);
 	style.Colors[ImGuiCol_ResizeGripActive] = ImVec4(60 / 255.0f, 60 / 255.0f, 60 / 255.0f, 170 / 255.0f);
 	style.Colors[ImGuiCol_Tab] = ImVec4(60 / 255.0f, 60 / 255.0f, 60 / 255.0f, 79 / 255.0f);
 	style.Colors[ImGuiCol_TabHovered] = ImVec4(60 / 255.0f, 60 / 255.0f, 60 / 255.0f, 170 / 255.0f);
-	style.Colors[ImGuiCol_TabActive] = ImVec4(60 / 255.0f, 60 / 255.0f, 60 / 255.0f, 170 / 255.0f);
+	style.Colors[ImGuiCol_TabActive] = ImVec4(241 / 255.0f, 135 / 255.0f, 1 / 255.0f, 255 / 255.0f);
 	style.Colors[ImGuiCol_Button] = ImVec4(80 / 255.0f, 80 / 255.0f, 80 / 255.0f, 170 / 255.0f);
-	style.Colors[ImGuiCol_ButtonHovered] = ImVec4(100 / 255.0f, 100 / 255.0f, 100 / 255.0f, 170 / 255.0f);
-	style.Colors[ImGuiCol_ButtonActive] = ImVec4(255 / 255.0f, 255 / 255.0f, 255 / 255.0f, 170 / 255.0f);
+	style.Colors[ImGuiCol_ButtonHovered] = ImVec4(241 / 255.0f, 135 / 255.0f, 1 / 255.0f, 255 / 255.0f);
+	style.Colors[ImGuiCol_ButtonActive] = ImVec4(241 / 255.0f, 135 / 255.0f, 1 / 255.0f, 255 / 255.0f);
 }
 
 VkCommandBuffer Hmck::UserInterface::beginSingleTimeCommands()

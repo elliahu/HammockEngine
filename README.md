@@ -34,9 +34,8 @@ The following NuGet packages are used:
 
 
 ![glTF 2.0](https://raw.githubusercontent.com/elliahu/HammockEngine/master/Img/IBL.png)
+![PBR](https://raw.githubusercontent.com/elliahu/HammockEngine/master/Img/pbr2.png)
+![Sponza](https://raw.githubusercontent.com/elliahu/HammockEngine/master/Img/sponza_pbr.png)
 ![Cloud](https://raw.githubusercontent.com/elliahu/HammockEngine/master/Img/cloud.png)
-![Smoke](https://raw.githubusercontent.com/elliahu/HammockEngine/master/Img/smoke.png)
-![Sponza4](https://raw.githubusercontent.com/elliahu/HammockEngine/master/Img/sponza4.png)
-![SSAO](https://raw.githubusercontent.com/elliahu/HammockEngine/master/Img/ssao.png)
 
 

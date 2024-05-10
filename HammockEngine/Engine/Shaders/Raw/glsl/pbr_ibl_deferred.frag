@@ -33,6 +33,9 @@ layout (set = 1, binding = 0) uniform SceneUbo
     mat4 projection;
     mat4 view;
     mat4 inverseView;
+	float exposure;
+	float gamma;
+	float whitePoint;
 } scene;
 
 const float PI = 3.14159265359;
@@ -116,8 +119,6 @@ vec3 Uncharted2Tonemap(vec3 x)
 	return ((x*(A*x+C*B)+D*E)/(x*(A*x+B)+D*F))-E/F;
 }
 
-const float EXPOSURE = 4.0;
-const float GAMMA = 2.2;
 
 vec3 prefilteredReflection(vec2 R, float roughness)
 {
@@ -180,10 +181,10 @@ void main()
 	vec3 color = ambient * ao;
 
     // Tone mapping
-	color = Uncharted2Tonemap(color * EXPOSURE);
-	color = color * (1.0f / Uncharted2Tonemap(vec3(11.2f)));	
+	color = Uncharted2Tonemap(color * scene.exposure);
+	color = color * (1.0f / Uncharted2Tonemap(vec3(scene.whitePoint)));	
 	// Gamma correction
-	color = pow(color, vec3(1.0f / GAMMA));
+	color = pow(color, vec3(1.0f / scene.gamma));
 
     outColor = vec4(ambient, 1.0);
 }

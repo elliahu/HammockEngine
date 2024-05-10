@@ -32,6 +32,8 @@ layout (set = 1, binding = 0) uniform SceneUbo
     mat4 projection;
     mat4 view;
     mat4 inverseView;
+	float exposure;
+	float gamma;
 } scene;
 
 
@@ -73,7 +75,7 @@ void main()
 	if(material.baseColorTextureIndex == INVALID_TEXTURE)
 		_albedo = material.baseColorFactor;
 	else 
-		_albedo = vec4(pow(texture(textures[material.baseColorTextureIndex], uv).rgb, vec3(1.0)),1);
+		_albedo = vec4(pow(texture(textures[material.baseColorTextureIndex], uv).rgb, vec3(scene.gamma)),1);
 
     float roughness;
 	if(material.metallicRoughnessTextureIndex == INVALID_TEXTURE)

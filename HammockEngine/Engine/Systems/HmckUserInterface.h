@@ -37,6 +37,7 @@ namespace Hmck
 		void showWindowControls();
 		void showEntityComponents(std::shared_ptr<Entity>& entity, bool* close = (bool*)0);
 		void showEntityInspector(std::unique_ptr<Scene>& scene);
+		void showColorSettings(float* exposure, float* gamma, float * whitePoint);
 		void showLog();
 
 		// forwarding events to ImGUI

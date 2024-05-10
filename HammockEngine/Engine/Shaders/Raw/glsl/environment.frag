@@ -14,6 +14,9 @@ layout(set = 1, binding = 0) uniform SceneUbo
     mat4 projection;
     mat4 view;
     mat4 inverseView;
+    float exposure;
+    float gamma;
+    float whitePoint;
 } scene;
 
 // From http://filmicworlds.com/blog/filmic-tonemapping-operators/
@@ -46,10 +49,10 @@ void main()
     // Sample the environment map in the calculated direction
     vec3 color = texture(environmentSampler, uv).rgb;
     // Tone mapping
-	color = Uncharted2Tonemap(color * EXPOSURE);
-	color = color * (1.0f / Uncharted2Tonemap(vec3(11.2f)));	
+	color = Uncharted2Tonemap(color * scene.exposure);
+	color = color * (1.0f / Uncharted2Tonemap(vec3(scene.whitePoint)));	
 	// Gamma correction
-	color = pow(color, vec3(1.0f / GAMMA));
+	color = pow(color, vec3(1.0f / scene.gamma));
 
     // Output the environment color as fragment color
     outFragColor = vec4(color, 1.0);
