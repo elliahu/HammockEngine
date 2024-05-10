@@ -430,6 +430,7 @@ void Hmck::GltfLoader::loadIOmniLight(gltf::Node& node, gltf::Model& model, Enti
 	light->parent = parent;
 	light->name = node.name;
 	scene->add(light);
+	scene->lights.push_back(light->id);
 
 	if (node.translation.size() == 3) {
 		light->transform.translation = glm::vec3(glm::make_vec3(node.translation.data()));

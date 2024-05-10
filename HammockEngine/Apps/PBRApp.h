@@ -48,7 +48,7 @@ namespace Hmck
 				glm::vec4 color;
 			};
 
-			OmniLight omniLights[10]; // TODO lights should be in frame buffer data
+			OmniLight omniLights[1000]; // TODO lights should be in frame buffer data
 			uint32_t numOmniLights = 0;
 		};
 

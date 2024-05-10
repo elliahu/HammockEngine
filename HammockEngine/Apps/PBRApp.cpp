@@ -26,7 +26,7 @@ void Hmck::PBRApp::run()
 
 	std::shared_ptr<OmniLight> light = std::make_shared<OmniLight>();
 	light->transform.translation = { 0.0f, 2.0f, 0.0f };
-	scene->add(light);
+	//scene->add(light);
 
 	FrameBufferData data{
 		.projection = scene->getActiveCamera()->getProjection(),
@@ -66,14 +66,12 @@ void Hmck::PBRApp::run()
 			// write env data
 			EnvironmentBufferData envData{};
 			uint32_t ldx = 0;
-			for (int i = 0; i < scene->entities.size(); i++)
+			for (int i = 0; i < scene->lights.size(); i++)
 			{
-				if (isInstanceOf<Entity, OmniLight>(scene->entities[i]))
-				{
-					auto l = cast<Entity, OmniLight>(scene->entities[i]);
-					envData.omniLights[ldx] = { .position = scene->getActiveCamera()->getView() * glm::vec4(l->transform.translation,1.0f), .color = glm::vec4(l->color,1.0f) };
-					ldx++;
-				}
+				uint32_t lightId = scene->lights[i];
+				auto l = cast<Entity, OmniLight>(scene->entities[lightId]);
+				envData.omniLights[ldx] = { .position = scene->getActiveCamera()->getView() * glm::vec4(l->transform.translation,1.0f), .color = glm::vec4(l->color,1.0f) };
+				ldx++;
 			}
 			envData.numOmniLights = ldx;
 			memoryManager.getBuffer(environmentBuffer)->writeToBuffer(&envData);
@@ -151,9 +149,9 @@ void Hmck::PBRApp::load()
 	scene = std::make_unique<Scene>(Scene::SceneCreateInfo{
 		.device = device,
 		.memory = memoryManager,
-		.name = "Physically based rendering demo",});
+		.name = "Physically based rendering demo", });
 
-	EnvironmentLoader loader{ device, memoryManager};
+	EnvironmentLoader loader{ device, memoryManager };
 	//loader.loadHDR("../../Resources/env/ibl/precomp/lebombo/lebombo_prefiltered_map.hdr", scene->environment->environmentSphere, VK_FORMAT_R32G32B32A32_SFLOAT);
 	//loader.loadHDR("../../Resources/env/ibl/room.hdr", scene->environment->environmentSphere, VK_FORMAT_R32G32B32A32_SFLOAT);
 	loader.loadHDR("../../Resources/env/ibl/sunset.hdr", scene->environment->environmentSphere, VK_FORMAT_R32G32B32A32_SFLOAT);
@@ -162,12 +160,11 @@ void Hmck::PBRApp::load()
 	scene->environment->generateBRDFLUT(device, memoryManager);
 
 	GltfLoader gltfloader{ device, memoryManager, scene };
-	gltfloader.load(std::string(MODELS_DIR) + "sponza/sponza_lights.glb");
+	//gltfloader.load(std::string(MODELS_DIR) + "sponza/sponza_lights.glb");
 	//gltfloader.load(std::string(MODELS_DIR) + "helmet/DamagedHelmet.glb");
-	//gltfloader.load(std::string(MODELS_DIR) + "SunTemple/SunTemple.glb");
-	//gltfloader.load(std::string(MODELS_DIR) + "Bistro/BistroExterior.glb");
 	//gltfloader.load(std::string(MODELS_DIR) + "helmet/helmet.glb");
-	//gltfloader.load(std::string(MODELS_DIR) + "BrassCookware/brass_vase_03_4k.gltf");
+	//gltfloader.load(std::string(MODELS_DIR) + "Bistro/BistroInterior.glb");
+	gltfloader.load(std::string(MODELS_DIR) + "Bistro/BistroExterior.glb");
 	//gltfloader.load(std::string(MODELS_DIR) + "Sphere/LambertSphere.glb");
 
 	vertexBuffer = memoryManager.createVertexBuffer({
@@ -232,7 +229,7 @@ void Hmck::PBRApp::init()
 			.instanceCount = 1,
 			.usageFlags = VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
 			.memoryPropertyFlags = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT
-		});
+			});
 
 		auto fbufferInfo = memoryManager.getBuffer(frameBuffers[i])->descriptorInfo();
 		frameDescriptorSets[i] = memoryManager.createDescriptorSet({
@@ -297,7 +294,7 @@ void Hmck::PBRApp::init()
 			{.binding = 3, .descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, .stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT}, // material (roughness, metalness, ao)
 		}
 		});
-	
+
 }
 
 void Hmck::PBRApp::renderEntity(uint32_t frameIndex, VkCommandBuffer commandBuffer, std::unique_ptr<GraphicsPipeline>& pipeline, std::shared_ptr<Entity>& entity)
@@ -307,7 +304,7 @@ void Hmck::PBRApp::renderEntity(uint32_t frameIndex, VkCommandBuffer commandBuff
 	{
 		auto _entity = cast<Entity, Entity3D>(entity);
 
-		if (_entity->mesh.primitives.size() > 0) 
+		if (_entity->mesh.primitives.size() > 0)
 		{
 			if (entityDataUpdated[_entity->id])
 			{
@@ -334,10 +331,10 @@ void Hmck::PBRApp::renderEntity(uint32_t frameIndex, VkCommandBuffer commandBuff
 				2, 1,
 				entityDescriptorSets[entity->id],
 				0, nullptr);
-			
-			for (Primitive& primitive : _entity->mesh.primitives) 
+
+			for (Primitive& primitive : _entity->mesh.primitives)
 			{
-				if (primitive.indexCount > 0) 
+				if (primitive.indexCount > 0)
 				{
 
 					if (primitive.materialIndex >= 0)
@@ -360,7 +357,7 @@ void Hmck::PBRApp::renderEntity(uint32_t frameIndex, VkCommandBuffer commandBuff
 							memoryManager.getBuffer(materialBuffers[primitive.materialIndex])->writeToBuffer(&pData);
 							materialDataUpdated[primitive.materialIndex] = false;
 						}
-						
+
 					}
 
 					memoryManager.bindDescriptorSet(
@@ -375,7 +372,7 @@ void Hmck::PBRApp::renderEntity(uint32_t frameIndex, VkCommandBuffer commandBuff
 					vkCmdDrawIndexed(commandBuffer, primitive.indexCount, 1, primitive.firstIndex, 0, 0);
 				}
 			}
-		}	
+		}
 	}
 
 	for (auto& child : entity->children) {
@@ -572,7 +569,7 @@ void Hmck::PBRApp::createPipelines(Renderer& renderer)
 			.entryFunc = "main"
 		},
 		.FS {
-			.byteCode = Hmck::Filesystem::readFile("../../HammockEngine/Engine/Shaders/Compiled/pbr_ibl_deferred.frag.spv"),
+			.byteCode = Hmck::Filesystem::readFile("../../HammockEngine/Engine/Shaders/Compiled/pbr_deferred.frag.spv"),
 			.entryFunc = "main"
 		},
 		.descriptorSetLayouts = {
@@ -618,7 +615,7 @@ void Hmck::PBRApp::clean()
 	for (int i = 0; i < frameBuffers.size(); i++)
 		memoryManager.destroyBuffer(frameBuffers[i]);
 
-	for (const auto& pair : entityBuffers) 
+	for (const auto& pair : entityBuffers)
 		memoryManager.destroyBuffer(entityBuffers[pair.first]);
 
 	for (int i = 0; i < materialBuffers.size(); i++)

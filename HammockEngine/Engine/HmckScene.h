@@ -78,6 +78,7 @@ namespace Hmck
 
 		EntityHandle activeCamera = 0;
 		std::vector<EntityHandle> cameras{};
+		std::vector<EntityHandle> lights{};
 		
 
 	private:

@@ -22,7 +22,7 @@ struct OmniLight
 
 layout(set = 0, binding = 0) uniform Environment
 {
-    OmniLight omniLights[10];
+    OmniLight omniLights[1000];
     uint numOmniLights;
 } env;
 
