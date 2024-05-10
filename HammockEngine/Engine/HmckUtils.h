@@ -88,6 +88,18 @@ namespace Hmck
 			return viewport;
 		}
 
+		inline VkViewport viewportFlipped(float width, float height, float minDepth, float maxDepth)
+		{
+			VkViewport viewport{};
+			viewport.width = width;
+			viewport.height = -height;
+			viewport.minDepth = minDepth;
+			viewport.maxDepth = maxDepth;
+			viewport.x = 0.0f;
+			viewport.y = height;
+			return viewport;
+		}
+
 		inline VkRect2D rect2D(int32_t width, int32_t height, int32_t offsetX, int32_t offsetY)
 		{
 			VkRect2D rect2D{};
