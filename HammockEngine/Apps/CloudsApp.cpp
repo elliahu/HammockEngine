@@ -113,7 +113,6 @@ void Hmck::CloudsApp::run()
 				this->ui();
 				ui.showDebugStats(scene->getActiveCamera());
 				ui.showWindowControls();
-				ui.showEntityInspector(scene);
 				ui.endUserInterface(commandBuffer);
 			}
 

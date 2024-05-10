@@ -84,15 +84,7 @@ void Hmck::UserInterface::showWindowControls()
 	ImGui::End();
 }
 
-void Hmck::UserInterface::showEntityComponents(std::shared_ptr<Entity>& entity, bool* close)
-{
-	beginWindow(("#" + std::to_string(entity->id)).c_str(), close, ImGuiWindowFlags_AlwaysAutoResize);
-	ImGui::Text("Attached components:");
-	entityComponets(entity);
-	endWindow();
-}
-
-void Hmck::UserInterface::showEntityInspector(std::unique_ptr<Scene>& scene)
+void Hmck::UserInterface::showEntityInspector(std::unique_ptr<Scene>& scene, std::unordered_map<EntityHandle, bool>& dataChanged)
 {
 	const ImGuiWindowFlags window_flags = ImGuiWindowFlags_AlwaysAutoResize;
 	ImGui::SetNextWindowPos({ 10, 130 }, ImGuiCond_Once, { 0,0 });
@@ -100,7 +92,7 @@ void Hmck::UserInterface::showEntityInspector(std::unique_ptr<Scene>& scene)
 	beginWindow("Entity Inspector", (bool*)false, ImGuiWindowFlags_AlwaysAutoResize);
 	ImGui::Text("Scene props");
 	ImGui::Text("Inspect all entities in the scene", window_flags);
-	inspectEntity(scene->getRoot(),scene);
+	inspectEntity(scene->getRoot(),scene, dataChanged);
 	endWindow();
 }
 
@@ -290,8 +282,10 @@ void Hmck::UserInterface::endWindow()
 	ImGui::End();
 }
 
-void Hmck::UserInterface::entityComponets(std::shared_ptr<Entity> entity)
+void Hmck::UserInterface::entityComponets(std::shared_ptr<Entity> entity, std::unordered_map<EntityHandle, bool>& dataChanged)
 {
+	glm::vec3 translation = entity->transform.translation;
+	glm::vec3 rotation = entity->transform.rotation;
 
 	if (ImGui::CollapsingHeader("Transform")) // Tranform
 	{
@@ -309,10 +303,16 @@ void Hmck::UserInterface::entityComponets(std::shared_ptr<Entity> entity)
 		}
 	}
 
+	if (translation != entity->transform.translation || rotation != entity->transform.rotation)
+	{
+		// Data changed
+		dataChanged[entity->id] = true;
+	}
+
 	ImGui::Separator();
 }
 
-void Hmck::UserInterface::inspectEntity(std::shared_ptr<Entity> entity, std::unique_ptr<Scene>& scene)
+void Hmck::UserInterface::inspectEntity(std::shared_ptr<Entity> entity, std::unique_ptr<Scene>& scene, std::unordered_map<EntityHandle, bool>& dataChanged)
 {
 	std::string name = entity->name + " # " + std::to_string(entity->id);
 	std::string prefix = "";
@@ -330,11 +330,11 @@ void Hmck::UserInterface::inspectEntity(std::shared_ptr<Entity> entity, std::uni
 	if (ImGui::TreeNode(name.c_str()))
 	{
 		
-		entityComponets(entity);
+		entityComponets(entity, dataChanged);
 		ImGui::Text("Children:");
 		for (auto& child : entity->children)
 		{
-			inspectEntity(scene->getEntity(child), scene);
+			inspectEntity(scene->getEntity(child), scene, dataChanged);
 		}
 
 		ImGui::TreePop();

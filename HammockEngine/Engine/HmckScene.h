@@ -52,7 +52,7 @@ namespace Hmck
 				return entities[id];
 			}
 
-			throw std::runtime_error("Entity with provided handle does not exist!");
+			return nullptr;
 		}
 		Device& getDevice() { return device; }
 		EntityHandle getLastAdded() { return lastAdded; };

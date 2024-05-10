@@ -65,7 +65,7 @@ namespace Hmck
 		struct EntityBufferData
 		{
 			glm::mat4 model{ 1.f };
-			glm::mat4 normal{ 1.f };
+			glm::mat4 normal = glm::transpose(glm::inverse(glm::mat4{ 1.f }));
 		};
 
 		struct PrimitiveBufferData
@@ -130,11 +130,13 @@ namespace Hmck
 		std::unordered_map<EntityHandle, DescriptorSetHandle> entityDescriptorSets{};
 		DescriptorSetLayoutHandle entityDescriptorSetLayout;
 		std::unordered_map<EntityHandle, BufferHandle> entityBuffers{};
+		std::unordered_map<EntityHandle, bool> entityDataUpdated{};
 
 		// per material
 		std::vector<DescriptorSetHandle> materialDescriptorSets{};
 		DescriptorSetLayoutHandle materialDescriptorSetLayout;
 		std::vector<BufferHandle> materialBuffers{};
+		std::unordered_map<uint32_t, bool> materialDataUpdated{};
 
 		// gbuffer descriptors
 		std::vector<DescriptorSetHandle> gbufferDescriptorSets{};

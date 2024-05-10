@@ -133,7 +133,7 @@ void Hmck::PBRApp::run()
 				ui.beginUserInterface();
 				ui.showDebugStats(scene->getActiveCamera());
 				ui.showWindowControls();
-				ui.showEntityInspector(scene);
+				ui.showEntityInspector(scene, entityDataUpdated);
 				ui.showColorSettings(&data.exposure, &data.gamma, &data.whitePoint);
 				ui.endUserInterface(commandBuffer);
 			}
@@ -162,11 +162,11 @@ void Hmck::PBRApp::load()
 	scene->environment->generateBRDFLUT(device, memoryManager);
 
 	GltfLoader gltfloader{ device, memoryManager, scene };
-	//gltfloader.load(std::string(MODELS_DIR) + "sponza/sponza_lights.glb");
+	gltfloader.load(std::string(MODELS_DIR) + "sponza/sponza_lights.glb");
 	//gltfloader.load(std::string(MODELS_DIR) + "helmet/DamagedHelmet.glb");
 	//gltfloader.load(std::string(MODELS_DIR) + "SunTemple/SunTemple.glb");
 	//gltfloader.load(std::string(MODELS_DIR) + "Bistro/BistroExterior.glb");
-	gltfloader.load(std::string(MODELS_DIR) + "helmet/helmet.glb");
+	//gltfloader.load(std::string(MODELS_DIR) + "helmet/helmet.glb");
 	//gltfloader.load(std::string(MODELS_DIR) + "BrassCookware/brass_vase_03_4k.gltf");
 	//gltfloader.load(std::string(MODELS_DIR) + "Sphere/LambertSphere.glb");
 
@@ -260,6 +260,7 @@ void Hmck::PBRApp::init()
 			.descriptorSetLayout = entityDescriptorSetLayout,
 			.bufferWrites = {{0,ebufferInfo}},
 			});
+		entityDataUpdated[ep.first] = true;
 	}
 
 	materialDescriptorSets.resize(scene->materials.size());
@@ -284,6 +285,7 @@ void Hmck::PBRApp::init()
 			.descriptorSetLayout = materialDescriptorSetLayout,
 			.bufferWrites = {{0,pbufferInfo}},
 			});
+		materialDataUpdated[i] = true;
 	}
 
 	gbufferDescriptorSets.resize(SwapChain::MAX_FRAMES_IN_FLIGHT);
@@ -307,19 +309,23 @@ void Hmck::PBRApp::renderEntity(uint32_t frameIndex, VkCommandBuffer commandBuff
 
 		if (_entity->mesh.primitives.size() > 0) 
 		{
-			glm::mat4 model = entity->transform.mat4();
-			std::shared_ptr<Entity> currentParent = scene->getEntity(entity->parent);
-			while (currentParent) 
+			if (entityDataUpdated[_entity->id])
 			{
-				model = currentParent->transform.mat4() * model;
-				currentParent = scene->getEntity(currentParent->parent);
-			}
+				glm::mat4 model = entity->transform.mat4();
+				std::shared_ptr<Entity> currentParent = scene->getEntity(entity->parent);
+				while (currentParent)
+				{
+					model = currentParent->transform.mat4() * model;
+					currentParent = scene->getEntity(currentParent->parent);
+				}
 
-			EntityBufferData entityData{
-				.model = model,
-				.normal = glm::transpose(glm::inverse(model))
-			};
-			memoryManager.getBuffer(entityBuffers[entity->id])->writeToBuffer(&entityData);
+				EntityBufferData entityData{
+					.model = model,
+					.normal = glm::transpose(glm::inverse(model))
+				};
+				memoryManager.getBuffer(entityBuffers[entity->id])->writeToBuffer(&entityData);
+				entityDataUpdated[_entity->id] = false;
+			}
 
 			memoryManager.bindDescriptorSet(
 				commandBuffer,
@@ -349,7 +355,12 @@ void Hmck::PBRApp::renderEntity(uint32_t frameIndex, VkCommandBuffer commandBuff
 							.roughnessFactor = material.roughnessFactor
 						};
 
-						memoryManager.getBuffer(materialBuffers[primitive.materialIndex])->writeToBuffer(&pData);
+						if (materialDataUpdated[primitive.materialIndex])
+						{
+							memoryManager.getBuffer(materialBuffers[primitive.materialIndex])->writeToBuffer(&pData);
+							materialDataUpdated[primitive.materialIndex] = false;
+						}
+						
 					}
 
 					memoryManager.bindDescriptorSet(
