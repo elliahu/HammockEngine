@@ -517,20 +517,6 @@ void Hmck::GltfLoader::loadCamera(gltf::Node& node, gltf::Model& model, EntityHa
 		camera->setPerspectiveProjection(cameraNode.perspective.yfov, cameraNode.perspective.aspectRatio, cameraNode.perspective.znear, cameraNode.perspective.zfar);
 	}
 
-	if (cameraNode.type == "orthographic")
-	{
-		// Get the orthographic parameters
-		const gltf::OrthographicCamera& ortho = cameraNode.orthographic;
-
-		// Extract the bounds
-		float left = ortho.xmag * -1.0f; // Left bound
-		float right = ortho.xmag;        // Right bound
-		float top = ortho.ymag;          // Top bound
-		float bottom = ortho.ymag * -1.0f;// Bottom bound
-		float _near = ortho.znear;        // Near bound
-		float _far = ortho.zfar;          // Far bound
-		camera->setOrthographicProjection(left, right, top, bottom, _near, _far);
-	}
 }
 
 
