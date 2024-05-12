@@ -208,11 +208,11 @@ void Hmck::GltfLoader::loadEntities(gltf::Model& model)
 	for (size_t i = 0; i < s.nodes.size(); i++) 
 	{
 		gltf::Node& node = model.nodes[s.nodes[i]];
-		loadEntitiesRecursive(node, model, scene->getRoot()->id);
+		loadEntitiesRecursive(node, model, scene->getRoot());
 	}
 }
 
-void Hmck::GltfLoader::loadEntitiesRecursive(gltf::Node& node, gltf::Model& model, EntityHandle parent)
+void Hmck::GltfLoader::loadEntitiesRecursive(gltf::Node& node, gltf::Model& model, std::shared_ptr<Entity> parent)
 {
 	// Load the current node
 	if (isSolid(node)) 
@@ -235,16 +235,16 @@ void Hmck::GltfLoader::loadEntitiesRecursive(gltf::Node& node, gltf::Model& mode
 	// Load children recursively
 	for (size_t i = 0; i < node.children.size(); i++) {
 		gltf::Node& childNode = model.nodes[node.children[i]];
-		loadEntitiesRecursive(childNode, model, scene->getLastAdded());
+		loadEntitiesRecursive(childNode, model, scene->getEntity(scene->getLastAdded()));
 	}
 }
 
-void Hmck::GltfLoader::loadEntity(gltf::Node& node, gltf::Model& model, EntityHandle parent)
+void Hmck::GltfLoader::loadEntity(gltf::Node& node, gltf::Model& model, std::shared_ptr<Entity> parent)
 {
 	std::shared_ptr<Entity> entity = std::make_shared<Entity>();
 	entity->parent = parent;
 	entity->name = node.name;
-	scene->add(entity);
+	scene->add(entity, parent);
 
 
 	// Get the local entity matrix
@@ -278,12 +278,12 @@ void Hmck::GltfLoader::loadEntity(gltf::Node& node, gltf::Model& model, EntityHa
 	};
 }
 
-void Hmck::GltfLoader::loadEntity3D(gltf::Node& node, gltf::Model& model, EntityHandle parent)
+void Hmck::GltfLoader::loadEntity3D(gltf::Node& node, gltf::Model& model, std::shared_ptr<Entity> parent)
 {
 	std::shared_ptr<Entity3D> entity = std::make_shared<Entity3D>();
 	entity->parent = parent;
 	entity->name = node.name;
-	scene->add(entity);
+	scene->add(entity, parent);
 
 
 	// Get the local entity matrix
@@ -369,25 +369,10 @@ void Hmck::GltfLoader::loadEntity3D(gltf::Node& node, gltf::Model& model, Entity
 			{
 				Vertex vert{};
 				vert.position = glm::vec4(glm::make_vec3(&positionBuffer[v * 3]), 1.0f);
-
-				
-
 				vert.normal = glm::normalize(glm::vec3(normalsBuffer ? glm::make_vec3(&normalsBuffer[v * 3]) : glm::vec3(0.0f)));
 				vert.uv = texCoordsBuffer ? glm::make_vec2(&texCoordsBuffer[v * 2]) : glm::vec3(0.0f);
 				vert.color = glm::vec3(1.0f);
 				vert.tangent = vert.tangent = tangentBuffer ? glm::make_vec4(&tangentBuffer[v * 4]) : glm::vec4(0.0f);
-				
-				/*vert.position.y *= -1.0f;
-				vert.normal.y *= -1.0f;
-				vert.tangent.y *= -1.0f;*/
-
-				/*vert.position.x *= -1.0f;
-				vert.normal.x *= -1.0f;
-				vert.tangent.x *= -1.0f;*/
-
-				/*vert.position *= -1.0f;
-				vert.normal *= -1.0f;
-				vert.tangent *= -1.0f;*/
 				scene->vertices.push_back(vert);
 			}
 		}
@@ -439,12 +424,12 @@ void Hmck::GltfLoader::loadEntity3D(gltf::Node& node, gltf::Model& model, Entity
 	entity->mesh.name = mesh.name;
 }
 
-void Hmck::GltfLoader::loadIOmniLight(gltf::Node& node, gltf::Model& model, EntityHandle parent)
+void Hmck::GltfLoader::loadIOmniLight(gltf::Node& node, gltf::Model& model, std::shared_ptr<Entity> parent)
 {
 	std::shared_ptr<OmniLight> light = std::make_shared<OmniLight>();
 	light->parent = parent;
 	light->name = node.name;
-	scene->add(light);
+	scene->add(light, parent);
 	scene->lights.push_back(light->id);
 
 	if (node.translation.size() == 3) {
@@ -484,14 +469,14 @@ void Hmck::GltfLoader::loadIOmniLight(gltf::Node& node, gltf::Model& model, Enti
 	}
 }
 
-void Hmck::GltfLoader::loadCamera(gltf::Node& node, gltf::Model& model, EntityHandle parent)
+void Hmck::GltfLoader::loadCamera(gltf::Node& node, gltf::Model& model, std::shared_ptr<Entity> parent)
 {
 	const auto& cameraNode = model.cameras[node.camera];
 	
 	std::shared_ptr<Camera> camera = std::make_shared<Camera>();
 	camera->parent = parent;
 	camera->name = node.name;
-	scene->add(camera);
+	scene->add(camera, parent);
 	scene->cameras.push_back(camera->id);
 
 	if (node.translation.size() == 3) {
@@ -530,6 +515,22 @@ void Hmck::GltfLoader::loadCamera(gltf::Node& node, gltf::Model& model, EntityHa
 	if (cameraNode.type == "perspective")
 	{
 		camera->setPerspectiveProjection(cameraNode.perspective.yfov, cameraNode.perspective.aspectRatio, cameraNode.perspective.znear, cameraNode.perspective.zfar);
+	}
+
+
+	if (cameraNode.type == "orthographic")
+	{
+		// Get the orthographic parameters
+		const gltf::OrthographicCamera& ortho = cameraNode.orthographic;
+
+		// Extract the bounds
+		float left = ortho.xmag * -1.0f; // Left bound
+		float right = ortho.xmag;        // Right bound
+		float top = ortho.ymag;          // Top bound
+		float bottom = ortho.ymag * -1.0f;// Bottom bound
+		float _near = ortho.znear;        // Near bound
+		float _far = ortho.zfar;          // Far bound
+		camera->setOrthographicProjection(left, right, top, bottom, _near, _far);
 	}
 
 }

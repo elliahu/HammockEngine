@@ -33,9 +33,9 @@ The following NuGet packages are used:
 - [GLFW](https://www.glfw.org/) - Window creation and input handling
 
 
-![glTF 2.0](https://raw.githubusercontent.com/elliahu/HammockEngine/master/Img/IBL.png)
-![PBR](https://raw.githubusercontent.com/elliahu/HammockEngine/master/Img/pbr2.png)
-![Sponza](https://raw.githubusercontent.com/elliahu/HammockEngine/master/Img/sponza_pbr.png)
-![Cloud](https://raw.githubusercontent.com/elliahu/HammockEngine/master/Img/cloud.png)
+![img](https://raw.githubusercontent.com/elliahu/HammockEngine/master/Img/IBL.png)
+![img](https://raw.githubusercontent.com/elliahu/HammockEngine/master/Img/damaged_helmet1.png)
+![img](https://raw.githubusercontent.com/elliahu/HammockEngine/master/Img/deferred.png)
+![img](https://raw.githubusercontent.com/elliahu/HammockEngine/master/Img/cloud.png)
 
 

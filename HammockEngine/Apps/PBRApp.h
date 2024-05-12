@@ -130,7 +130,6 @@ namespace Hmck
 		std::unordered_map<EntityHandle, DescriptorSetHandle> entityDescriptorSets{};
 		DescriptorSetLayoutHandle entityDescriptorSetLayout;
 		std::unordered_map<EntityHandle, BufferHandle> entityBuffers{};
-		std::unordered_map<EntityHandle, bool> entityDataUpdated{};
 
 		// per material
 		std::vector<DescriptorSetHandle> materialDescriptorSets{};

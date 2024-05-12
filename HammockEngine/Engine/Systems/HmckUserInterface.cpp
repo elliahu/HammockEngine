@@ -84,7 +84,7 @@ void Hmck::UserInterface::showWindowControls()
 	ImGui::End();
 }
 
-void Hmck::UserInterface::showEntityInspector(std::unique_ptr<Scene>& scene, std::unordered_map<EntityHandle, bool>& dataChanged)
+void Hmck::UserInterface::showEntityInspector(std::unique_ptr<Scene>& scene)
 {
 	const ImGuiWindowFlags window_flags = ImGuiWindowFlags_AlwaysAutoResize;
 	ImGui::SetNextWindowPos({ 10, 130 }, ImGuiCond_Once, { 0,0 });
@@ -92,7 +92,7 @@ void Hmck::UserInterface::showEntityInspector(std::unique_ptr<Scene>& scene, std
 	beginWindow("Entity Inspector", (bool*)false, ImGuiWindowFlags_AlwaysAutoResize);
 	ImGui::Text("Scene props");
 	ImGui::Text("Inspect all entities in the scene", window_flags);
-	inspectEntity(scene->getRoot(),scene, dataChanged);
+	inspectEntity(scene->getRoot(),scene);
 	endWindow();
 }
 
@@ -282,7 +282,7 @@ void Hmck::UserInterface::endWindow()
 	ImGui::End();
 }
 
-void Hmck::UserInterface::entityComponets(std::shared_ptr<Entity> entity, std::unordered_map<EntityHandle, bool>& dataChanged)
+void Hmck::UserInterface::entityComponets(std::shared_ptr<Entity> entity)
 {
 	glm::vec3 translation = entity->transform.translation;
 	glm::vec3 rotation = entity->transform.rotation;
@@ -307,13 +307,14 @@ void Hmck::UserInterface::entityComponets(std::shared_ptr<Entity> entity, std::u
 	if (translation != entity->transform.translation || rotation != entity->transform.rotation || scale != entity->transform.scale)
 	{
 		// Data changed
-		dataChanged[entity->id] = true;
+		entity->dataChanged = true;
+		entity->notifyChildrenDataChanged();
 	}
 
 	ImGui::Separator();
 }
 
-void Hmck::UserInterface::inspectEntity(std::shared_ptr<Entity> entity, std::unique_ptr<Scene>& scene, std::unordered_map<EntityHandle, bool>& dataChanged)
+void Hmck::UserInterface::inspectEntity(std::shared_ptr<Entity> entity, std::unique_ptr<Scene>& scene)
 {
 	std::string name = entity->name + " # " + std::to_string(entity->id);
 	std::string prefix = "";
@@ -331,11 +332,11 @@ void Hmck::UserInterface::inspectEntity(std::shared_ptr<Entity> entity, std::uni
 	if (ImGui::TreeNode(name.c_str()))
 	{
 		
-		entityComponets(entity, dataChanged);
+		entityComponets(entity);
 		ImGui::Text("Children:");
 		for (auto& child : entity->children)
 		{
-			inspectEntity(scene->getEntity(child), scene, dataChanged);
+			inspectEntity(child, scene);
 		}
 
 		ImGui::TreePop();

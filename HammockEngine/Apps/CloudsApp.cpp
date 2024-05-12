@@ -66,7 +66,7 @@ void Hmck::CloudsApp::run()
 	// camera and movement
 	auto camera = std::make_shared<Camera>();
 	camera->transform.translation = { 0.f, 0.f, -6.f };
-	scene->add(camera);
+	scene->add(camera, scene->getRoot());
 	scene->setActiveCamera(camera->id);
 	scene->getActiveCamera()->setPerspectiveProjection(glm::radians(50.0f), renderer.getAspectRatio(), 0.1f, 1000.f);
 	

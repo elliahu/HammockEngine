@@ -48,12 +48,12 @@ namespace Hmck
 		void loadMaterials(gltf::Model& model);
 
 		void loadEntities(gltf::Model& model);
-		void loadEntitiesRecursive(gltf::Node& node, gltf::Model& model, EntityHandle parent);
+		void loadEntitiesRecursive(gltf::Node& node, gltf::Model& model, std::shared_ptr<Entity> parent);
 
-		void loadEntity(gltf::Node& node, gltf::Model& model, EntityHandle parent);
-		void loadEntity3D(gltf::Node& node, gltf::Model& model, EntityHandle parent);
-		void loadIOmniLight(gltf::Node& node, gltf::Model& model, EntityHandle parent);
-		void loadCamera(gltf::Node& node, gltf::Model& model, EntityHandle parent);
+		void loadEntity(gltf::Node& node, gltf::Model& model, std::shared_ptr<Entity> parent);
+		void loadEntity3D(gltf::Node& node, gltf::Model& model, std::shared_ptr<Entity> parent);
+		void loadIOmniLight(gltf::Node& node, gltf::Model& model, std::shared_ptr<Entity> parent);
+		void loadCamera(gltf::Node& node, gltf::Model& model, std::shared_ptr<Entity> parent);
 		
 	};
 }

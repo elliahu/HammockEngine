@@ -27,13 +27,23 @@ namespace Hmck
 
 		static void resetId() { currentId = 1; };
 
+		void notifyChildrenDataChanged()
+		{
+			for (const auto& child : children) 
+			{
+				child->dataChanged = true;
+				child->notifyChildrenDataChanged();
+			}
+		}
+
 		static EntityHandle currentId;
 		EntityHandle id;
 		std::string name = "";
-		EntityHandle parent{};
-		std::vector<EntityHandle> children{};
+		std::shared_ptr<Entity> parent{};
+		std::vector<std::shared_ptr<Entity>> children{};
 		TransformComponent transform{};
 		bool visible = false;
+		bool dataChanged = true;
 
 	};
 }

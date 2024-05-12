@@ -16,6 +16,7 @@
 #include "HmckCamera.h"
 #include "HmckHDR.h"
 #include "HmckUtils.h"
+#include "HmckLights.h"
 
 namespace Hmck
 {
@@ -41,7 +42,7 @@ namespace Hmck
 		Scene(const Scene&) = delete;
 		Scene& operator=(const Scene&) = delete;
 
-		void add(std::shared_ptr<Entity> entity);
+		void add(std::shared_ptr<Entity> entity, std::shared_ptr<Entity> parent);
 
 
 		std::shared_ptr<Entity> getRoot() { return entities[root]; }

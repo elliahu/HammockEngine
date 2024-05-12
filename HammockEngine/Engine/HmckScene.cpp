@@ -1,5 +1,6 @@
 #include "HmckScene.h"
 
+
 Hmck::Scene::Scene(SceneCreateInfo createInfo): device{createInfo.device}, memory{createInfo.memory}
 {
 	// create root
@@ -25,16 +26,20 @@ void Hmck::Scene::destroy()
 	environment->destroy(memory);
 }
 
-
-void Hmck::Scene::add(std::shared_ptr<Entity> entity)
+void Hmck::Scene::add(std::shared_ptr<Entity> entity, std::shared_ptr<Entity> parent)
 {
 	entities.emplace(entity->id, entity);
-	getRoot()->children.push_back(entity->id);
 	lastAdded = entity->id;
 	if (isInstanceOf<Entity, Camera>(entity))
 	{
 		cameras.push_back(entity->id);
 	}
+	if (isInstanceOf<Entity, OmniLight>(entity))
+	{
+		lights.push_back(entity->id);
+	}
+	parent->children.push_back(entity);
+	entity->parent = parent;
 }
 
 

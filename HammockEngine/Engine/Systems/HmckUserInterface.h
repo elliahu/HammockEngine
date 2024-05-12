@@ -35,7 +35,7 @@ namespace Hmck
 		void showDemoWindow() { ImGui::ShowDemoWindow(); }
 		void showDebugStats(std::shared_ptr<Entity> camera);
 		void showWindowControls();
-		void showEntityInspector(std::unique_ptr<Scene>& scene, std::unordered_map<EntityHandle, bool>& dataChanged);
+		void showEntityInspector(std::unique_ptr<Scene>& scene);
 		void showColorSettings(float* exposure, float* gamma, float * whitePoint);
 		void showLog();
 
@@ -51,8 +51,8 @@ namespace Hmck
 
 		void beginWindow(const char* title,bool * open = (bool*) 0, ImGuiWindowFlags flags = 0);
 		void endWindow();
-		void entityComponets(std::shared_ptr<Entity> entity, std::unordered_map<EntityHandle, bool>& dataChanged);
-		void inspectEntity(std::shared_ptr<Entity> entity, std::unique_ptr<Scene>& scene, std::unordered_map<EntityHandle, bool>& dataChanged);
+		void entityComponets(std::shared_ptr<Entity> entity);
+		void inspectEntity(std::shared_ptr<Entity> entity, std::unique_ptr<Scene>& scene);
 
 		Device& device;
 		Window& window;

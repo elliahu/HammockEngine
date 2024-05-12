@@ -20,10 +20,10 @@ void Hmck::PBRApp::run()
 	createPipelines(renderer);
 
 	auto camera = std::make_shared<Camera>();
-	scene->add(camera);
+	scene->add(camera, scene->getRoot());
 	scene->setActiveCamera(camera->id);
 	scene->getActiveCamera()->setPerspectiveProjection(glm::radians(50.f), renderer.getAspectRatio(), 0.1f, 1000.f);
-
+	
 	std::shared_ptr<OmniLight> light = std::make_shared<OmniLight>();
 	light->transform.translation = { 0.0f, 2.0f, 0.0f };
 	//scene->add(light);
@@ -130,7 +130,7 @@ void Hmck::PBRApp::run()
 				ui.beginUserInterface();
 				ui.showDebugStats(scene->getActiveCamera());
 				ui.showWindowControls();
-				ui.showEntityInspector(scene, entityDataUpdated);
+				ui.showEntityInspector(scene);
 				ui.showColorSettings(&data.exposure, &data.gamma, &data.whitePoint);
 				ui.endUserInterface(commandBuffer);
 			}
@@ -160,11 +160,12 @@ void Hmck::PBRApp::load()
 
 	GltfLoader gltfloader{ device, memoryManager, scene };
 	//gltfloader.load(std::string(MODELS_DIR) + "sponza/sponza_lights.glb");
-	//gltfloader.load(std::string(MODELS_DIR) + "helmet/DamagedHelmet.glb");
-	gltfloader.load(std::string(MODELS_DIR) + "helmet/helmet.glb");
+	gltfloader.load(std::string(MODELS_DIR) + "helmet/DamagedHelmet.glb");
+	//gltfloader.load(std::string(MODELS_DIR) + "helmet/helmet.glb");
 	//gltfloader.load(std::string(MODELS_DIR) + "Bistro/BistroInterior.glb");
 	//gltfloader.load(std::string(MODELS_DIR) + "Bistro/BistroExterior.glb");
-	//gltfloader.load(std::string(MODELS_DIR) + "Sphere/LambertSphere.glb");
+	//gltfloader.load(std::string(MODELS_DIR) + "Sphere/SphereIBL.glb");
+
 
 	vertexBuffer = memoryManager.createVertexBuffer({
 		.vertexSize = sizeof(scene->vertices[0]),
@@ -256,7 +257,6 @@ void Hmck::PBRApp::init()
 			.descriptorSetLayout = entityDescriptorSetLayout,
 			.bufferWrites = {{0,ebufferInfo}},
 			});
-		entityDataUpdated[ep.first] = true;
 	}
 
 	materialDescriptorSets.resize(scene->materials.size());
@@ -305,14 +305,14 @@ void Hmck::PBRApp::renderEntity(uint32_t frameIndex, VkCommandBuffer commandBuff
 
 		if (_entity->mesh.primitives.size() > 0)
 		{
-			if (entityDataUpdated[_entity->id] || true) // for now
+			if (_entity->dataChanged)
 			{
 				glm::mat4 model = entity->transform.mat4();
-				std::shared_ptr<Entity> currentParent = scene->getEntity(entity->parent);
+				std::shared_ptr<Entity> currentParent = entity->parent;
 				while (currentParent)
 				{
 					model = currentParent->transform.mat4() * model;
-					currentParent = scene->getEntity(currentParent->parent);
+					currentParent = currentParent->parent;
 				}
 
 				EntityBufferData entityData{
@@ -320,7 +320,7 @@ void Hmck::PBRApp::renderEntity(uint32_t frameIndex, VkCommandBuffer commandBuff
 					.normal = glm::transpose(glm::inverse(model))
 				};
 				memoryManager.getBuffer(entityBuffers[entity->id])->writeToBuffer(&entityData);
-				entityDataUpdated[_entity->id] = false;
+				_entity->dataChanged = false;
 			}
 
 			memoryManager.bindDescriptorSet(
@@ -375,8 +375,7 @@ void Hmck::PBRApp::renderEntity(uint32_t frameIndex, VkCommandBuffer commandBuff
 	}
 
 	for (auto& child : entity->children) {
-		auto c = scene->getEntity(child);
-		renderEntity(frameIndex, commandBuffer, pipeline, c);
+		renderEntity(frameIndex, commandBuffer, pipeline, child);
 	}
 }
 

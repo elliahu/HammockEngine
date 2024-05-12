@@ -1,8 +1,21 @@
 #include "HmckCamera.h"
 
+void Hmck::Camera::setOrthographicProjection(float left, float right, float top, float bottom, float _near, float _far)
+{
+	projectionType = ProjectionType::Orthographic;
+	projectionMatrix = glm::mat4{ 1.0f };
+	projectionMatrix[0][0] = 2.f / (right - left);
+	projectionMatrix[1][1] = 2.f / (bottom - top);
+	projectionMatrix[2][2] = 1.f / (_far - _near);
+	projectionMatrix[3][0] = -(right + left) / (right - left);
+	projectionMatrix[3][1] = -(bottom + top) / (bottom - top);
+	projectionMatrix[3][2] = -_near / (_far - _near);
+}
+
 void Hmck::Camera::setPerspectiveProjection(float fovy, float aspect, float _near, float _far)
 {
 	assert(glm::abs(aspect - std::numeric_limits<float>::epsilon()) > 0.0f);
+	projectionType = ProjectionType::Perspective;
 	const float tanHalfFovy = tan(fovy / 2.f);
 	projectionMatrix = glm::mat4{ 0.0f };
 	projectionMatrix[0][0] = 1.f / (aspect * tanHalfFovy);
@@ -22,7 +35,7 @@ void Hmck::Camera::setPerspectiveProjection(float fovy, float aspect, float _nea
 	this->_far = _far;
 }
 
-void Hmck::Camera::setViewYXZ(glm::vec3 position, glm::vec3 rotation)
+void Hmck::Camera::setView(glm::vec3 position, glm::vec3 rotation)
 {
 	transform.translation = position;
 	transform.rotation = rotation;
@@ -67,7 +80,17 @@ void Hmck::Camera::setViewYXZ(glm::vec3 position, glm::vec3 rotation)
 
 void Hmck::Camera::update()
 {
-	setPerspectiveProjection(fovy, aspect, _near, _far);
-	setViewYXZ(transform.translation, transform.rotation);
+	// Update projectionMatrix
+	if (projectionType == ProjectionType::Orthographic)
+	{
+		setOrthographicProjection(left, right, top, bottom, _near, _far);
+	}
+	else if (projectionType == ProjectionType::Perspective)
+	{
+		setPerspectiveProjection(fovy, aspect, _near, _far);
+	}
+
+	// Update the view matrix
+	setView(transform.translation, transform.rotation);
 }
 
