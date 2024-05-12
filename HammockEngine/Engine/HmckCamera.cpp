@@ -12,7 +12,8 @@ void Hmck::Camera::setPerspectiveProjection(float fovy, float aspect, float _nea
 	projectionMatrix[3][2] = -(_far * _near) / (_far - _near);
 	if (flipY)
 	{
-		projectionMatrix[1][1] *= -1.0f;
+		projectionMatrix[0][0] = - 1.f / (aspect * tanHalfFovy);
+		projectionMatrix[1][1] = - 1.f / (tanHalfFovy);
 	}
 	
 	this->fovy = fovy;

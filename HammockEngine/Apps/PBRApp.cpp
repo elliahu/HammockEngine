@@ -54,7 +54,6 @@ void Hmck::PBRApp::run()
 		{
 			int frameIndex = renderer.getFrameIndex();
 
-			vkCmdSetDepthBias(commandBuffer, 1.25f, 0.0f, 1.75f);
 
 			renderer.beginRenderPass(gbufferFramebuffer, commandBuffer, {
 					{.color = { 0.0f, 0.0f, 0.0f, 0.0f } },
@@ -451,6 +450,7 @@ void Hmck::PBRApp::createPipelines(Renderer& renderer)
 		.graphicsState {
 			.depthTest = VK_FALSE,
 			.depthTestCompareOp = VK_COMPARE_OP_LESS_OR_EQUAL,
+			.cullMode = VK_CULL_MODE_NONE,
 			.blendAtaAttachmentStates {
 				Hmck::Init::pipelineColorBlendAttachmentState(0xf, VK_FALSE),
 				Hmck::Init::pipelineColorBlendAttachmentState(0xf, VK_FALSE),
@@ -501,6 +501,8 @@ void Hmck::PBRApp::createPipelines(Renderer& renderer)
 		.graphicsState {
 			.depthTest = VK_TRUE,
 			.depthTestCompareOp = VK_COMPARE_OP_LESS_OR_EQUAL,
+			.cullMode = VK_CULL_MODE_BACK_BIT,
+			.frontFace = VK_FRONT_FACE_COUNTER_CLOCKWISE,
 			.blendAtaAttachmentStates {
 				Hmck::Init::pipelineColorBlendAttachmentState(0xf, VK_FALSE),
 				Hmck::Init::pipelineColorBlendAttachmentState(0xf, VK_FALSE),
@@ -583,6 +585,7 @@ void Hmck::PBRApp::createPipelines(Renderer& renderer)
 		.graphicsState {
 			.depthTest = VK_TRUE,
 			.depthTestCompareOp = VK_COMPARE_OP_LESS_OR_EQUAL,
+			.cullMode = VK_CULL_MODE_NONE,
 			.blendAtaAttachmentStates {},
 			.vertexBufferBindings
 			{

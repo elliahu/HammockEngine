@@ -369,10 +369,25 @@ void Hmck::GltfLoader::loadEntity3D(gltf::Node& node, gltf::Model& model, Entity
 			{
 				Vertex vert{};
 				vert.position = glm::vec4(glm::make_vec3(&positionBuffer[v * 3]), 1.0f);
+
+				
+
 				vert.normal = glm::normalize(glm::vec3(normalsBuffer ? glm::make_vec3(&normalsBuffer[v * 3]) : glm::vec3(0.0f)));
 				vert.uv = texCoordsBuffer ? glm::make_vec2(&texCoordsBuffer[v * 2]) : glm::vec3(0.0f);
 				vert.color = glm::vec3(1.0f);
 				vert.tangent = vert.tangent = tangentBuffer ? glm::make_vec4(&tangentBuffer[v * 4]) : glm::vec4(0.0f);
+				
+				/*vert.position.y *= -1.0f;
+				vert.normal.y *= -1.0f;
+				vert.tangent.y *= -1.0f;*/
+
+				/*vert.position.x *= -1.0f;
+				vert.normal.x *= -1.0f;
+				vert.tangent.x *= -1.0f;*/
+
+				/*vert.position *= -1.0f;
+				vert.normal *= -1.0f;
+				vert.tangent *= -1.0f;*/
 				scene->vertices.push_back(vert);
 			}
 		}

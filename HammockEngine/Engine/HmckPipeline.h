@@ -51,7 +51,7 @@ namespace Hmck
 				VkBool32 depthTest;
 				VkCompareOp depthTestCompareOp;
 				VkCullModeFlags cullMode = VK_CULL_MODE_BACK_BIT;
-				VkFrontFace frontFace = VK_FRONT_FACE_CLOCKWISE;
+				VkFrontFace frontFace = VK_FRONT_FACE_COUNTER_CLOCKWISE;
 				std::vector<VkPipelineColorBlendAttachmentState> blendAtaAttachmentStates;
 				struct VertexBufferBindingsInfo
 				{
@@ -61,7 +61,7 @@ namespace Hmck
 
 			}graphicsState;
 
-			struct DynamixStateInfo
+			struct DynamicStateInfo
 			{
 				std::vector<VkDynamicState> dynamicStateEnables{ VK_DYNAMIC_STATE_VIEWPORT, VK_DYNAMIC_STATE_SCISSOR };
 			}dynamicState;
