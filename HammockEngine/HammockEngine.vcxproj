@@ -76,6 +76,7 @@
     <ClInclude Include="Engine\HmckMemory.h" />
     <ClInclude Include="Engine\HmckPipeline.h" />
     <ClInclude Include="Engine\HmckRenderer.h" />
+    <ClInclude Include="Engine\HmckRTX.h" />
     <ClInclude Include="Engine\HmckScene.h" />
     <ClInclude Include="Engine\HmckTexture.h" />
     <ClInclude Include="Engine\Platform\HmckWindow.h" />

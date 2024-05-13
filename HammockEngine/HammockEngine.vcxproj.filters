@@ -242,6 +242,9 @@
     <ClInclude Include="Engine\HmckHDR.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="Engine\HmckRTX.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="Engine\Shaders\Raw\glsl\point_light.frag" />

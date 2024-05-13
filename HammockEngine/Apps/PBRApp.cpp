@@ -176,6 +176,9 @@ void Hmck::PBRApp::load()
 		.indexSize = sizeof(scene->indices[0]),
 		.indexCount = static_cast<uint32_t>(scene->indices.size()),
 		.data = (void*)scene->indices.data() });
+
+	scene->vertices.clear();
+	scene->indices.clear();
 }
 
 void Hmck::PBRApp::init()
