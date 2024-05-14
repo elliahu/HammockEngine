@@ -1,4 +1,6 @@
-#version 450
+#version 460
+#extension GL_EXT_ray_tracing : enable
+#extension GL_EXT_ray_query : enable
 
 //inputs
 layout (location = 0) in vec2 uv;
@@ -7,6 +9,8 @@ layout (location = 0) in vec2 uv;
 layout (location = 0) out vec4 outColor;
 
 layout(set = 0, binding = 2) uniform sampler2D environmentSampler;
+
+layout (set = 0, binding = 5) uniform accelerationStructureEXT topLevelAS;
 
 // gbuffer attachments  
 layout(set = 4, binding = 0) uniform sampler2D positionSampler;
@@ -91,7 +95,7 @@ void main()
         outColor = vec4(albedo, 1.0);
         return;
     }
-		
+
     vec3 F0 = vec3(0.04); 
     F0 = mix(F0, albedo, metallic);
 
@@ -99,9 +103,35 @@ void main()
     for(int i = 0; i < env.numOmniLights; ++i) {
         // calculate per-light radiance
         vec3 L = normalize(env.omniLights[i].position.xyz - position);
+
+        /* vec3 rayOrigin = (scene.inverseView * vec4(position,1.0)).xyz;
+        vec3 rayDirection = normalize((scene.inverseView * env.omniLights[i].position).xyz - rayOrigin);
+
+        // Ray query
+        rayQueryEXT rayQuery;
+        rayQueryInitializeEXT(
+            rayQuery, 
+            topLevelAS, 
+            gl_RayFlagsTerminateOnFirstHitEXT, 
+            0xFF, 
+            rayOrigin, 
+            0.01, 
+            rayDirection, 
+            1000.0);
+
+        // Traverse the acceleration structure and store information about the first intersection (if any)
+        rayQueryProceedEXT(rayQuery);
+
+        // If the intersection has hit a triangle, the fragment is shadowed
+        if (rayQueryGetIntersectionTypeEXT(rayQuery, true) == gl_RayQueryCommittedIntersectionTriangleEXT ) {
+            continue;
+        } */
+        
+
         vec3 H = normalize(V + L);
         float distance    = length(env.omniLights[i].position.xyz - position);
         float attenuation = 1.0 / (distance * distance);
+        attenuation = 1.0;
         vec3 radiance     = env.omniLights[i].color.rgb * attenuation;
 
         // cook-torrance brdf

@@ -37,6 +37,7 @@ void Hmck::RaymarchingDemoApp::run()
 			{
 				.depthTest = VK_TRUE,
 				.depthTestCompareOp = VK_COMPARE_OP_LESS_OR_EQUAL,
+				.frontFace = VK_FRONT_FACE_CLOCKWISE,
 				.blendAtaAttachmentStates {},
 				.vertexBufferBindings
 				{

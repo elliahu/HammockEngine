@@ -212,6 +212,8 @@ namespace Hmck
 		return *this;
 	}
 
+	
+
 	DescriptorWriter& DescriptorWriter::writeImage(
 		uint32_t binding, VkDescriptorImageInfo* imageInfo)
 	{
@@ -249,6 +251,27 @@ namespace Hmck
 		write.descriptorCount = static_cast<uint32_t>(imageInfos.size());
 		if (imageInfos.size() > 0)
 			writes.push_back(write);
+		return *this;
+	}
+
+	DescriptorWriter& DescriptorWriter::writeAccelerationStructure(uint32_t binding, VkWriteDescriptorSetAccelerationStructureKHR* accelerationStructureInfo)
+	{
+		assert(setLayout.bindings.count(binding) == 1 && "Layout does not contain specified binding");
+
+		auto& bindingDescription = setLayout.bindings[binding];
+
+		assert(
+			bindingDescription.descriptorCount == 1 &&
+			"Binding single descriptor info, but binding expects multiple");
+
+		VkWriteDescriptorSet write{};
+		write.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+		write.descriptorType = bindingDescription.descriptorType;
+		write.dstBinding = binding;
+		write.descriptorCount = 1;
+		write.pNext = accelerationStructureInfo;
+
+		writes.push_back(write);
 		return *this;
 	}
 

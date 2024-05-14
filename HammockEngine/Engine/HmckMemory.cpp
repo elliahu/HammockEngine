@@ -22,6 +22,7 @@ Hmck::MemoryManager::MemoryManager(Device& device) :device{ device }
 		.setMaxSets(20000)
 		.addPoolSize(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 10000)
 		.addPoolSize(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 10000)
+		.addPoolSize(VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR, 10000)
 		.build();
 }
 
@@ -34,7 +35,7 @@ Hmck::BufferHandle Hmck::MemoryManager::createBuffer(BufferCreateInfo createInfo
 		createInfo.usageFlags,
 		createInfo.memoryPropertyFlags);
 
-	if(createInfo.map) buffer->map();
+	if (createInfo.map) buffer->map();
 
 	buffers.emplace(buffersLastHandle, std::move(buffer));
 	BufferHandle handle = buffersLastHandle;
@@ -49,7 +50,7 @@ Hmck::BufferHandle Hmck::MemoryManager::createVertexBuffer(VertexBufferCreateInf
 		device,
 		createInfo.vertexSize,
 		createInfo.vertexCount,
-		VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
+		VK_BUFFER_USAGE_TRANSFER_SRC_BIT ,
 		VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
 	};
 
@@ -59,9 +60,9 @@ Hmck::BufferHandle Hmck::MemoryManager::createVertexBuffer(VertexBufferCreateInf
 	BufferHandle handle = createBuffer({
 		.instanceSize = createInfo.vertexSize,
 		.instanceCount = createInfo.vertexCount,
-		.usageFlags = VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT,
+		.usageFlags = VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT | createInfo.usageFlags,
 		.memoryPropertyFlags = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
-		.map = false});
+		.map = false });
 
 	device.copyBuffer(stagingBuffer.getBuffer(), getBuffer(handle)->getBuffer(), createInfo.vertexCount * createInfo.vertexSize);
 
@@ -74,7 +75,7 @@ Hmck::BufferHandle Hmck::MemoryManager::createIndexBuffer(IndexBufferCreateInfo 
 		device,
 		createInfo.indexSize,
 		createInfo.indexCount,
-		VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
+		VK_BUFFER_USAGE_TRANSFER_SRC_BIT ,
 		VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
 	};
 
@@ -84,7 +85,7 @@ Hmck::BufferHandle Hmck::MemoryManager::createIndexBuffer(IndexBufferCreateInfo 
 	BufferHandle handle = createBuffer({
 		.instanceSize = createInfo.indexSize,
 		.instanceCount = createInfo.indexCount,
-		.usageFlags = VK_BUFFER_USAGE_INDEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT,
+		.usageFlags = VK_BUFFER_USAGE_INDEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT | createInfo.usageFlags,
 		.memoryPropertyFlags = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
 		.map = false });
 
@@ -114,7 +115,7 @@ Hmck::DescriptorSetHandle Hmck::MemoryManager::createDescriptorSet(DescriptorSet
 	VkDescriptorSet descriptorSet;
 
 	auto writer = DescriptorWriter(getDescriptorSetLayout(createInfo.descriptorSetLayout), *descriptorPool);
-	
+
 	for (auto& buffer : createInfo.bufferWrites)
 	{
 		writer.writeBuffer(buffer.binding, &buffer.bufferInfo);
@@ -133,6 +134,11 @@ Hmck::DescriptorSetHandle Hmck::MemoryManager::createDescriptorSet(DescriptorSet
 	for (auto& imageArray : createInfo.imageArrayWrites)
 	{
 		writer.writeImageArray(imageArray.binding, imageArray.imageInfos);
+	}
+
+	for (auto& accelerationStructure : createInfo.accelerationStructureWrites)
+	{
+		writer.writeAccelerationStructure(accelerationStructure.binding, &accelerationStructure.accelerationStructureInfo);
 	}
 
 	if (writer.build(descriptorSet))
@@ -168,7 +174,7 @@ Hmck::Texture2DHandle Hmck::MemoryManager::createTexture2DFromBuffer(Texture2DCr
 	texture->loadFromBuffer(
 		createInfo.buffer,
 		createInfo.bufferSize,
-		createInfo.width,createInfo.height,
+		createInfo.width, createInfo.height,
 		device,
 		createInfo.format,
 		createInfo.imageLayout);
@@ -284,13 +290,13 @@ VkDescriptorImageInfo Hmck::MemoryManager::getTextureCubeMapDescriptorImageInfo(
 }
 
 void Hmck::MemoryManager::bindDescriptorSet(
-	VkCommandBuffer commandBuffer, 
-	VkPipelineBindPoint bindPoint, 
-	VkPipelineLayout pipelineLayout, 
-	uint32_t firstSet, 
-	uint32_t descriptorCount, 
+	VkCommandBuffer commandBuffer,
+	VkPipelineBindPoint bindPoint,
+	VkPipelineLayout pipelineLayout,
+	uint32_t firstSet,
+	uint32_t descriptorCount,
 	DescriptorSetHandle descriptorSet,
-	uint32_t dynamicOffsetCount, 
+	uint32_t dynamicOffsetCount,
 	const uint32_t* pDynamicOffsets)
 {
 	auto descriptor = getDescriptorSet(descriptorSet);
@@ -324,7 +330,7 @@ void Hmck::MemoryManager::destroyTexture2D(Texture2DHandle handle)
 void Hmck::MemoryManager::bindVertexBuffer(BufferHandle handle, VkCommandBuffer commandBuffer)
 {
 	VkDeviceSize offsets[] = { 0 };
-	VkBuffer buffers[] = { getBuffer(handle)->getBuffer()};
+	VkBuffer buffers[] = { getBuffer(handle)->getBuffer() };
 	vkCmdBindVertexBuffers(commandBuffer, 0, 1, buffers, offsets);
 }
 

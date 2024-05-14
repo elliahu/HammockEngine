@@ -1,7 +1,10 @@
 #pragma once
 
 #include "Platform/HmckWindow.h"
-//#include "HmckUtils.h"
+#include <vulkan/vulkan.h>
+#include <GLFW/glfw3.h>
+#include <stdexcept>
+#include <vector>
 
 // std lib headers
 #include <string>
@@ -62,6 +65,7 @@ namespace Hmck {
 			VkMemoryPropertyFlags properties,
 			VkBuffer& buffer,
 			VkDeviceMemory& bufferMemory);
+
 		VkCommandBuffer beginSingleTimeCommands();
 		void endSingleTimeCommands(VkCommandBuffer commandBuffer);
 		void copyBuffer(VkBuffer srcBuffer, VkBuffer dstBuffer, VkDeviceSize size);
@@ -80,10 +84,6 @@ namespace Hmck {
 			VkImageLayout layoutNew,
 			uint32_t layerCount = 1
 		);
-
-		// headless rendering
-		/*VkCommandBuffer createCommandBuffer(VkCommandBufferLevel level, VkCommandPool pool, bool begin);
-		VkCommandBuffer createCommandBuffer(VkCommandBufferLevel level, bool begin);*/
 
 		VkPhysicalDeviceProperties properties;
 
@@ -117,7 +117,18 @@ namespace Hmck {
 		VkQueue presentQueue_;
 
 		const std::vector<const char*> validationLayers = { "VK_LAYER_KHRONOS_validation" };
-		const std::vector<const char*> deviceExtensions = { VK_KHR_SWAPCHAIN_EXTENSION_NAME };
+		const std::vector<const char*> deviceExtensions = 
+		{ 
+			VK_KHR_SWAPCHAIN_EXTENSION_NAME,
+			VK_KHR_ACCELERATION_STRUCTURE_EXTENSION_NAME,
+			// VK_KHR_RAY_TRACING_PIPELINE_EXTENSION_NAME, 
+			VK_KHR_BUFFER_DEVICE_ADDRESS_EXTENSION_NAME,
+			VK_KHR_DEFERRED_HOST_OPERATIONS_EXTENSION_NAME,
+			VK_EXT_DESCRIPTOR_INDEXING_EXTENSION_NAME,
+			VK_KHR_SPIRV_1_4_EXTENSION_NAME,
+			VK_KHR_SHADER_FLOAT_CONTROLS_EXTENSION_NAME,
+			VK_KHR_RAY_QUERY_EXTENSION_NAME
+		};
 	};
 
 }

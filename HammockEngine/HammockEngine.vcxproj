@@ -41,6 +41,7 @@
     <ClCompile Include="Engine\HmckMemory.cpp" />
     <ClCompile Include="Engine\HmckPipeline.cpp" />
     <ClCompile Include="Engine\HmckRenderer.cpp" />
+    <ClCompile Include="Engine\HmckRTX.cpp" />
     <ClCompile Include="Engine\HmckScene.cpp" />
     <ClCompile Include="Engine\HmckTexture.cpp" />
     <ClCompile Include="Engine\Platform\HmckWindow.cpp" />

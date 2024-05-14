@@ -76,6 +76,7 @@ void Hmck::Camera::setView(glm::vec3 position, glm::vec3 rotation)
 	inverseViewMatrix[3][0] = position.x;
 	inverseViewMatrix[3][1] = position.y;
 	inverseViewMatrix[3][2] = position.z;
+
 }
 
 void Hmck::Camera::update()

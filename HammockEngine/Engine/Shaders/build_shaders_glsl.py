@@ -14,5 +14,5 @@ for path in os.listdir(input):
     # Check if current path is a file
     if os.path.isfile(os.path.join(input, path)):
         #compile
-        subprocess.check_call([compiler, shader_in, '-o', shader_out])
+        subprocess.check_call([compiler, shader_in, '-o', shader_out, '--target-env=vulkan1.2', '--target-spv=spv1.4']) 
         print(path + ' compiled successfully')

@@ -2,6 +2,7 @@
 
 Hmck::PBRApp::PBRApp()
 {
+	loadFunctionPointers(device);
 	load();
 }
 
@@ -22,11 +23,14 @@ void Hmck::PBRApp::run()
 	auto camera = std::make_shared<Camera>();
 	scene->add(camera, scene->getRoot());
 	scene->setActiveCamera(camera->id);
-	scene->getActiveCamera()->setPerspectiveProjection(glm::radians(50.f), renderer.getAspectRatio(), 0.1f, 1000.f);
+	scene->getActiveCamera()->flipY = true;
+	//scene->getActiveCamera()->transform.rotation.z = glm::radians(180.0f);
+	scene->getActiveCamera()->setPerspectiveProjection(glm::radians(50.f), renderer.getAspectRatio(), 0.1f, 512.0f);
+	
 	
 	std::shared_ptr<OmniLight> light = std::make_shared<OmniLight>();
-	light->transform.translation = { 0.0f, 2.0f, 0.0f };
-	//scene->add(light);
+	light->transform.translation = { 4.0f, 2.0f, 4.0f };
+	scene->add(light, scene->getRoot());
 
 	FrameBufferData data{
 		.projection = scene->getActiveCamera()->getProjection(),
@@ -34,6 +38,7 @@ void Hmck::PBRApp::run()
 		.inverseView = scene->getActiveCamera()->getInverseView()
 	};
 
+	float elapsed = 0;
 	auto currentTime = std::chrono::high_resolution_clock::now();
 	while (!window.shouldClose())
 	{
@@ -43,11 +48,13 @@ void Hmck::PBRApp::run()
 		// gameloop timing
 		auto newTime = std::chrono::high_resolution_clock::now();
 		float frameTime = std::chrono::duration<float, std::chrono::seconds::period>(newTime - currentTime).count();
+		elapsed += frameTime;
 		currentTime = newTime;
 
 		// camera
 		cameraController.moveInPlaneXZ(window, frameTime, scene->getActiveCamera());
 		scene->getActiveCamera()->update();
+
 
 		// start a new frame
 		if (auto commandBuffer = renderer.beginFrame())
@@ -160,22 +167,29 @@ void Hmck::PBRApp::load()
 
 	GltfLoader gltfloader{ device, memoryManager, scene };
 	//gltfloader.load(std::string(MODELS_DIR) + "sponza/sponza_lights.glb");
-	gltfloader.load(std::string(MODELS_DIR) + "helmet/DamagedHelmet.glb");
+	//gltfloader.load(std::string(MODELS_DIR) + "helmet/DamagedHelmet.glb");
 	//gltfloader.load(std::string(MODELS_DIR) + "helmet/helmet.glb");
 	//gltfloader.load(std::string(MODELS_DIR) + "Bistro/BistroInterior.glb");
 	//gltfloader.load(std::string(MODELS_DIR) + "Bistro/BistroExterior.glb");
-	//gltfloader.load(std::string(MODELS_DIR) + "Sphere/SphereIBL.glb");
+	gltfloader.load("../../Resources/data/models/vulkanscene_shadow.gltf");
 
 
 	vertexBuffer = memoryManager.createVertexBuffer({
 		.vertexSize = sizeof(scene->vertices[0]),
 		.vertexCount = static_cast<uint32_t>(scene->vertices.size()),
-		.data = (void*)scene->vertices.data() });
+		.data = (void*)scene->vertices.data(),
+		.usageFlags = VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT | VK_BUFFER_USAGE_ACCELERATION_STRUCTURE_BUILD_INPUT_READ_ONLY_BIT_KHR });
 
 	indexBuffer = memoryManager.createIndexBuffer({
 		.indexSize = sizeof(scene->indices[0]),
 		.indexCount = static_cast<uint32_t>(scene->indices.size()),
-		.data = (void*)scene->indices.data() });
+		.data = (void*)scene->indices.data(),
+		.usageFlags = VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT | VK_BUFFER_USAGE_ACCELERATION_STRUCTURE_BUILD_INPUT_READ_ONLY_BIT_KHR });
+
+	numTriangles = static_cast<uint32_t>(scene->vertices.size()) / 3;
+
+	createBottomLevelAccelerationStructure();
+	createTopLevelAccelerationStructure();
 
 	scene->vertices.clear();
 	scene->indices.clear();
@@ -190,8 +204,9 @@ void Hmck::PBRApp::init()
 			{.binding = 2, .descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, .stageFlags = VK_SHADER_STAGE_ALL_GRAPHICS}, // prefiltered env map
 			{.binding = 3, .descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, .stageFlags = VK_SHADER_STAGE_ALL_GRAPHICS}, //  brdfLUT
 			{.binding = 4, .descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, .stageFlags = VK_SHADER_STAGE_ALL_GRAPHICS}, //  irradiance map
+			{.binding = 5, .descriptorType = VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR, .stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT},
 		}
-		});
+	});
 
 	environmentBuffer = memoryManager.createBuffer({
 			.instanceSize = sizeof(EnvironmentBufferData),
@@ -206,6 +221,9 @@ void Hmck::PBRApp::init()
 		imageInfos[im] = memoryManager.getTexture2D(scene->images[im].texture)->descriptor;
 	}
 	auto sceneBufferInfo = memoryManager.getBuffer(environmentBuffer)->descriptorInfo();
+	VkWriteDescriptorSetAccelerationStructureKHR descriptorAccelerationStructureInfo = Init::writeDescriptorSetAccelerationStructureKHR();
+	descriptorAccelerationStructureInfo.accelerationStructureCount = 1;
+	descriptorAccelerationStructureInfo.pAccelerationStructures = &topLevelAS.handle;
 	environmentDescriptorSet = memoryManager.createDescriptorSet({
 			.descriptorSetLayout = environmentDescriptorSetLayout,
 			.bufferWrites = {{0,sceneBufferInfo}},
@@ -214,7 +232,8 @@ void Hmck::PBRApp::init()
 				{3, memoryManager.getTexture2DDescriptorImageInfo(scene->environment->brdfLUT)},
 				{4, memoryManager.getTexture2DDescriptorImageInfo(scene->environment->irradianceSphere)},
 			},
-			.imageArrayWrites = {{1,imageInfos}}
+			.imageArrayWrites = {{1,imageInfos}},
+			.accelerationStructureWrites = {{5, descriptorAccelerationStructureInfo}}
 		});
 
 	frameDescriptorSets.resize(SwapChain::MAX_FRAMES_IN_FLIGHT);
@@ -613,6 +632,166 @@ void Hmck::PBRApp::createPipelines(Renderer& renderer)
 		});
 }
 
+void Hmck::PBRApp::createBottomLevelAccelerationStructure()
+{
+	VkDeviceOrHostAddressConstKHR vertexBufferDeviceAddress{};
+	VkDeviceOrHostAddressConstKHR indexBufferDeviceAddress{};
+
+	vertexBufferDeviceAddress.deviceAddress = getBufferDeviceAddress(device, memoryManager.getBuffer(vertexBuffer)->getBuffer());
+	indexBufferDeviceAddress.deviceAddress = getBufferDeviceAddress(device, memoryManager.getBuffer(indexBuffer)->getBuffer());
+
+	assert(numTriangles > 0 && "Number of triangles must be greater than 0!");
+
+	// Build
+	VkAccelerationStructureGeometryKHR accelerationStructureGeometry = Init::accelerationStructureGeometryKHR();
+	accelerationStructureGeometry.flags = VK_GEOMETRY_OPAQUE_BIT_KHR;
+	accelerationStructureGeometry.geometryType = VK_GEOMETRY_TYPE_TRIANGLES_KHR;
+	accelerationStructureGeometry.geometry.triangles.sType = VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_GEOMETRY_TRIANGLES_DATA_KHR;
+	accelerationStructureGeometry.geometry.triangles.vertexFormat = VK_FORMAT_R32G32B32_SFLOAT;
+	accelerationStructureGeometry.geometry.triangles.vertexData = vertexBufferDeviceAddress;
+	accelerationStructureGeometry.geometry.triangles.maxVertex = scene->vertices.size() - 1;
+	accelerationStructureGeometry.geometry.triangles.vertexStride = sizeof(scene->vertices[0]);
+	accelerationStructureGeometry.geometry.triangles.indexType = VK_INDEX_TYPE_UINT32;
+	accelerationStructureGeometry.geometry.triangles.indexData = indexBufferDeviceAddress;
+	accelerationStructureGeometry.geometry.triangles.transformData.deviceAddress = 0;
+	accelerationStructureGeometry.geometry.triangles.transformData.hostAddress = nullptr;
+
+	// Get size info
+	VkAccelerationStructureBuildGeometryInfoKHR accelerationStructureBuildGeometryInfo = Init::accelerationStructureBuildGeometryInfoKHR();
+	accelerationStructureBuildGeometryInfo.type = VK_ACCELERATION_STRUCTURE_TYPE_BOTTOM_LEVEL_KHR;
+	accelerationStructureBuildGeometryInfo.flags = VK_BUILD_ACCELERATION_STRUCTURE_PREFER_FAST_TRACE_BIT_KHR;
+	accelerationStructureBuildGeometryInfo.geometryCount = 1;
+	accelerationStructureBuildGeometryInfo.pGeometries = &accelerationStructureGeometry;
+
+	VkAccelerationStructureBuildSizesInfoKHR accelerationStructureBuildSizesInfo = Init::accelerationStructureBuildSizesInfoKHR();
+	vkGetAccelerationStructureBuildSizesKHR(
+		device.device(),
+		VK_ACCELERATION_STRUCTURE_BUILD_TYPE_DEVICE_KHR,
+		&accelerationStructureBuildGeometryInfo,
+		&numTriangles,
+		&accelerationStructureBuildSizesInfo);
+
+	createAccelerationStructure(device, bottomLevelAS, VK_ACCELERATION_STRUCTURE_TYPE_BOTTOM_LEVEL_KHR, accelerationStructureBuildSizesInfo);
+
+	// Create a small scratch buffer used during build of the bottom level acceleration structure
+	ScratchBuffer scratchBuffer = createScratchBuffer(device, accelerationStructureBuildSizesInfo.buildScratchSize);
+
+	VkAccelerationStructureBuildGeometryInfoKHR accelerationBuildGeometryInfo = Init::accelerationStructureBuildGeometryInfoKHR();
+	accelerationBuildGeometryInfo.type = VK_ACCELERATION_STRUCTURE_TYPE_BOTTOM_LEVEL_KHR;
+	accelerationBuildGeometryInfo.flags = VK_BUILD_ACCELERATION_STRUCTURE_PREFER_FAST_TRACE_BIT_KHR;
+	accelerationBuildGeometryInfo.mode = VK_BUILD_ACCELERATION_STRUCTURE_MODE_BUILD_KHR;
+	accelerationBuildGeometryInfo.dstAccelerationStructure = bottomLevelAS.handle;
+	accelerationBuildGeometryInfo.geometryCount = 1;
+	accelerationBuildGeometryInfo.pGeometries = &accelerationStructureGeometry;
+	accelerationBuildGeometryInfo.scratchData.deviceAddress = scratchBuffer.deviceAddress;
+
+	VkAccelerationStructureBuildRangeInfoKHR accelerationStructureBuildRangeInfo{};
+	accelerationStructureBuildRangeInfo.primitiveCount = numTriangles;
+	accelerationStructureBuildRangeInfo.primitiveOffset = 0;
+	accelerationStructureBuildRangeInfo.firstVertex = 0;
+	accelerationStructureBuildRangeInfo.transformOffset = 0;
+	std::vector<VkAccelerationStructureBuildRangeInfoKHR*> accelerationBuildStructureRangeInfos = { &accelerationStructureBuildRangeInfo };
+
+	// Build the acceleration structure on the device via a one-time command buffer submission
+	// Some implementations may support acceleration structure building on the host (VkPhysicalDeviceAccelerationStructureFeaturesKHR->accelerationStructureHostCommands), but I prefer device builds
+	VkCommandBuffer commandBuffer = device.beginSingleTimeCommands();
+	vkCmdBuildAccelerationStructuresKHR(
+		commandBuffer,
+		1,
+		&accelerationBuildGeometryInfo,
+		accelerationBuildStructureRangeInfos.data());
+	device.endSingleTimeCommands(commandBuffer);
+
+	deleteScratchBuffer(device, scratchBuffer);
+}
+
+void Hmck::PBRApp::createTopLevelAccelerationStructure()
+{
+	VkTransformMatrixKHR transformMatrix = {
+			1.0f, 0.0f, 0.0f, 0.0f,
+			0.0f, 1.0f, 0.0f, 0.0f,
+			0.0f, 0.0f, 1.0f, 0.0f };
+
+	VkAccelerationStructureInstanceKHR instance{};
+	instance.transform = transformMatrix;
+	instance.instanceCustomIndex = 0;
+	instance.mask = 0xFF;
+	instance.instanceShaderBindingTableRecordOffset = 0;
+	instance.flags = VK_GEOMETRY_INSTANCE_TRIANGLE_FACING_CULL_DISABLE_BIT_KHR;
+	instance.accelerationStructureReference = bottomLevelAS.deviceAddress;
+
+	Buffer instancesBuffer{
+		device, 
+		sizeof(VkAccelerationStructureInstanceKHR), 
+		1, 
+		VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT | VK_BUFFER_USAGE_ACCELERATION_STRUCTURE_BUILD_INPUT_READ_ONLY_BIT_KHR,
+		VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT };
+	instancesBuffer.map();
+	instancesBuffer.writeToBuffer(&instance);
+
+	VkDeviceOrHostAddressConstKHR instanceDataDeviceAddress{};
+	instanceDataDeviceAddress.deviceAddress = getBufferDeviceAddress(device, instancesBuffer.getBuffer());
+
+	VkAccelerationStructureGeometryKHR accelerationStructureGeometry = Init::accelerationStructureGeometryKHR();
+	accelerationStructureGeometry.geometryType = VK_GEOMETRY_TYPE_INSTANCES_KHR;
+	accelerationStructureGeometry.flags = VK_GEOMETRY_OPAQUE_BIT_KHR;
+	accelerationStructureGeometry.geometry.instances.sType = VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_GEOMETRY_INSTANCES_DATA_KHR;
+	accelerationStructureGeometry.geometry.instances.arrayOfPointers = VK_FALSE;
+	accelerationStructureGeometry.geometry.instances.data = instanceDataDeviceAddress;
+
+	// Get size info
+	VkAccelerationStructureBuildGeometryInfoKHR accelerationStructureBuildGeometryInfo = Init::accelerationStructureBuildGeometryInfoKHR();
+	accelerationStructureBuildGeometryInfo.type = VK_ACCELERATION_STRUCTURE_TYPE_TOP_LEVEL_KHR;
+	accelerationStructureBuildGeometryInfo.flags = VK_BUILD_ACCELERATION_STRUCTURE_PREFER_FAST_TRACE_BIT_KHR;
+	accelerationStructureBuildGeometryInfo.geometryCount = 1;
+	accelerationStructureBuildGeometryInfo.pGeometries = &accelerationStructureGeometry;
+
+	uint32_t primitive_count = 1;
+
+	VkAccelerationStructureBuildSizesInfoKHR accelerationStructureBuildSizesInfo = Init::accelerationStructureBuildSizesInfoKHR();
+	vkGetAccelerationStructureBuildSizesKHR(
+		device.device(),
+		VK_ACCELERATION_STRUCTURE_BUILD_TYPE_DEVICE_KHR,
+		&accelerationStructureBuildGeometryInfo,
+		&primitive_count,
+		&accelerationStructureBuildSizesInfo);
+
+	createAccelerationStructure(device, topLevelAS, VK_ACCELERATION_STRUCTURE_TYPE_TOP_LEVEL_KHR, accelerationStructureBuildSizesInfo);
+
+	// Create a small scratch buffer used during build of the top level acceleration structure
+	ScratchBuffer scratchBuffer = createScratchBuffer(device, accelerationStructureBuildSizesInfo.buildScratchSize);
+
+	VkAccelerationStructureBuildGeometryInfoKHR accelerationBuildGeometryInfo = Init::accelerationStructureBuildGeometryInfoKHR();
+	accelerationBuildGeometryInfo.type = VK_ACCELERATION_STRUCTURE_TYPE_TOP_LEVEL_KHR;
+	accelerationBuildGeometryInfo.flags = VK_BUILD_ACCELERATION_STRUCTURE_PREFER_FAST_TRACE_BIT_KHR;
+	accelerationBuildGeometryInfo.mode = VK_BUILD_ACCELERATION_STRUCTURE_MODE_BUILD_KHR;
+	accelerationBuildGeometryInfo.dstAccelerationStructure = topLevelAS.handle;
+	accelerationBuildGeometryInfo.geometryCount = 1;
+	accelerationBuildGeometryInfo.pGeometries = &accelerationStructureGeometry;
+	accelerationBuildGeometryInfo.scratchData.deviceAddress = scratchBuffer.deviceAddress;
+
+	VkAccelerationStructureBuildRangeInfoKHR accelerationStructureBuildRangeInfo{};
+	accelerationStructureBuildRangeInfo.primitiveCount = 1;
+	accelerationStructureBuildRangeInfo.primitiveOffset = 0;
+	accelerationStructureBuildRangeInfo.firstVertex = 0;
+	accelerationStructureBuildRangeInfo.transformOffset = 0;
+	std::vector<VkAccelerationStructureBuildRangeInfoKHR*> accelerationBuildStructureRangeInfos = { &accelerationStructureBuildRangeInfo };
+
+	// Build the acceleration structure on the device via a one-time command buffer submission
+	// Some implementations may support acceleration structure building on the host (VkPhysicalDeviceAccelerationStructureFeaturesKHR->accelerationStructureHostCommands), but we prefer device builds
+	VkCommandBuffer commandBuffer = device.beginSingleTimeCommands();
+	vkCmdBuildAccelerationStructuresKHR(
+		commandBuffer,
+		1,
+		&accelerationBuildGeometryInfo,
+		accelerationBuildStructureRangeInfos.data());
+	device.endSingleTimeCommands(commandBuffer);
+
+	deleteScratchBuffer(device, scratchBuffer);
+}
+
+
+
 void Hmck::PBRApp::clean()
 {
 	memoryManager.destroyBuffer(environmentBuffer);
@@ -634,4 +813,7 @@ void Hmck::PBRApp::clean()
 
 	memoryManager.destroyBuffer(vertexBuffer);
 	memoryManager.destroyBuffer(indexBuffer);
+
+	deleteAccelerationStructure(device, topLevelAS);
+	deleteAccelerationStructure(device, bottomLevelAS);
 }

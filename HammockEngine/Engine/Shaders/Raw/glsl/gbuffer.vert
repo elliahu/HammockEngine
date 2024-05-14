@@ -33,7 +33,7 @@ void main()
 	_uv = uv;
 
     // vertex pos in viewspace
-	_position = vec3(scene.view * transform.model * vec4(position, 1.0));
+	_position = vec3(scene.view * (transform.model * vec4(position, 1.0)));
 
     // normal in view space
     mat3 normalMatrix = transpose(inverse(mat3(scene.view * transform.model)));

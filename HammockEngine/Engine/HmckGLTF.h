@@ -24,9 +24,15 @@ namespace Hmck
 	class GltfLoader
 	{
 	public:
+
+		enum LoadingFlags {
+			None = 0x00000000,
+			FlipY = 0x00000001,
+			PreTransformVertices = 0x00000002
+		};
 		GltfLoader(Device& device, MemoryManager& memory, std::unique_ptr<Scene>& scene);
 
-		void load(std::string filename);
+		void load(std::string filename, uint32_t fileLoadingFlags = LoadingFlags::None);
 
 	private:
 		Device& device;
@@ -36,6 +42,9 @@ namespace Hmck
 		uint32_t imagesOffset;
 		uint32_t texturesOffset;
 		uint32_t materialsOffset;
+		uint32_t loadingFlags = LoadingFlags::None;
+
+
 
 
 		bool isBinary(std::string& filename);

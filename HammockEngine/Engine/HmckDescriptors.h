@@ -100,6 +100,7 @@ namespace Hmck {
         DescriptorWriter& writeBufferArray(uint32_t binding, std::vector<VkDescriptorBufferInfo>& bufferInfos);
         DescriptorWriter& writeImage(uint32_t binding, VkDescriptorImageInfo* imageInfo);
         DescriptorWriter& writeImageArray(uint32_t binding, std::vector<VkDescriptorImageInfo>& imageInfos);
+        DescriptorWriter& writeAccelerationStructure(uint32_t binding, VkWriteDescriptorSetAccelerationStructureKHR* accelerationStructureInfo);
 
         bool build(VkDescriptorSet& set);
         void overwrite(VkDescriptorSet& set);

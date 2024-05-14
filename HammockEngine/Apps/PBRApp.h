@@ -24,6 +24,7 @@
 #include "HmckLights.h"
 #include "HmckMemory.h"
 #include "HmckGLTF.h"
+#include "HmckRTX.h"
 
 #ifndef MODELS_DIR
 #define MODELS_DIR "../../Resources/Models/"
@@ -36,7 +37,7 @@
 
 namespace Hmck 
 {
-	class PBRApp : public IApp
+	class PBRApp : public IApp, public IRayTracingSupport
 	{
 	public:
 
@@ -99,16 +100,11 @@ namespace Hmck
 
 	private:
 		void createPipelines(Renderer& renderer);
+		void createBottomLevelAccelerationStructure();
+		void createTopLevelAccelerationStructure();
 		void clean();
 
-		float zNear{ 0.1f };
-		float zFar{ 1024.0f };
-		const uint32_t offscreenImageSize{ 1024 };
-		const VkFormat offscreenImageFormat{ VK_FORMAT_R32_SFLOAT };
-		VkFormat offscreenDepthFormat{ VK_FORMAT_UNDEFINED }; // The depth format is selected at runtime
-
-		//TextureCubeMap shadowCubeMap;
-		//std::array<VkImageView, 6> shadowCubeMapFaceImageViews{};
+		uint32_t numTriangles = 0;
 
 		std::unique_ptr<Scene> scene{};
 
@@ -151,15 +147,12 @@ namespace Hmck
 		std::unique_ptr<GraphicsPipeline> skyboxPipeline{}; // uses gbufferFramebuffer render pass
 		std::unique_ptr<GraphicsPipeline> gbufferPipeline{}; // uses gbufferFramebuffer render pass
 		std::unique_ptr<GraphicsPipeline> defferedPipeline{};// uses swapchain render pass
-
-
-		// BRDFLUT
 		
-		
-		Texture2DHandle brdfLUT; 
-		
+		// RTX
+		AccelerationStructure bottomLevelAS{};
+		AccelerationStructure topLevelAS{};
 
-
+		VkPhysicalDeviceRayQueryFeaturesKHR enabledRayQueryFeatures{};
 	};
 
 }

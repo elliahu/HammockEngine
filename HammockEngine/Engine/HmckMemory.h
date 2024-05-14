@@ -48,6 +48,7 @@ namespace Hmck
 			VkDeviceSize vertexSize;
 			uint32_t vertexCount;
 			void* data;
+			VkBufferUsageFlags usageFlags = 0;
 		};
 
 		BufferHandle createVertexBuffer(VertexBufferCreateInfo createInfo);
@@ -57,6 +58,7 @@ namespace Hmck
 			VkDeviceSize indexSize;
 			uint32_t indexCount;
 			void* data;
+			VkBufferUsageFlags usageFlags = 0;
 		};
 
 		BufferHandle createIndexBuffer(IndexBufferCreateInfo createInfo);
@@ -105,10 +107,17 @@ namespace Hmck
 				std::vector<VkDescriptorImageInfo> imageInfos;
 			};
 
+			struct DescriptorSetWriteAccelerationStructureInfo
+			{
+				uint32_t binding;
+				VkWriteDescriptorSetAccelerationStructureKHR accelerationStructureInfo;
+			};
+
 			std::vector<DescriptorSetWriteBufferInfo> bufferWrites;
 			std::vector<DescriptorSetWriteBufferArrayInfo> bufferArrayWrites;
 			std::vector<DescriptorSetWriteImageInfo> imageWrites;
 			std::vector<DescriptorSetWriteImageArrayInfo> imageArrayWrites;
+			std::vector<DescriptorSetWriteAccelerationStructureInfo> accelerationStructureWrites;
 		};
 
 		DescriptorSetHandle createDescriptorSet(DescriptorSetCreateInfo createInfo);

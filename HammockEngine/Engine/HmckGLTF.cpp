@@ -17,7 +17,7 @@ Hmck::GltfLoader::GltfLoader(Device& device, MemoryManager& memory, std::unique_
 	materialsOffset = scene->materials.size();
 }
 
-void Hmck::GltfLoader::load(std::string filename)
+void Hmck::GltfLoader::load(std::string filename, uint32_t fileLoadingFlags)
 {
 	gltf::TinyGLTF loader;
 	gltf::Model model;
@@ -51,6 +51,8 @@ void Hmck::GltfLoader::load(std::string filename)
 	imagesOffset = scene->images.size();
 	texturesOffset = scene->textures.size();
 	materialsOffset = scene->materials.size();
+
+	loadingFlags = fileLoadingFlags;
 
 	loadImages(model);
 	loadTextures(model);
@@ -373,6 +375,33 @@ void Hmck::GltfLoader::loadEntity3D(gltf::Node& node, gltf::Model& model, std::s
 				vert.uv = texCoordsBuffer ? glm::make_vec2(&texCoordsBuffer[v * 2]) : glm::vec3(0.0f);
 				vert.color = glm::vec3(1.0f);
 				vert.tangent = vert.tangent = tangentBuffer ? glm::make_vec4(&tangentBuffer[v * 4]) : glm::vec4(0.0f);
+
+				if (loadingFlags & LoadingFlags::PreTransformVertices)
+				{
+					glm::mat4 model = entity->transform.mat4();
+					std::shared_ptr<Entity> currentParent = entity->parent;
+					while (currentParent)
+					{
+						model = currentParent->transform.mat4() * model;
+						currentParent = currentParent->parent;
+					}
+					vert.position = glm::vec3(model * glm::vec4(vert.position, 1.0));
+					vert.normal = glm::normalize(glm::mat3(model) * vert.normal);
+					vert.tangent = glm::normalize(model * vert.tangent);
+				}
+
+				if (loadingFlags & LoadingFlags::FlipY)
+				{
+					vert.position.y *= -1.0f;
+					vert.normal.y *= -1.0f;
+					vert.tangent.y *= -1.0f;
+
+					// retain front face orientation
+					vert.position.x *= -1.0f;
+					vert.normal.x *= -1.0f;
+					vert.tangent.x *= -1.0f;
+				}
+
 				scene->vertices.push_back(vert);
 			}
 		}
