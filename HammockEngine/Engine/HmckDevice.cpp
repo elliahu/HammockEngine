@@ -203,7 +203,7 @@ namespace Hmck {
         // Populate VkPhysicalDeviceFeatures2
         VkPhysicalDeviceFeatures2 deviceFeatures2{};
         deviceFeatures2.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2; 
-        deviceFeatures2.pNext = &accelerationStructureFeatures;
+        deviceFeatures2.pNext = &descriptorIndexingFeatures;
         deviceFeatures2.features = deviceFeatures;
 
         // Include deviceFeatures2 in VkDeviceCreateInfo pNext field
@@ -489,7 +489,7 @@ namespace Hmck {
         allocInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
         allocInfo.allocationSize = memRequirements.size;
         allocInfo.memoryTypeIndex = findMemoryType(memRequirements.memoryTypeBits, properties);
-        allocInfo.pNext = &memoryAllocateFlagsInfo;
+        //allocInfo.pNext = &memoryAllocateFlagsInfo;
 
         if (vkAllocateMemory(device_, &allocInfo, nullptr, &bufferMemory) != VK_SUCCESS) {
             throw std::runtime_error("failed to allocate buffer memory!");

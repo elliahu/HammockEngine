@@ -26,6 +26,7 @@ namespace Hmck
 		VkImageView view;
 		VkImageLayout layout;
 		int width, height, channels;
+		uint32_t layerCount;
 		VkDescriptorImageInfo descriptor;
 
 		void updateDescriptor();

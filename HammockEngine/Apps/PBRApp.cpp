@@ -2,7 +2,7 @@
 
 Hmck::PBRApp::PBRApp()
 {
-	loadFunctionPointers(device);
+	//loadFunctionPointers(device);
 	load();
 }
 
@@ -17,28 +17,19 @@ void Hmck::PBRApp::run()
 	KeyboardMovementController cameraController{};
 	UserInterface ui{ device, renderer.getSwapChainRenderPass(), window };
 
-	init();
-	createPipelines(renderer);
-
 	auto camera = std::make_shared<Camera>();
 	scene->add(camera, scene->getRoot());
 	scene->setActiveCamera(camera->id);
 	scene->getActiveCamera()->flipY = true;
-	//scene->getActiveCamera()->transform.rotation.z = glm::radians(180.0f);
 	scene->getActiveCamera()->setPerspectiveProjection(glm::radians(50.f), renderer.getAspectRatio(), 0.1f, 512.0f);
-	
-	
+
 	std::shared_ptr<OmniLight> light = std::make_shared<OmniLight>();
-	light->transform.translation = { 4.0f, 2.0f, 4.0f };
+	light->transform.translation = { 0.0f, 2.0f, -8.0f };
 	scene->add(light, scene->getRoot());
 
-	FrameBufferData data{
-		.projection = scene->getActiveCamera()->getProjection(),
-		.view = scene->getActiveCamera()->getView(),
-		.inverseView = scene->getActiveCamera()->getInverseView()
-	};
+	init();
+	createPipelines(renderer);
 
-	float elapsed = 0;
 	auto currentTime = std::chrono::high_resolution_clock::now();
 	while (!window.shouldClose())
 	{
@@ -48,7 +39,6 @@ void Hmck::PBRApp::run()
 		// gameloop timing
 		auto newTime = std::chrono::high_resolution_clock::now();
 		float frameTime = std::chrono::duration<float, std::chrono::seconds::period>(newTime - currentTime).count();
-		elapsed += frameTime;
 		currentTime = newTime;
 
 		// camera
@@ -61,6 +51,7 @@ void Hmck::PBRApp::run()
 		{
 			int frameIndex = renderer.getFrameIndex();
 
+			memoryManager.bindVertexBuffer(vertexBuffer, indexBuffer, commandBuffer);
 
 			renderer.beginRenderPass(gbufferFramebuffer, commandBuffer, {
 					{.color = { 0.0f, 0.0f, 0.0f, 0.0f } },
@@ -91,9 +82,11 @@ void Hmck::PBRApp::run()
 				0, nullptr);
 
 
-			data.projection = scene->getActiveCamera()->getProjection();
-			data.view = scene->getActiveCamera()->getView();
-			data.inverseView = scene->getActiveCamera()->getInverseView();
+			FrameBufferData data{
+				.projection = scene->getActiveCamera()->getProjection(),
+				.view = scene->getActiveCamera()->getView(),
+				.inverseView = scene->getActiveCamera()->getInverseView()
+			};
 
 			memoryManager.getBuffer(frameBuffers[frameIndex])->writeToBuffer(&data);
 
@@ -105,7 +98,7 @@ void Hmck::PBRApp::run()
 				frameDescriptorSets[frameIndex],
 				0, nullptr);
 
-			memoryManager.bindVertexBuffer(vertexBuffer, indexBuffer, commandBuffer);
+
 
 			skyboxPipeline->bind(commandBuffer);
 			vkCmdDraw(commandBuffer, 3, 1, 0, 0);
@@ -166,30 +159,29 @@ void Hmck::PBRApp::load()
 	scene->environment->generateBRDFLUT(device, memoryManager);
 
 	GltfLoader gltfloader{ device, memoryManager, scene };
-	//gltfloader.load(std::string(MODELS_DIR) + "sponza/sponza_lights.glb");
+	//gltfloader.load(std::string(MODELS_DIR) + "sponza/sponza.glb");
 	//gltfloader.load(std::string(MODELS_DIR) + "helmet/DamagedHelmet.glb");
 	//gltfloader.load(std::string(MODELS_DIR) + "helmet/helmet.glb");
 	//gltfloader.load(std::string(MODELS_DIR) + "Bistro/BistroInterior.glb");
 	//gltfloader.load(std::string(MODELS_DIR) + "Bistro/BistroExterior.glb");
-	gltfloader.load("../../Resources/data/models/vulkanscene_shadow.gltf");
+	gltfloader.load("../../Resources/data/models/reflection_scene.gltf");
 
 
 	vertexBuffer = memoryManager.createVertexBuffer({
 		.vertexSize = sizeof(scene->vertices[0]),
 		.vertexCount = static_cast<uint32_t>(scene->vertices.size()),
 		.data = (void*)scene->vertices.data(),
-		.usageFlags = VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT | VK_BUFFER_USAGE_ACCELERATION_STRUCTURE_BUILD_INPUT_READ_ONLY_BIT_KHR });
+		.usageFlags = VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT});
 
 	indexBuffer = memoryManager.createIndexBuffer({
 		.indexSize = sizeof(scene->indices[0]),
 		.indexCount = static_cast<uint32_t>(scene->indices.size()),
 		.data = (void*)scene->indices.data(),
-		.usageFlags = VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT | VK_BUFFER_USAGE_ACCELERATION_STRUCTURE_BUILD_INPUT_READ_ONLY_BIT_KHR });
+		.usageFlags = VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT});
 
 	numTriangles = static_cast<uint32_t>(scene->vertices.size()) / 3;
 
-	createBottomLevelAccelerationStructure();
-	createTopLevelAccelerationStructure();
+	Logger::log(HMCK_LOG_LEVEL_DEBUG, "Number of triangles: %d\n", numTriangles);
 
 	scene->vertices.clear();
 	scene->indices.clear();
@@ -204,7 +196,6 @@ void Hmck::PBRApp::init()
 			{.binding = 2, .descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, .stageFlags = VK_SHADER_STAGE_ALL_GRAPHICS}, // prefiltered env map
 			{.binding = 3, .descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, .stageFlags = VK_SHADER_STAGE_ALL_GRAPHICS}, //  brdfLUT
 			{.binding = 4, .descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, .stageFlags = VK_SHADER_STAGE_ALL_GRAPHICS}, //  irradiance map
-			{.binding = 5, .descriptorType = VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR, .stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT},
 		}
 	});
 
@@ -232,8 +223,7 @@ void Hmck::PBRApp::init()
 				{3, memoryManager.getTexture2DDescriptorImageInfo(scene->environment->brdfLUT)},
 				{4, memoryManager.getTexture2DDescriptorImageInfo(scene->environment->irradianceSphere)},
 			},
-			.imageArrayWrites = {{1,imageInfos}},
-			.accelerationStructureWrites = {{5, descriptorAccelerationStructureInfo}}
+			.imageArrayWrites = {{1,imageInfos}}
 		});
 
 	frameDescriptorSets.resize(SwapChain::MAX_FRAMES_IN_FLIGHT);
@@ -315,7 +305,6 @@ void Hmck::PBRApp::init()
 			{.binding = 3, .descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, .stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT}, // material (roughness, metalness, ao)
 		}
 		});
-
 }
 
 void Hmck::PBRApp::renderEntity(uint32_t frameIndex, VkCommandBuffer commandBuffer, std::unique_ptr<GraphicsPipeline>& pipeline, std::shared_ptr<Entity>& entity)
@@ -329,13 +318,7 @@ void Hmck::PBRApp::renderEntity(uint32_t frameIndex, VkCommandBuffer commandBuff
 		{
 			if (_entity->dataChanged)
 			{
-				glm::mat4 model = entity->transform.mat4();
-				std::shared_ptr<Entity> currentParent = entity->parent;
-				while (currentParent)
-				{
-					model = currentParent->transform.mat4() * model;
-					currentParent = currentParent->parent;
-				}
+				glm::mat4 model = entity->mat4();
 
 				EntityBufferData entityData{
 					.model = model,
@@ -398,6 +381,41 @@ void Hmck::PBRApp::renderEntity(uint32_t frameIndex, VkCommandBuffer commandBuff
 
 	for (auto& child : entity->children) {
 		renderEntity(frameIndex, commandBuffer, pipeline, child);
+	}
+}
+
+void Hmck::PBRApp::renderShadowCubeMapFace(uint32_t frameIndex, VkCommandBuffer commandBuffer, std::shared_ptr<Entity> entity, std::shared_ptr<OmniLight> light)
+{
+	if (isInstanceOf<Entity, Entity3D>(entity) && entity->visible)
+	{
+		auto _entity = cast<Entity, Entity3D>(entity);
+
+		if (_entity->mesh.primitives.size() > 0)
+		{
+			glm::mat4 model = _entity->mat4();
+
+			glm::mat4 perspective = glm::perspective(std::numbers::pi_v<float> / 2.0f, 1.0f, light->zNear, light->zfar);
+			OmniLight::UniformData data{
+				.projection = perspective,
+				.model = model
+			};
+			memoryManager.getBuffer(light->buffer)->writeToBuffer(&data);
+
+			memoryManager.bindDescriptorSet(
+				commandBuffer,
+				VK_PIPELINE_BIND_POINT_GRAPHICS,
+				light->pipeline->graphicsPipelineLayout,
+				0, 1,
+				light->descriptorSet,
+				0, nullptr);
+
+			for (Primitive& primitive : _entity->mesh.primitives)
+				if (primitive.indexCount > 0) vkCmdDrawIndexed(commandBuffer, primitive.indexCount, 1, primitive.firstIndex, 0, 0);
+		}
+	}
+
+	for (auto& child : entity->children) {
+		renderShadowCubeMapFace(frameIndex, commandBuffer, child, light);
 	}
 }
 
@@ -721,9 +739,9 @@ void Hmck::PBRApp::createTopLevelAccelerationStructure()
 	instance.accelerationStructureReference = bottomLevelAS.deviceAddress;
 
 	Buffer instancesBuffer{
-		device, 
-		sizeof(VkAccelerationStructureInstanceKHR), 
-		1, 
+		device,
+		sizeof(VkAccelerationStructureInstanceKHR),
+		1,
 		VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT | VK_BUFFER_USAGE_ACCELERATION_STRUCTURE_BUILD_INPUT_READ_ONLY_BIT_KHR,
 		VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT };
 	instancesBuffer.map();
@@ -813,7 +831,4 @@ void Hmck::PBRApp::clean()
 
 	memoryManager.destroyBuffer(vertexBuffer);
 	memoryManager.destroyBuffer(indexBuffer);
-
-	deleteAccelerationStructure(device, topLevelAS);
-	deleteAccelerationStructure(device, bottomLevelAS);
 }

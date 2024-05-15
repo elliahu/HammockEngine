@@ -27,7 +27,7 @@ namespace Hmck
 
 		static void resetId() { currentId = 1; };
 
-		void notifyChildrenDataChanged()
+		inline void notifyChildrenDataChanged()
 		{
 			for (const auto& child : children) 
 			{
@@ -35,6 +35,8 @@ namespace Hmck
 				child->notifyChildrenDataChanged();
 			}
 		}
+
+		glm::mat4 mat4();
 
 		static EntityHandle currentId;
 		EntityHandle id;

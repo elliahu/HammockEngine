@@ -10,7 +10,9 @@ layout (location = 0) out vec4 outColor;
 
 layout(set = 0, binding = 2) uniform sampler2D environmentSampler;
 
-layout (set = 0, binding = 5) uniform accelerationStructureEXT topLevelAS;
+//layout (set = 0, binding = 5) uniform accelerationStructureEXT topLevelAS;
+
+//layout (set = 0, binding = 6) uniform samplerCube shadowCubeMap; 
 
 // gbuffer attachments  
 layout(set = 4, binding = 0) uniform sampler2D positionSampler;
@@ -79,6 +81,9 @@ vec3 fresnelSchlick(float cosTheta, vec3 F0)
     return F0 + (1.0 - F0) * pow(1.0 - cosTheta, 5.0);
 }
 
+#define EPSILON 0.15
+#define SHADOW_OPACITY 0.0
+
 void main()
 {
     vec3 N = normalize(texture(normalSampler, uv).rgb);
@@ -103,35 +108,18 @@ void main()
     for(int i = 0; i < env.numOmniLights; ++i) {
         // calculate per-light radiance
         vec3 L = normalize(env.omniLights[i].position.xyz - position);
-
-        /* vec3 rayOrigin = (scene.inverseView * vec4(position,1.0)).xyz;
-        vec3 rayDirection = normalize((scene.inverseView * env.omniLights[i].position).xyz - rayOrigin);
-
-        // Ray query
-        rayQueryEXT rayQuery;
-        rayQueryInitializeEXT(
-            rayQuery, 
-            topLevelAS, 
-            gl_RayFlagsTerminateOnFirstHitEXT, 
-            0xFF, 
-            rayOrigin, 
-            0.01, 
-            rayDirection, 
-            1000.0);
-
-        // Traverse the acceleration structure and store information about the first intersection (if any)
-        rayQueryProceedEXT(rayQuery);
-
-        // If the intersection has hit a triangle, the fragment is shadowed
-        if (rayQueryGetIntersectionTypeEXT(rayQuery, true) == gl_RayQueryCommittedIntersectionTriangleEXT ) {
-            continue;
-        } */
         
-
+        /* // Shadow
+        // TODO sample from omnidirectional shadow map (shadowCubeMap) and decide if the fragment is in shadow
+        vec3 shadowDir = normalize((scene.inverseView * vec4(L, 0.0)).xyz);
+        float shadowDepth = texture(shadowCubeMap, -shadowDir).r;
+        float lightDistance = length(env.omniLights[i].position.xyz - position);
+        float shadow = lightDistance <= shadowDepth + EPSILON ? 1.0 : SHADOW_OPACITY;
+ */
         vec3 H = normalize(V + L);
         float distance    = length(env.omniLights[i].position.xyz - position);
         float attenuation = 1.0 / (distance * distance);
-        attenuation = 1.0;
+        //attenuation = 1.0;
         vec3 radiance     = env.omniLights[i].color.rgb * attenuation;
 
         // cook-torrance brdf
@@ -145,7 +133,7 @@ void main()
 
         // add to outgoing radiance Lo
         float NdotL = max(dot(N, L), 0.0);
-        Lo += (specular + albedo / PI) * radiance * NdotL;
+        Lo += /*shadow * */ (specular + albedo / PI) * radiance * NdotL;
     }
 
     vec3 ambient = vec3(0.03) * albedo * ao;

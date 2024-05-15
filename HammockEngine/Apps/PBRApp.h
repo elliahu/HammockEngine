@@ -7,6 +7,7 @@
 #include <memory>
 #include <vector>
 #include <stdexcept>
+#include <numbers> 
 #include <chrono>
 
 #include "Platform/HmckWindow.h"
@@ -37,7 +38,7 @@
 
 namespace Hmck 
 {
-	class PBRApp : public IApp, public IRayTracingSupport
+	class PBRApp : public IApp , public IRayTracingSupport
 	{
 	public:
 
@@ -96,6 +97,12 @@ namespace Hmck
 			std::unique_ptr<GraphicsPipeline>& pipeline,
 			std::shared_ptr<Entity>& entity);
 
+		void renderShadowCubeMapFace(
+			uint32_t frameIndex,
+			VkCommandBuffer commandBuffer,
+			std::shared_ptr<Entity> entity,
+			std::shared_ptr<OmniLight> light);
+
 		
 
 	private:
@@ -143,7 +150,6 @@ namespace Hmck
 		std::array<std::unique_ptr<Framebuffer>, 6> offscreenFramebuffers{};
 
 		// pipelines
-		std::unique_ptr<GraphicsPipeline> offscreenPipeline{};
 		std::unique_ptr<GraphicsPipeline> skyboxPipeline{}; // uses gbufferFramebuffer render pass
 		std::unique_ptr<GraphicsPipeline> gbufferPipeline{}; // uses gbufferFramebuffer render pass
 		std::unique_ptr<GraphicsPipeline> defferedPipeline{};// uses swapchain render pass
@@ -152,7 +158,7 @@ namespace Hmck
 		AccelerationStructure bottomLevelAS{};
 		AccelerationStructure topLevelAS{};
 
-		VkPhysicalDeviceRayQueryFeaturesKHR enabledRayQueryFeatures{};
+
 	};
 
 }
