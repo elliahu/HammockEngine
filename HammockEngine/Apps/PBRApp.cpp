@@ -160,11 +160,12 @@ void Hmck::PBRApp::load()
 
 	GltfLoader gltfloader{ device, memoryManager, scene };
 	//gltfloader.load(std::string(MODELS_DIR) + "sponza/sponza.glb");
-	//gltfloader.load(std::string(MODELS_DIR) + "helmet/DamagedHelmet.glb");
+	gltfloader.load(std::string(MODELS_DIR) + "helmet/DamagedHelmet.glb");
 	//gltfloader.load(std::string(MODELS_DIR) + "helmet/helmet.glb");
+	//gltfloader.load(std::string(MODELS_DIR) + "6887_allied_avenger/ship.glb");
 	//gltfloader.load(std::string(MODELS_DIR) + "Bistro/BistroInterior.glb");
 	//gltfloader.load(std::string(MODELS_DIR) + "Bistro/BistroExterior.glb");
-	gltfloader.load("../../Resources/data/models/reflection_scene.gltf");
+	//gltfloader.load("../../Resources/data/models/reflection_scene.gltf");
 
 
 	vertexBuffer = memoryManager.createVertexBuffer({
