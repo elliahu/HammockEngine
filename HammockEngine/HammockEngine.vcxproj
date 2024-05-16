@@ -71,7 +71,6 @@
     <ClInclude Include="Engine\HmckDevice.h" />
     <ClInclude Include="Engine\HmckEntity.h" />
     <ClInclude Include="Engine\HmckEntity3D.h" />
-    <ClInclude Include="Engine\HmckFrameInfo.h" />
     <ClInclude Include="Engine\HmckEntityComponents.h" />
     <ClInclude Include="Engine\HmckHDR.h" />
     <ClInclude Include="Engine\HmckMemory.h" />

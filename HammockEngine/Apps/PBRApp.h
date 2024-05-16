@@ -134,7 +134,7 @@ namespace Hmck
 		
 		// gbuffer descriptors
 		struct {
-			std::vector<DescriptorSetHandle> gbufferDescriptorSets{}; // TODO make GBuffer a class
+			std::vector<DescriptorSetHandle> gbufferDescriptorSets{}; 
 			DescriptorSetLayoutHandle gbufferDescriptorSetLayout;
 			Binding binding = 3;
 		} gBufferDescriptors;

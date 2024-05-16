@@ -134,9 +134,6 @@
     <ClInclude Include="Engine\HmckBuffer.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="Engine\HmckFrameInfo.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="Engine\HmckDescriptors.h">
       <Filter>Header Files</Filter>
     </ClInclude>
