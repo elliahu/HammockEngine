@@ -42,7 +42,7 @@ namespace Hmck
 		};
 		struct OffscreenPass {
 			int32_t width, height;
-			std::array<VkFramebuffer, 6> frameBuffers;
+			std::array<VkFramebuffer, 6> sceneBuffers;
 			FrameBufferAttachment depth;
 			VkRenderPass renderPass;
 			VkSampler sampler;

@@ -42,26 +42,23 @@ namespace Hmck
 	{
 	public:
 
-		struct EnvironmentBufferData
-		{
-			struct OmniLight
-			{
-				glm::vec4 position;
-				glm::vec4 color;
-			};
-
-			OmniLight omniLights[1000]; // TODO lights should be in frame buffer data
-			uint32_t numOmniLights = 0;
-		};
-
-		struct FrameBufferData
+		struct SceneBufferData
 		{
 			glm::mat4 projection{ 1.f };
 			glm::mat4 view{ 1.f };
 			glm::mat4 inverseView{ 1.f };
+
 			float exposure = 4.5f;
 			float gamma = 1.0f;
 			float whitePoint = 11.2f;
+
+			struct OmniLight
+			{
+				glm::vec4 position;
+				glm::vec4 color;
+			} omniLights[1000];
+			uint32_t numOmniLights = 0;
+
 		};
 
 		struct EntityBufferData
@@ -100,44 +97,54 @@ namespace Hmck
 	private:
 		void createPipelines(Renderer& renderer);
 
-		uint32_t numTriangles = 0;
-
 		std::unique_ptr<Scene> scene{};
 
-		BufferHandle vertexBuffer;
-		BufferHandle indexBuffer;
+
+		struct {
+			BufferHandle vertexBuffer;
+			BufferHandle indexBuffer;
+			uint32_t numTriangles = 0;
+		} geometry;
+		
 
 		// Descriptors
-		// per scene (bound once when scene is initialized)
-		DescriptorSetHandle environmentDescriptorSet;
-		DescriptorSetLayoutHandle environmentDescriptorSetLayout;
-		BufferHandle environmentBuffer;
-		
-		// per frame
-		std::vector<DescriptorSetHandle> frameDescriptorSets{};
-		DescriptorSetLayoutHandle frameDescriptorSetLayout;
-		std::vector<BufferHandle> frameBuffers{}; // TODO this is misleading as these are data buffers but name suggests these are actual framebbuffers
-		
+		// per frame (scene info updated every frame)
+		struct {
+			std::vector<DescriptorSetHandle> sceneDescriptorSets{};
+			DescriptorSetLayoutHandle sceneDescriptorSetLayout;
+			std::vector<BufferHandle> sceneBuffers{};
+			Binding binding = 0;
+		} sceneDescriptors;
+
 		// per entity
-		std::unordered_map<EntityHandle, DescriptorSetHandle> entityDescriptorSets{};
-		DescriptorSetLayoutHandle entityDescriptorSetLayout;
-		std::unordered_map<EntityHandle, BufferHandle> entityBuffers{};
-
-		// per material
-		std::vector<DescriptorSetHandle> materialDescriptorSets{};
-		DescriptorSetLayoutHandle materialDescriptorSetLayout;
-		std::vector<BufferHandle> materialBuffers{};
-
+		struct {
+			std::unordered_map<EntityHandle, DescriptorSetHandle> entityDescriptorSets{};
+			DescriptorSetLayoutHandle entityDescriptorSetLayout;
+			std::unordered_map<EntityHandle, BufferHandle> entityBuffers{};
+			Binding binding = 1;
+		} entityDescriptors;
+		
+		// per primitive
+		struct {
+			std::vector<DescriptorSetHandle> primitiveDescriptorSets{};
+			DescriptorSetLayoutHandle primitiveDescriptorSetLayout;
+			std::vector<BufferHandle> primitiveBuffers{};
+			Binding binding = 2;
+		} primitiveDescriptors;
+		
 		// gbuffer descriptors
-		std::vector<DescriptorSetHandle> gbufferDescriptorSets{};
-		DescriptorSetLayoutHandle gbufferDescriptorSetLayout;
+		struct {
+			std::vector<DescriptorSetHandle> gbufferDescriptorSets{}; // TODO make GBuffer a class
+			DescriptorSetLayoutHandle gbufferDescriptorSetLayout;
+			Binding binding = 3;
+		} gBufferDescriptors;
 
 
 		// renderpasses and framebuffers
 		std::unique_ptr<Framebuffer> gbufferFramebuffer{}; // TODO probably shoul be bufferd as well
 
 		// pipelines
-		std::unique_ptr<GraphicsPipeline> skyboxPipeline{}; // uses gbufferFramebuffer render pass
+		std::unique_ptr<GraphicsPipeline> environmentSpherePipeline{}; // uses gbufferFramebuffer render pass
 		std::unique_ptr<GraphicsPipeline> gbufferPipeline{}; // uses gbufferFramebuffer render pass
 		std::unique_ptr<GraphicsPipeline> deferredCompositionPipeline{};// uses swapchain render pass
 		

@@ -19,32 +19,23 @@ struct OmniLight
     vec4 color;
 };
 
-layout(set = 0, binding = 0) uniform Environment
-{
-    OmniLight omniLights[1000];
-    uint numOmniLights;
-} env;
-
 layout(set = 0, binding = 1) uniform sampler2D textures[];
 
-layout (set = 1, binding = 0) uniform SceneUbo
+layout (set = 0, binding = 0) uniform SceneUbo
 {
     mat4 projection;
     mat4 view;
     mat4 inverseView;
+	
 	float exposure;
 	float gamma;
+	float whitePoint;
+
+	OmniLight omniLights[1000];
+    uint numOmniLights;
 } scene;
 
-
-
-layout (set = 2, binding = 0) uniform TransformUbo
-{
-    mat4 model;
-    mat4 normal;
-} transform;
-
-layout (set = 3, binding = 0) uniform MaterialPropertyUbo
+layout (set = 2, binding = 0) uniform MaterialPropertyUbo
 {
     vec4 baseColorFactor;
     uint baseColorTextureIndex;

@@ -10,15 +10,11 @@ layout (location = 0) out vec4 outColor;
 
 layout(set = 0, binding = 2) uniform sampler2D environmentSampler;
 
-//layout (set = 0, binding = 5) uniform accelerationStructureEXT topLevelAS;
-
-//layout (set = 0, binding = 6) uniform samplerCube shadowCubeMap; 
-
 // gbuffer attachments  
-layout(set = 4, binding = 0) uniform sampler2D positionSampler;
-layout(set = 4, binding = 1) uniform sampler2D albedoSampler;
-layout(set = 4, binding = 2) uniform sampler2D normalSampler;
-layout(set = 4, binding = 3) uniform sampler2D materialPropertySampler;
+layout(set = 3, binding = 0) uniform sampler2D positionSampler;
+layout(set = 3, binding = 1) uniform sampler2D albedoSampler;
+layout(set = 3, binding = 2) uniform sampler2D normalSampler;
+layout(set = 3, binding = 3) uniform sampler2D materialPropertySampler;
 
 struct OmniLight
 {
@@ -26,17 +22,18 @@ struct OmniLight
     vec4 color;
 };
 
-layout(set = 0, binding = 0) uniform Environment
-{
-    OmniLight omniLights[1000];
-    uint numOmniLights;
-} env;
-
-layout (set = 1, binding = 0) uniform SceneUbo
+layout (set = 0, binding = 0) uniform SceneUbo
 {
     mat4 projection;
     mat4 view;
     mat4 inverseView;
+	
+	float exposure;
+	float gamma;
+	float whitePoint;
+
+	OmniLight omniLights[1000];
+    uint numOmniLights;
 } scene;
 
 const float PI = 3.14159265359;
@@ -105,22 +102,22 @@ void main()
     F0 = mix(F0, albedo, metallic);
 
     vec3 Lo = vec3(0);
-    for(int i = 0; i < env.numOmniLights; ++i) {
+    for(int i = 0; i < scene.numOmniLights; ++i) {
         // calculate per-light radiance
-        vec3 L = normalize(env.omniLights[i].position.xyz - position);
+        vec3 L = normalize(scene.omniLights[i].position.xyz - position);
         
         /* // Shadow
         // TODO sample from omnidirectional shadow map (shadowCubeMap) and decide if the fragment is in shadow
         vec3 shadowDir = normalize((scene.inverseView * vec4(L, 0.0)).xyz);
         float shadowDepth = texture(shadowCubeMap, -shadowDir).r;
-        float lightDistance = length(env.omniLights[i].position.xyz - position);
+        float lightDistance = length(scene.omniLights[i].position.xyz - position);
         float shadow = lightDistance <= shadowDepth + EPSILON ? 1.0 : SHADOW_OPACITY;
- */
+        */
         vec3 H = normalize(V + L);
-        float distance    = length(env.omniLights[i].position.xyz - position);
+        float distance    = length(scene.omniLights[i].position.xyz - position);
         float attenuation = 1.0 / (distance * distance);
         //attenuation = 1.0;
-        vec3 radiance     = env.omniLights[i].color.rgb * attenuation;
+        vec3 radiance     = scene.omniLights[i].color.rgb * attenuation;
 
         // cook-torrance brdf
         float NDF = DistributionGGX(N, H, roughness);   

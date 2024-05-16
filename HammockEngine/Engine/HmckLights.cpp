@@ -145,7 +145,7 @@ void Hmck::OmniLight::prepareFrameBuffer(Device& device)
 	for (uint32_t i = 0; i < 6; i++)
 	{
 		attachments[0] = shadowCubeMapFaceImageViews[i];
-		checkResult(vkCreateFramebuffer(device.device(), &fbufCreateInfo, nullptr, &renderPass.frameBuffers[i]));
+		checkResult(vkCreateFramebuffer(device.device(), &fbufCreateInfo, nullptr, &renderPass.sceneBuffers[i]));
 	}
 }
 
@@ -248,7 +248,7 @@ void Hmck::OmniLight::beginCubeMapFaceUpdate(uint32_t faceIndex, VkCommandBuffer
 	VkRenderPassBeginInfo renderPassBeginInfo = Init::renderPassBeginInfo();
 	// Reuse render pass from example pass
 	renderPassBeginInfo.renderPass = renderPass.renderPass;
-	renderPassBeginInfo.framebuffer = renderPass.frameBuffers[faceIndex];
+	renderPassBeginInfo.framebuffer = renderPass.sceneBuffers[faceIndex];
 	renderPassBeginInfo.renderArea.extent.width = renderPass.width;
 	renderPassBeginInfo.renderArea.extent.height = renderPass.height;
 	renderPassBeginInfo.clearValueCount = 2;

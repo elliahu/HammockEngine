@@ -11,31 +11,28 @@ layout(set = 0, binding = 3) uniform sampler2D brdfLUTSampler;
 layout(set = 0, binding = 4) uniform sampler2D irradinaceSampler;
 
 // gbuffer attachments  
-layout(set = 4, binding = 0) uniform sampler2D positionSampler;
-layout(set = 4, binding = 1) uniform sampler2D albedoSampler;
-layout(set = 4, binding = 2) uniform sampler2D normalSampler;
-layout(set = 4, binding = 3) uniform sampler2D materialPropertySampler;
+layout(set = 3, binding = 0) uniform sampler2D positionSampler;
+layout(set = 3, binding = 1) uniform sampler2D albedoSampler;
+layout(set = 3, binding = 2) uniform sampler2D normalSampler;
+layout(set = 3, binding = 3) uniform sampler2D materialPropertySampler;
 
 struct OmniLight
 {
     vec4 position;
     vec4 color;
 };
-
-layout(set = 0, binding = 0) uniform Environment
-{
-    OmniLight omniLights[1000];
-    uint numOmniLights;
-} env;
-
-layout (set = 1, binding = 0) uniform SceneUbo
+layout (set = 0, binding = 0) uniform SceneUbo
 {
     mat4 projection;
     mat4 view;
     mat4 inverseView;
+	
 	float exposure;
 	float gamma;
 	float whitePoint;
+
+	OmniLight omniLights[1000];
+    uint numOmniLights;
 } scene;
 
 const float PI = 3.14159265359;
@@ -155,8 +152,8 @@ void main()
 	F0 = mix(F0, albedo, metallic);
 
     vec3 Lo = vec3(0.0);
-	 for(int i = 0; i < env.numOmniLights; ++i) {
-		vec3 L = normalize(env.omniLights[i].position.xyz - position);
+	 for(int i = 0; i < scene.numOmniLights; ++i) {
+		vec3 L = normalize(scene.omniLights[i].position.xyz - position);
 		Lo += specularContribution(L, V, N, F0, albedo, metallic, roughness);
 	}   
 

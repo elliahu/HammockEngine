@@ -9,16 +9,26 @@ layout(location = 1) out vec4 outFragColor;
 layout(location = 2) out vec4 outNormal;
 layout(location = 3) out vec4 outMaterial;
 
-layout(set = 1, binding = 0) uniform SceneUbo
+struct OmniLight
+{
+    vec4 position;
+    vec4 color;
+};
+
+
+layout (set = 0, binding = 0) uniform SceneUbo
 {
     mat4 projection;
     mat4 view;
     mat4 inverseView;
-    float exposure;
-    float gamma;
-    float whitePoint;
-} scene;
+	
+	float exposure;
+	float gamma;
+	float whitePoint;
 
+	OmniLight omniLights[1000];
+    uint numOmniLights;
+} scene;
 // From http://filmicworlds.com/blog/filmic-tonemapping-operators/
 vec3 Uncharted2Tonemap(vec3 color)
 {
