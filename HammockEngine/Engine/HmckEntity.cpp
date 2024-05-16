@@ -14,3 +14,16 @@ glm::mat4 Hmck::Entity::mat4()
 
 	return model;
 }
+
+glm::mat4 Hmck::Entity::mat4N()
+{
+	glm::mat3 normal = transform.normalMatrix();
+	std::shared_ptr<Entity> currentParent = parent;
+	while (currentParent)
+	{
+		normal = currentParent->transform.normalMatrix() * normal;
+		currentParent = currentParent->parent;
+	}
+
+	return glm::mat4(normal);
+}

@@ -67,7 +67,7 @@ namespace Hmck
 		struct EntityBufferData
 		{
 			glm::mat4 model{ 1.f };
-			glm::mat4 normal = glm::transpose(glm::inverse(glm::mat4{ 1.f }));
+			glm::mat4 normal{ 1.f };
 		};
 
 		struct PrimitiveBufferData
@@ -95,7 +95,7 @@ namespace Hmck
 			uint32_t frameIndex,
 			VkCommandBuffer commandBuffer,
 			std::unique_ptr<GraphicsPipeline>& pipeline,
-			std::shared_ptr<Entity>& entity);
+			std::shared_ptr<Entity> entity);
 
 	private:
 		void createPipelines(Renderer& renderer);
@@ -139,7 +139,7 @@ namespace Hmck
 		// pipelines
 		std::unique_ptr<GraphicsPipeline> skyboxPipeline{}; // uses gbufferFramebuffer render pass
 		std::unique_ptr<GraphicsPipeline> gbufferPipeline{}; // uses gbufferFramebuffer render pass
-		std::unique_ptr<GraphicsPipeline> defferedPipeline{};// uses swapchain render pass
+		std::unique_ptr<GraphicsPipeline> deferredCompositionPipeline{};// uses swapchain render pass
 		
 
 	};

@@ -37,6 +37,7 @@ namespace Hmck
 		}
 
 		glm::mat4 mat4();
+		glm::mat4 mat4N();
 
 		static EntityHandle currentId;
 		EntityHandle id;

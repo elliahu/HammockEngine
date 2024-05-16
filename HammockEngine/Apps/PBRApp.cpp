@@ -47,6 +47,13 @@ void Hmck::PBRApp::run()
 	init();
 	createPipelines(renderer);
 
+	FrameBufferData perFrameData{
+		.projection = scene->getActiveCamera()->getProjection(),
+		.view = scene->getActiveCamera()->getView(),
+		.inverseView = scene->getActiveCamera()->getInverseView()
+	};
+	EnvironmentBufferData envData{};
+
 	auto currentTime = std::chrono::high_resolution_clock::now();
 	while (!window.shouldClose())
 	{
@@ -77,8 +84,7 @@ void Hmck::PBRApp::run()
 					{.color = { 0.0f, 0.0f, 0.0f, 0.0f } },
 					{.depthStencil = { 1.0f, 0 }} });
 
-			// write env data
-			EnvironmentBufferData envData{};
+			// write env perFrameData
 			uint32_t ldx = 0;
 			for (int i = 0; i < scene->lights.size(); i++)
 			{
@@ -98,14 +104,11 @@ void Hmck::PBRApp::run()
 				environmentDescriptorSet,
 				0, nullptr);
 
+			perFrameData.projection = scene->getActiveCamera()->getProjection();
+			perFrameData.view = scene->getActiveCamera()->getView();
+			perFrameData.inverseView = scene->getActiveCamera()->getInverseView();
 
-			FrameBufferData data{
-				.projection = scene->getActiveCamera()->getProjection(),
-				.view = scene->getActiveCamera()->getView(),
-				.inverseView = scene->getActiveCamera()->getInverseView()
-			};
-
-			memoryManager.getBuffer(frameBuffers[frameIndex])->writeToBuffer(&data);
+			memoryManager.getBuffer(frameBuffers[frameIndex])->writeToBuffer(&perFrameData);
 
 			memoryManager.bindDescriptorSet(
 				commandBuffer,
@@ -123,18 +126,17 @@ void Hmck::PBRApp::run()
 			gbufferPipeline->bind(commandBuffer);
 
 			// Render all nodes at top-level off-screen
-			auto root = scene->getRoot();
-			renderEntity(frameIndex, commandBuffer, gbufferPipeline, root);
+			renderEntity(frameIndex, commandBuffer, gbufferPipeline, scene->getRoot());
 
 			renderer.endRenderPass(commandBuffer);
 			renderer.beginSwapChainRenderPass(commandBuffer);
 
-			defferedPipeline->bind(commandBuffer);
+			deferredCompositionPipeline->bind(commandBuffer);
 
 			memoryManager.bindDescriptorSet(
 				commandBuffer,
 				VK_PIPELINE_BIND_POINT_GRAPHICS,
-				defferedPipeline->graphicsPipelineLayout,
+				deferredCompositionPipeline->graphicsPipelineLayout,
 				4, 1,
 				gbufferDescriptorSets[frameIndex],
 				0, nullptr);
@@ -148,7 +150,7 @@ void Hmck::PBRApp::run()
 				ui.showDebugStats(scene->getActiveCamera());
 				ui.showWindowControls();
 				ui.showEntityInspector(scene);
-				ui.showColorSettings(&data.exposure, &data.gamma, &data.whitePoint);
+				ui.showColorSettings(&perFrameData.exposure, &perFrameData.gamma, &perFrameData.whitePoint);
 				ui.endUserInterface(commandBuffer);
 			}
 
@@ -182,20 +184,18 @@ void Hmck::PBRApp::load()
 	//gltfloader.load(std::string(MODELS_DIR) + "6887_allied_avenger/ship.glb");
 	//gltfloader.load(std::string(MODELS_DIR) + "Bistro/BistroInterior.glb");
 	//gltfloader.load(std::string(MODELS_DIR) + "Bistro/BistroExterior.glb");
-	//gltfloader.load("../../Resources/data/models/reflection_scene.gltf");
+	//gltfloader.load("../../Resources/perFrameData/models/reflection_scene.gltf");
 
 
 	vertexBuffer = memoryManager.createVertexBuffer({
 		.vertexSize = sizeof(scene->vertices[0]),
 		.vertexCount = static_cast<uint32_t>(scene->vertices.size()),
-		.data = (void*)scene->vertices.data(),
-		.usageFlags = VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT});
+		.data = (void*)scene->vertices.data()});
 
 	indexBuffer = memoryManager.createIndexBuffer({
 		.indexSize = sizeof(scene->indices[0]),
 		.indexCount = static_cast<uint32_t>(scene->indices.size()),
-		.data = (void*)scene->indices.data(),
-		.usageFlags = VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT});
+		.data = (void*)scene->indices.data()});
 
 	numTriangles = static_cast<uint32_t>(scene->vertices.size()) / 3;
 
@@ -215,7 +215,7 @@ void Hmck::PBRApp::init()
 			{.binding = 3, .descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, .stageFlags = VK_SHADER_STAGE_ALL_GRAPHICS}, //  brdfLUT
 			{.binding = 4, .descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, .stageFlags = VK_SHADER_STAGE_ALL_GRAPHICS}, //  irradiance map
 		}
-	});
+		});
 
 	environmentBuffer = memoryManager.createBuffer({
 			.instanceSize = sizeof(EnvironmentBufferData),
@@ -321,7 +321,7 @@ void Hmck::PBRApp::init()
 		});
 }
 
-void Hmck::PBRApp::renderEntity(uint32_t frameIndex, VkCommandBuffer commandBuffer, std::unique_ptr<GraphicsPipeline>& pipeline, std::shared_ptr<Entity>& entity)
+void Hmck::PBRApp::renderEntity(uint32_t frameIndex, VkCommandBuffer commandBuffer, std::unique_ptr<GraphicsPipeline>& pipeline, std::shared_ptr<Entity> entity)
 {
 	// don't render invisible nodes
 	if (isInstanceOf<Entity, Entity3D>(entity) && entity->visible)
@@ -332,12 +332,7 @@ void Hmck::PBRApp::renderEntity(uint32_t frameIndex, VkCommandBuffer commandBuff
 		{
 			if (_entity->dataChanged)
 			{
-				glm::mat4 model = entity->mat4();
-
-				EntityBufferData entityData{
-					.model = model,
-					.normal = glm::transpose(glm::inverse(model))
-				};
+				EntityBufferData entityData{ .model = _entity->mat4(), .normal = _entity->mat4N() };
 				memoryManager.getBuffer(entityBuffers[entity->id])->writeToBuffer(&entityData);
 				_entity->dataChanged = false;
 			}
@@ -354,14 +349,13 @@ void Hmck::PBRApp::renderEntity(uint32_t frameIndex, VkCommandBuffer commandBuff
 			{
 				if (primitive.indexCount > 0)
 				{
-
 					if (primitive.materialIndex >= 0)
 					{
 						Material& material = scene->materials[primitive.materialIndex];
 
 						if (material.alphaMode == "BLEND") continue; // skip blend in this pass
 
-						PrimitiveBufferData pData{
+						PrimitiveBufferData primitiveData{
 							.baseColorFactor = material.baseColorFactor,
 							.baseColorTextureIndex = (material.baseColorTextureIndex != TextureIndex::Invalid) ? scene->textures[material.baseColorTextureIndex].imageIndex : TextureIndex::Invalid,
 							.normalTextureIndex = (material.normalTextureIndex != TextureIndex::Invalid) ? scene->textures[material.normalTextureIndex].imageIndex : TextureIndex::Invalid,
@@ -374,7 +368,7 @@ void Hmck::PBRApp::renderEntity(uint32_t frameIndex, VkCommandBuffer commandBuff
 
 						if (material.dataChanged)
 						{
-							memoryManager.getBuffer(materialBuffers[primitive.materialIndex])->writeToBuffer(&pData);
+							memoryManager.getBuffer(materialBuffers[primitive.materialIndex])->writeToBuffer(&primitiveData);
 							material.dataChanged = false;
 						}
 
@@ -583,7 +577,7 @@ void Hmck::PBRApp::createPipelines(Renderer& renderer)
 			});
 	}
 
-	defferedPipeline = GraphicsPipeline::createGraphicsPipelinePtr({
+	deferredCompositionPipeline = GraphicsPipeline::createGraphicsPipelinePtr({
 		.debugName = "deferred_pass",
 		.device = device,
 		.VS {
