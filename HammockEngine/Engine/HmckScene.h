@@ -12,7 +12,6 @@
 #include "HmckDescriptors.h"
 #include "HmckEntity3D.h"
 #include "HmckSwapChain.h"
-#include "HmckFrameInfo.h"
 #include "HmckCamera.h"
 #include "HmckHDR.h"
 #include "HmckUtils.h"

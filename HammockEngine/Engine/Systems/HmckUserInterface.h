@@ -5,7 +5,6 @@
 #include "imgui.h"
 #include "backends/imgui_impl_glfw.h"
 #include "backends/imgui_impl_vulkan.h"
-#include "HmckFrameInfo.h"
 #include "HmckEntity.h"
 #include "HmckScene.h"
 #include "HmckRenderer.h"

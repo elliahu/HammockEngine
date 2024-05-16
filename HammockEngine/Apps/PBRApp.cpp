@@ -16,10 +16,10 @@ Hmck::PBRApp::~PBRApp()
 	for (int i = 0; i < primitiveDescriptors.primitiveBuffers.size(); i++)
 		memoryManager.destroyBuffer(primitiveDescriptors.primitiveBuffers[i]);
 
-	memoryManager.destroyDescriptorSetLayout(sceneDescriptors.sceneDescriptorSetLayout);
-	memoryManager.destroyDescriptorSetLayout(entityDescriptors.entityDescriptorSetLayout);
-	memoryManager.destroyDescriptorSetLayout(primitiveDescriptors.primitiveDescriptorSetLayout);
-	memoryManager.destroyDescriptorSetLayout(gBufferDescriptors.gbufferDescriptorSetLayout);
+	memoryManager.destroyDescriptorSetLayout(sceneDescriptors.descriptorSetLayout);
+	memoryManager.destroyDescriptorSetLayout(entityDescriptors.descriptorSetLayout);
+	memoryManager.destroyDescriptorSetLayout(primitiveDescriptors.descriptorSetLayout);
+	memoryManager.destroyDescriptorSetLayout(gBufferDescriptors.descriptorSetLayout);
 
 	memoryManager.destroyBuffer(geometry.vertexBuffer);
 	memoryManager.destroyBuffer(geometry.indexBuffer);
@@ -103,7 +103,7 @@ void Hmck::PBRApp::run()
 				VK_PIPELINE_BIND_POINT_GRAPHICS,
 				environmentSpherePipeline->graphicsPipelineLayout,
 				sceneDescriptors.binding, 1,
-				sceneDescriptors.sceneDescriptorSets[frameIndex],
+				sceneDescriptors.descriptorSets[frameIndex],
 				0, nullptr);
 
 
@@ -118,14 +118,14 @@ void Hmck::PBRApp::run()
 			renderer.endRenderPass(commandBuffer);
 			renderer.beginSwapChainRenderPass(commandBuffer);
 
-			deferredCompositionPipeline->bind(commandBuffer);
+			compositionPipeline->bind(commandBuffer);
 
 			memoryManager.bindDescriptorSet(
 				commandBuffer,
 				VK_PIPELINE_BIND_POINT_GRAPHICS,
-				deferredCompositionPipeline->graphicsPipelineLayout,
+				compositionPipeline->graphicsPipelineLayout,
 				gBufferDescriptors.binding, 1,
-				gBufferDescriptors.gbufferDescriptorSets[frameIndex],
+				gBufferDescriptors.descriptorSets[frameIndex],
 				0, nullptr);
 
 			// draw deffered
@@ -200,9 +200,9 @@ void Hmck::PBRApp::init()
 		imageInfos[im] = memoryManager.getTexture2D(scene->images[im].texture)->descriptor;
 	}
 
-	sceneDescriptors.sceneDescriptorSets.resize(SwapChain::MAX_FRAMES_IN_FLIGHT);
+	sceneDescriptors.descriptorSets.resize(SwapChain::MAX_FRAMES_IN_FLIGHT);
 	sceneDescriptors.sceneBuffers.resize(SwapChain::MAX_FRAMES_IN_FLIGHT);
-	sceneDescriptors.sceneDescriptorSetLayout = memoryManager.createDescriptorSetLayout({
+	sceneDescriptors.descriptorSetLayout = memoryManager.createDescriptorSetLayout({
 		.bindings = {
 			{.binding = 0, .descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, .stageFlags = VK_SHADER_STAGE_ALL_GRAPHICS},
 			{.binding = 1, .descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, .stageFlags = VK_SHADER_STAGE_ALL_GRAPHICS, .count = 2000, .bindingFlags = VK_DESCRIPTOR_BINDING_PARTIALLY_BOUND_BIT}, // bindless textures
@@ -222,8 +222,8 @@ void Hmck::PBRApp::init()
 			});
 
 		auto fbufferInfo = memoryManager.getBuffer(sceneDescriptors.sceneBuffers[i])->descriptorInfo();
-		sceneDescriptors.sceneDescriptorSets[i] = memoryManager.createDescriptorSet({
-			.descriptorSetLayout = sceneDescriptors.sceneDescriptorSetLayout,
+		sceneDescriptors.descriptorSets[i] = memoryManager.createDescriptorSet({
+			.descriptorSetLayout = sceneDescriptors.descriptorSetLayout,
 			.bufferWrites = {{0,fbufferInfo}},
 			.imageWrites = {
 				{2, memoryManager.getTexture2DDescriptorImageInfo(scene->environment->prefilteredSphere)},
@@ -234,7 +234,7 @@ void Hmck::PBRApp::init()
 		});
 	}
 
-	entityDescriptors.entityDescriptorSetLayout = memoryManager.createDescriptorSetLayout({
+	entityDescriptors.descriptorSetLayout = memoryManager.createDescriptorSetLayout({
 		.bindings = {
 			{.binding = 0, .descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, .stageFlags = VK_SHADER_STAGE_ALL_GRAPHICS},
 		}
@@ -249,21 +249,21 @@ void Hmck::PBRApp::init()
 			.memoryPropertyFlags = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT
 			});
 		auto ebufferInfo = memoryManager.getBuffer(entityDescriptors.entityBuffers[ep.first])->descriptorInfo();
-		entityDescriptors.entityDescriptorSets[ep.first] = memoryManager.createDescriptorSet({
-			.descriptorSetLayout = entityDescriptors.entityDescriptorSetLayout,
+		entityDescriptors.descriptorSets[ep.first] = memoryManager.createDescriptorSet({
+			.descriptorSetLayout = entityDescriptors.descriptorSetLayout,
 			.bufferWrites = {{0,ebufferInfo}},
 			});
 	}
 
-	primitiveDescriptors.primitiveDescriptorSets.resize(scene->materials.size());
+	primitiveDescriptors.descriptorSets.resize(scene->materials.size());
 	primitiveDescriptors.primitiveBuffers.resize(scene->materials.size());
-	primitiveDescriptors.primitiveDescriptorSetLayout = memoryManager.createDescriptorSetLayout({
+	primitiveDescriptors.descriptorSetLayout = memoryManager.createDescriptorSetLayout({
 		.bindings = {
 			{.binding = 0, .descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, .stageFlags = VK_SHADER_STAGE_ALL_GRAPHICS},
 		}
 		});
 
-	for (size_t i = 0; i < primitiveDescriptors.primitiveDescriptorSets.size(); i++)
+	for (size_t i = 0; i < primitiveDescriptors.descriptorSets.size(); i++)
 	{
 		primitiveDescriptors.primitiveBuffers[i] = memoryManager.createBuffer({
 			.instanceSize = sizeof(PrimitiveBufferData),
@@ -273,14 +273,14 @@ void Hmck::PBRApp::init()
 			});
 
 		auto pbufferInfo = memoryManager.getBuffer(primitiveDescriptors.primitiveBuffers[i])->descriptorInfo();
-		primitiveDescriptors.primitiveDescriptorSets[i] = memoryManager.createDescriptorSet({
-			.descriptorSetLayout = primitiveDescriptors.primitiveDescriptorSetLayout,
+		primitiveDescriptors.descriptorSets[i] = memoryManager.createDescriptorSet({
+			.descriptorSetLayout = primitiveDescriptors.descriptorSetLayout,
 			.bufferWrites = {{0,pbufferInfo}},
 			});
 	}
 
-	gBufferDescriptors.gbufferDescriptorSets.resize(SwapChain::MAX_FRAMES_IN_FLIGHT);
-	gBufferDescriptors.gbufferDescriptorSetLayout = memoryManager.createDescriptorSetLayout({
+	gBufferDescriptors.descriptorSets.resize(SwapChain::MAX_FRAMES_IN_FLIGHT);
+	gBufferDescriptors.descriptorSetLayout = memoryManager.createDescriptorSetLayout({
 		.bindings = {
 			{.binding = 0, .descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, .stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT}, // position
 			{.binding = 1, .descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, .stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT}, // albedo
@@ -311,7 +311,7 @@ void Hmck::PBRApp::renderEntity(uint32_t frameIndex, VkCommandBuffer commandBuff
 				VK_PIPELINE_BIND_POINT_GRAPHICS,
 				pipeline->graphicsPipelineLayout,
 				entityDescriptors.binding, 1,
-				entityDescriptors.entityDescriptorSets[entity->id],
+				entityDescriptors.descriptorSets[entity->id],
 				0, nullptr);
 
 			for (Primitive& primitive : _entity->mesh.primitives)
@@ -348,7 +348,7 @@ void Hmck::PBRApp::renderEntity(uint32_t frameIndex, VkCommandBuffer commandBuff
 						VK_PIPELINE_BIND_POINT_GRAPHICS,
 						pipeline->graphicsPipelineLayout,
 						primitiveDescriptors.binding, 1,
-						primitiveDescriptors.primitiveDescriptorSets[(primitive.materialIndex >= 0 ? primitive.materialIndex : 0)],
+						primitiveDescriptors.descriptorSets[(primitive.materialIndex >= 0 ? primitive.materialIndex : 0)],
 						0, nullptr);
 
 					// draw
@@ -426,7 +426,7 @@ void Hmck::PBRApp::createPipelines(Renderer& renderer)
 			.entryFunc = "main"
 		},
 		.descriptorSetLayouts = {
-			memoryManager.getDescriptorSetLayout(sceneDescriptors.sceneDescriptorSetLayout).getDescriptorSetLayout()
+			memoryManager.getDescriptorSetLayout(sceneDescriptors.descriptorSetLayout).getDescriptorSetLayout()
 		},
 		.pushConstantRanges {},
 		.graphicsState {
@@ -474,9 +474,9 @@ void Hmck::PBRApp::createPipelines(Renderer& renderer)
 			.entryFunc = "main"
 		},
 		.descriptorSetLayouts = {
-			memoryManager.getDescriptorSetLayout(sceneDescriptors.sceneDescriptorSetLayout).getDescriptorSetLayout(),
-			memoryManager.getDescriptorSetLayout(entityDescriptors.entityDescriptorSetLayout).getDescriptorSetLayout(),
-			memoryManager.getDescriptorSetLayout(primitiveDescriptors.primitiveDescriptorSetLayout).getDescriptorSetLayout()
+			memoryManager.getDescriptorSetLayout(sceneDescriptors.descriptorSetLayout).getDescriptorSetLayout(),
+			memoryManager.getDescriptorSetLayout(entityDescriptors.descriptorSetLayout).getDescriptorSetLayout(),
+			memoryManager.getDescriptorSetLayout(primitiveDescriptors.descriptorSetLayout).getDescriptorSetLayout()
 		},
 		.pushConstantRanges {},
 		.graphicsState {
@@ -513,7 +513,7 @@ void Hmck::PBRApp::createPipelines(Renderer& renderer)
 		.renderPass = gbufferFramebuffer->renderPass
 		});
 
-	for (int i = 0; i < gBufferDescriptors.gbufferDescriptorSets.size(); i++)
+	for (int i = 0; i < gBufferDescriptors.descriptorSets.size(); i++)
 	{
 		std::vector<VkDescriptorImageInfo> gbufferImageInfos = {
 			{
@@ -538,13 +538,13 @@ void Hmck::PBRApp::createPipelines(Renderer& renderer)
 			}
 		};
 
-		gBufferDescriptors.gbufferDescriptorSets[i] = memoryManager.createDescriptorSet({
-			.descriptorSetLayout = gBufferDescriptors.gbufferDescriptorSetLayout,
+		gBufferDescriptors.descriptorSets[i] = memoryManager.createDescriptorSet({
+			.descriptorSetLayout = gBufferDescriptors.descriptorSetLayout,
 			.imageArrayWrites = {{0,gbufferImageInfos}},
 			});
 	}
 
-	deferredCompositionPipeline = GraphicsPipeline::createGraphicsPipelinePtr({
+	compositionPipeline = GraphicsPipeline::createGraphicsPipelinePtr({
 		.debugName = "deferred_pass",
 		.device = device,
 		.VS {
@@ -556,10 +556,10 @@ void Hmck::PBRApp::createPipelines(Renderer& renderer)
 			.entryFunc = "main"
 		},
 		.descriptorSetLayouts = {
-			memoryManager.getDescriptorSetLayout(sceneDescriptors.sceneDescriptorSetLayout).getDescriptorSetLayout(),
-			memoryManager.getDescriptorSetLayout(entityDescriptors.entityDescriptorSetLayout).getDescriptorSetLayout(),
-			memoryManager.getDescriptorSetLayout(primitiveDescriptors.primitiveDescriptorSetLayout).getDescriptorSetLayout(),
-			memoryManager.getDescriptorSetLayout(gBufferDescriptors.gbufferDescriptorSetLayout).getDescriptorSetLayout()
+			memoryManager.getDescriptorSetLayout(sceneDescriptors.descriptorSetLayout).getDescriptorSetLayout(),
+			memoryManager.getDescriptorSetLayout(entityDescriptors.descriptorSetLayout).getDescriptorSetLayout(),
+			memoryManager.getDescriptorSetLayout(primitiveDescriptors.descriptorSetLayout).getDescriptorSetLayout(),
+			memoryManager.getDescriptorSetLayout(gBufferDescriptors.descriptorSetLayout).getDescriptorSetLayout()
 		},
 		.pushConstantRanges {},
 		.graphicsState {

@@ -110,43 +110,44 @@ namespace Hmck
 		// Descriptors
 		// per frame (scene info updated every frame)
 		struct {
-			std::vector<DescriptorSetHandle> sceneDescriptorSets{};
-			DescriptorSetLayoutHandle sceneDescriptorSetLayout;
+			std::vector<DescriptorSetHandle> descriptorSets{};
+			DescriptorSetLayoutHandle descriptorSetLayout;
 			std::vector<BufferHandle> sceneBuffers{};
 			Binding binding = 0;
 		} sceneDescriptors;
 
 		// per entity
 		struct {
-			std::unordered_map<EntityHandle, DescriptorSetHandle> entityDescriptorSets{};
-			DescriptorSetLayoutHandle entityDescriptorSetLayout;
+			std::unordered_map<EntityHandle, DescriptorSetHandle> descriptorSets{};
+			DescriptorSetLayoutHandle descriptorSetLayout;
 			std::unordered_map<EntityHandle, BufferHandle> entityBuffers{};
 			Binding binding = 1;
 		} entityDescriptors;
 		
 		// per primitive
 		struct {
-			std::vector<DescriptorSetHandle> primitiveDescriptorSets{};
-			DescriptorSetLayoutHandle primitiveDescriptorSetLayout;
+			std::vector<DescriptorSetHandle> descriptorSets{};
+			DescriptorSetLayoutHandle descriptorSetLayout;
 			std::vector<BufferHandle> primitiveBuffers{};
 			Binding binding = 2;
 		} primitiveDescriptors;
 		
 		// gbuffer descriptors
 		struct {
-			std::vector<DescriptorSetHandle> gbufferDescriptorSets{}; 
-			DescriptorSetLayoutHandle gbufferDescriptorSetLayout;
+			std::vector<DescriptorSetHandle> descriptorSets{}; 
+			DescriptorSetLayoutHandle descriptorSetLayout;
 			Binding binding = 3;
 		} gBufferDescriptors;
 
 
 		// renderpasses and framebuffers
 		std::unique_ptr<Framebuffer> gbufferFramebuffer{}; // TODO probably shoul be bufferd as well
+		std::unique_ptr<Framebuffer> compositionFramebuffer{};
 
 		// pipelines
 		std::unique_ptr<GraphicsPipeline> environmentSpherePipeline{}; // uses gbufferFramebuffer render pass
 		std::unique_ptr<GraphicsPipeline> gbufferPipeline{}; // uses gbufferFramebuffer render pass
-		std::unique_ptr<GraphicsPipeline> deferredCompositionPipeline{};// uses swapchain render pass
+		std::unique_ptr<GraphicsPipeline> compositionPipeline{};// uses swapchain render pass
 		
 
 	};

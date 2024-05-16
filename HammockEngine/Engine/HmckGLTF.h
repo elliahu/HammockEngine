@@ -13,7 +13,6 @@
 #include "HmckTexture.h"
 #include "HmckEntity.h"
 #include "HmckEntity3D.h"
-#include "HmckFrameInfo.h"
 #include "HmckMemory.h"
 #include "HmckLights.h"
 #include "HmckScene.h"
