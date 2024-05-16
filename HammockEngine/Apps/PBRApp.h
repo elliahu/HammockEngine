@@ -140,15 +140,30 @@ namespace Hmck
 		} gBufferDescriptors;
 
 
-		// renderpasses and framebuffers
-		std::unique_ptr<Framebuffer> gbufferFramebuffer{}; // TODO probably shoul be bufferd as well
-		std::unique_ptr<Framebuffer> compositionFramebuffer{};
 
-		// pipelines
-		std::unique_ptr<GraphicsPipeline> environmentSpherePipeline{}; // uses gbufferFramebuffer render pass
-		std::unique_ptr<GraphicsPipeline> gbufferPipeline{}; // uses gbufferFramebuffer render pass
-		std::unique_ptr<GraphicsPipeline> compositionPipeline{};// uses swapchain render pass
-		
+		// Render passes
+		// renders environment sphere into gbuffer color attachments and clears depth buffer
+		struct {
+			std::unique_ptr<GraphicsPipeline> pipeline{}; 
+			// uses gbuffer render pass
+		} environmentPass;
+
+		// constructs gbuffer
+		struct {
+			std::unique_ptr<GraphicsPipeline> pipeline{}; 
+			std::unique_ptr<Framebuffer> framebuffer{}; // TODO probably shoul be bufferd as well
+		} gbufferPass;
+
+		// composes image from gbuffer attachments
+		struct {
+			std::unique_ptr<GraphicsPipeline> pipeline{};
+			std::unique_ptr<Framebuffer> framebuffer{};
+		} compositionPass;
+
+		// forward transparency pass
+		struct {
+			std::unique_ptr<GraphicsPipeline> pipeline{};
+		} transparencyPass;
 
 	};
 

@@ -68,6 +68,6 @@ void main()
     outFragColor = vec4(color, 1.0);
 
     outPosition = vec4(0);
-    outNormal = vec4(0);
+    outNormal = vec4(direction, 1.0);
     outMaterial = vec4(-1);
 }

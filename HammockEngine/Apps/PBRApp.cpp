@@ -72,7 +72,7 @@ void Hmck::PBRApp::run()
 			int frameIndex = renderer.getFrameIndex();
 
 			memoryManager.bindVertexBuffer(geometry.vertexBuffer, geometry.indexBuffer, commandBuffer);
-			renderer.beginRenderPass(gbufferFramebuffer, commandBuffer, {
+			renderer.beginRenderPass(gbufferPass.framebuffer, commandBuffer, {
 					{.color = { 0.0f, 0.0f, 0.0f, 0.0f } },
 					{.color = { 0.0f, 0.0f, 0.0f, 0.0f } },
 					{.color = { 0.0f, 0.0f, 0.0f, 0.0f } },
@@ -81,7 +81,7 @@ void Hmck::PBRApp::run()
 
 			
 
-			environmentSpherePipeline->bind(commandBuffer);
+			environmentPass.pipeline->bind(commandBuffer);
 
 
 			/// Write scene data
@@ -101,7 +101,7 @@ void Hmck::PBRApp::run()
 			memoryManager.bindDescriptorSet(
 				commandBuffer,
 				VK_PIPELINE_BIND_POINT_GRAPHICS,
-				environmentSpherePipeline->graphicsPipelineLayout,
+				environmentPass.pipeline->graphicsPipelineLayout,
 				sceneDescriptors.binding, 1,
 				sceneDescriptors.descriptorSets[frameIndex],
 				0, nullptr);
@@ -110,20 +110,20 @@ void Hmck::PBRApp::run()
 			
 			vkCmdDraw(commandBuffer, 3, 1, 0, 0);
 
-			gbufferPipeline->bind(commandBuffer);
+			gbufferPass.pipeline->bind(commandBuffer);
 
 			// Render all nodes at top-level off-screen
-			renderEntity(frameIndex, commandBuffer, gbufferPipeline, scene->getRoot());
+			renderEntity(frameIndex, commandBuffer, gbufferPass.pipeline, scene->getRoot());
 
 			renderer.endRenderPass(commandBuffer);
 			renderer.beginSwapChainRenderPass(commandBuffer);
 
-			compositionPipeline->bind(commandBuffer);
+			compositionPass.pipeline->bind(commandBuffer);
 
 			memoryManager.bindDescriptorSet(
 				commandBuffer,
 				VK_PIPELINE_BIND_POINT_GRAPHICS,
-				compositionPipeline->graphicsPipelineLayout,
+				compositionPass.pipeline->graphicsPipelineLayout,
 				gBufferDescriptors.binding, 1,
 				gBufferDescriptors.descriptorSets[frameIndex],
 				0, nullptr);
@@ -372,7 +372,7 @@ void Hmck::PBRApp::createPipelines(Renderer& renderer)
 		VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT);
 
 
-	gbufferFramebuffer = Framebuffer::createFramebufferPtr({
+	gbufferPass.framebuffer = Framebuffer::createFramebufferPtr({
 		.device = device,
 		.width = IApp::WINDOW_WIDTH, .height = IApp::WINDOW_HEIGHT,
 		.attachments {
@@ -414,7 +414,7 @@ void Hmck::PBRApp::createPipelines(Renderer& renderer)
 		}
 		});
 
-	environmentSpherePipeline = GraphicsPipeline::createGraphicsPipelinePtr({
+	environmentPass.pipeline = GraphicsPipeline::createGraphicsPipelinePtr({
 		.debugName = "skybox_pass",
 		.device = device,
 		.VS {
@@ -459,10 +459,10 @@ void Hmck::PBRApp::createPipelines(Renderer& renderer)
 					}
 				}
 		},
-		.renderPass = gbufferFramebuffer->renderPass
+		.renderPass = gbufferPass.framebuffer->renderPass
 		});
 
-	gbufferPipeline = GraphicsPipeline::createGraphicsPipelinePtr({
+	gbufferPass.pipeline = GraphicsPipeline::createGraphicsPipelinePtr({
 		.debugName = "gbuffer_pass",
 		.device = device,
 		.VS {
@@ -510,30 +510,30 @@ void Hmck::PBRApp::createPipelines(Renderer& renderer)
 					}
 				}
 		},
-		.renderPass = gbufferFramebuffer->renderPass
+		.renderPass = gbufferPass.framebuffer->renderPass
 		});
 
 	for (int i = 0; i < gBufferDescriptors.descriptorSets.size(); i++)
 	{
 		std::vector<VkDescriptorImageInfo> gbufferImageInfos = {
 			{
-				.sampler = gbufferFramebuffer->sampler,
-				.imageView = gbufferFramebuffer->attachments[0].view,
+				.sampler = gbufferPass.framebuffer->sampler,
+				.imageView = gbufferPass.framebuffer->attachments[0].view,
 				.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL
 			},
 			{
-				.sampler = gbufferFramebuffer->sampler,
-				.imageView = gbufferFramebuffer->attachments[1].view,
+				.sampler = gbufferPass.framebuffer->sampler,
+				.imageView = gbufferPass.framebuffer->attachments[1].view,
 				.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL
 			},
 			{
-				.sampler = gbufferFramebuffer->sampler,
-				.imageView = gbufferFramebuffer->attachments[2].view,
+				.sampler = gbufferPass.framebuffer->sampler,
+				.imageView = gbufferPass.framebuffer->attachments[2].view,
 				.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL
 			},
 			{
-				.sampler = gbufferFramebuffer->sampler,
-				.imageView = gbufferFramebuffer->attachments[3].view,
+				.sampler = gbufferPass.framebuffer->sampler,
+				.imageView = gbufferPass.framebuffer->attachments[3].view,
 				.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL
 			}
 		};
@@ -544,7 +544,7 @@ void Hmck::PBRApp::createPipelines(Renderer& renderer)
 			});
 	}
 
-	compositionPipeline = GraphicsPipeline::createGraphicsPipelinePtr({
+	compositionPass.pipeline = GraphicsPipeline::createGraphicsPipelinePtr({
 		.debugName = "deferred_pass",
 		.device = device,
 		.VS {
