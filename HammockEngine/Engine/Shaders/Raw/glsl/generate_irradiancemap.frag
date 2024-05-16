@@ -24,8 +24,8 @@ vec2 directionToUV(vec3 direction)
     return vec2(phi / (2.0 * PI) + 0.5, theta / PI);
 }
 
-const float deltaPhi = (2.0 * PI) / 180.0;
-const float deltaTheta = (0.5 * PI) / 64.0;
+const float deltaPhi = (2.0 * PI) / 45.0;
+const float deltaTheta = (0.5 * PI) / 16.0;
 
 void main()
 {

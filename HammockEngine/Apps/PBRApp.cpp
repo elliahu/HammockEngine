@@ -2,13 +2,30 @@
 
 Hmck::PBRApp::PBRApp()
 {
-	//loadFunctionPointers(device);
 	load();
 }
 
 Hmck::PBRApp::~PBRApp()
 {
-	clean();
+	memoryManager.destroyBuffer(environmentBuffer);
+
+	for (int i = 0; i < frameBuffers.size(); i++)
+		memoryManager.destroyBuffer(frameBuffers[i]);
+
+	for (const auto& pair : entityBuffers)
+		memoryManager.destroyBuffer(entityBuffers[pair.first]);
+
+	for (int i = 0; i < materialBuffers.size(); i++)
+		memoryManager.destroyBuffer(materialBuffers[i]);
+
+	memoryManager.destroyDescriptorSetLayout(environmentDescriptorSetLayout);
+	memoryManager.destroyDescriptorSetLayout(frameDescriptorSetLayout);
+	memoryManager.destroyDescriptorSetLayout(entityDescriptorSetLayout);
+	memoryManager.destroyDescriptorSetLayout(materialDescriptorSetLayout);
+	memoryManager.destroyDescriptorSetLayout(gbufferDescriptorSetLayout);
+
+	memoryManager.destroyBuffer(vertexBuffer);
+	memoryManager.destroyBuffer(indexBuffer);
 }
 
 void Hmck::PBRApp::run()
@@ -160,8 +177,8 @@ void Hmck::PBRApp::load()
 
 	GltfLoader gltfloader{ device, memoryManager, scene };
 	//gltfloader.load(std::string(MODELS_DIR) + "sponza/sponza.glb");
-	gltfloader.load(std::string(MODELS_DIR) + "helmet/DamagedHelmet.glb");
-	//gltfloader.load(std::string(MODELS_DIR) + "helmet/helmet.glb");
+	//gltfloader.load(std::string(MODELS_DIR) + "helmet/DamagedHelmet.glb");
+	gltfloader.load(std::string(MODELS_DIR) + "helmet/helmet.glb");
 	//gltfloader.load(std::string(MODELS_DIR) + "6887_allied_avenger/ship.glb");
 	//gltfloader.load(std::string(MODELS_DIR) + "Bistro/BistroInterior.glb");
 	//gltfloader.load(std::string(MODELS_DIR) + "Bistro/BistroExterior.glb");
@@ -213,9 +230,6 @@ void Hmck::PBRApp::init()
 		imageInfos[im] = memoryManager.getTexture2D(scene->images[im].texture)->descriptor;
 	}
 	auto sceneBufferInfo = memoryManager.getBuffer(environmentBuffer)->descriptorInfo();
-	VkWriteDescriptorSetAccelerationStructureKHR descriptorAccelerationStructureInfo = Init::writeDescriptorSetAccelerationStructureKHR();
-	descriptorAccelerationStructureInfo.accelerationStructureCount = 1;
-	descriptorAccelerationStructureInfo.pAccelerationStructures = &topLevelAS.handle;
 	environmentDescriptorSet = memoryManager.createDescriptorSet({
 			.descriptorSetLayout = environmentDescriptorSetLayout,
 			.bufferWrites = {{0,sceneBufferInfo}},
@@ -294,7 +308,6 @@ void Hmck::PBRApp::init()
 			.descriptorSetLayout = materialDescriptorSetLayout,
 			.bufferWrites = {{0,pbufferInfo}},
 			});
-		materialDataUpdated[i] = true;
 	}
 
 	gbufferDescriptorSets.resize(SwapChain::MAX_FRAMES_IN_FLIGHT);
@@ -346,6 +359,8 @@ void Hmck::PBRApp::renderEntity(uint32_t frameIndex, VkCommandBuffer commandBuff
 					{
 						Material& material = scene->materials[primitive.materialIndex];
 
+						if (material.alphaMode == "BLEND") continue; // skip blend in this pass
+
 						PrimitiveBufferData pData{
 							.baseColorFactor = material.baseColorFactor,
 							.baseColorTextureIndex = (material.baseColorTextureIndex != TextureIndex::Invalid) ? scene->textures[material.baseColorTextureIndex].imageIndex : TextureIndex::Invalid,
@@ -357,10 +372,10 @@ void Hmck::PBRApp::renderEntity(uint32_t frameIndex, VkCommandBuffer commandBuff
 							.roughnessFactor = material.roughnessFactor
 						};
 
-						if (materialDataUpdated[primitive.materialIndex])
+						if (material.dataChanged)
 						{
 							memoryManager.getBuffer(materialBuffers[primitive.materialIndex])->writeToBuffer(&pData);
-							materialDataUpdated[primitive.materialIndex] = false;
+							material.dataChanged = false;
 						}
 
 					}
@@ -382,41 +397,6 @@ void Hmck::PBRApp::renderEntity(uint32_t frameIndex, VkCommandBuffer commandBuff
 
 	for (auto& child : entity->children) {
 		renderEntity(frameIndex, commandBuffer, pipeline, child);
-	}
-}
-
-void Hmck::PBRApp::renderShadowCubeMapFace(uint32_t frameIndex, VkCommandBuffer commandBuffer, std::shared_ptr<Entity> entity, std::shared_ptr<OmniLight> light)
-{
-	if (isInstanceOf<Entity, Entity3D>(entity) && entity->visible)
-	{
-		auto _entity = cast<Entity, Entity3D>(entity);
-
-		if (_entity->mesh.primitives.size() > 0)
-		{
-			glm::mat4 model = _entity->mat4();
-
-			glm::mat4 perspective = glm::perspective(std::numbers::pi_v<float> / 2.0f, 1.0f, light->zNear, light->zfar);
-			OmniLight::UniformData data{
-				.projection = perspective,
-				.model = model
-			};
-			memoryManager.getBuffer(light->buffer)->writeToBuffer(&data);
-
-			memoryManager.bindDescriptorSet(
-				commandBuffer,
-				VK_PIPELINE_BIND_POINT_GRAPHICS,
-				light->pipeline->graphicsPipelineLayout,
-				0, 1,
-				light->descriptorSet,
-				0, nullptr);
-
-			for (Primitive& primitive : _entity->mesh.primitives)
-				if (primitive.indexCount > 0) vkCmdDrawIndexed(commandBuffer, primitive.indexCount, 1, primitive.firstIndex, 0, 0);
-		}
-	}
-
-	for (auto& child : entity->children) {
-		renderShadowCubeMapFace(frameIndex, commandBuffer, child, light);
 	}
 }
 
@@ -649,187 +629,4 @@ void Hmck::PBRApp::createPipelines(Renderer& renderer)
 		},
 		.renderPass = renderer.getSwapChainRenderPass()
 		});
-}
-
-void Hmck::PBRApp::createBottomLevelAccelerationStructure()
-{
-	VkDeviceOrHostAddressConstKHR vertexBufferDeviceAddress{};
-	VkDeviceOrHostAddressConstKHR indexBufferDeviceAddress{};
-
-	vertexBufferDeviceAddress.deviceAddress = getBufferDeviceAddress(device, memoryManager.getBuffer(vertexBuffer)->getBuffer());
-	indexBufferDeviceAddress.deviceAddress = getBufferDeviceAddress(device, memoryManager.getBuffer(indexBuffer)->getBuffer());
-
-	assert(numTriangles > 0 && "Number of triangles must be greater than 0!");
-
-	// Build
-	VkAccelerationStructureGeometryKHR accelerationStructureGeometry = Init::accelerationStructureGeometryKHR();
-	accelerationStructureGeometry.flags = VK_GEOMETRY_OPAQUE_BIT_KHR;
-	accelerationStructureGeometry.geometryType = VK_GEOMETRY_TYPE_TRIANGLES_KHR;
-	accelerationStructureGeometry.geometry.triangles.sType = VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_GEOMETRY_TRIANGLES_DATA_KHR;
-	accelerationStructureGeometry.geometry.triangles.vertexFormat = VK_FORMAT_R32G32B32_SFLOAT;
-	accelerationStructureGeometry.geometry.triangles.vertexData = vertexBufferDeviceAddress;
-	accelerationStructureGeometry.geometry.triangles.maxVertex = scene->vertices.size() - 1;
-	accelerationStructureGeometry.geometry.triangles.vertexStride = sizeof(scene->vertices[0]);
-	accelerationStructureGeometry.geometry.triangles.indexType = VK_INDEX_TYPE_UINT32;
-	accelerationStructureGeometry.geometry.triangles.indexData = indexBufferDeviceAddress;
-	accelerationStructureGeometry.geometry.triangles.transformData.deviceAddress = 0;
-	accelerationStructureGeometry.geometry.triangles.transformData.hostAddress = nullptr;
-
-	// Get size info
-	VkAccelerationStructureBuildGeometryInfoKHR accelerationStructureBuildGeometryInfo = Init::accelerationStructureBuildGeometryInfoKHR();
-	accelerationStructureBuildGeometryInfo.type = VK_ACCELERATION_STRUCTURE_TYPE_BOTTOM_LEVEL_KHR;
-	accelerationStructureBuildGeometryInfo.flags = VK_BUILD_ACCELERATION_STRUCTURE_PREFER_FAST_TRACE_BIT_KHR;
-	accelerationStructureBuildGeometryInfo.geometryCount = 1;
-	accelerationStructureBuildGeometryInfo.pGeometries = &accelerationStructureGeometry;
-
-	VkAccelerationStructureBuildSizesInfoKHR accelerationStructureBuildSizesInfo = Init::accelerationStructureBuildSizesInfoKHR();
-	vkGetAccelerationStructureBuildSizesKHR(
-		device.device(),
-		VK_ACCELERATION_STRUCTURE_BUILD_TYPE_DEVICE_KHR,
-		&accelerationStructureBuildGeometryInfo,
-		&numTriangles,
-		&accelerationStructureBuildSizesInfo);
-
-	createAccelerationStructure(device, bottomLevelAS, VK_ACCELERATION_STRUCTURE_TYPE_BOTTOM_LEVEL_KHR, accelerationStructureBuildSizesInfo);
-
-	// Create a small scratch buffer used during build of the bottom level acceleration structure
-	ScratchBuffer scratchBuffer = createScratchBuffer(device, accelerationStructureBuildSizesInfo.buildScratchSize);
-
-	VkAccelerationStructureBuildGeometryInfoKHR accelerationBuildGeometryInfo = Init::accelerationStructureBuildGeometryInfoKHR();
-	accelerationBuildGeometryInfo.type = VK_ACCELERATION_STRUCTURE_TYPE_BOTTOM_LEVEL_KHR;
-	accelerationBuildGeometryInfo.flags = VK_BUILD_ACCELERATION_STRUCTURE_PREFER_FAST_TRACE_BIT_KHR;
-	accelerationBuildGeometryInfo.mode = VK_BUILD_ACCELERATION_STRUCTURE_MODE_BUILD_KHR;
-	accelerationBuildGeometryInfo.dstAccelerationStructure = bottomLevelAS.handle;
-	accelerationBuildGeometryInfo.geometryCount = 1;
-	accelerationBuildGeometryInfo.pGeometries = &accelerationStructureGeometry;
-	accelerationBuildGeometryInfo.scratchData.deviceAddress = scratchBuffer.deviceAddress;
-
-	VkAccelerationStructureBuildRangeInfoKHR accelerationStructureBuildRangeInfo{};
-	accelerationStructureBuildRangeInfo.primitiveCount = numTriangles;
-	accelerationStructureBuildRangeInfo.primitiveOffset = 0;
-	accelerationStructureBuildRangeInfo.firstVertex = 0;
-	accelerationStructureBuildRangeInfo.transformOffset = 0;
-	std::vector<VkAccelerationStructureBuildRangeInfoKHR*> accelerationBuildStructureRangeInfos = { &accelerationStructureBuildRangeInfo };
-
-	// Build the acceleration structure on the device via a one-time command buffer submission
-	// Some implementations may support acceleration structure building on the host (VkPhysicalDeviceAccelerationStructureFeaturesKHR->accelerationStructureHostCommands), but I prefer device builds
-	VkCommandBuffer commandBuffer = device.beginSingleTimeCommands();
-	vkCmdBuildAccelerationStructuresKHR(
-		commandBuffer,
-		1,
-		&accelerationBuildGeometryInfo,
-		accelerationBuildStructureRangeInfos.data());
-	device.endSingleTimeCommands(commandBuffer);
-
-	deleteScratchBuffer(device, scratchBuffer);
-}
-
-void Hmck::PBRApp::createTopLevelAccelerationStructure()
-{
-	VkTransformMatrixKHR transformMatrix = {
-			1.0f, 0.0f, 0.0f, 0.0f,
-			0.0f, 1.0f, 0.0f, 0.0f,
-			0.0f, 0.0f, 1.0f, 0.0f };
-
-	VkAccelerationStructureInstanceKHR instance{};
-	instance.transform = transformMatrix;
-	instance.instanceCustomIndex = 0;
-	instance.mask = 0xFF;
-	instance.instanceShaderBindingTableRecordOffset = 0;
-	instance.flags = VK_GEOMETRY_INSTANCE_TRIANGLE_FACING_CULL_DISABLE_BIT_KHR;
-	instance.accelerationStructureReference = bottomLevelAS.deviceAddress;
-
-	Buffer instancesBuffer{
-		device,
-		sizeof(VkAccelerationStructureInstanceKHR),
-		1,
-		VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT | VK_BUFFER_USAGE_ACCELERATION_STRUCTURE_BUILD_INPUT_READ_ONLY_BIT_KHR,
-		VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT };
-	instancesBuffer.map();
-	instancesBuffer.writeToBuffer(&instance);
-
-	VkDeviceOrHostAddressConstKHR instanceDataDeviceAddress{};
-	instanceDataDeviceAddress.deviceAddress = getBufferDeviceAddress(device, instancesBuffer.getBuffer());
-
-	VkAccelerationStructureGeometryKHR accelerationStructureGeometry = Init::accelerationStructureGeometryKHR();
-	accelerationStructureGeometry.geometryType = VK_GEOMETRY_TYPE_INSTANCES_KHR;
-	accelerationStructureGeometry.flags = VK_GEOMETRY_OPAQUE_BIT_KHR;
-	accelerationStructureGeometry.geometry.instances.sType = VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_GEOMETRY_INSTANCES_DATA_KHR;
-	accelerationStructureGeometry.geometry.instances.arrayOfPointers = VK_FALSE;
-	accelerationStructureGeometry.geometry.instances.data = instanceDataDeviceAddress;
-
-	// Get size info
-	VkAccelerationStructureBuildGeometryInfoKHR accelerationStructureBuildGeometryInfo = Init::accelerationStructureBuildGeometryInfoKHR();
-	accelerationStructureBuildGeometryInfo.type = VK_ACCELERATION_STRUCTURE_TYPE_TOP_LEVEL_KHR;
-	accelerationStructureBuildGeometryInfo.flags = VK_BUILD_ACCELERATION_STRUCTURE_PREFER_FAST_TRACE_BIT_KHR;
-	accelerationStructureBuildGeometryInfo.geometryCount = 1;
-	accelerationStructureBuildGeometryInfo.pGeometries = &accelerationStructureGeometry;
-
-	uint32_t primitive_count = 1;
-
-	VkAccelerationStructureBuildSizesInfoKHR accelerationStructureBuildSizesInfo = Init::accelerationStructureBuildSizesInfoKHR();
-	vkGetAccelerationStructureBuildSizesKHR(
-		device.device(),
-		VK_ACCELERATION_STRUCTURE_BUILD_TYPE_DEVICE_KHR,
-		&accelerationStructureBuildGeometryInfo,
-		&primitive_count,
-		&accelerationStructureBuildSizesInfo);
-
-	createAccelerationStructure(device, topLevelAS, VK_ACCELERATION_STRUCTURE_TYPE_TOP_LEVEL_KHR, accelerationStructureBuildSizesInfo);
-
-	// Create a small scratch buffer used during build of the top level acceleration structure
-	ScratchBuffer scratchBuffer = createScratchBuffer(device, accelerationStructureBuildSizesInfo.buildScratchSize);
-
-	VkAccelerationStructureBuildGeometryInfoKHR accelerationBuildGeometryInfo = Init::accelerationStructureBuildGeometryInfoKHR();
-	accelerationBuildGeometryInfo.type = VK_ACCELERATION_STRUCTURE_TYPE_TOP_LEVEL_KHR;
-	accelerationBuildGeometryInfo.flags = VK_BUILD_ACCELERATION_STRUCTURE_PREFER_FAST_TRACE_BIT_KHR;
-	accelerationBuildGeometryInfo.mode = VK_BUILD_ACCELERATION_STRUCTURE_MODE_BUILD_KHR;
-	accelerationBuildGeometryInfo.dstAccelerationStructure = topLevelAS.handle;
-	accelerationBuildGeometryInfo.geometryCount = 1;
-	accelerationBuildGeometryInfo.pGeometries = &accelerationStructureGeometry;
-	accelerationBuildGeometryInfo.scratchData.deviceAddress = scratchBuffer.deviceAddress;
-
-	VkAccelerationStructureBuildRangeInfoKHR accelerationStructureBuildRangeInfo{};
-	accelerationStructureBuildRangeInfo.primitiveCount = 1;
-	accelerationStructureBuildRangeInfo.primitiveOffset = 0;
-	accelerationStructureBuildRangeInfo.firstVertex = 0;
-	accelerationStructureBuildRangeInfo.transformOffset = 0;
-	std::vector<VkAccelerationStructureBuildRangeInfoKHR*> accelerationBuildStructureRangeInfos = { &accelerationStructureBuildRangeInfo };
-
-	// Build the acceleration structure on the device via a one-time command buffer submission
-	// Some implementations may support acceleration structure building on the host (VkPhysicalDeviceAccelerationStructureFeaturesKHR->accelerationStructureHostCommands), but we prefer device builds
-	VkCommandBuffer commandBuffer = device.beginSingleTimeCommands();
-	vkCmdBuildAccelerationStructuresKHR(
-		commandBuffer,
-		1,
-		&accelerationBuildGeometryInfo,
-		accelerationBuildStructureRangeInfos.data());
-	device.endSingleTimeCommands(commandBuffer);
-
-	deleteScratchBuffer(device, scratchBuffer);
-}
-
-
-
-void Hmck::PBRApp::clean()
-{
-	memoryManager.destroyBuffer(environmentBuffer);
-
-	for (int i = 0; i < frameBuffers.size(); i++)
-		memoryManager.destroyBuffer(frameBuffers[i]);
-
-	for (const auto& pair : entityBuffers)
-		memoryManager.destroyBuffer(entityBuffers[pair.first]);
-
-	for (int i = 0; i < materialBuffers.size(); i++)
-		memoryManager.destroyBuffer(materialBuffers[i]);
-
-	memoryManager.destroyDescriptorSetLayout(environmentDescriptorSetLayout);
-	memoryManager.destroyDescriptorSetLayout(frameDescriptorSetLayout);
-	memoryManager.destroyDescriptorSetLayout(entityDescriptorSetLayout);
-	memoryManager.destroyDescriptorSetLayout(materialDescriptorSetLayout);
-	memoryManager.destroyDescriptorSetLayout(gbufferDescriptorSetLayout);
-
-	memoryManager.destroyBuffer(vertexBuffer);
-	memoryManager.destroyBuffer(indexBuffer);
 }

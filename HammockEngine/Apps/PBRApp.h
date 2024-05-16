@@ -38,7 +38,7 @@
 
 namespace Hmck 
 {
-	class PBRApp : public IApp , public IRayTracingSupport
+	class PBRApp : public IApp
 	{
 	public:
 
@@ -97,19 +97,8 @@ namespace Hmck
 			std::unique_ptr<GraphicsPipeline>& pipeline,
 			std::shared_ptr<Entity>& entity);
 
-		void renderShadowCubeMapFace(
-			uint32_t frameIndex,
-			VkCommandBuffer commandBuffer,
-			std::shared_ptr<Entity> entity,
-			std::shared_ptr<OmniLight> light);
-
-		
-
 	private:
 		void createPipelines(Renderer& renderer);
-		void createBottomLevelAccelerationStructure();
-		void createTopLevelAccelerationStructure();
-		void clean();
 
 		uint32_t numTriangles = 0;
 
@@ -138,7 +127,6 @@ namespace Hmck
 		std::vector<DescriptorSetHandle> materialDescriptorSets{};
 		DescriptorSetLayoutHandle materialDescriptorSetLayout;
 		std::vector<BufferHandle> materialBuffers{};
-		std::unordered_map<uint32_t, bool> materialDataUpdated{};
 
 		// gbuffer descriptors
 		std::vector<DescriptorSetHandle> gbufferDescriptorSets{};
@@ -147,17 +135,12 @@ namespace Hmck
 
 		// renderpasses and framebuffers
 		std::unique_ptr<Framebuffer> gbufferFramebuffer{}; // TODO probably shoul be bufferd as well
-		std::array<std::unique_ptr<Framebuffer>, 6> offscreenFramebuffers{};
 
 		// pipelines
 		std::unique_ptr<GraphicsPipeline> skyboxPipeline{}; // uses gbufferFramebuffer render pass
 		std::unique_ptr<GraphicsPipeline> gbufferPipeline{}; // uses gbufferFramebuffer render pass
 		std::unique_ptr<GraphicsPipeline> defferedPipeline{};// uses swapchain render pass
 		
-		// RTX
-		AccelerationStructure bottomLevelAS{};
-		AccelerationStructure topLevelAS{};
-
 
 	};
 

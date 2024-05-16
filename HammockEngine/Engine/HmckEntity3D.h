@@ -45,6 +45,7 @@ namespace Hmck
 		float metallicFactor = 0.f;
 		float roughnessFactor = 1.f;
 		bool doubleSided = false;
+		bool dataChanged = true;
 	};
 
 	struct Primitive {
