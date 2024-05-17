@@ -75,6 +75,13 @@ namespace Hmck
 			VkPipelineColorBlendAttachmentState pipelineColorBlendAttachmentState{};
 			pipelineColorBlendAttachmentState.colorWriteMask = colorWriteMask;
 			pipelineColorBlendAttachmentState.blendEnable = blendEnable;
+			pipelineColorBlendAttachmentState.srcColorBlendFactor = VK_BLEND_FACTOR_SRC_ALPHA;
+			pipelineColorBlendAttachmentState.dstColorBlendFactor = VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA;
+			pipelineColorBlendAttachmentState.colorBlendOp = VK_BLEND_OP_ADD;
+			pipelineColorBlendAttachmentState.srcAlphaBlendFactor = VK_BLEND_FACTOR_ONE;
+			pipelineColorBlendAttachmentState.dstAlphaBlendFactor = VK_BLEND_FACTOR_ZERO;
+			pipelineColorBlendAttachmentState.alphaBlendOp = VK_BLEND_OP_ADD;
+			pipelineColorBlendAttachmentState.colorWriteMask = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
 			return pipelineColorBlendAttachmentState;
 		}
 

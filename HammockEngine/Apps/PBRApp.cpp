@@ -83,8 +83,6 @@ void Hmck::PBRApp::run()
 
 			environmentPass.pipeline->bind(commandBuffer);
 
-
-			/// Write scene data
 			sceneData.projection = scene->getActiveCamera()->getProjection();
 			sceneData.view = scene->getActiveCamera()->getView();
 			sceneData.inverseView = scene->getActiveCamera()->getInverseView();
@@ -111,8 +109,7 @@ void Hmck::PBRApp::run()
 			vkCmdDraw(commandBuffer, 3, 1, 0, 0);
 
 			gbufferPass.pipeline->bind(commandBuffer);
-
-			// Render all nodes at top-level off-screen
+			blend = false;
 			renderEntity(frameIndex, commandBuffer, gbufferPass.pipeline, scene->getRoot());
 
 			renderer.endRenderPass(commandBuffer);
@@ -131,6 +128,11 @@ void Hmck::PBRApp::run()
 			// draw deffered
 			vkCmdDraw(commandBuffer, 3, 1, 0, 0);
 
+			
+			// Transparency pass
+			transparencyPass.pipeline->bind(commandBuffer);
+			blend = true;
+			renderEntity(frameIndex, commandBuffer, gbufferPass.pipeline, scene->getRoot());
 
 			{
 				ui.beginUserInterface();
@@ -170,7 +172,6 @@ void Hmck::PBRApp::load()
 	gltfloader.load(std::string(MODELS_DIR) + "helmet/helmet.glb");
 	//gltfloader.load(std::string(MODELS_DIR) + "6887_allied_avenger/ship.glb");
 	//gltfloader.load(std::string(MODELS_DIR) + "Bistro/BistroInterior.glb");
-	//gltfloader.load(std::string(MODELS_DIR) + "Bistro/BistroExterior.glb");
 	//gltfloader.load("../../Resources/sceneData/models/reflection_scene.gltf");
 
 
@@ -287,7 +288,7 @@ void Hmck::PBRApp::init()
 			{.binding = 2, .descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, .stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT}, // normal
 			{.binding = 3, .descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, .stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT}, // material (roughness, metalness, ao)
 		}
-		});
+	});
 }
 
 void Hmck::PBRApp::renderEntity(uint32_t frameIndex, VkCommandBuffer commandBuffer, std::unique_ptr<GraphicsPipeline>& pipeline, std::shared_ptr<Entity> entity)
@@ -322,7 +323,9 @@ void Hmck::PBRApp::renderEntity(uint32_t frameIndex, VkCommandBuffer commandBuff
 					{
 						Material& material = scene->materials[primitive.materialIndex];
 
-						if (material.alphaMode == "BLEND") continue; // skip blend in this pass
+						if (material.alphaMode == "BLEND" && !blend) continue; // skip blend in this pass
+
+						if (material.alphaMode == "OPAQUE" && blend) continue; // skip opaque in this pass
 
 						PrimitiveBufferData primitiveData{
 							.baseColorFactor = material.baseColorFactor,
@@ -412,7 +415,7 @@ void Hmck::PBRApp::createPipelines(Renderer& renderer)
 				.usage = VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,
 			},
 		}
-		});
+	});
 
 	environmentPass.pipeline = GraphicsPipeline::createGraphicsPipelinePtr({
 		.debugName = "skybox_pass",
@@ -535,14 +538,15 @@ void Hmck::PBRApp::createPipelines(Renderer& renderer)
 				.sampler = gbufferPass.framebuffer->sampler,
 				.imageView = gbufferPass.framebuffer->attachments[3].view,
 				.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL
-			}
+			},
 		};
 
 		gBufferDescriptors.descriptorSets[i] = memoryManager.createDescriptorSet({
 			.descriptorSetLayout = gBufferDescriptors.descriptorSetLayout,
 			.imageArrayWrites = {{0,gbufferImageInfos}},
-			});
+		});
 	}
+
 
 	compositionPass.pipeline = GraphicsPipeline::createGraphicsPipelinePtr({
 		.debugName = "deferred_pass",
@@ -563,8 +567,7 @@ void Hmck::PBRApp::createPipelines(Renderer& renderer)
 		},
 		.pushConstantRanges {},
 		.graphicsState {
-			.depthTest = VK_TRUE,
-			.depthTestCompareOp = VK_COMPARE_OP_LESS_OR_EQUAL,
+			.depthTest = VK_FALSE,
 			.cullMode = VK_CULL_MODE_NONE,
 			.blendAtaAttachmentStates {},
 			.vertexBufferBindings
@@ -588,5 +591,51 @@ void Hmck::PBRApp::createPipelines(Renderer& renderer)
 				}
 		},
 		.renderPass = renderer.getSwapChainRenderPass()
-		});
+	});
+
+	transparencyPass.pipeline = GraphicsPipeline::createGraphicsPipelinePtr({
+		.debugName = "deferred_pass",
+		.device = device,
+		.VS {
+			.byteCode = Hmck::Filesystem::readFile("../../HammockEngine/Engine/Shaders/Compiled/gbuffer.vert.spv"),
+			.entryFunc = "main"
+		},
+		.FS {
+			.byteCode = Hmck::Filesystem::readFile("../../HammockEngine/Engine/Shaders/Compiled/transparency_pass.frag.spv"),
+			.entryFunc = "main"
+		},
+		.descriptorSetLayouts = {
+			memoryManager.getDescriptorSetLayout(sceneDescriptors.descriptorSetLayout).getDescriptorSetLayout(),
+			memoryManager.getDescriptorSetLayout(entityDescriptors.descriptorSetLayout).getDescriptorSetLayout(),
+			memoryManager.getDescriptorSetLayout(primitiveDescriptors.descriptorSetLayout).getDescriptorSetLayout(),
+			memoryManager.getDescriptorSetLayout(gBufferDescriptors.descriptorSetLayout).getDescriptorSetLayout(),
+		},
+		.pushConstantRanges {},
+		.graphicsState {
+			.depthTest = VK_FALSE,
+			.cullMode = VK_CULL_MODE_BACK_BIT,
+			.frontFace = VK_FRONT_FACE_COUNTER_CLOCKWISE,
+			.blendAtaAttachmentStates {Hmck::Init::pipelineColorBlendAttachmentState(0xf, VK_TRUE)},
+			.vertexBufferBindings
+			{
+					.vertexBindingDescriptions =
+					{
+						{
+							.binding = 0,
+							.stride = sizeof(Vertex),
+							.inputRate = VK_VERTEX_INPUT_RATE_VERTEX
+						}
+					},
+					.vertexAttributeDescriptions =
+					{
+						{0, 0, VK_FORMAT_R32G32B32_SFLOAT, offsetof(Vertex, position)},
+						{1, 0, VK_FORMAT_R32G32B32_SFLOAT, offsetof(Vertex, color)},
+						{2, 0, VK_FORMAT_R32G32B32_SFLOAT, offsetof(Vertex, normal)},
+						{3, 0, VK_FORMAT_R32G32_SFLOAT, offsetof(Vertex, uv)},
+						{4, 0, VK_FORMAT_R32G32B32_SFLOAT, offsetof(Vertex, tangent)}
+					}
+				}
+		},
+		.renderPass = renderer.getSwapChainRenderPass()
+	});
 }

@@ -99,6 +99,7 @@ namespace Hmck
 
 		std::unique_ptr<Scene> scene{};
 
+		bool blend = false;
 
 		struct {
 			BufferHandle vertexBuffer;
@@ -139,8 +140,6 @@ namespace Hmck
 			Binding binding = 3;
 		} gBufferDescriptors;
 
-
-
 		// Render passes
 		// renders environment sphere into gbuffer color attachments and clears depth buffer
 		struct {
@@ -157,12 +156,12 @@ namespace Hmck
 		// composes image from gbuffer attachments
 		struct {
 			std::unique_ptr<GraphicsPipeline> pipeline{};
-			std::unique_ptr<Framebuffer> framebuffer{};
 		} compositionPass;
 
 		// forward transparency pass
 		struct {
 			std::unique_ptr<GraphicsPipeline> pipeline{};
+			// uses swapchain render pass
 		} transparencyPass;
 
 	};

@@ -88,10 +88,6 @@ void main()
 
     _material = vec4(roughness, metallic, ao, 1.0);
 
-	if (material.alphaCutoff < 0.5) {
-		discard;
-	}
-
 
     vec3 N = normal;
 	if(material.normalTextureIndex != INVALID_TEXTURE)
