@@ -85,6 +85,7 @@
     <ClInclude Include="Engine\HmckUtils.h" />
     <ClInclude Include="Engine\Systems\HmckUserInterface.h" />
     <ClInclude Include="Engine\HmckThreadPool.h" />
+    <ClInclude Include="Engine\Utils\HmckBenchmarkRunner.h" />
     <ClInclude Include="External\backends\imgui_impl_glfw.h" />
     <ClInclude Include="External\backends\imgui_impl_vulkan.h" />
     <ClInclude Include="External\imconfig.h" />

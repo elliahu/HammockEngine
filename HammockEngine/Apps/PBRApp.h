@@ -26,6 +26,7 @@
 #include "HmckMemory.h"
 #include "HmckGLTF.h"
 #include "HmckRTX.h"
+#include "Utils/HmckBenchmarkRunner.h"
 
 #ifndef MODELS_DIR
 #define MODELS_DIR "../../Resources/Models/"
@@ -38,7 +39,7 @@
 
 namespace Hmck 
 {
-	class PBRApp : public IApp
+	class PBRApp : public IApp, public BenchmarkRunner
 	{
 	public:
 
