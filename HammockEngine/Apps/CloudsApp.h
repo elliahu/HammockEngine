@@ -25,6 +25,7 @@
 #include "HmckTexture.h"
 #include "HmckMemory.h"
 #include "HmckGLTF.h"
+#include "Utils/HmckBenchmarkRunner.h"
 
 #ifndef MODELS_DIR
 #define MODELS_DIR "../../Resources/Models/"
@@ -37,7 +38,7 @@
 
 namespace Hmck
 {
-	class CloudsApp : public IApp
+	class CloudsApp : public IApp, public BenchmarkRunner
 	{
 		
 	public:

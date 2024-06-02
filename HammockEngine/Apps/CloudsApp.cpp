@@ -75,6 +75,8 @@ void Hmck::CloudsApp::run()
 	UserInterface ui{ device, renderer.getSwapChainRenderPass(), window };
 
 
+	startBenchmark(10.f); // start the benchmark
+
 	float elapsedTime = 0.f;
 	auto currentTime = std::chrono::high_resolution_clock::now();
 	while (!window.shouldClose())
@@ -87,6 +89,15 @@ void Hmck::CloudsApp::run()
 		float frameTime = std::chrono::duration<float, std::chrono::seconds::period>(newTime - currentTime).count();
 		currentTime = newTime;
 		elapsedTime += frameTime;
+
+		if (benchmarkInProgress())
+		{
+			addBenchmarkTimePoint({ .frameTime = frameTime });
+		}
+		else
+		{
+			endBenchmark();
+		}
 
 		// camera
 		cameraController.moveInPlaneXZ(window, frameTime, scene->getActiveCamera());
@@ -123,6 +134,19 @@ void Hmck::CloudsApp::run()
 
 		vkDeviceWaitIdle(device.device());
 	}
+
+	// remove first timepoint, at the time of the insertion the first frame has not been renderer yet
+	// therefore, the value is not a correct frame time
+	benchmarkTimePoints.erase(benchmarkTimePoints.begin());
+
+	BenchmarkResult benchmarkResult = processBenchmark();
+	Logger::log(HMCK_LOG_LEVEL_DEBUG, "Average frame time: %f\n Min frame time: %f\n Max frame time: %f\n Average FPS: %f\n",
+		benchmarkResult.frameTime.average,
+		benchmarkResult.frameTime.min,
+		benchmarkResult.frameTime.max,
+		benchmarkResult.fps.average);
+	std::string csv = benchmarkResultToCSV(benchmarkResult);
+	Filesystem::dump("../../Resources/SemestralProject/rtx2060.csv", csv);
 
 	destroy();
 }

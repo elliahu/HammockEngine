@@ -50,7 +50,6 @@ void Hmck::PBRApp::run()
 		.inverseView = scene->getActiveCamera()->getInverseView()
 	};
 
-	startBenchmark(10.f); // 10 second benchmark
 
 	auto currentTime = std::chrono::high_resolution_clock::now();
 	while (!window.shouldClose())
@@ -62,15 +61,6 @@ void Hmck::PBRApp::run()
 		auto newTime = std::chrono::high_resolution_clock::now();
 		float frameTime = std::chrono::duration<float, std::chrono::seconds::period>(newTime - currentTime).count();
 		currentTime = newTime;
-
-		if (benchmarkInProgress())
-		{
-			addBenchmarkTimePoint({ .frameTime = frameTime });
-		}
-		else 
-		{
-			endBenchmark();
-		}
 
 		// camera
 		cameraController.moveInPlaneXZ(window, frameTime, scene->getActiveCamera());
@@ -160,13 +150,6 @@ void Hmck::PBRApp::run()
 
 		vkDeviceWaitIdle(device.device());
 	}
-
-	BenchmarkResult benchmarkResult = processBenchmark();
-	Logger::log(HMCK_LOG_LEVEL_DEBUG, "Average frame time: %f\n Min frame time: %f\n Max frame time: %f\n Average FPS: %f\n", 
-		benchmarkResult.frameTime.average, 
-		benchmarkResult.frameTime.min,
-		benchmarkResult.frameTime.max,
-		benchmarkResult.fps.average);
 }
 
 void Hmck::PBRApp::load()

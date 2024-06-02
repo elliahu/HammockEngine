@@ -575,6 +575,20 @@ namespace Hmck
 			return buffer;
 		}
 
+		inline void dump(const std::string& filename, const std::string& data)
+		{
+			std::ofstream outFile(filename);
+			if (outFile.is_open())
+			{
+				outFile << data;
+				outFile.close();
+			}
+			else
+			{
+				throw std::runtime_error("could not dump into file!");
+			}
+		}
+
 	} // namespace Filesystem
 
 	namespace Math
