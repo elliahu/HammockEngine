@@ -26,8 +26,7 @@ Hmck::MemoryManager::MemoryManager(Device& device) :device{ device }
 		.build();
 }
 
-Hmck::BufferHandle Hmck::MemoryManager::createBuffer(BufferCreateInfo createInfo)
-{
+Hmck::BufferHandle Hmck::MemoryManager::createBuffer(BufferCreateInfo createInfo) const {
 	auto buffer = std::make_unique<Buffer>(
 		device,
 		createInfo.instanceSize,
@@ -44,7 +43,7 @@ Hmck::BufferHandle Hmck::MemoryManager::createBuffer(BufferCreateInfo createInfo
 }
 
 
-Hmck::BufferHandle Hmck::MemoryManager::createVertexBuffer(VertexBufferCreateInfo createInfo)
+Hmck::BufferHandle Hmck::MemoryManager::createVertexBuffer(const VertexBufferCreateInfo &createInfo)
 {
 	Buffer stagingBuffer{
 		device,
@@ -69,7 +68,7 @@ Hmck::BufferHandle Hmck::MemoryManager::createVertexBuffer(VertexBufferCreateInf
 	return handle;
 }
 
-Hmck::BufferHandle Hmck::MemoryManager::createIndexBuffer(IndexBufferCreateInfo createInfo)
+Hmck::BufferHandle Hmck::MemoryManager::createIndexBuffer(const IndexBufferCreateInfo &createInfo)
 {
 	Buffer stagingBuffer{
 		device,
@@ -94,8 +93,7 @@ Hmck::BufferHandle Hmck::MemoryManager::createIndexBuffer(IndexBufferCreateInfo 
 	return handle;
 }
 
-Hmck::DescriptorSetLayoutHandle Hmck::MemoryManager::createDescriptorSetLayout(DescriptorSetLayoutCreateInfo createInfo)
-{
+Hmck::DescriptorSetLayoutHandle Hmck::MemoryManager::createDescriptorSetLayout(const DescriptorSetLayoutCreateInfo& createInfo) const {
 	auto descriptorSetLayoutBuilder = DescriptorSetLayout::Builder(device);
 
 	for (auto& binding : createInfo.bindings)
@@ -110,7 +108,7 @@ Hmck::DescriptorSetLayoutHandle Hmck::MemoryManager::createDescriptorSetLayout(D
 	return handle;
 }
 
-Hmck::DescriptorSetHandle Hmck::MemoryManager::createDescriptorSet(DescriptorSetCreateInfo createInfo)
+Hmck::DescriptorSetHandle Hmck::MemoryManager::createDescriptorSet(const DescriptorSetCreateInfo& createInfo)
 {
 	VkDescriptorSet descriptorSet;
 
@@ -152,8 +150,7 @@ Hmck::DescriptorSetHandle Hmck::MemoryManager::createDescriptorSet(DescriptorSet
 	throw std::runtime_error("Faild to create descriptor!");
 }
 
-Hmck::Texture2DHandle Hmck::MemoryManager::createTexture2DFromFile(Texture2DCreateFromFileInfo createInfo)
-{
+Hmck::Texture2DHandle Hmck::MemoryManager::createTexture2DFromFile(Texture2DCreateFromFileInfo createInfo) const {
 	std::unique_ptr<Texture2D> texture = std::make_unique<Texture2D>();
 	texture->loadFromFile(
 		createInfo.filepath,
@@ -168,8 +165,7 @@ Hmck::Texture2DHandle Hmck::MemoryManager::createTexture2DFromFile(Texture2DCrea
 	return handle;
 }
 
-Hmck::Texture2DHandle Hmck::MemoryManager::createTexture2DFromBuffer(Texture2DCreateFromBufferInfo createInfo)
-{
+Hmck::Texture2DHandle Hmck::MemoryManager::createTexture2DFromBuffer(const Texture2DCreateFromBufferInfo &createInfo) const {
 	std::unique_ptr<Texture2D> texture = std::make_unique<Texture2D>();
 	texture->loadFromBuffer(
 		createInfo.buffer,
@@ -186,8 +182,7 @@ Hmck::Texture2DHandle Hmck::MemoryManager::createTexture2DFromBuffer(Texture2DCr
 	return handle;
 }
 
-Hmck::Texture2DHandle Hmck::MemoryManager::createHDRTexture2DFromBuffer(HDRTexture2DCreateFromBufferInfo createInfo)
-{
+Hmck::Texture2DHandle Hmck::MemoryManager::createHDRTexture2DFromBuffer(const HDRTexture2DCreateFromBufferInfo &createInfo) const {
 	std::unique_ptr<Texture2D> texture = std::make_unique<Texture2D>();
 	texture->loadFromBuffer(
 		createInfo.buffer,
@@ -213,8 +208,7 @@ Hmck::Texture2DHandle Hmck::MemoryManager::createTexture2D()
 	return handle;
 }
 
-Hmck::TextureCubeMapHandle Hmck::MemoryManager::createTextureCubeMapFromFiles(TextureCubeMapCreateFromFilesInfo createInfo)
-{
+Hmck::TextureCubeMapHandle Hmck::MemoryManager::createTextureCubeMapFromFiles(const TextureCubeMapCreateFromFilesInfo &createInfo) const {
 	std::unique_ptr<TextureCubeMap> texture = std::make_unique<TextureCubeMap>();
 	texture->loadFromFiles(
 		createInfo.filenames,
@@ -229,7 +223,7 @@ Hmck::TextureCubeMapHandle Hmck::MemoryManager::createTextureCubeMapFromFiles(Te
 	return handle;
 }
 
-Hmck::DescriptorSetLayout& Hmck::MemoryManager::getDescriptorSetLayout(DescriptorSetLayoutHandle handle)
+Hmck::DescriptorSetLayout& Hmck::MemoryManager::getDescriptorSetLayout(const DescriptorSetLayoutHandle handle)
 {
 	if (descriptorSetLayouts.contains(handle))
 	{
@@ -239,7 +233,7 @@ Hmck::DescriptorSetLayout& Hmck::MemoryManager::getDescriptorSetLayout(Descripto
 	throw std::runtime_error("Descriptor set layout with provided handle does not exist!");
 }
 
-VkDescriptorSet Hmck::MemoryManager::getDescriptorSet(DescriptorSetHandle handle)
+VkDescriptorSet Hmck::MemoryManager::getDescriptorSet(const DescriptorSetHandle handle)
 {
 	if (descriptorSets.contains(handle))
 	{
@@ -249,7 +243,7 @@ VkDescriptorSet Hmck::MemoryManager::getDescriptorSet(DescriptorSetHandle handle
 	throw std::runtime_error("Descriptor with provided handle does not exist!");
 }
 
-std::unique_ptr<Hmck::Buffer>& Hmck::MemoryManager::getBuffer(BufferHandle handle)
+std::unique_ptr<Hmck::Buffer>& Hmck::MemoryManager::getBuffer(const BufferHandle handle)
 {
 	if (buffers.contains(handle))
 	{
@@ -259,7 +253,7 @@ std::unique_ptr<Hmck::Buffer>& Hmck::MemoryManager::getBuffer(BufferHandle handl
 	throw std::runtime_error("Uniform buffer with provided handle does not exist!");
 }
 
-std::unique_ptr<Hmck::Texture2D>& Hmck::MemoryManager::getTexture2D(Texture2DHandle handle)
+std::unique_ptr<Hmck::Texture2D>& Hmck::MemoryManager::getTexture2D(const Texture2DHandle handle)
 {
 	if (texture2Ds.contains(handle))
 	{
@@ -269,12 +263,12 @@ std::unique_ptr<Hmck::Texture2D>& Hmck::MemoryManager::getTexture2D(Texture2DHan
 	throw std::runtime_error("Texture2D with provided handle does not exist!");
 }
 
-VkDescriptorImageInfo Hmck::MemoryManager::getTexture2DDescriptorImageInfo(Texture2DHandle handle)
+VkDescriptorImageInfo Hmck::MemoryManager::getTexture2DDescriptorImageInfo(const Texture2DHandle handle)
 {
 	return getTexture2D(handle)->descriptor;
 }
 
-std::unique_ptr<Hmck::TextureCubeMap>& Hmck::MemoryManager::getTextureCubeMap(TextureCubeMapHandle handle)
+std::unique_ptr<Hmck::TextureCubeMap>& Hmck::MemoryManager::getTextureCubeMap(const TextureCubeMapHandle handle)
 {
 	if (textureCubeMaps.contains(handle))
 	{
@@ -284,22 +278,22 @@ std::unique_ptr<Hmck::TextureCubeMap>& Hmck::MemoryManager::getTextureCubeMap(Te
 	throw std::runtime_error("TextureCubeMap with provided handle does not exist!");
 }
 
-VkDescriptorImageInfo Hmck::MemoryManager::getTextureCubeMapDescriptorImageInfo(TextureCubeMapHandle handle)
+VkDescriptorImageInfo Hmck::MemoryManager::getTextureCubeMapDescriptorImageInfo(const TextureCubeMapHandle handle)
 {
 	return getTextureCubeMap(handle)->descriptor;
 }
 
 void Hmck::MemoryManager::bindDescriptorSet(
-	VkCommandBuffer commandBuffer,
-	VkPipelineBindPoint bindPoint,
-	VkPipelineLayout pipelineLayout,
-	uint32_t firstSet,
-	uint32_t descriptorCount,
-	DescriptorSetHandle descriptorSet,
-	uint32_t dynamicOffsetCount,
+	const VkCommandBuffer commandBuffer,
+	const VkPipelineBindPoint bindPoint,
+	const VkPipelineLayout pipelineLayout,
+	const uint32_t firstSet,
+	const uint32_t descriptorCount,
+	const DescriptorSetHandle descriptorSet,
+	const uint32_t dynamicOffsetCount,
 	const uint32_t* pDynamicOffsets)
 {
-	auto descriptor = getDescriptorSet(descriptorSet);
+	const auto descriptor = getDescriptorSet(descriptorSet);
 
 	vkCmdBindDescriptorSets(
 		commandBuffer,
@@ -311,48 +305,45 @@ void Hmck::MemoryManager::bindDescriptorSet(
 		pDynamicOffsets);
 }
 
-void Hmck::MemoryManager::destroyBuffer(BufferHandle handle)
+void Hmck::MemoryManager::destroyBuffer(const BufferHandle handle)
 {
 	buffers.erase(handle);
 }
 
-void Hmck::MemoryManager::destroyDescriptorSetLayout(DescriptorSetLayoutHandle handle)
+void Hmck::MemoryManager::destroyDescriptorSetLayout(const DescriptorSetLayoutHandle handle)
 {
 	descriptorSetLayouts.erase(handle);
 }
 
-void Hmck::MemoryManager::destroyTexture2D(Texture2DHandle handle)
-{
+void Hmck::MemoryManager::destroyTexture2D(const Texture2DHandle handle) const {
 	getTexture2D(handle)->destroy(device);
 	texture2Ds.erase(handle);
 }
 
-void Hmck::MemoryManager::bindVertexBuffer(BufferHandle handle, VkCommandBuffer commandBuffer)
+void Hmck::MemoryManager::bindVertexBuffer(const BufferHandle handle, const VkCommandBuffer commandBuffer)
 {
 	VkDeviceSize offsets[] = { 0 };
 	VkBuffer buffers[] = { getBuffer(handle)->getBuffer() };
 	vkCmdBindVertexBuffers(commandBuffer, 0, 1, buffers, offsets);
 }
 
-void Hmck::MemoryManager::bindVertexBuffer(BufferHandle vertexBuffer, BufferHandle indexBuffer, VkCommandBuffer commandBuffer, VkIndexType indexType)
+void Hmck::MemoryManager::bindVertexBuffer(const BufferHandle vertexBuffer, const BufferHandle indexBuffer, const VkCommandBuffer commandBuffer, VkIndexType indexType)
 {
 	bindVertexBuffer(vertexBuffer, commandBuffer);
 	bindIndexBuffer(indexBuffer, commandBuffer);
 }
 
-void Hmck::MemoryManager::bindIndexBuffer(BufferHandle handle, VkCommandBuffer commandBuffer, VkIndexType indexType)
+void Hmck::MemoryManager::bindIndexBuffer(const BufferHandle handle, const VkCommandBuffer commandBuffer, const VkIndexType indexType)
 {
 	vkCmdBindIndexBuffer(commandBuffer, getBuffer(handle)->getBuffer(), 0, indexType);
 }
 
-void Hmck::MemoryManager::destroyTextureCubeMap(TextureCubeMapHandle handle)
-{
+void Hmck::MemoryManager::destroyTextureCubeMap(const TextureCubeMapHandle handle) const {
 	getTextureCubeMap(handle)->destroy(device);
 	textureCubeMaps.erase(handle);
 }
 
-void Hmck::MemoryManager::copyBuffer(BufferHandle from, BufferHandle to)
-{
+void Hmck::MemoryManager::copyBuffer(const BufferHandle from, const BufferHandle to) const {
 	auto& fromBuffer = getBuffer(from);
 	auto& toBuffer = getBuffer(to);
 

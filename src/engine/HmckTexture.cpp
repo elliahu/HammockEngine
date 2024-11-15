@@ -10,7 +10,7 @@ void Hmck::ITexture::updateDescriptor()
 	descriptor.imageLayout = layout;
 }
 
-void Hmck::ITexture::destroy(Device& device)
+void Hmck::ITexture::destroy(const Device& device)
 {
 	// if image have sampler, destroy it
 	if (sampler != VK_NULL_HANDLE)
@@ -25,10 +25,10 @@ void Hmck::ITexture::destroy(Device& device)
 }
 
 void Hmck::Texture2D::loadFromFile(
-	std::string& filepath,
+	const std::string& filepath,
 	Device& device,
 	VkFormat format,
-	VkImageLayout imageLayout
+	const VkImageLayout imageLayout
 )
 {
 	stbi_set_flip_vertically_on_load(true);
@@ -58,8 +58,6 @@ void Hmck::Texture2D::loadFromFile(
 	stbi_image_free(pixels);
 
 	// create VkImage
-	format = format;
-
 	VkImageCreateInfo imageInfo{};
 	imageInfo.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
 	imageInfo.imageType = VK_IMAGE_TYPE_2D;
@@ -114,7 +112,7 @@ void Hmck::Texture2D::loadFromFile(
 	}
 }
 
-void Hmck::TextureCubeMap::loadFromFiles(std::vector<std::string> filenames, VkFormat format, Device& device, VkImageLayout imageLayout)
+void Hmck::TextureCubeMap::loadFromFiles(const std::vector<std::string> &filenames, const VkFormat format, Device& device, const VkImageLayout imageLayout)
 {
 	std::vector<stbi_uc*> pixels{ 6 };
 	stbi_set_flip_vertically_on_load(true);
@@ -204,7 +202,7 @@ void Hmck::TextureCubeMap::loadFromFiles(std::vector<std::string> filenames, VkF
 	}
 }
 
-void Hmck::TextureCubeMap::createSampler(Device& device, VkFilter filter)
+void Hmck::TextureCubeMap::createSampler(const Device& device, const VkFilter filter)
 {
 	VkSamplerCreateInfo samplerInfo{};
 	samplerInfo.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
@@ -235,7 +233,7 @@ void Hmck::TextureCubeMap::createSampler(Device& device, VkFilter filter)
 	}
 }
 
-void Hmck::Texture2D::loadFromBuffer(unsigned char* buffer, uint32_t bufferSize, uint32_t width, uint32_t height, Device& device, VkFormat format, VkImageLayout imageLayout)
+void Hmck::Texture2D::loadFromBuffer(const unsigned char* buffer, const uint32_t bufferSize, const uint32_t width, const uint32_t height, Device& device, VkFormat format, const VkImageLayout imageLayout)
 {
 	this->width = width;
 	this->height = height;
@@ -308,7 +306,7 @@ void Hmck::Texture2D::loadFromBuffer(unsigned char* buffer, uint32_t bufferSize,
 	}
 }
 
-void Hmck::Texture2D::loadFromBuffer(float* buffer, uint32_t bufferSize, uint32_t width, uint32_t height, Device& device, VkFormat format, VkImageLayout imageLayout)
+void Hmck::Texture2D::loadFromBuffer(const float* buffer, const uint32_t bufferSize, const uint32_t width, const uint32_t height, Device& device, VkFormat format, const VkImageLayout imageLayout)
 {
 	this->width = width;
 	this->height = height;
@@ -325,8 +323,6 @@ void Hmck::Texture2D::loadFromBuffer(float* buffer, uint32_t bufferSize, uint32_
 	stagingBuffer.writeToBuffer(buffer);
 
 	// create VkImage
-	format = format;
-
 	VkImageCreateInfo imageInfo{};
 	imageInfo.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
 	imageInfo.imageType = VK_IMAGE_TYPE_2D;
@@ -381,7 +377,7 @@ void Hmck::Texture2D::loadFromBuffer(float* buffer, uint32_t bufferSize, uint32_
 	}
 }
 
-void Hmck::Texture2D::createSampler(Device& device, VkFilter filter)
+void Hmck::Texture2D::createSampler(const Device& device, const VkFilter filter)
 {
 	VkSamplerCreateInfo samplerInfo{};
 	samplerInfo.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;

@@ -28,61 +28,61 @@
 
 #define SSAO_RES_MULTIPLIER 1.0
 
-namespace Hmck
-{
-	class Renderer
-	{
-	public:
+namespace Hmck {
+    class Renderer {
+    public:
+        Renderer(Window &window, Device &device);
+
+        ~Renderer();
+
+        // delete copy constructor and copy destructor
+        Renderer(const Renderer &) = delete;
+
+        Renderer &operator=(const Renderer &) = delete;
+
+        [[nodiscard]] VkRenderPass getSwapChainRenderPass() const { return hmckSwapChain->getRenderPass(); }
+        [[nodiscard]] float getAspectRatio() const { return hmckSwapChain->extentAspectRatio(); }
+        [[nodiscard]] bool isFrameInProgress() const { return isFrameStarted; }
 
 
-		Renderer(Window& window, Device& device);
-		~Renderer();
+        [[nodiscard]] VkCommandBuffer getCurrentCommandBuffer() const {
+            assert(isFrameStarted && "Cannot get command buffer when frame not in progress");
+            return commandBuffers[getFrameIndex()];
+        }
 
-		// delete copy constructor and copy destructor
-		Renderer(const Renderer&) = delete;
-		Renderer& operator=(const Renderer&) = delete;
+        [[nodiscard]] int getFrameIndex() const {
+            assert(isFrameStarted && "Cannot get frame index when frame not in progress");
+            return currentFrameIndex;
+        }
 
-		VkRenderPass getSwapChainRenderPass() const { return hmckSwapChain->getRenderPass(); }
-		float getAspectRatio() const { return hmckSwapChain->extentAspectRatio(); }
-		bool isFrameInProgress() const { return isFrameStarted; }
+        VkCommandBuffer beginFrame();
 
+        void endFrame();
 
-		VkCommandBuffer getCurrentCommandBuffer() const
-		{
-			assert(isFrameStarted && "Cannot get command buffer when frame not in progress");
-			return commandBuffers[getFrameIndex()];
-		}
+        void beginSwapChainRenderPass(VkCommandBuffer commandBuffer) const;
 
-		int getFrameIndex() const
-		{
-			assert(isFrameStarted && "Cannot get frame index when frame not in progress");
-			return currentFrameIndex;
-		}
+        void beginRenderPass(
+            const std::unique_ptr<Framebuffer> &framebuffer,
+            VkCommandBuffer commandBuffer,
+            const std::vector<VkClearValue> &clearValues) const;
 
-		VkCommandBuffer beginFrame();
-		void endFrame();
-		void beginSwapChainRenderPass(VkCommandBuffer commandBuffer);
-		void beginRenderPass(
-			std::unique_ptr<Framebuffer>& framebuffer,
-			VkCommandBuffer commandBuffer,
-			std::vector<VkClearValue> clearValues);
-		void endRenderPass(VkCommandBuffer commandBuffer);
+        void endRenderPass(VkCommandBuffer commandBuffer) const;
+
+    private:
+        void createCommandBuffer();
+
+        void freeCommandBuffers();
+
+        void recreateSwapChain();
 
 
-	private:
-		void createCommandBuffer();
-		void freeCommandBuffers();
-		void recreateSwapChain();
-		
+        Window &window;
+        Device &device;
+        std::unique_ptr<SwapChain> hmckSwapChain;
+        std::vector<VkCommandBuffer> commandBuffers;
 
-		Window& window;
-		Device& device;
-		std::unique_ptr<SwapChain> hmckSwapChain;
-		std::vector<VkCommandBuffer> commandBuffers;
-
-		uint32_t currentImageIndex;
-		int currentFrameIndex{ 0 };
-		bool isFrameStarted{false};
-	};
-
+        uint32_t currentImageIndex;
+        int currentFrameIndex{0};
+        bool isFrameStarted{false};
+    };
 }

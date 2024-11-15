@@ -6,48 +6,46 @@
 #include <unordered_set>
 
 namespace Hmck {
-
     // local callback functions
     static VKAPI_ATTR VkBool32 VKAPI_CALL debugCallback(
         VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity,
         VkDebugUtilsMessageTypeFlagsEXT messageType,
-        const VkDebugUtilsMessengerCallbackDataEXT* pCallbackData,
-        void* pUserData) {
+        const VkDebugUtilsMessengerCallbackDataEXT *pCallbackData,
+        void *pUserData) {
         std::cerr << "validation layer: " << pCallbackData->pMessage << std::endl;
 
         return VK_FALSE;
     }
 
     VkResult CreateDebugUtilsMessengerEXT(
-        VkInstance instance,
-        const VkDebugUtilsMessengerCreateInfoEXT* pCreateInfo,
-        const VkAllocationCallbacks* pAllocator,
-        VkDebugUtilsMessengerEXT* pDebugMessenger) {
-        auto func = (PFN_vkCreateDebugUtilsMessengerEXT)vkGetInstanceProcAddr(
+        const VkInstance instance,
+        const VkDebugUtilsMessengerCreateInfoEXT *pCreateInfo,
+        const VkAllocationCallbacks *pAllocator,
+        VkDebugUtilsMessengerEXT *pDebugMessenger) {
+        const auto func = reinterpret_cast<PFN_vkCreateDebugUtilsMessengerEXT>(vkGetInstanceProcAddr(
             instance,
-            "vkCreateDebugUtilsMessengerEXT");
+            "vkCreateDebugUtilsMessengerEXT"));
         if (func != nullptr) {
             return func(instance, pCreateInfo, pAllocator, pDebugMessenger);
-        }
-        else {
+        } else {
             return VK_ERROR_EXTENSION_NOT_PRESENT;
         }
     }
 
     void DestroyDebugUtilsMessengerEXT(
-        VkInstance instance,
-        VkDebugUtilsMessengerEXT debugMessenger,
-        const VkAllocationCallbacks* pAllocator) {
-        auto func = (PFN_vkDestroyDebugUtilsMessengerEXT)vkGetInstanceProcAddr(
+        const VkInstance instance,
+        const VkDebugUtilsMessengerEXT debugMessenger,
+        const VkAllocationCallbacks *pAllocator) {
+        const auto func = reinterpret_cast<PFN_vkDestroyDebugUtilsMessengerEXT>(vkGetInstanceProcAddr(
             instance,
-            "vkDestroyDebugUtilsMessengerEXT");
+            "vkDestroyDebugUtilsMessengerEXT"));
         if (func != nullptr) {
             func(instance, debugMessenger, pAllocator);
         }
     }
 
     // class member functions
-    Device::Device(Window& window) : window{ window } {
+    Device::Device(Window &window) : window{window} {
         createInstance();
         setupDebugMessenger();
         createSurface();
@@ -97,9 +95,8 @@ namespace Hmck {
             createInfo.ppEnabledLayerNames = validationLayers.data();
 
             populateDebugMessengerCreateInfo(debugCreateInfo);
-            createInfo.pNext = (VkDebugUtilsMessengerCreateInfoEXT*)&debugCreateInfo;
-        }
-        else {
+            createInfo.pNext = (VkDebugUtilsMessengerCreateInfoEXT *) &debugCreateInfo;
+        } else {
             createInfo.enabledLayerCount = 0;
             createInfo.pNext = nullptr;
         }
@@ -121,7 +118,7 @@ namespace Hmck {
         std::vector<VkPhysicalDevice> devices(deviceCount);
         vkEnumeratePhysicalDevices(instance, &deviceCount, devices.data());
 
-        for (const auto& device : devices) {
+        for (const auto &device: devices) {
             if (isDeviceSuitable(device)) {
                 physicalDevice = device;
                 break;
@@ -137,13 +134,13 @@ namespace Hmck {
     }
 
     void Device::createLogicalDevice() {
-        QueueFamilyIndices indices = findQueueFamilies(physicalDevice);
+        auto [graphicsFamily, presentFamily, graphicsFamilyHasValue, presentFamilyHasValue] = findQueueFamilies(physicalDevice);
 
         std::vector<VkDeviceQueueCreateInfo> queueCreateInfos;
-        std::set<uint32_t> uniqueQueueFamilies = { indices.graphicsFamily, indices.presentFamily };
+        std::set<uint32_t> uniqueQueueFamilies = {graphicsFamily, presentFamily};
 
         float queuePriority = 1.0f;
-        for (uint32_t queueFamily : uniqueQueueFamilies) {
+        for (uint32_t queueFamily: uniqueQueueFamilies) {
             VkDeviceQueueCreateInfo queueCreateInfo = {};
             queueCreateInfo.sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
             queueCreateInfo.queueFamilyIndex = queueFamily;
@@ -152,7 +149,7 @@ namespace Hmck {
             queueCreateInfos.push_back(queueCreateInfo);
         }
 
-        VkPhysicalDeviceRayTracingPipelinePropertiesKHR  rayTracingPipelineProperties{};
+        VkPhysicalDeviceRayTracingPipelinePropertiesKHR rayTracingPipelineProperties{};
         rayTracingPipelineProperties.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_TRACING_PIPELINE_PROPERTIES_KHR;
         VkPhysicalDeviceProperties2 deviceProperties2{};
         deviceProperties2.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROPERTIES_2;
@@ -202,7 +199,7 @@ namespace Hmck {
 
         // Populate VkPhysicalDeviceFeatures2
         VkPhysicalDeviceFeatures2 deviceFeatures2{};
-        deviceFeatures2.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2; 
+        deviceFeatures2.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2;
         deviceFeatures2.pNext = &descriptorIndexingFeatures;
         deviceFeatures2.features = deviceFeatures;
 
@@ -211,7 +208,8 @@ namespace Hmck {
         createInfo.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
         createInfo.queueCreateInfoCount = static_cast<uint32_t>(queueCreateInfos.size());
         createInfo.pQueueCreateInfos = queueCreateInfos.data();
-        createInfo.pEnabledFeatures = nullptr; // Ensure no enabled features from previous Vulkan versions are left active
+        createInfo.pEnabledFeatures = nullptr;
+        // Ensure no enabled features from previous Vulkan versions are left active
         createInfo.enabledExtensionCount = static_cast<uint32_t>(deviceExtensions.size());
         createInfo.ppEnabledExtensionNames = deviceExtensions.data();
         createInfo.pNext = &deviceFeatures2; // Pass the device features structure
@@ -221,8 +219,7 @@ namespace Hmck {
         if (enableValidationLayers) {
             createInfo.enabledLayerCount = static_cast<uint32_t>(validationLayers.size());
             createInfo.ppEnabledLayerNames = validationLayers.data();
-        }
-        else {
+        } else {
             createInfo.enabledLayerCount = 0;
         }
 
@@ -230,18 +227,18 @@ namespace Hmck {
             throw std::runtime_error("failed to create logical device!");
         }
 
-        vkGetDeviceQueue(device_, indices.graphicsFamily, 0, &graphicsQueue_);
-        vkGetDeviceQueue(device_, indices.presentFamily, 0, &presentQueue_);
+        vkGetDeviceQueue(device_, graphicsFamily, 0, &graphicsQueue_);
+        vkGetDeviceQueue(device_, presentFamily, 0, &presentQueue_);
     }
 
     void Device::createCommandPool() {
-        QueueFamilyIndices queueFamilyIndices = findPhysicalQueueFamilies();
+        auto [graphicsFamily, presentFamily, graphicsFamilyHasValue, presentFamilyHasValue] = findPhysicalQueueFamilies();
 
         VkCommandPoolCreateInfo poolInfo = {};
         poolInfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
-        poolInfo.queueFamilyIndex = queueFamilyIndices.graphicsFamily;
+        poolInfo.queueFamilyIndex = graphicsFamily;
         poolInfo.flags =
-            VK_COMMAND_POOL_CREATE_TRANSIENT_BIT | VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
+                VK_COMMAND_POOL_CREATE_TRANSIENT_BIT | VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
 
         if (vkCreateCommandPool(device_, &poolInfo, nullptr, &commandPool) != VK_SUCCESS) {
             throw std::runtime_error("failed to create command pool!");
@@ -251,34 +248,34 @@ namespace Hmck {
     void Device::createSurface() { window.createWindowSurface(instance, &surface_); }
 
     bool Device::isDeviceSuitable(VkPhysicalDevice device) {
-        QueueFamilyIndices indices = findQueueFamilies(device);
+        const QueueFamilyIndices indices = findQueueFamilies(device);
 
         bool extensionsSupported = checkDeviceExtensionSupport(device);
 
         bool swapChainAdequate = false;
         if (extensionsSupported) {
-            SwapChainSupportDetails swapChainSupport = querySwapChainSupport(device);
-            swapChainAdequate = !swapChainSupport.formats.empty() && !swapChainSupport.presentModes.empty();
+            const auto [capabilities, formats, presentModes] = querySwapChainSupport(device);
+            swapChainAdequate = !formats.empty() && !presentModes.empty();
         }
 
         VkPhysicalDeviceFeatures supportedFeatures;
         vkGetPhysicalDeviceFeatures(device, &supportedFeatures);
 
         return indices.isComplete() && extensionsSupported && swapChainAdequate &&
-            supportedFeatures.samplerAnisotropy;
+               supportedFeatures.samplerAnisotropy;
     }
 
     void Device::populateDebugMessengerCreateInfo(
-        VkDebugUtilsMessengerCreateInfoEXT& createInfo) {
+        VkDebugUtilsMessengerCreateInfoEXT &createInfo) {
         createInfo = {};
         createInfo.sType = VK_STRUCTURE_TYPE_DEBUG_UTILS_MESSENGER_CREATE_INFO_EXT;
         createInfo.messageSeverity = VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT |
-            VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT;
+                                     VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT;
         createInfo.messageType = VK_DEBUG_UTILS_MESSAGE_TYPE_GENERAL_BIT_EXT |
-            VK_DEBUG_UTILS_MESSAGE_TYPE_VALIDATION_BIT_EXT |
-            VK_DEBUG_UTILS_MESSAGE_TYPE_PERFORMANCE_BIT_EXT;
+                                 VK_DEBUG_UTILS_MESSAGE_TYPE_VALIDATION_BIT_EXT |
+                                 VK_DEBUG_UTILS_MESSAGE_TYPE_PERFORMANCE_BIT_EXT;
         createInfo.pfnUserCallback = debugCallback;
-        createInfo.pUserData = nullptr;  // Optional
+        createInfo.pUserData = nullptr; // Optional
     }
 
     void Device::setupDebugMessenger() {
@@ -290,17 +287,17 @@ namespace Hmck {
         }
     }
 
-    bool Device::checkValidationLayerSupport() {
+    bool Device::checkValidationLayerSupport() const {
         uint32_t layerCount;
         vkEnumerateInstanceLayerProperties(&layerCount, nullptr);
 
         std::vector<VkLayerProperties> availableLayers(layerCount);
         vkEnumerateInstanceLayerProperties(&layerCount, availableLayers.data());
 
-        for (const char* layerName : validationLayers) {
+        for (const char *layerName: validationLayers) {
             bool layerFound = false;
 
-            for (const auto& layerProperties : availableLayers) {
+            for (const auto &layerProperties: availableLayers) {
                 if (strcmp(layerName, layerProperties.layerName) == 0) {
                     layerFound = true;
                     break;
@@ -315,12 +312,11 @@ namespace Hmck {
         return true;
     }
 
-    std::vector<const char*> Device::getRequiredExtensions() {
+    std::vector<const char *> Device::getRequiredExtensions() const {
         uint32_t glfwExtensionCount = 0;
-        const char** glfwExtensions;
-        glfwExtensions = glfwGetRequiredInstanceExtensions(&glfwExtensionCount);
+        const char **glfwExtensions = glfwGetRequiredInstanceExtensions(&glfwExtensionCount);
 
-        std::vector<const char*> extensions(glfwExtensions, glfwExtensions + glfwExtensionCount);
+        std::vector<const char *> extensions(glfwExtensions, glfwExtensions + glfwExtensionCount);
 
         if (enableValidationLayers) {
             extensions.push_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
@@ -332,7 +328,7 @@ namespace Hmck {
         return extensions;
     }
 
-    void Device::hasGflwRequiredInstanceExtensions() {
+    void Device::hasGflwRequiredInstanceExtensions() const {
         uint32_t extensionCount = 0;
         vkEnumerateInstanceExtensionProperties(nullptr, &extensionCount, nullptr);
         std::vector<VkExtensionProperties> extensions(extensionCount);
@@ -340,14 +336,14 @@ namespace Hmck {
 
         //std::cout << "available extensions:" << std::endl;
         std::unordered_set<std::string> available;
-        for (const auto& extension : extensions) {
+        for (const auto &extension: extensions) {
             //std::cout << "\t" << extension.extensionName << std::endl;
             available.insert(extension.extensionName);
         }
 
         //std::cout << "required extensions:" << std::endl;
         auto requiredExtensions = getRequiredExtensions();
-        for (const auto& required : requiredExtensions) {
+        for (const auto &required: requiredExtensions) {
             //std::cout << "\t" << required << std::endl;
             if (available.find(required) == available.end()) {
                 throw std::runtime_error("Missing required glfw extension");
@@ -355,7 +351,7 @@ namespace Hmck {
         }
     }
 
-    bool Device::checkDeviceExtensionSupport(VkPhysicalDevice device) {
+    bool Device::checkDeviceExtensionSupport(const VkPhysicalDevice device) const {
         uint32_t extensionCount;
         vkEnumerateDeviceExtensionProperties(device, nullptr, &extensionCount, nullptr);
 
@@ -368,14 +364,14 @@ namespace Hmck {
 
         std::set<std::string> requiredExtensions(deviceExtensions.begin(), deviceExtensions.end());
 
-        for (const auto& extension : availableExtensions) {
+        for (const auto &extension: availableExtensions) {
             requiredExtensions.erase(extension.extensionName);
         }
 
         return requiredExtensions.empty();
     }
 
-    QueueFamilyIndices Device::findQueueFamilies(VkPhysicalDevice device) {
+    QueueFamilyIndices Device::findQueueFamilies(const VkPhysicalDevice device) const {
         QueueFamilyIndices indices;
 
         uint32_t queueFamilyCount = 0;
@@ -385,7 +381,7 @@ namespace Hmck {
         vkGetPhysicalDeviceQueueFamilyProperties(device, &queueFamilyCount, queueFamilies.data());
 
         int i = 0;
-        for (const auto& queueFamily : queueFamilies) {
+        for (const auto &queueFamily: queueFamilies) {
             if (queueFamily.queueCount > 0 && queueFamily.queueFlags & VK_QUEUE_GRAPHICS_BIT) {
                 indices.graphicsFamily = i;
                 indices.graphicsFamilyHasValue = true;
@@ -406,7 +402,7 @@ namespace Hmck {
         return indices;
     }
 
-    SwapChainSupportDetails Device::querySwapChainSupport(VkPhysicalDevice device) {
+    SwapChainSupportDetails Device::querySwapChainSupport(const VkPhysicalDevice device) const {
         SwapChainSupportDetails details;
         vkGetPhysicalDeviceSurfaceCapabilitiesKHR(device, surface_, &details.capabilities);
 
@@ -433,15 +429,14 @@ namespace Hmck {
     }
 
     VkFormat Device::findSupportedFormat(
-        const std::vector<VkFormat>& candidates, VkImageTiling tiling, VkFormatFeatureFlags features) {
-        for (VkFormat format : candidates) {
+        const std::vector<VkFormat> &candidates, const VkImageTiling tiling, const VkFormatFeatureFlags features) const {
+        for (const VkFormat format: candidates) {
             VkFormatProperties props;
             vkGetPhysicalDeviceFormatProperties(physicalDevice, format, &props);
 
             if (tiling == VK_IMAGE_TILING_LINEAR && (props.linearTilingFeatures & features) == features) {
                 return format;
-            }
-            else if (
+            } else if (
                 tiling == VK_IMAGE_TILING_OPTIMAL && (props.optimalTilingFeatures & features) == features) {
                 return format;
             }
@@ -449,7 +444,7 @@ namespace Hmck {
         throw std::runtime_error("failed to find supported format!");
     }
 
-    uint32_t Device::findMemoryType(uint32_t typeFilter, VkMemoryPropertyFlags properties) {
+    uint32_t Device::findMemoryType(const uint32_t typeFilter, const VkMemoryPropertyFlags properties) const {
         VkPhysicalDeviceMemoryProperties memProperties;
         vkGetPhysicalDeviceMemoryProperties(physicalDevice, &memProperties);
         for (uint32_t i = 0; i < memProperties.memoryTypeCount; i++) {
@@ -463,11 +458,11 @@ namespace Hmck {
     }
 
     void Device::createBuffer(
-        VkDeviceSize size,
-        VkBufferUsageFlags usage,
-        VkMemoryPropertyFlags properties,
-        VkBuffer& buffer,
-        VkDeviceMemory& bufferMemory) {
+        const VkDeviceSize size,
+        const VkBufferUsageFlags usage,
+        const VkMemoryPropertyFlags properties,
+        VkBuffer &buffer,
+        VkDeviceMemory &bufferMemory) const {
         VkBufferCreateInfo bufferInfo{};
         bufferInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
         bufferInfo.size = size;
@@ -498,7 +493,7 @@ namespace Hmck {
         vkBindBufferMemory(device_, buffer, bufferMemory, 0);
     }
 
-    VkCommandBuffer Device::beginSingleTimeCommands() {
+    VkCommandBuffer Device::beginSingleTimeCommands() const {
         VkCommandBufferAllocateInfo allocInfo{};
         allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
         allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
@@ -516,7 +511,7 @@ namespace Hmck {
         return commandBuffer;
     }
 
-    void Device::endSingleTimeCommands(VkCommandBuffer commandBuffer) {
+    void Device::endSingleTimeCommands(const VkCommandBuffer commandBuffer) const {
         vkEndCommandBuffer(commandBuffer);
 
         VkSubmitInfo submitInfo{};
@@ -530,12 +525,12 @@ namespace Hmck {
         vkFreeCommandBuffers(device_, commandPool, 1, &commandBuffer);
     }
 
-    void Device::copyBuffer(VkBuffer srcBuffer, VkBuffer dstBuffer, VkDeviceSize size) {
-        VkCommandBuffer commandBuffer = beginSingleTimeCommands();
+    void Device::copyBuffer(const VkBuffer srcBuffer, const VkBuffer dstBuffer, const VkDeviceSize size) const {
+        const VkCommandBuffer commandBuffer = beginSingleTimeCommands();
 
         VkBufferCopy copyRegion{};
-        copyRegion.srcOffset = 0;  // Optional
-        copyRegion.dstOffset = 0;  // Optional
+        copyRegion.srcOffset = 0; // Optional
+        copyRegion.dstOffset = 0; // Optional
         copyRegion.size = size;
         vkCmdCopyBuffer(commandBuffer, srcBuffer, dstBuffer, 1, &copyRegion);
 
@@ -543,8 +538,8 @@ namespace Hmck {
     }
 
     void Device::copyBufferToImage(
-        VkBuffer buffer, VkImage image, uint32_t width, uint32_t height, uint32_t layerCount, uint32_t baseArrayLayer) {
-        VkCommandBuffer commandBuffer = beginSingleTimeCommands();
+        const VkBuffer buffer, const VkImage image, const uint32_t width, const uint32_t height, const uint32_t layerCount, const uint32_t baseArrayLayer) const {
+        const VkCommandBuffer commandBuffer = beginSingleTimeCommands();
 
         VkBufferImageCopy region{};
         region.bufferOffset = 0;
@@ -556,8 +551,8 @@ namespace Hmck {
         region.imageSubresource.baseArrayLayer = baseArrayLayer;
         region.imageSubresource.layerCount = layerCount;
 
-        region.imageOffset = { 0, 0, 0 };
-        region.imageExtent = { width, height, 1 };
+        region.imageOffset = {0, 0, 0};
+        region.imageExtent = {width, height, 1};
 
         vkCmdCopyBufferToImage(
             commandBuffer,
@@ -570,10 +565,10 @@ namespace Hmck {
     }
 
     void Device::createImageWithInfo(
-        const VkImageCreateInfo& imageInfo,
-        VkMemoryPropertyFlags properties,
-        VkImage& image,
-        VkDeviceMemory& imageMemory) {
+        const VkImageCreateInfo &imageInfo,
+        const VkMemoryPropertyFlags properties,
+        VkImage &image,
+        VkDeviceMemory &imageMemory) const {
         if (vkCreateImage(device_, &imageInfo, nullptr, &image) != VK_SUCCESS) {
             throw std::runtime_error("failed to create image!");
         }
@@ -595,10 +590,10 @@ namespace Hmck {
         }
     }
 
-    void Device::transitionImageLayout(VkImage image,
-        VkImageLayout layoutOld,
-        VkImageLayout layoutNew,
-        uint32_t layerCount) {
+    void Device::transitionImageLayout(const VkImage image,
+                                       const VkImageLayout layoutOld,
+                                       const VkImageLayout layoutNew,
+                                       const uint32_t layerCount) const {
         VkCommandBuffer commandBuffer = beginSingleTimeCommands();
 
         VkImageMemoryBarrier barrier{};
@@ -627,13 +622,13 @@ namespace Hmck {
 
             // Ensure the appropriate pipeline stage is specified for the source and destination access
             vkCmdPipelineBarrier(commandBuffer,
-                sourceStage, destinationStage,
-                0,
-                0, nullptr,
-                0, nullptr,
-                1, &barrier);
-        }
-        else if (layoutOld == VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL && layoutNew == VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL) {
+                                 sourceStage, destinationStage,
+                                 0,
+                                 0, nullptr,
+                                 0, nullptr,
+                                 1, &barrier);
+        } else if (layoutOld == VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL && layoutNew ==
+                   VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL) {
             barrier.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
             barrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
 
@@ -645,21 +640,15 @@ namespace Hmck {
 
             // Ensure the appropriate pipeline stage is specified for the source and destination access
             vkCmdPipelineBarrier(commandBuffer,
-                sourceStage, destinationStage,
-                0,
-                0, nullptr,
-                0, nullptr,
-                1, &barrier);
-        }
-        else {
+                                 sourceStage, destinationStage,
+                                 0,
+                                 0, nullptr,
+                                 0, nullptr,
+                                 1, &barrier);
+        } else {
             throw std::invalid_argument("Unsupported layout transition!");
         }
 
         endSingleTimeCommands(commandBuffer);
     }
-
-   
-
-    
-
 }

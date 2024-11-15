@@ -15,207 +15,202 @@
 #include <HmckDescriptors.h>
 #include <HmckTexture.h>
 
-namespace Hmck
-{
-	typedef uint32_t BufferHandle;
-	typedef uint32_t DescriptorSetHandle;
-	typedef uint32_t DescriptorSetLayoutHandle;
-	typedef uint32_t Texture2DHandle;
-	typedef uint32_t TextureCubeMapHandle;
+namespace Hmck {
+    typedef uint32_t BufferHandle;
+    typedef uint32_t DescriptorSetHandle;
+    typedef uint32_t DescriptorSetLayoutHandle;
+    typedef uint32_t Texture2DHandle;
+    typedef uint32_t TextureCubeMapHandle;
 
-	class MemoryManager
-	{
-	public:
+    class MemoryManager {
+    public:
+        static const uint32_t INVALID_HANDLE;
 
-		static const uint32_t INVALID_HANDLE;
+        explicit MemoryManager(Device &device);
 
-		MemoryManager(Device& device);
+        struct BufferCreateInfo {
+            VkDeviceSize instanceSize;
+            uint32_t instanceCount;
+            VkBufferUsageFlags usageFlags;
+            VkMemoryPropertyFlags memoryPropertyFlags;
+            VkDeviceSize minOffsetAlignment = 1;
+            bool map = true;
+        };
 
-		struct BufferCreateInfo
-		{
-			VkDeviceSize instanceSize;
-			uint32_t instanceCount;
-			VkBufferUsageFlags usageFlags;
-			VkMemoryPropertyFlags memoryPropertyFlags;
-			VkDeviceSize minOffsetAlignment = 1;
-			bool map = true;
-		};
+        BufferHandle createBuffer(BufferCreateInfo createInfo) const;
 
-		BufferHandle createBuffer(BufferCreateInfo createInfo);
+        struct VertexBufferCreateInfo {
+            VkDeviceSize vertexSize;
+            uint32_t vertexCount;
+            void *data;
+            VkBufferUsageFlags usageFlags = 0;
+        };
 
-		struct VertexBufferCreateInfo
-		{
-			VkDeviceSize vertexSize;
-			uint32_t vertexCount;
-			void* data;
-			VkBufferUsageFlags usageFlags = 0;
-		};
+        BufferHandle createVertexBuffer(const VertexBufferCreateInfo &createInfo);
 
-		BufferHandle createVertexBuffer(VertexBufferCreateInfo createInfo);
+        struct IndexBufferCreateInfo {
+            VkDeviceSize indexSize;
+            uint32_t indexCount;
+            void *data;
+            VkBufferUsageFlags usageFlags = 0;
+        };
 
-		struct IndexBufferCreateInfo
-		{
-			VkDeviceSize indexSize;
-			uint32_t indexCount;
-			void* data;
-			VkBufferUsageFlags usageFlags = 0;
-		};
+        BufferHandle createIndexBuffer(const IndexBufferCreateInfo &createInfo);
 
-		BufferHandle createIndexBuffer(IndexBufferCreateInfo createInfo);
+        struct DescriptorSetLayoutCreateInfo {
+            struct DescriptorSetLayoutBindingCreateInfo {
+                uint32_t binding;
+                VkDescriptorType descriptorType;
+                VkShaderStageFlags stageFlags;
+                uint32_t count = 1;
+                VkDescriptorBindingFlags bindingFlags = 0;
+            };
 
-		struct DescriptorSetLayoutCreateInfo
-		{
-			struct DescriptorSetLayoutBindingCreateInfo
-			{
-				uint32_t binding;
-				VkDescriptorType descriptorType;
-				VkShaderStageFlags stageFlags;
-				uint32_t count = 1;
-				VkDescriptorBindingFlags bindingFlags = 0;
-			};
+            std::vector<DescriptorSetLayoutBindingCreateInfo> bindings;
+        };
 
-			std::vector<DescriptorSetLayoutBindingCreateInfo> bindings;
-		};
+        DescriptorSetLayoutHandle createDescriptorSetLayout(const DescriptorSetLayoutCreateInfo &createInfo) const;
 
-		DescriptorSetLayoutHandle createDescriptorSetLayout(DescriptorSetLayoutCreateInfo createInfo);
+        struct DescriptorSetCreateInfo {
+            DescriptorSetLayoutHandle descriptorSetLayout;
 
-		struct DescriptorSetCreateInfo
-		{
-			DescriptorSetLayoutHandle descriptorSetLayout;
+            struct DescriptorSetWriteBufferInfo {
+                uint32_t binding;
+                VkDescriptorBufferInfo bufferInfo;
+            };
 
-			struct DescriptorSetWriteBufferInfo
-			{
-				uint32_t binding;
-				VkDescriptorBufferInfo bufferInfo;
-			};
+            struct DescriptorSetWriteBufferArrayInfo {
+                uint32_t binding;
+                std::vector<VkDescriptorBufferInfo> bufferInfos;
+            };
 
-			struct DescriptorSetWriteBufferArrayInfo
-			{
-				uint32_t binding;
-				std::vector <VkDescriptorBufferInfo> bufferInfos;
-			};
+            struct DescriptorSetWriteImageInfo {
+                uint32_t binding;
+                VkDescriptorImageInfo imageInfo;
+            };
 
-			struct DescriptorSetWriteImageInfo
-			{
-				uint32_t binding;
-				VkDescriptorImageInfo imageInfo;
-			};
+            struct DescriptorSetWriteImageArrayInfo {
+                uint32_t binding;
+                std::vector<VkDescriptorImageInfo> imageInfos;
+            };
 
-			struct DescriptorSetWriteImageArrayInfo
-			{
-				uint32_t binding;
-				std::vector<VkDescriptorImageInfo> imageInfos;
-			};
+            struct DescriptorSetWriteAccelerationStructureInfo {
+                uint32_t binding;
+                VkWriteDescriptorSetAccelerationStructureKHR accelerationStructureInfo;
+            };
 
-			struct DescriptorSetWriteAccelerationStructureInfo
-			{
-				uint32_t binding;
-				VkWriteDescriptorSetAccelerationStructureKHR accelerationStructureInfo;
-			};
+            std::vector<DescriptorSetWriteBufferInfo> bufferWrites;
+            std::vector<DescriptorSetWriteBufferArrayInfo> bufferArrayWrites;
+            std::vector<DescriptorSetWriteImageInfo> imageWrites;
+            std::vector<DescriptorSetWriteImageArrayInfo> imageArrayWrites;
+            std::vector<DescriptorSetWriteAccelerationStructureInfo> accelerationStructureWrites;
+        };
 
-			std::vector<DescriptorSetWriteBufferInfo> bufferWrites;
-			std::vector<DescriptorSetWriteBufferArrayInfo> bufferArrayWrites;
-			std::vector<DescriptorSetWriteImageInfo> imageWrites;
-			std::vector<DescriptorSetWriteImageArrayInfo> imageArrayWrites;
-			std::vector<DescriptorSetWriteAccelerationStructureInfo> accelerationStructureWrites;
-		};
+        DescriptorSetHandle createDescriptorSet(const DescriptorSetCreateInfo &createInfo);
 
-		DescriptorSetHandle createDescriptorSet(DescriptorSetCreateInfo createInfo);
+        static Texture2DHandle createTexture2D();
 
-		Texture2DHandle createTexture2D();
+        struct Texture2DCreateFromFileInfo {
+            std::string filepath;
+            VkFormat format;
+            VkImageLayout imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+        };
 
-		struct Texture2DCreateFromFileInfo
-		{
-			std::string filepath;
-			VkFormat format;
-			VkImageLayout imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-		};
+        Texture2DHandle createTexture2DFromFile(Texture2DCreateFromFileInfo createInfo) const;
 
-		Texture2DHandle createTexture2DFromFile(Texture2DCreateFromFileInfo createInfo);
+        struct Texture2DCreateFromBufferInfo {
+            unsigned char *buffer;
+            uint32_t bufferSize;
+            uint32_t width;
+            uint32_t height;
+            VkFormat format;
+            VkImageLayout imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+        };
 
-		struct Texture2DCreateFromBufferInfo
-		{
-			unsigned char* buffer;
-			uint32_t bufferSize;
-			uint32_t width;
-			uint32_t height;
-			VkFormat format;
-			VkImageLayout imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-		};
+        Texture2DHandle createTexture2DFromBuffer(const Texture2DCreateFromBufferInfo &createInfo) const;
 
-		Texture2DHandle createTexture2DFromBuffer(Texture2DCreateFromBufferInfo createInfo);
+        struct HDRTexture2DCreateFromBufferInfo {
+            float *buffer;
+            uint32_t bufferSize;
+            uint32_t width;
+            uint32_t height;
+            VkFormat format;
+            VkImageLayout imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+        };
 
-		struct HDRTexture2DCreateFromBufferInfo
-		{
-			float* buffer;
-			uint32_t bufferSize;
-			uint32_t width;
-			uint32_t height;
-			VkFormat format;
-			VkImageLayout imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-		};
-
-		Texture2DHandle createHDRTexture2DFromBuffer(HDRTexture2DCreateFromBufferInfo createInfo);
+        Texture2DHandle createHDRTexture2DFromBuffer(const HDRTexture2DCreateFromBufferInfo &createInfo) const;
 
 
-		struct TextureCubeMapCreateFromFilesInfo
-		{
-			std::vector<std::string> filenames;
-			VkFormat format;
-			VkImageLayout imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-		};
+        struct TextureCubeMapCreateFromFilesInfo {
+            std::vector<std::string> filenames;
+            VkFormat format;
+            VkImageLayout imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+        };
 
-		TextureCubeMapHandle createTextureCubeMapFromFiles(TextureCubeMapCreateFromFilesInfo createInfo);
-
-
-		DescriptorSetLayout& getDescriptorSetLayout(DescriptorSetLayoutHandle handle); // TODO make it return pointer, do not dereference
-		VkDescriptorSet getDescriptorSet(DescriptorSetHandle handle);
-		std::unique_ptr<Buffer>& getBuffer(BufferHandle handle);
-		std::unique_ptr<Texture2D>& getTexture2D(Texture2DHandle handle);
-		VkDescriptorImageInfo getTexture2DDescriptorImageInfo(Texture2DHandle handle);
-		std::unique_ptr<TextureCubeMap>& getTextureCubeMap(TextureCubeMapHandle handle);
-		VkDescriptorImageInfo getTextureCubeMapDescriptorImageInfo(TextureCubeMapHandle handle);
-
-		void bindDescriptorSet(
-			VkCommandBuffer commandBuffer,
-			VkPipelineBindPoint bindPoint,
-			VkPipelineLayout pipelineLayout,
-			uint32_t firstSet,
-			uint32_t descriptorCount,
-			DescriptorSetHandle descriptorSet,
-			uint32_t dynamicOffsetCount,
-			const uint32_t* pDynamicOffsets);
-
-		void bindVertexBuffer(BufferHandle vertexBuffer, BufferHandle indexBuffer, VkCommandBuffer commandBuffer, VkIndexType indexType = VK_INDEX_TYPE_UINT32);
-		void bindVertexBuffer(BufferHandle handle, VkCommandBuffer commandBuffer);
-		void bindIndexBuffer(BufferHandle handle, VkCommandBuffer commandBuffer, VkIndexType indexType = VK_INDEX_TYPE_UINT32);
-
-		void destroyBuffer(BufferHandle handle);
-		void destroyDescriptorSetLayout(DescriptorSetLayoutHandle handle);
-		void destroyTexture2D(Texture2DHandle handle);
-		void destroyTextureCubeMap(TextureCubeMapHandle handle);
-
-		void copyBuffer(BufferHandle from, BufferHandle to);
+        TextureCubeMapHandle createTextureCubeMapFromFiles(const TextureCubeMapCreateFromFilesInfo &createInfo) const;
 
 
-	private:
-		Device& device;
-		std::unique_ptr<DescriptorPool> descriptorPool;
+        static DescriptorSetLayout &getDescriptorSetLayout(DescriptorSetLayoutHandle handle);
 
-		// descriptors and buffer
-		static std::unordered_map<BufferHandle, std::unique_ptr<Buffer>> buffers;
-		static std::unordered_map<DescriptorSetHandle, VkDescriptorSet> descriptorSets;
-		static std::unordered_map<DescriptorSetLayoutHandle, std::unique_ptr<DescriptorSetLayout>> descriptorSetLayouts;
+        // TODO make it return pointer, do not dereference
+        static VkDescriptorSet getDescriptorSet(DescriptorSetHandle handle);
 
-		// textures
-		static std::unordered_map<Texture2DHandle, std::unique_ptr<Texture2D>> texture2Ds;
-		static std::unordered_map<Texture2DHandle, std::unique_ptr<TextureCubeMap>> textureCubeMaps;
+        static std::unique_ptr<Buffer> &getBuffer(BufferHandle handle);
 
-		static uint32_t buffersLastHandle;
-		static uint32_t descriptorSetsLastHandle;
-		static uint32_t descriptorSetLayoutsLastHandle;
-		static uint32_t texture2DsLastHandle;
-		static uint32_t textureCubeMapsLastHandle;
+        static std::unique_ptr<Texture2D> &getTexture2D(Texture2DHandle handle);
 
-	};
+        static VkDescriptorImageInfo getTexture2DDescriptorImageInfo(Texture2DHandle handle);
+
+        static std::unique_ptr<TextureCubeMap> &getTextureCubeMap(TextureCubeMapHandle handle);
+
+        static VkDescriptorImageInfo getTextureCubeMapDescriptorImageInfo(TextureCubeMapHandle handle);
+
+        static void bindDescriptorSet(
+            VkCommandBuffer commandBuffer,
+            VkPipelineBindPoint bindPoint,
+            VkPipelineLayout pipelineLayout,
+            uint32_t firstSet,
+            uint32_t descriptorCount,
+            DescriptorSetHandle descriptorSet,
+            uint32_t dynamicOffsetCount,
+            const uint32_t *pDynamicOffsets);
+
+        static void bindVertexBuffer(BufferHandle vertexBuffer, BufferHandle indexBuffer, VkCommandBuffer commandBuffer,
+                                     VkIndexType indexType = VK_INDEX_TYPE_UINT32);
+
+        static void bindVertexBuffer(BufferHandle handle, VkCommandBuffer commandBuffer);
+
+        static void bindIndexBuffer(BufferHandle handle, VkCommandBuffer commandBuffer,
+                                    VkIndexType indexType = VK_INDEX_TYPE_UINT32);
+
+        static void destroyBuffer(BufferHandle handle);
+
+        static void destroyDescriptorSetLayout(DescriptorSetLayoutHandle handle);
+
+        void destroyTexture2D(Texture2DHandle handle) const;
+
+        void destroyTextureCubeMap(TextureCubeMapHandle handle) const;
+
+        void copyBuffer(BufferHandle from, BufferHandle to) const;
+
+    private:
+        Device &device;
+        std::unique_ptr<DescriptorPool> descriptorPool;
+
+        // descriptors and buffer
+        static std::unordered_map<BufferHandle, std::unique_ptr<Buffer> > buffers;
+        static std::unordered_map<DescriptorSetHandle, VkDescriptorSet> descriptorSets;
+        static std::unordered_map<DescriptorSetLayoutHandle, std::unique_ptr<DescriptorSetLayout> >
+        descriptorSetLayouts;
+
+        // textures
+        static std::unordered_map<Texture2DHandle, std::unique_ptr<Texture2D> > texture2Ds;
+        static std::unordered_map<Texture2DHandle, std::unique_ptr<TextureCubeMap> > textureCubeMaps;
+
+        static uint32_t buffersLastHandle;
+        static uint32_t descriptorSetsLastHandle;
+        static uint32_t descriptorSetLayoutsLastHandle;
+        static uint32_t texture2DsLastHandle;
+        static uint32_t textureCubeMapsLastHandle;
+    };
 }

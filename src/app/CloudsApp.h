@@ -27,65 +27,61 @@
 #include "HmckGLTF.h"
 #include "utils/HmckBenchmarkRunner.h"
 
-namespace Hmck
-{
-	class CloudsApp : public IApp, public BenchmarkRunner
-	{
-		
-	public:
+namespace Hmck {
+    class CloudsApp final : public IApp, public BenchmarkRunner {
+    public:
+        struct BufferData {
+            glm::mat4 projection{};
+            glm::mat4 view{};
+            glm::mat4 inverseView{};
+            glm::vec4 sunPosition{2.0f, .3f, 2.0f, 0.0f};
+            glm::vec4 sunColor{1.0f, 0.5f, 0.3f, 0.0f};
+            glm::vec4 baseSkyColor{0.7f, 0.7f, 0.90, 0.0f};
+            glm::vec4 gradientSkyColor{0.90f, 0.75f, 0.90f, 0.8f};
+        };
 
-		struct BufferData
-		{
-			glm::mat4 projection{};
-			glm::mat4 view{};
-			glm::mat4 inverseView{};
-			glm::vec4 sunPosition{ 2.0f, .3f, 2.0f, 0.0f };
-			glm::vec4 sunColor{ 1.0f, 0.5f, 0.3f, 0.0f };
-			glm::vec4 baseSkyColor{ 0.7f, 0.7f, 0.90, 0.0f };
-			glm::vec4 gradientSkyColor{ 0.90f, 0.75f, 0.90f, 0.8f };
-		};
+        struct PushData {
+            float resX = IApp::WINDOW_WIDTH;
+            float resY = IApp::WINDOW_HEIGHT;
+            float elapsedTime = 1.0f;
+            float maxSteps = 60.0f;
+            float maxStepsLight = 6.0f;
+            float marchSize = 0.16f;
+            float absorbtionCoef = 0.9f;
+            float scatteringAniso = 0.3f;
+        };
 
-		struct PushData
-		{
-			float resX = IApp::WINDOW_WIDTH;
-			float resY = IApp::WINDOW_HEIGHT;
-			float elapsedTime = 1.0f;
-			float maxSteps = 60.0f;
-			float maxStepsLight = 6.0f;
-			float marchSize = 0.16f;
-			float absorbtionCoef = 0.9f;
-			float scatteringAniso = 0.3f;
-		};
+        CloudsApp();
 
-		CloudsApp();
+        // Inherited via IApp
+        void run() override;
 
-		// Inherited via IApp
-		virtual void run() override;
-		virtual void load() override;
+        void load() override;
 
-		void init();
-		void draw(int frameIndex, float elapsedTime, VkCommandBuffer commandBuffer);
-		void destroy();
-		void ui();
+        void init();
 
-	private:
-		std::unique_ptr<Scene> scene{};
+        void draw(int frameIndex, float elapsedTime, VkCommandBuffer commandBuffer);
 
-		BufferHandle vertexBuffer;
-		BufferHandle indexBuffer;
+        void destroy();
 
-		std::vector<DescriptorSetHandle> descriptorSets{};
-		DescriptorSetLayoutHandle descriptorSetLayout;
-		std::vector<BufferHandle> uniformBuffers{};
+        void ui();
 
-		std::unique_ptr<GraphicsPipeline> pipeline{}; // uses swapchain render pass
+    private:
+        std::unique_ptr<Scene> scene{};
 
-		Texture2DHandle noiseTexture;
-		Texture2DHandle blueNoiseTexture;
+        BufferHandle vertexBuffer;
+        BufferHandle indexBuffer;
 
-		PushData pushData{};
-		BufferData bufferData{};
-	};
+        std::vector<DescriptorSetHandle> descriptorSets{};
+        DescriptorSetLayoutHandle descriptorSetLayout;
+        std::vector<BufferHandle> uniformBuffers{};
 
+        std::unique_ptr<GraphicsPipeline> pipeline{}; // uses swapchain render pass
+
+        Texture2DHandle noiseTexture;
+        Texture2DHandle blueNoiseTexture;
+
+        PushData pushData{};
+        BufferData bufferData{};
+    };
 }
-

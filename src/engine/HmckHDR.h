@@ -13,44 +13,48 @@
 #include "HmckFramebuffer.h"
 #include "utils/HmckLogger.h"
 
-namespace Hmck
-{
-	class Environment
-	{
-	public:
-		// environment map
-		Texture2DHandle environmentSphere;
+namespace Hmck {
+    class Environment {
+    public:
+        // environment map
+        Texture2DHandle environmentSphere;
 
-		Texture2DHandle prefilteredSphere;
-		void generatePrefilteredSphere(Device& device, MemoryManager& memory, VkFormat format = VK_FORMAT_R32G32B32A32_SFLOAT);
+        Texture2DHandle prefilteredSphere;
 
-		// irradiance map
-		Texture2DHandle irradianceSphere;
-		void generateIrradianceSphere(Device& device, MemoryManager& memory, VkFormat format = VK_FORMAT_R32G32B32A32_SFLOAT);
+        void generatePrefilteredSphere(Device &device, MemoryManager &memory,
+                                       VkFormat format = VK_FORMAT_R32G32B32A32_SFLOAT);
 
-		// BRDFLUT
-		Texture2DHandle brdfLUT;
-		void generateBRDFLUT(Device& device, MemoryManager& memory, uint32_t dim = 512, VkFormat format = VK_FORMAT_R16G16_SFLOAT);
+        // irradiance map
+        Texture2DHandle irradianceSphere;
 
-		void destroy(MemoryManager& memory);
+        void generateIrradianceSphere(Device &device, MemoryManager &memory,
+                                      VkFormat format = VK_FORMAT_R32G32B32A32_SFLOAT);
 
-	private:
-	
-	};
+        // BRDFLUT
+        Texture2DHandle brdfLUT;
 
-	class EnvironmentLoader
-	{
-	public:
-		// TODO totaly change this haha
-		EnvironmentLoader(Device& device, MemoryManager& memory) :device{ device }, memory{ memory } {}
+        void generateBRDFLUT(Device &device, MemoryManager &memory, uint32_t dim = 512,
+                             VkFormat format = VK_FORMAT_R16G16_SFLOAT);
 
-		
-		void load(std::string filepath, Texture2DHandle& texture, VkFormat format);
-		void loadHDR(std::string filepath, Texture2DHandle& texture, VkFormat format);
+        void destroy(MemoryManager &memory) const;
 
-	private:
-		Device& device;
-		MemoryManager& memory;
-		int width, height, channels;
-	};
+    private:
+    };
+
+    class EnvironmentLoader {
+    public:
+        // TODO totaly change this haha, like seriously i should change this
+        EnvironmentLoader(Device &device, MemoryManager &memory) : device{device}, memory{memory} {
+        }
+
+
+        void load(const std::string &filepath, Texture2DHandle &texture, VkFormat format);
+
+        void loadHDR(const std::string &filepath, Texture2DHandle &texture, VkFormat format);
+
+    private:
+        Device &device;
+        MemoryManager &memory;
+        int width, height, channels;
+    };
 }

@@ -2,6 +2,13 @@
 
 Hmck::EntityHandle Hmck::Entity::currentId = 1;
 
+void Hmck::Entity::notifyChildrenDataChanged() {
+	for (const auto &child: children) {
+		child->dataChanged = true;
+		child->notifyChildrenDataChanged();
+	}
+}
+
 glm::mat4 Hmck::Entity::mat4()
 {
 	glm::mat4 model = transform.mat4();

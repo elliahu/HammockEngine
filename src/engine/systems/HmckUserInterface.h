@@ -19,43 +19,53 @@
 #include <string>
 
 
-namespace Hmck
-{
+namespace Hmck {
+    class UserInterface {
+    public:
+        UserInterface(Device &device, VkRenderPass renderPass, Window &window);
 
-	class UserInterface
-	{
-	public:
-		UserInterface(Device& device, VkRenderPass renderPass, Window& window);
-		~UserInterface();
+        ~UserInterface();
 
-		// Ui rendering
-		void beginUserInterface();
-		void endUserInterface(VkCommandBuffer commandBuffer);
-		void showDemoWindow() { ImGui::ShowDemoWindow(); }
-		void showDebugStats(std::shared_ptr<Entity> camera);
-		void showWindowControls();
-		void showEntityInspector(std::unique_ptr<Scene>& scene);
-		void showColorSettings(float* exposure, float* gamma, float * whitePoint);
-		void showLog();
+        // Ui rendering
+        static void beginUserInterface();
 
-		// forwarding events to ImGUI
-		static void forward(int button, bool state);
+        static void endUserInterface(VkCommandBuffer commandBuffer);
 
-	private:
-		void init();
-		void setupStyle();
+        static void showDemoWindow() { ImGui::ShowDemoWindow(); }
 
-		VkCommandBuffer beginSingleTimeCommands();
-		void endSingleTimeCommands(VkCommandBuffer commandBuffer);
+        void showDebugStats(const std::shared_ptr<Entity> &camera) const;
 
-		void beginWindow(const char* title,bool * open = (bool*) 0, ImGuiWindowFlags flags = 0);
-		void endWindow();
-		void entityComponets(std::shared_ptr<Entity> entity);
-		void inspectEntity(std::shared_ptr<Entity> entity, std::unique_ptr<Scene>& scene);
+        void showWindowControls() const;
 
-		Device& device;
-		Window& window;
-		VkRenderPass renderPass;
-		VkDescriptorPool imguiPool;
-	};
+        void showEntityInspector(std::unique_ptr<Scene> &scene);
+
+        void showColorSettings(float *exposure, float *gamma, float *whitePoint);
+
+        static void showLog();
+
+        // forwarding events to ImGUI
+        static void forward(int button, bool state);
+
+    private:
+        void init();
+
+        static void setupStyle();
+
+        VkCommandBuffer beginSingleTimeCommands() const;
+
+        void endSingleTimeCommands(VkCommandBuffer commandBuffer) const;
+
+        static void beginWindow(const char *title, bool *open = (bool *) 0, ImGuiWindowFlags flags = 0);
+
+        static void endWindow();
+
+        static void entityComponents(const std::shared_ptr<Entity> &entity);
+
+        static void inspectEntity(const std::shared_ptr<Entity> &entity, std::unique_ptr<Scene> &scene);
+
+        Device &device;
+        Window &window;
+        VkRenderPass renderPass;
+        VkDescriptorPool imguiPool;
+    };
 }

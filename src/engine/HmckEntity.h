@@ -12,42 +12,34 @@
 #include "HmckDescriptors.h"
 #include "HmckEntityComponents.h"
 
-namespace Hmck
-{
-	typedef uint32_t EntityHandle;
+namespace Hmck {
+    typedef uint32_t EntityHandle;
 
-	class Entity
-	{
-	public:
+    class Entity {
+    public:
+        Entity() : id{currentId++} {
+        }
 
-		Entity() : id{ currentId++ }{}
-		virtual ~Entity(){}
+        virtual ~Entity() = default;
 
-		static void resetId() { currentId = 1; };
+        static void resetId() { currentId = 1; };
 
-		inline void notifyChildrenDataChanged()
-		{
-			for (const auto& child : children) 
-			{
-				child->dataChanged = true;
-				child->notifyChildrenDataChanged();
-			}
-		}
+        void notifyChildrenDataChanged();
 
-		glm::mat4 mat4();
-		glm::mat4 mat4N();
+        glm::mat4 mat4();
 
-		static EntityHandle currentId;
-		EntityHandle id;
-		std::string name = "";
+        glm::mat4 mat4N();
 
-		std::shared_ptr<Entity> parent{};
-		std::vector<std::shared_ptr<Entity>> children{};
+        static EntityHandle currentId;
+        EntityHandle id;
+        std::string name;
 
-		TransformComponent transform{};
+        std::shared_ptr<Entity> parent{};
+        std::vector<std::shared_ptr<Entity> > children{};
 
-		bool visible = false;
-		bool dataChanged = true;
+        TransformComponent transform{};
 
-	};
+        bool visible = false;
+        bool dataChanged = true;
+    };
 }
