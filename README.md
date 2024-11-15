@@ -1,7 +1,7 @@
-![Hammock Engine Logo](https://raw.githubusercontent.com/elliahu/HammockEngine/master/Img/hammock-engine-logo.png)
+![Hammock Engine Logo](https://raw.githubusercontent.com/elliahu/HammockEngine/master/docs/img/hammock-engine-logo.png)
 
 # Hammock Engine 🔥
-Custom c++20 game engine using Vulkan - the next generation graphics API.
+Custom c++23 game engine using Vulkan - the next generation graphics API.
 
 # Features 🚀
 The following points are features currently implemented:
@@ -27,15 +27,9 @@ The following points are features currently implemented:
 - Implementing more robust shadow system
 - Plug-in system for render systems to expose and sample from frame buffer attachments
 
-## Engine dependencies 📚
-The following NuGet packages are used:
-- [GLM](https://github.com/g-truc/glm) - Linear algebra lib for matrix and vector operations (may switch to handmade math later as it is much lighter)
-- [GLFW](https://www.glfw.org/) - Window creation and input handling
-
-
-![img](https://raw.githubusercontent.com/elliahu/HammockEngine/master/Img/IBL.png)
-![img](https://raw.githubusercontent.com/elliahu/HammockEngine/master/Img/damaged_helmet1.png)
-![img](https://raw.githubusercontent.com/elliahu/HammockEngine/master/Img/deferred.png)
-![img](https://raw.githubusercontent.com/elliahu/HammockEngine/master/Img/cloud.png)
+![img](https://raw.githubusercontent.com/elliahu/HammockEngine/master/docs/img/IBL.png)
+![img](https://raw.githubusercontent.com/elliahu/HammockEngine/master/docs/img/damaged_helmet1.png)
+![img](https://raw.githubusercontent.com/elliahu/HammockEngine/master/docs/img/deferred.png)
+![img](https://raw.githubusercontent.com/elliahu/HammockEngine/master/docs/img/cloud.png)
 
 
