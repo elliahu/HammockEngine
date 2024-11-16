@@ -25,8 +25,7 @@ namespace Hmck {
         virtual void load() = 0;
 
         Window window{WINDOW_WIDTH, WINDOW_HEIGHT, "Hammock Engine"};
-        Device device{window};
-        // TODO this is wrong, device should not be dependent on window -> should be otherway around
+        Device device{window}; // TODO this is wrong, device should not be dependent on window -> should be otherway around
         MemoryManager memoryManager{device};
     };
 }
