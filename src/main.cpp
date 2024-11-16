@@ -4,7 +4,7 @@
 #include "app/PBRApp.h"
 #include "app/RaymarchingDemoApp.h"
 #include "app/CloudsApp.h"
-#include "engine/HmckEntity.h"
+#include "engine/scene/HmckEntity.h"
 
 
 int main() {

@@ -15,8 +15,8 @@
 #include <cmath>
 #include <memory>
 
-#include "HmckDescriptors.h"
-#include "HmckTexture.h"
+#include "resources/HmckDescriptors.h"
+#include "resources/HmckTexture.h"
 
 namespace Hmck {
     namespace Init {

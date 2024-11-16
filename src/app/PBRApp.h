@@ -7,14 +7,14 @@
 #include <vector>
 #include <chrono>
 
-#include "HmckDevice.h"
-#include "HmckRenderer.h"
-#include "HmckDescriptors.h"
+#include "core/HmckDevice.h"
+#include "core/HmckRenderer.h"
+#include "resources/HmckDescriptors.h"
 #include "IApp.h"
-#include "HmckEntity.h"
-#include "HmckScene.h"
-#include "HmckMemory.h"
-#include "HmckGLTF.h"
+#include "scene/HmckEntity.h"
+#include "scene/HmckScene.h"
+#include "core/HmckMemory.h"
+#include "scene/HmckGLTF.h"
 #include "utils/HmckBenchmarkRunner.h"
 #include "io/KeyboardMovementController.h"
 

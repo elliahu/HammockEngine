@@ -7,9 +7,9 @@
 #include <glm/gtc/matrix_transform.hpp>
 
 #include "HmckEntity.h"
-#include "HmckFramebuffer.h"
-#include "HmckPipeline.h"
-#include "HmckMemory.h"
+#include "core/HmckFramebuffer.h"
+#include "core/HmckPipeline.h"
+#include "core/HmckMemory.h"
 
 namespace Hmck {
     class ILight : public Entity {

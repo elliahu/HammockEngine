@@ -7,7 +7,7 @@
 #include <glm/glm.hpp>
 #include <glm/gtc/type_ptr.hpp>
 #include "HmckEntity.h"
-#include "HmckMemory.h"
+#include "core/HmckMemory.h"
 
 namespace Hmck {
     enum TextureIndex : uint32_t { Invalid = 4294967295 };

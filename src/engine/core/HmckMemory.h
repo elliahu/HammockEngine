@@ -11,9 +11,9 @@
 #include <cassert>
 #include <functional>
 
-#include <HmckBuffer.h>
-#include <HmckDescriptors.h>
-#include <HmckTexture.h>
+#include <resources/HmckBuffer.h>
+#include <resources/HmckDescriptors.h>
+#include <resources/HmckTexture.h>
 
 namespace Hmck {
     typedef uint32_t BufferHandle;

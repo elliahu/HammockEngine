@@ -4,9 +4,9 @@
 #include <memory>
 #include <stb_image.h>
 
-#include "HmckDevice.h"
+#include "core/HmckDevice.h"
 #include "HmckBuffer.h"
-#include "HmckUtils.h"
+#include "utils/HmckUtils.h"
 
 namespace Hmck {
     /*

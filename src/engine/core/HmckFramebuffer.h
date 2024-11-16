@@ -6,7 +6,7 @@
 #include <vulkan/vulkan.h>
 
 #include "HmckDevice.h"
-#include "HmckUtils.h"
+#include "utils/HmckUtils.h"
 
 #define VK_FLAGS_NONE 0
 

@@ -8,13 +8,13 @@
 #include <glm/glm.hpp>
 #include <glm/gtc/type_ptr.hpp>
 #include <tiny_gltf.h>
-#include "HmckTexture.h"
-#include "HmckDescriptors.h"
+#include "resources/HmckTexture.h"
+#include "resources/HmckDescriptors.h"
 #include "HmckEntity3D.h"
-#include "HmckSwapChain.h"
+#include "core/HmckSwapChain.h"
 #include "HmckCamera.h"
-#include "HmckHDR.h"
-#include "HmckUtils.h"
+#include "resources/HmckHDR.h"
+#include "utils/HmckUtils.h"
 #include "HmckLights.h"
 
 namespace Hmck {

@@ -1,9 +1,4 @@
 #pragma once
-#include <vulkan/vulkan.h>
-#include "HmckDevice.h"
-#include "HmckUtils.h"
-
-
 #include <chrono>
 #include <limits>
 #include <sstream>

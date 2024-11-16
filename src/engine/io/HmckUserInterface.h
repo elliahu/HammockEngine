@@ -1,16 +1,15 @@
 #pragma once
-#include "HmckPipeline.h"
-#include "HmckDevice.h"
+#include "core/HmckPipeline.h"
+#include "core/HmckDevice.h"
 #include "utils/HmckLogger.h"
 #include "imgui.h"
 #include "backends/imgui_impl_glfw.h" // !important
 #include "backends/imgui_impl_vulkan.h"
-#include "HmckEntity.h"
-#include "HmckScene.h"
-#include "HmckRenderer.h"
-#include "HmckUtils.h"
-#include "HmckLights.h"
-#include "HmckUtils.h"
+#include "scene/HmckEntity.h"
+#include "scene/HmckScene.h"
+#include "core/HmckRenderer.h"
+#include "utils/HmckUtils.h"
+#include "scene/HmckLights.h"
 
 #include <exception>
 #include <deque>

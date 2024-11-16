@@ -1,8 +1,8 @@
 #pragma once
 #include <io//HmckWindow.h>
-#include <HmckDevice.h>
-#include <HmckRenderer.h>
-#include <HmckMemory.h>
+#include <core/HmckDevice.h>
+#include <core/HmckRenderer.h>
+#include <core/HmckMemory.h>
 
 namespace Hmck {
     class IApp {

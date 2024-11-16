@@ -11,10 +11,10 @@
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtx/euler_angles.hpp> // Include for glm::eulerAngleYXZ function
 #include <tiny_gltf.h>
-#include "HmckTexture.h"
+#include "resources/HmckTexture.h"
 #include "HmckEntity.h"
 #include "HmckEntity3D.h"
-#include "HmckMemory.h"
+#include "core/HmckMemory.h"
 #include "HmckLights.h"
 #include "HmckScene.h"
 

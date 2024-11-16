@@ -16,7 +16,7 @@
 #include "HmckSwapChain.h"
 #include "io/HmckUserInterface.h"
 #include "HmckFramebuffer.h"
-#include "HmckScene.h"
+#include "scene/HmckScene.h"
 #include "HmckPipeline.h"
 
 // black clear color

@@ -1,6 +1,6 @@
 #pragma once
 
-#include "HmckDevice.h"
+#include "core/HmckDevice.h"
 
 namespace Hmck {
     class Buffer {

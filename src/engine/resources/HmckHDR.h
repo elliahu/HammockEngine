@@ -8,10 +8,10 @@
 #include <filesystem>
 
 #include "HmckTexture.h"
-#include "HmckDevice.h"
-#include "HmckMemory.h"
-#include "HmckPipeline.h"
-#include "HmckFramebuffer.h"
+#include "core/HmckDevice.h"
+#include "core/HmckMemory.h"
+#include "core/HmckPipeline.h"
+#include "core/HmckFramebuffer.h"
 #include "utils/HmckLogger.h"
 #include "shaders/HmckShader.h"
 
