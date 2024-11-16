@@ -43,6 +43,7 @@ void Hmck::EnvironmentLoader::loadHDR(const std::string &filepath, Texture2DHand
     stbi_image_free(pixels);
 }
 
+
 void Hmck::Environment::generatePrefilteredSphere(Device &device, MemoryManager &memory, VkFormat format) {
     assert(environmentSphere > 0 && "Env map not set");
     auto tStart = std::chrono::high_resolution_clock::now();
@@ -174,11 +175,11 @@ void Hmck::Environment::generatePrefilteredSphere(Device &device, MemoryManager 
         .debugName = "PrefilteredMap_generation",
         .device = device,
         .VS{
-            .byteCode = Hmck::Filesystem::readFile("../src/engine/shaders/compiled/fullscreen_headless.vert.spv"),
+            .byteCode = Hmck::Filesystem::readFile(Shader::getCompiledShaderPath("fullscreen_headless.vert.spv").string()),
             .entryFunc = "main"
         },
         .FS{
-            .byteCode = Hmck::Filesystem::readFile("../src/engine/shaders/compiled/generate_prefilteredmap.frag.spv"),
+            .byteCode = Hmck::Filesystem::readFile(Shader::getCompiledShaderPath("generate_prefilteredmap.frag.spv").string()),
             .entryFunc = "main"
         },
         .descriptorSetLayouts = {
@@ -223,7 +224,7 @@ void Hmck::Environment::generatePrefilteredSphere(Device &device, MemoryManager 
 
 
     vkCmdBeginRenderPass(commandBuffer, &renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
-    VkViewport viewport = Init::viewport((float) width, (float) height, 0.0f, 1.0f);
+    VkViewport viewport = Init::viewport(static_cast<float>(width), static_cast<float>(height), 0.0f, 1.0f);
     VkRect2D scissor = Init::rect2D(width, height, 0, 0);
     vkCmdSetViewport(commandBuffer, 0, 1, &viewport);
     vkCmdSetScissor(commandBuffer, 0, 1, &scissor);
@@ -375,11 +376,11 @@ void Hmck::Environment::generateIrradianceSphere(Device &device, MemoryManager &
         .debugName = "IrradianceMap_generation",
         .device = device,
         .VS{
-            .byteCode = Hmck::Filesystem::readFile("../src/engine/shaders/compiled/fullscreen_headless.vert.spv"),
+            .byteCode = Hmck::Filesystem::readFile(Shader::getCompiledShaderPath("fullscreen_headless.vert.spv").string()),
             .entryFunc = "main"
         },
         .FS{
-            .byteCode = Hmck::Filesystem::readFile("../src/engine/shaders/compiled/generate_irradiancemap.frag.spv"),
+            .byteCode = Hmck::Filesystem::readFile(Shader::getCompiledShaderPath("generate_irradiancemap.frag.spv").string()),
             .entryFunc = "main"
         },
         .descriptorSetLayouts = {
@@ -570,11 +571,11 @@ void Hmck::Environment::generateBRDFLUT(Device &device, MemoryManager &memory, u
         .debugName = "BRDFLUT_generation",
         .device = device,
         .VS{
-            .byteCode = Hmck::Filesystem::readFile("../src/engine/shaders/compiled/fullscreen_headless.vert.spv"),
+            .byteCode = Hmck::Filesystem::readFile(Shader::getCompiledShaderPath("fullscreen_headless.vert.spv").string()),
             .entryFunc = "main"
         },
         .FS{
-            .byteCode = Hmck::Filesystem::readFile("../src/engine/shaders/compiled/generate_brdflut.frag.spv"),
+            .byteCode = Hmck::Filesystem::readFile(Shader::getCompiledShaderPath("generate_brdflut.frag.spv").string()),
             .entryFunc = "main"
         },
         .descriptorSetLayouts = {
@@ -604,7 +605,7 @@ void Hmck::Environment::generateBRDFLUT(Device &device, MemoryManager &memory, u
 
     VkCommandBuffer commandBuffer = device.beginSingleTimeCommands();
     vkCmdBeginRenderPass(commandBuffer, &renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
-    VkViewport viewport = Init::viewport((float) dim, (float) dim, 0.0f, 1.0f);
+    VkViewport viewport = Init::viewport(static_cast<float>(dim), static_cast<float>(dim), 0.0f, 1.0f);
     VkRect2D scissor = Init::rect2D(dim, dim, 0, 0);
     vkCmdSetViewport(commandBuffer, 0, 1, &viewport);
     vkCmdSetScissor(commandBuffer, 0, 1, &scissor);

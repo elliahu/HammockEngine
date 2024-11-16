@@ -5,6 +5,7 @@
 #include <stb_image.h>
 #include <chrono>
 #include <string>
+#include <filesystem>
 
 #include "HmckTexture.h"
 #include "HmckDevice.h"
@@ -12,6 +13,7 @@
 #include "HmckPipeline.h"
 #include "HmckFramebuffer.h"
 #include "utils/HmckLogger.h"
+#include "shaders/HmckShader.h"
 
 namespace Hmck {
     class Environment {

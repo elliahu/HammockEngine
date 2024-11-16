@@ -11,10 +11,10 @@
 #include <cassert>
 #include <functional>
 
-#include "platforms/HmckWindow.h"
+#include "io/HmckWindow.h"
 #include "HmckDevice.h"
 #include "HmckSwapChain.h"
-#include "Systems/HmckUserInterface.h"
+#include "io/HmckUserInterface.h"
 #include "HmckFramebuffer.h"
 #include "HmckScene.h"
 #include "HmckPipeline.h"

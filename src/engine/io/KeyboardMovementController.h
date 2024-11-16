@@ -1,7 +1,7 @@
 #pragma once
 
-#include "platforms/HmckWindow.h"
-#include "systems/HmckUserInterface.h"
+#include "HmckWindow.h"
+#include "HmckUserInterface.h"
 
 #include <memory>
 

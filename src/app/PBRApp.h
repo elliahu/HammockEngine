@@ -16,6 +16,7 @@
 #include "HmckMemory.h"
 #include "HmckGLTF.h"
 #include "utils/HmckBenchmarkRunner.h"
+#include "io/KeyboardMovementController.h"
 
 
 namespace Hmck {

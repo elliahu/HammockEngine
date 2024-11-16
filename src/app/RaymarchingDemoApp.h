@@ -9,12 +9,12 @@
 #include <stdexcept>
 #include <chrono>
 
-#include "platforms/HmckWindow.h"
+#include "io/HmckWindow.h"
 #include "HmckDevice.h"
 #include "HmckRenderer.h"
-#include "systems/HmckUserInterface.h"
+#include "io/HmckUserInterface.h"
 #include "HmckCamera.h"
-#include "controllers/KeyboardMovementController.h"
+#include "io/KeyboardMovementController.h"
 #include "HmckBuffer.h"
 #include "HmckDescriptors.h"
 #include "utils/HmckLogger.h"

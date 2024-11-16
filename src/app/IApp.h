@@ -1,5 +1,5 @@
 #pragma once
-#include <platforms/HmckWindow.h>
+#include <io//HmckWindow.h>
 #include <HmckDevice.h>
 #include <HmckRenderer.h>
 #include <HmckMemory.h>
