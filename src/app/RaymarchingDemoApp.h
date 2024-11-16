@@ -2,29 +2,19 @@
 #define GLM_FORCE_RADIANS
 #define GLM_FORCE_DEPTH_ZERO_TO_ONE
 #include <glm/glm.hpp>
-#include <glm/gtc/constants.hpp>
 
 #include <memory>
 #include <vector>
-#include <stdexcept>
 #include <chrono>
 
-#include "io/HmckWindow.h"
+
 #include "core/HmckDevice.h"
-#include "core/HmckRenderer.h"
-#include "io/HmckUserInterface.h"
-#include "scene/HmckCamera.h"
-#include "io/KeyboardMovementController.h"
-#include "resources/HmckBuffer.h"
-#include "resources/HmckDescriptors.h"
-#include "utils/HmckLogger.h"
+#include "core/HmckPipeline.h"
 #include "IApp.h"
 #include "scene/HmckEntity.h"
 #include "scene/HmckScene.h"
-#include "scene/HmckLights.h"
-#include "resources//HmckTexture.h"
 #include "core/HmckMemory.h"
-#include "scene/HmckGLTF.h"
+
 
 
 namespace Hmck {

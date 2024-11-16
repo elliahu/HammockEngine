@@ -14,9 +14,8 @@
 #include "scene/HmckEntity.h"
 #include "scene/HmckScene.h"
 #include "core/HmckMemory.h"
-#include "scene/HmckGLTF.h"
+#include "core/HmckPipeline.h"
 #include "utils/HmckBenchmarkRunner.h"
-#include "io/KeyboardMovementController.h"
 
 
 namespace Hmck {

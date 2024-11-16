@@ -3,7 +3,6 @@
 #define GLM_FORCE_RADIANS
 #define GLM_FORCE_DEPTH_ZERO_TO_ONE
 #include <glm/glm.hpp>
-#include <glm/gtc/constants.hpp>
 #define GLM_ENABLE_EXPERIMENTAL
 #include <glm/gtx/matrix_decompose.hpp>
 
@@ -16,7 +15,7 @@
 #include <memory>
 
 #include "resources/HmckDescriptors.h"
-#include "resources/HmckTexture.h"
+#include "resources/HmckBuffer.h"
 
 namespace Hmck {
     namespace Init {

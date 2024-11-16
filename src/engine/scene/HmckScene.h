@@ -1,21 +1,14 @@
 #pragma once
 #include <string>
-#include <iostream>
 #include <memory>
 
-#define GLM_FORCE_RADIANS
-#define GLM_FORCE_DEPTH_ZERO_TO_ONE
-#include <glm/glm.hpp>
-#include <glm/gtc/type_ptr.hpp>
-#include <tiny_gltf.h>
-#include "resources/HmckTexture.h"
 #include "resources/HmckDescriptors.h"
 #include "HmckEntity3D.h"
 #include "core/HmckSwapChain.h"
 #include "HmckCamera.h"
 #include "resources/HmckHDR.h"
 #include "utils/HmckUtils.h"
-#include "HmckLights.h"
+#include "HmckVertex.h"
 
 namespace Hmck {
     // TODO add runtime object addition and removal

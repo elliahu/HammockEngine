@@ -1,4 +1,11 @@
 #include "HmckUserInterface.h"
+#include "core/HmckPipeline.h"
+#include "backends/imgui_impl_glfw.h" // !important
+#include "backends/imgui_impl_vulkan.h"
+#include "utils/HmckUtils.h"
+#include "scene/HmckLights.h"
+#include <deque>
+#include <string>
 
 
 Hmck::UserInterface::UserInterface(Device &device, const VkRenderPass renderPass, Window &window) : device{device},

@@ -1,4 +1,5 @@
 #include "HmckLights.h"
+#include "HmckVertex.h"
 
 void Hmck::OmniLight::prepareRenderPass(const Device &device) {
     VkAttachmentDescription osAttachments[2] = {};

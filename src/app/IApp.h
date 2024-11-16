@@ -1,7 +1,6 @@
 #pragma once
 #include <io//HmckWindow.h>
 #include <core/HmckDevice.h>
-#include <core/HmckRenderer.h>
 #include <core/HmckMemory.h>
 
 namespace Hmck {

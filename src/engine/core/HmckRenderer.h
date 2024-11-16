@@ -3,13 +3,10 @@
 #define GLM_FORCE_RADIANS
 #define GLM_FORCE_DEPTH_ZERO_TO_ONE
 #include <glm/glm.hpp>
-#include <glm/gtc/constants.hpp>
 
 #include <memory>
 #include <vector>
-#include <stdexcept>
 #include <cassert>
-#include <functional>
 
 #include "io/HmckWindow.h"
 #include "HmckDevice.h"
@@ -17,7 +14,6 @@
 #include "io/HmckUserInterface.h"
 #include "HmckFramebuffer.h"
 #include "scene/HmckScene.h"
-#include "HmckPipeline.h"
 
 // black clear color
 #define HMCK_CLEAR_COLOR {0.f,0.f,0.f} //{ 0.f,171.f / 255.f,231.f / 255.f,1.f }

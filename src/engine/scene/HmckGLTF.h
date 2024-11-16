@@ -1,21 +1,10 @@
 #pragma once
 #include <string>
-#include <iostream>
 #include <memory>
 
-#define GLM_FORCE_RADIANS
-#define GLM_FORCE_DEPTH_ZERO_TO_ONE
-#define GLM_ENABLE_EXPERIMENTAL
-#include <glm/glm.hpp>
-#include <glm/gtc/type_ptr.hpp>
-#include <glm/gtc/matrix_transform.hpp>
-#include <glm/gtx/euler_angles.hpp> // Include for glm::eulerAngleYXZ function
 #include <tiny_gltf.h>
-#include "resources/HmckTexture.h"
 #include "HmckEntity.h"
-#include "HmckEntity3D.h"
 #include "core/HmckMemory.h"
-#include "HmckLights.h"
 #include "HmckScene.h"
 
 namespace gltf = tinygltf;

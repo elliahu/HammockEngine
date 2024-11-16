@@ -1,4 +1,5 @@
 #include "HmckRTX.h"
+#include "utils/HmckUtils.h"
 
 uint64_t Hmck::IRayTracingSupport::getBufferDeviceAddress(const Device &device, const VkBuffer buffer) const {
     VkBufferDeviceAddressInfoKHR bufferDeviceAI{};

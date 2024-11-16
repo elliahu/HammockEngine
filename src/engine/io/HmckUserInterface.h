@@ -1,21 +1,13 @@
 #pragma once
-#include "core/HmckPipeline.h"
+
 #include "core/HmckDevice.h"
-#include "utils/HmckLogger.h"
 #include "imgui.h"
-#include "backends/imgui_impl_glfw.h" // !important
-#include "backends/imgui_impl_vulkan.h"
 #include "scene/HmckEntity.h"
 #include "scene/HmckScene.h"
 #include "core/HmckRenderer.h"
-#include "utils/HmckUtils.h"
-#include "scene/HmckLights.h"
 
-#include <exception>
-#include <deque>
-#include <map>
 #include <memory>
-#include <string>
+
 
 
 namespace Hmck {

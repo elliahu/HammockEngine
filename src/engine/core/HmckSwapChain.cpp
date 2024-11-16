@@ -6,8 +6,9 @@
 #include <cstring>
 #include <iostream>
 #include <limits>
-#include <set>
 #include <stdexcept>
+
+#include "utils/HmckUtils.h"
 
 namespace Hmck {
     SwapChain::SwapChain(Device &deviceRef, const VkExtent2D extent)

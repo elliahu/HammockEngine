@@ -2,7 +2,7 @@
 // vulkan headers
 #include <vulkan/vulkan.h>
 #include "core/HmckDevice.h"
-#include "utils/HmckUtils.h"
+
 
 namespace Hmck {
     // Holds information for a ray tracing acceleration structure

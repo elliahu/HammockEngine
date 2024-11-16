@@ -1,4 +1,5 @@
 #include "HmckScene.h"
+#include "HmckLights.h"
 
 
 Hmck::Scene::Scene(const SceneCreateInfo &createInfo): device{createInfo.device}, memory{createInfo.memory} {

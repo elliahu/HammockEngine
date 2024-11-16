@@ -1,5 +1,14 @@
 #include "CloudsApp.h"
 
+#include "io/HmckUserInterface.h"
+#include "scene/HmckCamera.h"
+#include "io/KeyboardMovementController.h"
+#include "resources//HmckBuffer.h"
+#include "resources/HmckDescriptors.h"
+#include "utils/HmckLogger.h"
+#include "io/HmckWindow.h"
+#include "scene/HmckGLTF.h"
+
 
 Hmck::CloudsApp::CloudsApp() {
     init();

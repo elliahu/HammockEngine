@@ -8,7 +8,6 @@
 #include <glm/glm.hpp>
 #include <glm/gtc/type_ptr.hpp>
 #include <glm/gtc/quaternion.hpp>
-#include <tiny_gltf.h>
 #include "resources/HmckDescriptors.h"
 #include "HmckEntityComponents.h"
 

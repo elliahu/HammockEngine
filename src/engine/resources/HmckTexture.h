@@ -2,10 +2,7 @@
 
 #include <vulkan/vulkan.h>
 #include <memory>
-#include <stb_image.h>
-
 #include "core/HmckDevice.h"
-#include "HmckBuffer.h"
 #include "utils/HmckUtils.h"
 
 namespace Hmck {

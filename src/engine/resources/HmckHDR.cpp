@@ -1,5 +1,14 @@
 #include "HmckHDR.h"
 
+#include <glm/glm.hpp>
+#include <stb_image.h>
+#include <chrono>
+
+#include "core/HmckPipeline.h"
+#include "core/HmckFramebuffer.h"
+#include "utils/HmckLogger.h"
+#include "shaders/HmckShader.h"
+
 void Hmck::EnvironmentLoader::load(const std::string &filepath, Texture2DHandle &texture, VkFormat format) {
     stbi_set_flip_vertically_on_load(true);
     unsigned char *pixels = stbi_load(filepath.c_str(), &width, &height, &channels, STBI_rgb_alpha);

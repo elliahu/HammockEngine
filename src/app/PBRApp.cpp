@@ -1,5 +1,9 @@
 #include "PBRApp.h"
 
+#include "io/KeyboardMovementController.h"
+#include "scene/HmckGLTF.h"
+#include "scene/HmckLights.h"
+#include "utils/HmckLogger.h"
 
 
 Hmck::PBRApp::PBRApp() {

@@ -1,12 +1,7 @@
 #pragma once
 #include <string>
 #include <vector>
-#include <fstream>
-#include <stdexcept>
-#include <iostream>
-#include <cassert>
 #include "HmckDevice.h"
-#include "scene/HmckVertex.h"
 #include <memory>
 
 namespace Hmck {

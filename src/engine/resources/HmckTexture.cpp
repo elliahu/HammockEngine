@@ -1,6 +1,8 @@
 #include "HmckTexture.h"
 #include <stb_image.h>
 
+#include "HmckBuffer.h"
+
 
 
 void Hmck::ITexture::updateDescriptor()
