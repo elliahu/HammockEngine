@@ -8,7 +8,7 @@
 #include "HmckEntity.h"
 #include "core/HmckFramebuffer.h"
 #include "core/HmckPipeline.h"
-#include "core/HmckMemory.h"
+#include "core/HmckResourceManager.h"
 
 namespace Hmck {
     class ILight : public Entity {
@@ -69,9 +69,9 @@ namespace Hmck {
 
         void prepareCubeMap(Device &device);
 
-        static void prepareDescriptor(MemoryManager &memory);
+        static void prepareDescriptor(ResourceManager &memory);
 
-        void preparePipeline(Device &device, MemoryManager &memory) const;
+        void preparePipeline(Device &device, ResourceManager &memory) const;
 
         void beginCubeMapFaceUpdate(uint32_t faceIndex, VkCommandBuffer commandBuffer) const;
 

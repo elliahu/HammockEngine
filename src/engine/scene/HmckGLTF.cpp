@@ -14,8 +14,8 @@
 
 namespace gltf = tinygltf;
 
-Hmck::GltfLoader::GltfLoader(Device &device, MemoryManager &memory, std::unique_ptr<Scene> &scene) : device{device},
-    memory{memory},
+Hmck::GltfLoader::GltfLoader(Device &device, ResourceManager &memory, std::unique_ptr<Scene> &scene) : device{device},
+    resources{memory},
     scene{scene} {
     imagesOffset = scene->images.size();
     texturesOffset = scene->textures.size();
@@ -111,7 +111,7 @@ void Hmck::GltfLoader::loadImages(gltf::Model &model) const {
         // Load texture from image buffer
         scene->images[i].uri = glTFImage.uri;
         scene->images[i].name = glTFImage.name;
-        scene->images[i].texture = memory.createTexture2DFromBuffer({
+        scene->images[i].texture = resources.createTexture2DFromBuffer({
             .buffer = buffer,
             .bufferSize = bufferSize,
             .width = static_cast<uint32_t>(glTFImage.width),

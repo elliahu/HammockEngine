@@ -14,11 +14,11 @@ namespace Hmck {
     typedef uint32_t Texture2DHandle;
     typedef uint32_t TextureCubeMapHandle;
 
-    class MemoryManager {
+    class ResourceManager {
     public:
         static const uint32_t INVALID_HANDLE;
 
-        explicit MemoryManager(Device &device);
+        explicit ResourceManager(Device &device);
 
         struct BufferCreateInfo {
             VkDeviceSize instanceSize;
@@ -29,7 +29,7 @@ namespace Hmck {
             bool map = true;
         };
 
-        BufferHandle createBuffer(BufferCreateInfo createInfo) const;
+        [[nodiscard]] BufferHandle createBuffer(BufferCreateInfo createInfo) const;
 
         struct VertexBufferCreateInfo {
             VkDeviceSize vertexSize;
@@ -38,7 +38,7 @@ namespace Hmck {
             VkBufferUsageFlags usageFlags = 0;
         };
 
-        BufferHandle createVertexBuffer(const VertexBufferCreateInfo &createInfo);
+        [[nodiscard]] BufferHandle createVertexBuffer(const VertexBufferCreateInfo &createInfo);
 
         struct IndexBufferCreateInfo {
             VkDeviceSize indexSize;
@@ -47,7 +47,7 @@ namespace Hmck {
             VkBufferUsageFlags usageFlags = 0;
         };
 
-        BufferHandle createIndexBuffer(const IndexBufferCreateInfo &createInfo);
+        [[nodiscard]] BufferHandle createIndexBuffer(const IndexBufferCreateInfo &createInfo);
 
         struct DescriptorSetLayoutCreateInfo {
             struct DescriptorSetLayoutBindingCreateInfo {
@@ -61,7 +61,7 @@ namespace Hmck {
             std::vector<DescriptorSetLayoutBindingCreateInfo> bindings;
         };
 
-        DescriptorSetLayoutHandle createDescriptorSetLayout(const DescriptorSetLayoutCreateInfo &createInfo) const;
+        [[nodiscard]] DescriptorSetLayoutHandle createDescriptorSetLayout(const DescriptorSetLayoutCreateInfo &createInfo) const;
 
         struct DescriptorSetCreateInfo {
             DescriptorSetLayoutHandle descriptorSetLayout;
@@ -98,7 +98,7 @@ namespace Hmck {
             std::vector<DescriptorSetWriteAccelerationStructureInfo> accelerationStructureWrites;
         };
 
-        DescriptorSetHandle createDescriptorSet(const DescriptorSetCreateInfo &createInfo);
+        [[nodiscard]] DescriptorSetHandle createDescriptorSet(const DescriptorSetCreateInfo &createInfo);
 
         static Texture2DHandle createTexture2D();
 
@@ -108,7 +108,7 @@ namespace Hmck {
             VkImageLayout imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
         };
 
-        Texture2DHandle createTexture2DFromFile(Texture2DCreateFromFileInfo createInfo) const;
+        [[nodiscard]] Texture2DHandle createTexture2DFromFile(Texture2DCreateFromFileInfo createInfo) const;
 
         struct Texture2DCreateFromBufferInfo {
             unsigned char *buffer;
@@ -119,7 +119,7 @@ namespace Hmck {
             VkImageLayout imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
         };
 
-        Texture2DHandle createTexture2DFromBuffer(const Texture2DCreateFromBufferInfo &createInfo) const;
+        [[nodiscard]] Texture2DHandle createTexture2DFromBuffer(const Texture2DCreateFromBufferInfo &createInfo) const;
 
         struct HDRTexture2DCreateFromBufferInfo {
             float *buffer;
@@ -130,7 +130,7 @@ namespace Hmck {
             VkImageLayout imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
         };
 
-        Texture2DHandle createHDRTexture2DFromBuffer(const HDRTexture2DCreateFromBufferInfo &createInfo) const;
+        [[nodiscard]] Texture2DHandle createHDRTexture2DFromBuffer(const HDRTexture2DCreateFromBufferInfo &createInfo) const;
 
 
         struct TextureCubeMapCreateFromFilesInfo {
@@ -139,12 +139,11 @@ namespace Hmck {
             VkImageLayout imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
         };
 
-        TextureCubeMapHandle createTextureCubeMapFromFiles(const TextureCubeMapCreateFromFilesInfo &createInfo) const;
+        [[nodiscard]] TextureCubeMapHandle createTextureCubeMapFromFiles(const TextureCubeMapCreateFromFilesInfo &createInfo) const;
 
 
         static DescriptorSetLayout &getDescriptorSetLayout(DescriptorSetLayoutHandle handle);
 
-        // TODO make it return pointer, do not dereference
         static VkDescriptorSet getDescriptorSet(DescriptorSetHandle handle);
 
         static std::unique_ptr<Buffer> &getBuffer(BufferHandle handle);

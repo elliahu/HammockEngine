@@ -13,7 +13,7 @@
 #include "IApp.h"
 #include "scene/HmckEntity.h"
 #include "scene/HmckScene.h"
-#include "core/HmckMemory.h"
+#include "core/HmckResourceManager.h"
 #include "core/HmckPipeline.h"
 #include "utils/HmckBenchmarkRunner.h"
 

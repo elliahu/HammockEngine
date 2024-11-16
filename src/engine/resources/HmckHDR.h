@@ -1,56 +1,33 @@
 #pragma once
-
-
 #include <string>
 #include <filesystem>
 
 
 #include "core/HmckDevice.h"
-#include "core/HmckMemory.h"
+#include "core/HmckResourceManager.h"
 
 
 namespace Hmck {
     class Environment {
     public:
-        // environment map
-        Texture2DHandle environmentSphere;
+        void load(Device &device, const ResourceManager &memory, const std::string &filepath, VkFormat format);
 
-        Texture2DHandle prefilteredSphere;
-
-        void generatePrefilteredSphere(Device &device, MemoryManager &memory,
+        void generatePrefilteredSphere(Device &device, ResourceManager &memory,
                                        VkFormat format = VK_FORMAT_R32G32B32A32_SFLOAT);
 
-        // irradiance map
-        Texture2DHandle irradianceSphere;
-
-        void generateIrradianceSphere(Device &device, MemoryManager &memory,
+        void generateIrradianceSphere(Device &device, ResourceManager &memory,
                                       VkFormat format = VK_FORMAT_R32G32B32A32_SFLOAT);
 
-        // BRDFLUT
-        Texture2DHandle brdfLUT;
-
-        void generateBRDFLUT(Device &device, MemoryManager &memory, uint32_t dim = 512,
+        // TODO should load a mipmap chain for different roughness values
+        void generateBRDFLUT(Device &device, ResourceManager &memory, uint32_t dim = 512,
                              VkFormat format = VK_FORMAT_R16G16_SFLOAT);
 
-        void destroy(MemoryManager &memory) const;
+        void destroy(ResourceManager &memory) const;
 
-    private:
-    };
-
-    class EnvironmentLoader {
-    public:
-        // TODO totaly change this haha, like seriously i should change this
-        EnvironmentLoader(Device &device, MemoryManager &memory) : device{device}, memory{memory} {
-        }
-
-
-        void load(const std::string &filepath, Texture2DHandle &texture, VkFormat format);
-
-        void loadHDR(const std::string &filepath, Texture2DHandle &texture, VkFormat format);
-
-    private:
-        Device &device;
-        MemoryManager &memory;
-        int width, height, channels;
+        // texture handles
+        Texture2DHandle environmentSphere;
+        Texture2DHandle prefilteredSphere;
+        Texture2DHandle irradianceSphere;
+        Texture2DHandle brdfLUT;
     };
 }

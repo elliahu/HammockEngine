@@ -9,29 +9,8 @@
 #include "utils/HmckLogger.h"
 #include "shaders/HmckShader.h"
 
-void Hmck::EnvironmentLoader::load(const std::string &filepath, Texture2DHandle &texture, VkFormat format) {
-    stbi_set_flip_vertically_on_load(true);
-    unsigned char *pixels = stbi_load(filepath.c_str(), &width, &height, &channels, STBI_rgb_alpha);
-    stbi_set_flip_vertically_on_load(false);
-    if (!pixels) {
-        throw std::runtime_error("Failed to load image from disk");
-    }
-
-    channels = 4;
-
-    texture = memory.createTexture2DFromBuffer({
-        .buffer = pixels,
-        .bufferSize = static_cast<uint32_t>(width * height * channels),
-        .width = static_cast<uint32_t>(width), .height = static_cast<uint32_t>(height),
-        .format = format
-    });
-
-
-    // Free the memory allocated by stb_image
-    stbi_image_free(pixels);
-}
-
-void Hmck::EnvironmentLoader::loadHDR(const std::string &filepath, Texture2DHandle &texture, VkFormat format) {
+void Hmck::Environment::load(Device &device, const ResourceManager &memory, const std::string &filepath, const VkFormat format) {
+    int width = 0, height = 0, channels = 0;
     stbi_set_flip_vertically_on_load(true);
     float *pixels = stbi_loadf(filepath.c_str(), &width, &height, &channels, STBI_rgb_alpha);
     stbi_set_flip_vertically_on_load(false);
@@ -41,7 +20,7 @@ void Hmck::EnvironmentLoader::loadHDR(const std::string &filepath, Texture2DHand
 
     channels = 4;
 
-    texture = memory.createHDRTexture2DFromBuffer({
+    environmentSphere = memory.createHDRTexture2DFromBuffer({
         .buffer = pixels,
         .bufferSize = static_cast<uint32_t>(width * height * channels),
         .width = static_cast<uint32_t>(width), .height = static_cast<uint32_t>(height),
@@ -52,8 +31,7 @@ void Hmck::EnvironmentLoader::loadHDR(const std::string &filepath, Texture2DHand
     stbi_image_free(pixels);
 }
 
-
-void Hmck::Environment::generatePrefilteredSphere(Device &device, MemoryManager &memory, VkFormat format) {
+void Hmck::Environment::generatePrefilteredSphere(Device &device, ResourceManager &memory, VkFormat format) {
     assert(environmentSphere > 0 && "Env map not set");
     auto tStart = std::chrono::high_resolution_clock::now();
     uint32_t width = memory.getTexture2D(environmentSphere)->width;
@@ -259,7 +237,7 @@ void Hmck::Environment::generatePrefilteredSphere(Device &device, MemoryManager 
     Logger::log(LogLevel::HMCK_LOG_LEVEL_DEBUG, "Generating prefiltered sphere took %f ms\n", tDiff);
 }
 
-void Hmck::Environment::generateIrradianceSphere(Device &device, MemoryManager &memory, VkFormat format) {
+void Hmck::Environment::generateIrradianceSphere(Device &device, ResourceManager &memory, VkFormat format) {
     assert(environmentSphere > 0 && "Env map not set");
     auto tStart = std::chrono::high_resolution_clock::now();
     uint32_t width = memory.getTexture2D(environmentSphere)->width;
@@ -465,7 +443,7 @@ void Hmck::Environment::generateIrradianceSphere(Device &device, MemoryManager &
     Logger::log(LogLevel::HMCK_LOG_LEVEL_DEBUG, "Generating irradiance sphere took %f ms\n", tDiff);
 }
 
-void Hmck::Environment::generateBRDFLUT(Device &device, MemoryManager &memory, uint32_t dim, VkFormat format) {
+void Hmck::Environment::generateBRDFLUT(Device &device, ResourceManager &memory, uint32_t dim, VkFormat format) {
     auto tStart = std::chrono::high_resolution_clock::now();
     std::unique_ptr<GraphicsPipeline> brdfLUTPipeline{};
     brdfLUT = memory.createTexture2D();
@@ -635,7 +613,7 @@ void Hmck::Environment::generateBRDFLUT(Device &device, MemoryManager &memory, u
     Logger::log(LogLevel::HMCK_LOG_LEVEL_DEBUG, "Generating BRDF LUT took %f ms\n", tDiff);
 }
 
-void Hmck::Environment::destroy(MemoryManager &memory) const {
+void Hmck::Environment::destroy(ResourceManager &memory) const {
     if (environmentSphere > 0)
         memory.destroyTexture2D(environmentSphere);
     if (prefilteredSphere > 0)

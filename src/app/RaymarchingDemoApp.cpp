@@ -31,7 +31,7 @@ void Hmck::RaymarchingDemoApp::run() {
         },
         .descriptorSetLayouts =
         {
-            memoryManager.getDescriptorSetLayout(descriptorSetLayout).getDescriptorSetLayout()
+            resources.getDescriptorSetLayout(descriptorSetLayout).getDescriptorSetLayout()
         },
         .pushConstantRanges{
             {
@@ -131,18 +131,18 @@ void Hmck::RaymarchingDemoApp::run() {
 void Hmck::RaymarchingDemoApp::load() {
     Scene::SceneCreateInfo info = {
         .device = device,
-        .memory = memoryManager,
+        .memory = resources,
         .name = "Volumetric scene",
     };
     scene = std::make_unique<Scene>(info);
 
-    GltfLoader gltfloader{device, memoryManager, scene};
+    GltfLoader gltfloader{device, resources, scene};
     gltfloader.load("../data/models/Sphere/Sphere.glb");
 
     descriptorSets.resize(SwapChain::MAX_FRAMES_IN_FLIGHT);
     buffers.resize(SwapChain::MAX_FRAMES_IN_FLIGHT);
 
-    descriptorSetLayout = memoryManager.createDescriptorSetLayout({
+    descriptorSetLayout = resources.createDescriptorSetLayout({
         .bindings = {
             {
                 .binding = 0, .descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
@@ -156,35 +156,35 @@ void Hmck::RaymarchingDemoApp::load() {
     });
 
     for (int i = 0; i < SwapChain::MAX_FRAMES_IN_FLIGHT; i++)
-        buffers[i] = memoryManager.createBuffer({
+        buffers[i] = resources.createBuffer({
             .instanceSize = sizeof(BufferData),
             .instanceCount = 1,
             .usageFlags = VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
             .memoryPropertyFlags = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT
         });
 
-    noiseTexture = memoryManager.createTexture2DFromFile({
+    noiseTexture = resources.createTexture2DFromFile({
         .filepath = "../data/noise/noise2.png",
         .format = VK_FORMAT_R8G8B8A8_UNORM
     });
 
     for (int i = 0; i < SwapChain::MAX_FRAMES_IN_FLIGHT; i++) {
-        auto fbufferInfo = memoryManager.getBuffer(buffers[i])->descriptorInfo();
-        auto imageInfo = memoryManager.getTexture2DDescriptorImageInfo(noiseTexture);
-        descriptorSets[i] = memoryManager.createDescriptorSet({
+        auto fbufferInfo = resources.getBuffer(buffers[i])->descriptorInfo();
+        auto imageInfo = resources.getTexture2DDescriptorImageInfo(noiseTexture);
+        descriptorSets[i] = resources.createDescriptorSet({
             .descriptorSetLayout = descriptorSetLayout,
             .bufferWrites = {{0, fbufferInfo}},
             .imageWrites = {{1, imageInfo}}
         });
     }
 
-    vertexBuffer = memoryManager.createVertexBuffer({
+    vertexBuffer = resources.createVertexBuffer({
         .vertexSize = sizeof(scene->vertices[0]),
         .vertexCount = static_cast<uint32_t>(scene->vertices.size()),
         .data = static_cast<void *>(scene->vertices.data())
     });
 
-    indexBuffer = memoryManager.createIndexBuffer({
+    indexBuffer = resources.createIndexBuffer({
         .indexSize = sizeof(scene->indices[0]),
         .indexCount = static_cast<uint32_t>(scene->indices.size()),
         .data = static_cast<void *>(scene->indices.data())
@@ -192,7 +192,7 @@ void Hmck::RaymarchingDemoApp::load() {
 }
 
 void Hmck::RaymarchingDemoApp::draw(int frameIndex, float elapsedTime, VkCommandBuffer commandBuffer) {
-    memoryManager.bindVertexBuffer(vertexBuffer, indexBuffer, commandBuffer);
+    resources.bindVertexBuffer(vertexBuffer, indexBuffer, commandBuffer);
 
     pipeline->bind(commandBuffer);
 
@@ -200,9 +200,9 @@ void Hmck::RaymarchingDemoApp::draw(int frameIndex, float elapsedTime, VkCommand
     bufferData.view = scene->getActiveCamera()->getView();
     bufferData.inverseView = scene->getActiveCamera()->getInverseView();
 
-    memoryManager.getBuffer(buffers[frameIndex])->writeToBuffer(&bufferData);
+    resources.getBuffer(buffers[frameIndex])->writeToBuffer(&bufferData);
 
-    memoryManager.bindDescriptorSet(
+    resources.bindDescriptorSet(
         commandBuffer,
         VK_PIPELINE_BIND_POINT_GRAPHICS,
         pipeline->graphicsPipelineLayout,
@@ -220,15 +220,15 @@ void Hmck::RaymarchingDemoApp::draw(int frameIndex, float elapsedTime, VkCommand
 }
 
 void Hmck::RaymarchingDemoApp::destroy() {
-    memoryManager.destroyTexture2D(noiseTexture);
+    resources.destroyTexture2D(noiseTexture);
 
     for (auto &uniformBuffer: buffers)
-        memoryManager.destroyBuffer(uniformBuffer);
+        resources.destroyBuffer(uniformBuffer);
 
-    memoryManager.destroyDescriptorSetLayout(descriptorSetLayout);
+    resources.destroyDescriptorSetLayout(descriptorSetLayout);
 
-    memoryManager.destroyBuffer(vertexBuffer);
-    memoryManager.destroyBuffer(indexBuffer);
+    resources.destroyBuffer(vertexBuffer);
+    resources.destroyBuffer(indexBuffer);
 }
 
 void Hmck::RaymarchingDemoApp::ui() {

@@ -15,7 +15,7 @@
 #include "scene/HmckEntity.h"
 #include "scene/HmckScene.h"
 
-#include "core/HmckMemory.h"
+#include "core/HmckResourceManager.h"
 #include "utils/HmckBenchmarkRunner.h"
 
 namespace Hmck {

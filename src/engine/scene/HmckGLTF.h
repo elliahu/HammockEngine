@@ -4,7 +4,7 @@
 
 #include <tiny_gltf.h>
 #include "HmckEntity.h"
-#include "core/HmckMemory.h"
+#include "core/HmckResourceManager.h"
 #include "HmckScene.h"
 
 namespace gltf = tinygltf;
@@ -18,13 +18,13 @@ namespace Hmck {
             PreTransformVertices = 0x00000002
         };
 
-        GltfLoader(Device &device, MemoryManager &memory, std::unique_ptr<Scene> &scene);
+        GltfLoader(Device &device, ResourceManager &memory, std::unique_ptr<Scene> &scene);
 
         void load(std::string filename, uint32_t fileLoadingFlags = LoadingFlags::None);
 
     private:
         Device &device;
-        MemoryManager &memory;
+        ResourceManager &resources;
         std::unique_ptr<Scene> &scene;
 
         uint32_t imagesOffset;

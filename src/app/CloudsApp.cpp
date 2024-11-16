@@ -33,7 +33,7 @@ void Hmck::CloudsApp::run() {
         },
         .descriptorSetLayouts =
         {
-            Hmck::MemoryManager::getDescriptorSetLayout(descriptorSetLayout).getDescriptorSetLayout()
+            Hmck::ResourceManager::getDescriptorSetLayout(descriptorSetLayout).getDescriptorSetLayout()
         },
         .pushConstantRanges{
             {
@@ -154,42 +154,42 @@ void Hmck::CloudsApp::run() {
 void Hmck::CloudsApp::load() {
     Scene::SceneCreateInfo info = {
         .device = device,
-        .memory = memoryManager,
+        .memory = resources,
         .name = "Volumetric scene",
     };
     scene = std::make_unique<Scene>(info);
 
-    GltfLoader gltfloader{device, memoryManager, scene};
+    GltfLoader gltfloader{device, resources, scene};
     gltfloader.load("../data/models/Sphere/Sphere.glb");
 
-    vertexBuffer = memoryManager.createVertexBuffer({
+    vertexBuffer = resources.createVertexBuffer({
         .vertexSize = sizeof(scene->vertices[0]),
         .vertexCount = static_cast<uint32_t>(scene->vertices.size()),
         .data = static_cast<void *>(scene->vertices.data())
     });
 
-    indexBuffer = memoryManager.createIndexBuffer({
+    indexBuffer = resources.createIndexBuffer({
         .indexSize = sizeof(scene->indices[0]),
         .indexCount = static_cast<uint32_t>(scene->indices.size()),
         .data = static_cast<void *>(scene->indices.data())
     });
 
 
-    noiseTexture = memoryManager.createTexture2DFromFile({
+    noiseTexture = resources.createTexture2DFromFile({
         .filepath = "../data/noise/noise2.png",
         .format = VK_FORMAT_R8G8B8A8_UNORM
     });
 
-    blueNoiseTexture = memoryManager.createTexture2DFromFile({
+    blueNoiseTexture = resources.createTexture2DFromFile({
         .filepath = "../data/noise/blue_noise.jpg",
         .format = VK_FORMAT_R8G8B8A8_UNORM
     });
 
     for (int i = 0; i < SwapChain::MAX_FRAMES_IN_FLIGHT; i++) {
-        const auto fbufferInfo = memoryManager.getBuffer(uniformBuffers[i])->descriptorInfo();
-        const auto nimageInfo = memoryManager.getTexture2DDescriptorImageInfo(noiseTexture);
-        const auto bnimageInfo = memoryManager.getTexture2DDescriptorImageInfo(blueNoiseTexture);
-        descriptorSets[i] = memoryManager.createDescriptorSet({
+        const auto fbufferInfo = resources.getBuffer(uniformBuffers[i])->descriptorInfo();
+        const auto nimageInfo = resources.getTexture2DDescriptorImageInfo(noiseTexture);
+        const auto bnimageInfo = resources.getTexture2DDescriptorImageInfo(blueNoiseTexture);
+        descriptorSets[i] = resources.createDescriptorSet({
             .descriptorSetLayout = descriptorSetLayout,
             .bufferWrites = {{0, fbufferInfo}},
             .imageWrites = {{1, nimageInfo}, {2, bnimageInfo}}
@@ -201,7 +201,7 @@ void Hmck::CloudsApp::init() {
     descriptorSets.resize(SwapChain::MAX_FRAMES_IN_FLIGHT);
     uniformBuffers.resize(SwapChain::MAX_FRAMES_IN_FLIGHT);
 
-    descriptorSetLayout = memoryManager.createDescriptorSetLayout({
+    descriptorSetLayout = resources.createDescriptorSetLayout({
         .bindings = {
             {
                 .binding = 0, .descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
@@ -219,7 +219,7 @@ void Hmck::CloudsApp::init() {
     });
 
     for (int i = 0; i < SwapChain::MAX_FRAMES_IN_FLIGHT; i++)
-        uniformBuffers[i] = memoryManager.createBuffer({
+        uniformBuffers[i] = resources.createBuffer({
             .instanceSize = sizeof(BufferData),
             .instanceCount = 1,
             .usageFlags = VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
@@ -228,7 +228,7 @@ void Hmck::CloudsApp::init() {
 }
 
 void Hmck::CloudsApp::draw(int frameIndex, float elapsedTime, VkCommandBuffer commandBuffer) {
-    memoryManager.bindVertexBuffer(vertexBuffer, indexBuffer, commandBuffer);
+    resources.bindVertexBuffer(vertexBuffer, indexBuffer, commandBuffer);
 
     pipeline->bind(commandBuffer);
 
@@ -236,9 +236,9 @@ void Hmck::CloudsApp::draw(int frameIndex, float elapsedTime, VkCommandBuffer co
     bufferData.view = scene->getActiveCamera()->getView();
     bufferData.inverseView = scene->getActiveCamera()->getInverseView();
 
-    memoryManager.getBuffer(uniformBuffers[frameIndex])->writeToBuffer(&bufferData);
+    resources.getBuffer(uniformBuffers[frameIndex])->writeToBuffer(&bufferData);
 
-    memoryManager.bindDescriptorSet(
+    resources.bindDescriptorSet(
         commandBuffer,
         VK_PIPELINE_BIND_POINT_GRAPHICS,
         pipeline->graphicsPipelineLayout,
@@ -257,16 +257,16 @@ void Hmck::CloudsApp::draw(int frameIndex, float elapsedTime, VkCommandBuffer co
 }
 
 void Hmck::CloudsApp::destroy() {
-    memoryManager.destroyTexture2D(noiseTexture);
-    memoryManager.destroyTexture2D(blueNoiseTexture);
+    resources.destroyTexture2D(noiseTexture);
+    resources.destroyTexture2D(blueNoiseTexture);
 
     for (auto &uniformBuffer: uniformBuffers)
-        memoryManager.destroyBuffer(uniformBuffer);
+        resources.destroyBuffer(uniformBuffer);
 
-    memoryManager.destroyDescriptorSetLayout(descriptorSetLayout);
+    resources.destroyDescriptorSetLayout(descriptorSetLayout);
 
-    memoryManager.destroyBuffer(vertexBuffer);
-    memoryManager.destroyBuffer(indexBuffer);
+    resources.destroyBuffer(vertexBuffer);
+    resources.destroyBuffer(indexBuffer);
 }
 
 void Hmck::CloudsApp::ui() {

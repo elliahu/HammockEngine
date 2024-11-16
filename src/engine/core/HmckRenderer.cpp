@@ -109,7 +109,6 @@ void Hmck::Renderer::beginRenderPass(
     const std::unique_ptr<Framebuffer> &framebuffer,
     const VkCommandBuffer commandBuffer,
     const std::vector<VkClearValue> &clearValues) const {
-    // TODO delete this method when no longer used
     assert(isFrameInProgress() && "Cannot call beginRenderPass if frame is not in progress");
     assert(
         commandBuffer == getCurrentCommandBuffer() &&

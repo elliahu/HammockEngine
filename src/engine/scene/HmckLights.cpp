@@ -302,7 +302,7 @@ void Hmck::OmniLight::beginCubeMapFaceUpdate(const uint32_t faceIndex, const VkC
     pipeline->bind(commandBuffer);
 }
 
-void Hmck::OmniLight::preparePipeline(Device &device, MemoryManager &memory) const {
+void Hmck::OmniLight::preparePipeline(Device &device, ResourceManager &memory) const {
     pipeline = GraphicsPipeline::createGraphicsPipelinePtr({
         .debugName = "light_pass",
         .device = device,
@@ -360,7 +360,7 @@ void Hmck::OmniLight::endCubeMapFaceUpdate(const VkCommandBuffer commandBuffer) 
     vkCmdEndRenderPass(commandBuffer);
 }
 
-void Hmck::OmniLight::prepareDescriptor(MemoryManager &memory) {
+void Hmck::OmniLight::prepareDescriptor(ResourceManager &memory) {
     descriptorSetLayout = memory.createDescriptorSetLayout({
         .bindings = {
             {

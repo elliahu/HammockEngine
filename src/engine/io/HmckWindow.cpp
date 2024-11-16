@@ -58,7 +58,7 @@ void Hmck::Window::setWindowMode(const WindowMode mode) const {
         // fullscreen
         glfwSetWindowMonitor(window, monitors[monitorIndex], 0, 0, width, height, vidmode->refreshRate);
     } else if (mode == HMCK_WINDOW_MODE_BORDERLESS) {
-        // TODO doesn't work
+        // FIXME doesn't work
         // borderless fullscreen
         glfwWindowHint(GLFW_RED_BITS, vidmode->redBits);
         glfwWindowHint(GLFW_GREEN_BITS, vidmode->greenBits);

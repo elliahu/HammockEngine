@@ -1,7 +1,7 @@
 #pragma once
-#include <io//HmckWindow.h>
+#include <io/HmckWindow.h>
 #include <core/HmckDevice.h>
-#include <core/HmckMemory.h>
+#include <core/HmckResourceManager.h>
 
 namespace Hmck {
     class IApp {
@@ -26,6 +26,6 @@ namespace Hmck {
 
         Window window{WINDOW_WIDTH, WINDOW_HEIGHT, "Hammock Engine"};
         Device device{window}; // TODO this is wrong, device should not be dependent on window -> should be otherway around
-        MemoryManager memoryManager{device};
+        ResourceManager resources{device};
     };
 }

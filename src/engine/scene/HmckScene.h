@@ -16,7 +16,7 @@ namespace Hmck {
     public:
         struct SceneCreateInfo {
             Device &device;
-            MemoryManager &memory;
+            ResourceManager &memory;
             std::string name;
         };
 
@@ -72,7 +72,7 @@ namespace Hmck {
 
     private:
         Device &device;
-        MemoryManager &memory;
+        ResourceManager &memory;
         EntityHandle lastAdded = 0;
         EntityHandle root;
     };
