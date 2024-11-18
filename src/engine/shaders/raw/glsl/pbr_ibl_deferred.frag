@@ -6,9 +6,10 @@ layout (location = 0) in vec2 uv;
 // outputs
 layout (location = 0) out vec4 outColor;
 
-layout(set = 0, binding = 2) uniform sampler2D prefilteredSampler;
-layout(set = 0, binding = 3) uniform sampler2D brdfLUTSampler;
-layout(set = 0, binding = 4) uniform sampler2D irradinaceSampler;
+layout(set = 0, binding = 2) uniform sampler2D environmentSampler; // unused
+layout(set = 0, binding = 3) uniform sampler2D prefilteredSampler;
+layout(set = 0, binding = 4) uniform sampler2D brdfLUTSampler;
+layout(set = 0, binding = 5) uniform sampler2D irradinaceSampler;
 
 // gbuffer attachments  
 layout(set = 3, binding = 0) uniform sampler2D positionSampler;
@@ -130,6 +131,9 @@ vec3 prefilteredReflection(vec2 R, float roughness)
 
 void main()
 {
+//	vec3 a = texture(prefilteredSampler, uv).rgb;
+//	outColor = vec4(a, 1.0);
+//	return;
     vec3 N = normalize(texture(normalSampler, uv).rgb);
     vec3 position = texture(positionSampler, uv).rgb;
     vec3 V = normalize(-position);
@@ -161,6 +165,7 @@ void main()
     vec2 brdf = texture(brdfLUTSampler, vec2(max(dot(N, V), 0.0), roughness)).rg;
     vec3 reflection = prefilteredReflection(toSphericalUV(R), roughness).rgb;	
 	vec3 irradiance = texture(irradinaceSampler, toSphericalUV(mat3(scene.inverseView) * N)).rgb;
+
 
 	// Diffuse based on irradiance
 	vec3 diffuse = irradiance * albedo;	

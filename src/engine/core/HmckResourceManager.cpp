@@ -156,7 +156,8 @@ Hmck::Texture2DHandle Hmck::ResourceManager::createTexture2DFromFile(Texture2DCr
 		createInfo.filepath,
 		device,
 		createInfo.format,
-		createInfo.imageLayout);
+		createInfo.imageLayout,
+		createInfo.mipLevels);
 	texture->createSampler(device);
 	texture->updateDescriptor();
 	texture2Ds.emplace(texture2DsLastHandle, std::move(texture));
@@ -173,7 +174,8 @@ Hmck::Texture2DHandle Hmck::ResourceManager::createTexture2DFromBuffer(const Tex
 		createInfo.width, createInfo.height,
 		device,
 		createInfo.format,
-		createInfo.imageLayout);
+		createInfo.imageLayout,
+		createInfo.mipLevels);
 	texture->createSampler(device);
 	texture->updateDescriptor();
 	texture2Ds.emplace(texture2DsLastHandle, std::move(texture));
@@ -190,7 +192,8 @@ Hmck::Texture2DHandle Hmck::ResourceManager::createHDRTexture2DFromBuffer(const 
 		createInfo.width, createInfo.height,
 		device,
 		createInfo.format,
-		createInfo.imageLayout);
+		createInfo.imageLayout,
+		createInfo.mipLevels);
 	texture->createSampler(device);
 	texture->updateDescriptor();
 	texture2Ds.emplace(texture2DsLastHandle, std::move(texture));

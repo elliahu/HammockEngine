@@ -11,7 +11,7 @@ Hmck::PBRApp::PBRApp() {
 }
 
 Hmck::PBRApp::~PBRApp() {
-    for (const unsigned int sceneBuffer : sceneDescriptors.sceneBuffers)
+    for (const unsigned int sceneBuffer: sceneDescriptors.sceneBuffers)
         resources.destroyBuffer(sceneBuffer);
 
     for (const auto &[fst, snd]: entityDescriptors.entityBuffers)
@@ -70,8 +70,8 @@ void Hmck::PBRApp::run() {
 
 
         // start a new frame
-        if (auto commandBuffer = renderer.beginFrame()) {
-            int frameIndex = renderer.getFrameIndex();
+        if (const auto commandBuffer = renderer.beginFrame()) {
+            const int frameIndex = renderer.getFrameIndex();
 
             resources.bindVertexBuffer(geometry.vertexBuffer, geometry.indexBuffer, commandBuffer);
             renderer.beginRenderPass(gbufferPass.framebuffer, commandBuffer, {
@@ -165,7 +165,7 @@ void Hmck::PBRApp::load() {
     scene->environment->generateBRDFLUT(device, resources);
 
     GltfLoader gltfloader{device, resources, scene};
-    gltfloader.load("../data/models/helmet/helmet.glb");
+    gltfloader.load("../data/models/helmet/DamagedHelmet.glb");
 
     geometry.vertexBuffer = resources.createVertexBuffer({
         .vertexSize = sizeof(scene->vertices[0]),
@@ -209,13 +209,17 @@ void Hmck::PBRApp::init() {
             {
                 .binding = 2, .descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
                 .stageFlags = VK_SHADER_STAGE_ALL_GRAPHICS
-            }, // prefiltered env map
+            }, // env map
             {
                 .binding = 3, .descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
                 .stageFlags = VK_SHADER_STAGE_ALL_GRAPHICS
-            }, //  brdfLUT
+            }, // prefiltered env map
             {
                 .binding = 4, .descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
+                .stageFlags = VK_SHADER_STAGE_ALL_GRAPHICS
+            }, //  brdfLUT
+            {
+                .binding = 5, .descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
                 .stageFlags = VK_SHADER_STAGE_ALL_GRAPHICS
             }, //  irradiance map
         }
@@ -234,9 +238,10 @@ void Hmck::PBRApp::init() {
             .descriptorSetLayout = sceneDescriptors.descriptorSetLayout,
             .bufferWrites = {{0, fbufferInfo}},
             .imageWrites = {
-                {2, resources.getTexture2DDescriptorImageInfo(scene->environment->prefilteredSphere)},
-                {3, resources.getTexture2DDescriptorImageInfo(scene->environment->brdfLUT)},
-                {4, resources.getTexture2DDescriptorImageInfo(scene->environment->irradianceSphere)},
+                {2, resources.getTexture2DDescriptorImageInfo(scene->environment->environmentSphere)},
+                {3, resources.getTexture2DDescriptorImageInfo(scene->environment->prefilteredSphere)},
+                {4, resources.getTexture2DDescriptorImageInfo(scene->environment->brdfLUT)},
+                {5, resources.getTexture2DDescriptorImageInfo(scene->environment->irradianceSphere)},
             },
             .imageArrayWrites = {{1, imageInfos}}
         });
@@ -336,7 +341,9 @@ void Hmck::PBRApp::renderEntity(const uint32_t frameIndex, const VkCommandBuffer
             for (const auto &[firstIndex, indexCount, materialIndex]: _entity->mesh.primitives) {
                 if (indexCount > 0) {
                     if (materialIndex >= 0) {
-                        auto &[name, baseColorFactor, baseColorTextureIndex, normalTextureIndex, metallicRoughnessTextureIndex, occlusionTextureIndex, alphaMode, alphaCutOff, metallicFactor, roughnessFactor, doubleSided, dataChanged] = scene->materials[materialIndex];
+                        auto &[name, baseColorFactor, baseColorTextureIndex, normalTextureIndex,
+                            metallicRoughnessTextureIndex, occlusionTextureIndex, alphaMode, alphaCutOff, metallicFactor
+                            , roughnessFactor, doubleSided, dataChanged] = scene->materials[materialIndex];
 
                         if (alphaMode == "BLEND" && !blend) continue; // skip blend in this pass
 
@@ -539,7 +546,7 @@ void Hmck::PBRApp::createPipelines(const Renderer &renderer) {
         .renderPass = gbufferPass.framebuffer->renderPass
     });
 
-    for (unsigned int & descriptorSet : gBufferDescriptors.descriptorSets) {
+    for (unsigned int &descriptorSet: gBufferDescriptors.descriptorSets) {
         std::vector<VkDescriptorImageInfo> gbufferImageInfos = {
             {
                 .sampler = gbufferPass.framebuffer->sampler,

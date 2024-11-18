@@ -9,7 +9,8 @@
 #include "utils/HmckLogger.h"
 #include "shaders/HmckShader.h"
 
-void Hmck::Environment::load(Device &device, const ResourceManager &memory, const std::string &filepath, const VkFormat format) {
+void Hmck::Environment::load(Device &device, const ResourceManager &memory, const std::string &filepath,
+                             const VkFormat format) {
     int width = 0, height = 0, channels = 0;
     stbi_set_flip_vertically_on_load(true);
     float *pixels = stbi_loadf(filepath.c_str(), &width, &height, &channels, STBI_rgb_alpha);
@@ -19,25 +20,35 @@ void Hmck::Environment::load(Device &device, const ResourceManager &memory, cons
     }
 
     channels = 4;
+    const uint32_t mipLevels = getNumberOfMipLevels(static_cast<uint32_t>(width), static_cast<uint32_t>(height));
 
     environmentSphere = memory.createHDRTexture2DFromBuffer({
         .buffer = pixels,
         .bufferSize = static_cast<uint32_t>(width * height * channels),
         .width = static_cast<uint32_t>(width), .height = static_cast<uint32_t>(height),
-        .format = format
+        .format = format,
+        .mipLevels = mipLevels
     });
+
+    // generate mip maps for the texture
+    memory.getTexture2D(environmentSphere)->generateMipMaps(
+        device, mipLevels);
 
     // Free the memory allocated by stb_image
     stbi_image_free(pixels);
 }
 
-void Hmck::Environment::generatePrefilteredSphere(Device &device, ResourceManager &memory, VkFormat format) {
+void Hmck::Environment::generatePrefilteredSphereMipMap(Device &device, ResourceManager &resources, VkFormat format) {
+    // TODO create a mip map chain for different rougness values
+}
+
+void Hmck::Environment::generatePrefilteredSphere(Device &device, ResourceManager &resources, VkFormat format) {
     assert(environmentSphere > 0 && "Env map not set");
     auto tStart = std::chrono::high_resolution_clock::now();
-    uint32_t width = memory.getTexture2D(environmentSphere)->width;
-    uint32_t height = memory.getTexture2D(environmentSphere)->height;
+    uint32_t width = resources.getTexture2D(environmentSphere)->width;
+    uint32_t height = resources.getTexture2D(environmentSphere)->height;
     std::unique_ptr<GraphicsPipeline> pipeline{};
-    prefilteredSphere = memory.createTexture2D();
+    prefilteredSphere = resources.createTexture2D();
 
     // image, view, sampler
     VkImageCreateInfo imageCI = Init::imageCreateInfo();
@@ -52,8 +63,8 @@ void Hmck::Environment::generatePrefilteredSphere(Device &device, ResourceManage
     imageCI.tiling = VK_IMAGE_TILING_OPTIMAL;
     imageCI.usage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT;
     device.createImageWithInfo(imageCI, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
-                               memory.getTexture2D(prefilteredSphere)->image,
-                               memory.getTexture2D(prefilteredSphere)->memory);
+                               resources.getTexture2D(prefilteredSphere)->image,
+                               resources.getTexture2D(prefilteredSphere)->memory);
 
     VkImageViewCreateInfo viewCI = Init::imageViewCreateInfo();
     viewCI.viewType = VK_IMAGE_VIEW_TYPE_2D;
@@ -62,12 +73,12 @@ void Hmck::Environment::generatePrefilteredSphere(Device &device, ResourceManage
     viewCI.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
     viewCI.subresourceRange.levelCount = 1;
     viewCI.subresourceRange.layerCount = 1;
-    viewCI.image = memory.getTexture2D(prefilteredSphere)->image;
-    checkResult(vkCreateImageView(device.device(), &viewCI, nullptr, &memory.getTexture2D(prefilteredSphere)->view));
+    viewCI.image = resources.getTexture2D(prefilteredSphere)->image;
+    checkResult(vkCreateImageView(device.device(), &viewCI, nullptr, &resources.getTexture2D(prefilteredSphere)->view));
 
-    memory.getTexture2D(prefilteredSphere)->createSampler(device, VK_FILTER_LINEAR);
-    memory.getTexture2D(prefilteredSphere)->layout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-    memory.getTexture2D(prefilteredSphere)->updateDescriptor();
+    resources.getTexture2D(prefilteredSphere)->createSampler(device, VK_FILTER_LINEAR);
+    resources.getTexture2D(prefilteredSphere)->layout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+    resources.getTexture2D(prefilteredSphere)->updateDescriptor();
 
     // FB, RP , Att
     VkAttachmentDescription attDesc = {};
@@ -119,7 +130,7 @@ void Hmck::Environment::generatePrefilteredSphere(Device &device, ResourceManage
     VkFramebufferCreateInfo framebufferCI = Init::framebufferCreateInfo();
     framebufferCI.renderPass = renderpass;
     framebufferCI.attachmentCount = 1;
-    framebufferCI.pAttachments = &memory.getTexture2D(prefilteredSphere)->view;
+    framebufferCI.pAttachments = &resources.getTexture2D(prefilteredSphere)->view;
     framebufferCI.width = width;
     framebufferCI.height = height;
     framebufferCI.layers = 1;
@@ -149,12 +160,12 @@ void Hmck::Environment::generatePrefilteredSphere(Device &device, ResourceManage
     checkResult(vkAllocateDescriptorSets(device.device(), &allocInfo, &descriptorset));
     VkWriteDescriptorSet writeDescriptorSet = Init::writeDescriptorSet(descriptorset,
                                                                        VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 0,
-                                                                       &memory.getTexture2D(environmentSphere)->
+                                                                       &resources.getTexture2D(environmentSphere)->
                                                                        descriptor);
     vkUpdateDescriptorSets(device.device(), 1, &writeDescriptorSet, 0, nullptr);
 
     struct PushBlock {
-        float roughness = 0.0f;
+        float roughness = 0.5f;
         unsigned int numSamples = 32u;
     } push;
 
@@ -162,11 +173,13 @@ void Hmck::Environment::generatePrefilteredSphere(Device &device, ResourceManage
         .debugName = "PrefilteredMap_generation",
         .device = device,
         .VS{
-            .byteCode = Hmck::Filesystem::readFile(Shader::getCompiledShaderPath("fullscreen_headless.vert.spv").string()),
+            .byteCode = Hmck::Filesystem::readFile(
+                Shader::getCompiledShaderPath("fullscreen_headless.vert.spv").string()),
             .entryFunc = "main"
         },
         .FS{
-            .byteCode = Hmck::Filesystem::readFile(Shader::getCompiledShaderPath("generate_prefilteredmap.frag.spv").string()),
+            .byteCode = Hmck::Filesystem::readFile(
+                Shader::getCompiledShaderPath("generate_prefilteredmap.frag.spv").string()),
             .entryFunc = "main"
         },
         .descriptorSetLayouts = {
@@ -237,13 +250,13 @@ void Hmck::Environment::generatePrefilteredSphere(Device &device, ResourceManage
     Logger::log(LogLevel::HMCK_LOG_LEVEL_DEBUG, "Generating prefiltered sphere took %f ms\n", tDiff);
 }
 
-void Hmck::Environment::generateIrradianceSphere(Device &device, ResourceManager &memory, VkFormat format) {
+void Hmck::Environment::generateIrradianceSphere(Device &device, ResourceManager &resources, VkFormat format) {
     assert(environmentSphere > 0 && "Env map not set");
     auto tStart = std::chrono::high_resolution_clock::now();
-    uint32_t width = memory.getTexture2D(environmentSphere)->width;
-    uint32_t height = memory.getTexture2D(environmentSphere)->height;
+    uint32_t width = resources.getTexture2D(environmentSphere)->width;
+    uint32_t height = resources.getTexture2D(environmentSphere)->height;
     std::unique_ptr<GraphicsPipeline> pipeline{};
-    irradianceSphere = memory.createTexture2D();
+    irradianceSphere = resources.createTexture2D();
 
     // image, view, sampler
     VkImageCreateInfo imageCI = Init::imageCreateInfo();
@@ -258,8 +271,8 @@ void Hmck::Environment::generateIrradianceSphere(Device &device, ResourceManager
     imageCI.tiling = VK_IMAGE_TILING_OPTIMAL;
     imageCI.usage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT;
     device.createImageWithInfo(imageCI, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
-                               memory.getTexture2D(irradianceSphere)->image,
-                               memory.getTexture2D(irradianceSphere)->memory);
+                               resources.getTexture2D(irradianceSphere)->image,
+                               resources.getTexture2D(irradianceSphere)->memory);
 
     VkImageViewCreateInfo viewCI = Init::imageViewCreateInfo();
     viewCI.viewType = VK_IMAGE_VIEW_TYPE_2D;
@@ -268,12 +281,12 @@ void Hmck::Environment::generateIrradianceSphere(Device &device, ResourceManager
     viewCI.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
     viewCI.subresourceRange.levelCount = 1;
     viewCI.subresourceRange.layerCount = 1;
-    viewCI.image = memory.getTexture2D(irradianceSphere)->image;
-    checkResult(vkCreateImageView(device.device(), &viewCI, nullptr, &memory.getTexture2D(irradianceSphere)->view));
+    viewCI.image = resources.getTexture2D(irradianceSphere)->image;
+    checkResult(vkCreateImageView(device.device(), &viewCI, nullptr, &resources.getTexture2D(irradianceSphere)->view));
 
-    memory.getTexture2D(irradianceSphere)->createSampler(device, VK_FILTER_LINEAR);
-    memory.getTexture2D(irradianceSphere)->layout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-    memory.getTexture2D(irradianceSphere)->updateDescriptor();
+    resources.getTexture2D(irradianceSphere)->createSampler(device, VK_FILTER_LINEAR);
+    resources.getTexture2D(irradianceSphere)->layout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+    resources.getTexture2D(irradianceSphere)->updateDescriptor();
 
     // FB, RP , Att
     VkAttachmentDescription attDesc = {};
@@ -325,7 +338,7 @@ void Hmck::Environment::generateIrradianceSphere(Device &device, ResourceManager
     VkFramebufferCreateInfo framebufferCI = Init::framebufferCreateInfo();
     framebufferCI.renderPass = renderpass;
     framebufferCI.attachmentCount = 1;
-    framebufferCI.pAttachments = &memory.getTexture2D(irradianceSphere)->view;
+    framebufferCI.pAttachments = &resources.getTexture2D(irradianceSphere)->view;
     framebufferCI.width = width;
     framebufferCI.height = height;
     framebufferCI.layers = 1;
@@ -355,7 +368,7 @@ void Hmck::Environment::generateIrradianceSphere(Device &device, ResourceManager
     checkResult(vkAllocateDescriptorSets(device.device(), &allocInfo, &descriptorset));
     VkWriteDescriptorSet writeDescriptorSet = Init::writeDescriptorSet(descriptorset,
                                                                        VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 0,
-                                                                       &memory.getTexture2D(environmentSphere)->
+                                                                       &resources.getTexture2D(environmentSphere)->
                                                                        descriptor);
     vkUpdateDescriptorSets(device.device(), 1, &writeDescriptorSet, 0, nullptr);
 
@@ -363,11 +376,13 @@ void Hmck::Environment::generateIrradianceSphere(Device &device, ResourceManager
         .debugName = "IrradianceMap_generation",
         .device = device,
         .VS{
-            .byteCode = Hmck::Filesystem::readFile(Shader::getCompiledShaderPath("fullscreen_headless.vert.spv").string()),
+            .byteCode = Hmck::Filesystem::readFile(
+                Shader::getCompiledShaderPath("fullscreen_headless.vert.spv").string()),
             .entryFunc = "main"
         },
         .FS{
-            .byteCode = Hmck::Filesystem::readFile(Shader::getCompiledShaderPath("generate_irradiancemap.frag.spv").string()),
+            .byteCode = Hmck::Filesystem::readFile(
+                Shader::getCompiledShaderPath("generate_irradiancemap.frag.spv").string()),
             .entryFunc = "main"
         },
         .descriptorSetLayouts = {
@@ -419,13 +434,13 @@ void Hmck::Environment::generateIrradianceSphere(Device &device, ResourceManager
     pipeline->bind(commandBuffer);
     vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline->graphicsPipelineLayout, 0, 1,
                             &descriptorset, 0, nullptr);
-    struct {
-        float resX, resY;
-    } data;
-    data.resX = static_cast<float>(width);
-    data.resY = static_cast<float>(height);
+    struct PushBlock {
+        // Sampling deltas
+        float deltaPhi = (2.0f * static_cast<float>(M_PI)) / 180.0f;
+        float deltaTheta = (0.5f * static_cast<float>(M_PI)) / 64.0f;
+    } pushBlock;
     vkCmdPushConstants(commandBuffer, pipeline->graphicsPipelineLayout, VK_SHADER_STAGE_FRAGMENT_BIT, 0,
-                       2 * sizeof(float), &data);
+                       2 * sizeof(float), &pushBlock);
     vkCmdDraw(commandBuffer, 3, 1, 0, 0);
     vkCmdEndRenderPass(commandBuffer);
 
@@ -443,10 +458,10 @@ void Hmck::Environment::generateIrradianceSphere(Device &device, ResourceManager
     Logger::log(LogLevel::HMCK_LOG_LEVEL_DEBUG, "Generating irradiance sphere took %f ms\n", tDiff);
 }
 
-void Hmck::Environment::generateBRDFLUT(Device &device, ResourceManager &memory, uint32_t dim, VkFormat format) {
+void Hmck::Environment::generateBRDFLUT(Device &device, ResourceManager &resources, uint32_t dim, VkFormat format) {
     auto tStart = std::chrono::high_resolution_clock::now();
     std::unique_ptr<GraphicsPipeline> brdfLUTPipeline{};
-    brdfLUT = memory.createTexture2D();
+    brdfLUT = resources.createTexture2D();
 
     // image, view, sampler
     VkImageCreateInfo imageCI = Init::imageCreateInfo();
@@ -460,8 +475,8 @@ void Hmck::Environment::generateBRDFLUT(Device &device, ResourceManager &memory,
     imageCI.samples = VK_SAMPLE_COUNT_1_BIT;
     imageCI.tiling = VK_IMAGE_TILING_OPTIMAL;
     imageCI.usage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT;
-    device.createImageWithInfo(imageCI, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, memory.getTexture2D(brdfLUT)->image,
-                               memory.getTexture2D(brdfLUT)->memory);
+    device.createImageWithInfo(imageCI, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, resources.getTexture2D(brdfLUT)->image,
+                               resources.getTexture2D(brdfLUT)->memory);
 
     VkImageViewCreateInfo viewCI = Init::imageViewCreateInfo();
     viewCI.viewType = VK_IMAGE_VIEW_TYPE_2D;
@@ -470,12 +485,12 @@ void Hmck::Environment::generateBRDFLUT(Device &device, ResourceManager &memory,
     viewCI.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
     viewCI.subresourceRange.levelCount = 1;
     viewCI.subresourceRange.layerCount = 1;
-    viewCI.image = memory.getTexture2D(brdfLUT)->image;
-    checkResult(vkCreateImageView(device.device(), &viewCI, nullptr, &memory.getTexture2D(brdfLUT)->view));
+    viewCI.image = resources.getTexture2D(brdfLUT)->image;
+    checkResult(vkCreateImageView(device.device(), &viewCI, nullptr, &resources.getTexture2D(brdfLUT)->view));
 
-    memory.getTexture2D(brdfLUT)->createSampler(device, VK_FILTER_LINEAR);
-    memory.getTexture2D(brdfLUT)->layout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-    memory.getTexture2D(brdfLUT)->updateDescriptor();
+    resources.getTexture2D(brdfLUT)->createSampler(device, VK_FILTER_LINEAR);
+    resources.getTexture2D(brdfLUT)->layout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+    resources.getTexture2D(brdfLUT)->updateDescriptor();
 
     // FB, RP , Att
     VkAttachmentDescription attDesc = {};
@@ -527,7 +542,7 @@ void Hmck::Environment::generateBRDFLUT(Device &device, ResourceManager &memory,
     VkFramebufferCreateInfo framebufferCI = Init::framebufferCreateInfo();
     framebufferCI.renderPass = renderpass;
     framebufferCI.attachmentCount = 1;
-    framebufferCI.pAttachments = &memory.getTexture2D(brdfLUT)->view;
+    framebufferCI.pAttachments = &resources.getTexture2D(brdfLUT)->view;
     framebufferCI.width = dim;
     framebufferCI.height = dim;
     framebufferCI.layers = 1;
@@ -558,7 +573,8 @@ void Hmck::Environment::generateBRDFLUT(Device &device, ResourceManager &memory,
         .debugName = "BRDFLUT_generation",
         .device = device,
         .VS{
-            .byteCode = Hmck::Filesystem::readFile(Shader::getCompiledShaderPath("fullscreen_headless.vert.spv").string()),
+            .byteCode = Hmck::Filesystem::readFile(
+                Shader::getCompiledShaderPath("fullscreen_headless.vert.spv").string()),
             .entryFunc = "main"
         },
         .FS{

@@ -374,6 +374,10 @@ namespace Hmck {
         }
     }
 
+    inline uint32_t getNumberOfMipLevels(const uint32_t width, const uint32_t height) {
+        return static_cast<uint32_t>(floor(log2(std::ranges::min(width, height)))) + 1;
+    }
+
     inline void setImageLayout(
         VkCommandBuffer cmdbuffer,
         VkImage image,

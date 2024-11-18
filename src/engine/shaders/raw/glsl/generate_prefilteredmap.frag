@@ -2,11 +2,14 @@
 layout (location = 0) in vec2 fragTexCoord;
 layout (location = 0) out vec4 outColor;
 layout (binding = 0) uniform sampler2D samplerEnv;
+
 layout(push_constant) uniform PushConsts {
 	float roughness;
 	uint numSamples;
 } consts;
+
 const float PI = 3.1415926536;
+
 // Based omn http://byteblacksmith.com/improvements-to-the-canonical-one-liner-glsl-rand-for-opengl-es-2-0/
 float random(vec2 co)
 {
@@ -91,7 +94,7 @@ vec3 prefilterEnvMap(vec3 R, float roughness)
 			// Solid angle of 1 pixel across all cube faces
 			float omegaP = 4.0 * PI / (6.0 * envMapDim * envMapDim);
 			// Biased (+1.0) mip level for better result
-			float mipLevel = roughness == 0.0 ? 0.0 : max(0.5 * log2(omegaS / omegaP) + 1.0, 0.0f);
+			float mipLevel =  roughness == 0.0 ? 0.0 : max(0.5 * log2(omegaS / omegaP) + 1.0, 0.0f);
 			color += textureLod(samplerEnv, toSphericalUV(L), mipLevel).rgb * dotNL;
 			totalWeight += dotNL;
 
@@ -104,21 +107,29 @@ void main()
     // Get UV coordinates
     vec2 uv = fragTexCoord;
 
-    // Convert UV to spherical coordinates
-    float u = uv.x;
-    float v = uv.y;
-    float phi = u * 2.0 * PI;
-    float theta = v * PI; // Adjust to full 0 to PI range
+//    // Convert UV to spherical coordinates
+//    float u = uv.x;
+//    float v = uv.y;
+//    float phi = u * 2.0 * PI;
+//    float theta = v * PI; // Adjust to full 0 to PI range
+//
+//    // Convert spherical coordinates to Cartesian coordinates
+//    vec3 N;
+//    N.x = sin(theta) * cos(phi);
+//    N.y = sin(theta) * sin(phi);
+//    N.z = cos(theta);
+//
+//    // Rotate N 90 degrees clockwise around z-axis inline
+//     N = vec3(N.x, -N.z, N.y); // for some reason the map is sideways so this will be here unti i find the bug, but with my lazyness it will stay here for ever i bet. 5/3/24
 
-    // Convert spherical coordinates to Cartesian coordinates
-    vec3 N;
-    N.x = sin(theta) * cos(phi);
-    N.y = sin(theta) * sin(phi);
-    N.z = cos(theta);
-
-    // Rotate N 90 degrees clockwise around z-axis inline
-     N = vec3(N.x, -N.z, N.y); // for some reason the map is sideways so this will be here unti i find the bug, but with my lazyness it will stay here for ever i bet. 5/3/24
+	// Convert UV to direction vector
+	vec3 N = vec3(
+	sin(uv.y * PI) * cos(uv.x * 2.0 * PI),
+	-cos(uv.y * PI),
+	sin(uv.y * PI) * sin(uv.x * 2.0 * PI)
+	);
 
     // Sample the prefiltered environment map
     outColor = vec4(prefilterEnvMap(N, consts.roughness), 1.0);
+	//outColor = vec4(1.0, 0.0, 0.0 , 1.0);
 }

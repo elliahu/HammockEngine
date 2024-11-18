@@ -106,6 +106,7 @@ namespace Hmck {
             std::string filepath;
             VkFormat format;
             VkImageLayout imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+            uint32_t mipLevels = 1;
         };
 
         [[nodiscard]] Texture2DHandle createTexture2DFromFile(Texture2DCreateFromFileInfo createInfo) const;
@@ -117,6 +118,7 @@ namespace Hmck {
             uint32_t height;
             VkFormat format;
             VkImageLayout imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+            uint32_t mipLevels = 1 ;
         };
 
         [[nodiscard]] Texture2DHandle createTexture2DFromBuffer(const Texture2DCreateFromBufferInfo &createInfo) const;
@@ -128,6 +130,7 @@ namespace Hmck {
             uint32_t height;
             VkFormat format;
             VkImageLayout imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+            uint32_t mipLevels = 1;
         };
 
         [[nodiscard]] Texture2DHandle createHDRTexture2DFromBuffer(const HDRTexture2DCreateFromBufferInfo &createInfo) const;

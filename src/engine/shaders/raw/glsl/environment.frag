@@ -1,6 +1,6 @@
 #version 450
 
-layout(set = 0, binding = 2) uniform sampler2D environmentSampler;
+layout(set = 0, binding = 2) uniform sampler2D environmentSampler; // 2 env, 3 prefiltered end, 4 lut BRDF, 5 irradiance
 
 layout(location = 0) in vec2 in_uv;
 
@@ -55,7 +55,6 @@ void main()
     vec2 uv;
     uv.x = atan(direction.z, direction.x) / (2.0 * 3.14159265358979323846) + 0.5;
     uv.y = asin(direction.y) / 3.14159265358979323846 + 0.5;
-    uv.y *= -1;
     // Sample the environment map in the calculated direction
     vec3 color = texture(environmentSampler, uv).rgb;
     // Tone mapping

@@ -36,7 +36,8 @@ namespace Hmck {
             const std::string &filepath,
             Device &device,
             VkFormat format,
-            VkImageLayout imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL
+            VkImageLayout imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+            uint32_t mipLevels = 1
         );
 
         void loadFromBuffer(
@@ -45,7 +46,8 @@ namespace Hmck {
             uint32_t width, uint32_t height,
             Device &device,
             VkFormat format,
-            VkImageLayout imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL
+            VkImageLayout imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+            uint32_t mipLevels = 1
         );
 
         void loadFromBuffer(
@@ -54,10 +56,13 @@ namespace Hmck {
             uint32_t width, uint32_t height,
             Device &device,
             VkFormat format,
-            VkImageLayout imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL
+            VkImageLayout imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+            uint32_t mipLevels = 1
         );
 
-        void createSampler(const Device &device, VkFilter filter = VK_FILTER_LINEAR);
+        void createSampler(const Device &device, VkFilter filter = VK_FILTER_LINEAR, float numMips = 0.0f);
+
+        void generateMipMaps(const Device &device, uint32_t mipLevels) const;
     };
 
     class TextureCubeMap : public ITexture {

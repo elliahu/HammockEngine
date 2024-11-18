@@ -90,8 +90,12 @@ namespace Hmck {
             VkImage image,
             VkImageLayout layoutOld,
             VkImageLayout layoutNew,
-            uint32_t layerCount = 1
+            uint32_t layerCount = 1,
+            uint32_t baseLayer = 0,
+            uint32_t levelCount = 1,
+            uint32_t baseLevel = 0
         ) const;
+
 
         VkPhysicalDeviceProperties properties;
 

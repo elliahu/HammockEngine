@@ -134,7 +134,8 @@ namespace Hmck {
     }
 
     void Device::createLogicalDevice() {
-        auto [graphicsFamily, presentFamily, graphicsFamilyHasValue, presentFamilyHasValue] = findQueueFamilies(physicalDevice);
+        auto [graphicsFamily, presentFamily, graphicsFamilyHasValue, presentFamilyHasValue] = findQueueFamilies(
+            physicalDevice);
 
         std::vector<VkDeviceQueueCreateInfo> queueCreateInfos;
         std::set<uint32_t> uniqueQueueFamilies = {graphicsFamily, presentFamily};
@@ -232,7 +233,8 @@ namespace Hmck {
     }
 
     void Device::createCommandPool() {
-        auto [graphicsFamily, presentFamily, graphicsFamilyHasValue, presentFamilyHasValue] = findPhysicalQueueFamilies();
+        auto [graphicsFamily, presentFamily, graphicsFamilyHasValue, presentFamilyHasValue] =
+                findPhysicalQueueFamilies();
 
         VkCommandPoolCreateInfo poolInfo = {};
         poolInfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
@@ -429,7 +431,8 @@ namespace Hmck {
     }
 
     VkFormat Device::findSupportedFormat(
-        const std::vector<VkFormat> &candidates, const VkImageTiling tiling, const VkFormatFeatureFlags features) const {
+        const std::vector<VkFormat> &candidates, const VkImageTiling tiling,
+        const VkFormatFeatureFlags features) const {
         for (const VkFormat format: candidates) {
             VkFormatProperties props;
             vkGetPhysicalDeviceFormatProperties(physicalDevice, format, &props);
@@ -538,7 +541,8 @@ namespace Hmck {
     }
 
     void Device::copyBufferToImage(
-        const VkBuffer buffer, const VkImage image, const uint32_t width, const uint32_t height, const uint32_t layerCount, const uint32_t baseArrayLayer) const {
+        const VkBuffer buffer, const VkImage image, const uint32_t width, const uint32_t height,
+        const uint32_t layerCount, const uint32_t baseArrayLayer) const {
         const VkCommandBuffer commandBuffer = beginSingleTimeCommands();
 
         VkBufferImageCopy region{};
@@ -593,7 +597,10 @@ namespace Hmck {
     void Device::transitionImageLayout(const VkImage image,
                                        const VkImageLayout layoutOld,
                                        const VkImageLayout layoutNew,
-                                       const uint32_t layerCount) const {
+                                       uint32_t layerCount,
+                                       uint32_t baseLayer,
+                                       uint32_t levelCount,
+                                       uint32_t baseLevel) const {
         VkCommandBuffer commandBuffer = beginSingleTimeCommands();
 
         VkImageMemoryBarrier barrier{};
@@ -604,9 +611,9 @@ namespace Hmck {
         barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
         barrier.image = image;
         barrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-        barrier.subresourceRange.baseMipLevel = 0;
-        barrier.subresourceRange.levelCount = 1;
-        barrier.subresourceRange.baseArrayLayer = 0;
+        barrier.subresourceRange.baseMipLevel = baseLevel;
+        barrier.subresourceRange.levelCount = levelCount;
+        barrier.subresourceRange.baseArrayLayer = baseLayer;
         barrier.subresourceRange.layerCount = layerCount;
 
         // Set access masks and pipeline stages based on layout transition
@@ -614,13 +621,38 @@ namespace Hmck {
             barrier.srcAccessMask = 0;
             barrier.dstAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
 
-            barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-            barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-
             VkPipelineStageFlags sourceStage = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
             VkPipelineStageFlags destinationStage = VK_PIPELINE_STAGE_TRANSFER_BIT;
 
-            // Ensure the appropriate pipeline stage is specified for the source and destination access
+            vkCmdPipelineBarrier(commandBuffer,
+                                 sourceStage, destinationStage,
+                                 0,
+                                 0, nullptr,
+                                 0, nullptr,
+                                 1, &barrier);
+        } else if (layoutOld == VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL && layoutNew ==
+                   VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL) {
+            barrier.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
+            barrier.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+
+            VkPipelineStageFlags sourceStage = VK_PIPELINE_STAGE_TRANSFER_BIT;
+            VkPipelineStageFlags destinationStage = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+
+            vkCmdPipelineBarrier(commandBuffer,
+                                 sourceStage, destinationStage,
+                                 0,
+                                 0, nullptr,
+                                 0, nullptr,
+                                 1, &barrier);
+        } else if (layoutOld == VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL && layoutNew ==
+                   VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL) {
+            barrier.srcAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+            barrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
+
+            VkPipelineStageFlags sourceStage = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+            VkPipelineStageFlags destinationStage = VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
+
+            // Transition from color attachment to shader read-only
             vkCmdPipelineBarrier(commandBuffer,
                                  sourceStage, destinationStage,
                                  0,
@@ -638,7 +670,6 @@ namespace Hmck {
             VkPipelineStageFlags sourceStage = VK_PIPELINE_STAGE_TRANSFER_BIT;
             VkPipelineStageFlags destinationStage = VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
 
-            // Ensure the appropriate pipeline stage is specified for the source and destination access
             vkCmdPipelineBarrier(commandBuffer,
                                  sourceStage, destinationStage,
                                  0,
