@@ -27,7 +27,9 @@ void Hmck::Environment::load(Device &device, const ResourceManager &memory, cons
         .bufferSize = static_cast<uint32_t>(width * height * channels),
         .width = static_cast<uint32_t>(width), .height = static_cast<uint32_t>(height),
         .format = format,
-        .mipLevels = mipLevels
+        .samplerInfo = {
+            .maxLod = static_cast<float>(mipLevels)
+        }
     });
 
     // generate mip maps for the texture

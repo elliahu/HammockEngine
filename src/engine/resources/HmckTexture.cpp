@@ -375,7 +375,7 @@ void Hmck::Texture2D::loadFromBuffer(
 }
 
 
-void Hmck::Texture2D::createSampler(const Device &device, const VkFilter filter, float numMips) {
+void Hmck::Texture2D::createSampler(const Device &device, const VkFilter filter, float numMips, VkSamplerMipmapMode mipmapMode) {
     VkSamplerCreateInfo samplerInfo{};
     samplerInfo.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
     samplerInfo.magFilter = filter;
@@ -394,7 +394,7 @@ void Hmck::Texture2D::createSampler(const Device &device, const VkFilter filter,
     samplerInfo.unnormalizedCoordinates = VK_FALSE;
     samplerInfo.compareEnable = VK_FALSE;
     samplerInfo.compareOp = VK_COMPARE_OP_ALWAYS;
-    samplerInfo.mipmapMode = VK_SAMPLER_MIPMAP_MODE_LINEAR;
+    samplerInfo.mipmapMode = mipmapMode;
     samplerInfo.mipLodBias = 0.0f;
     samplerInfo.minLod = 0.0f;
     samplerInfo.maxLod = numMips;

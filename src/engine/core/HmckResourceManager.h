@@ -102,11 +102,22 @@ namespace Hmck {
 
         static Texture2DHandle createTexture2D();
 
+        struct Texture2DCreateSamplerInfo {
+            bool createSampler = true;
+            const VkFilter filter = VK_FILTER_LINEAR;
+            const VkSamplerAddressMode addressMode = VK_SAMPLER_ADDRESS_MODE_REPEAT;
+            const VkBorderColor borderColor = VK_BORDER_COLOR_INT_OPAQUE_BLACK;
+            const VkSamplerMipmapMode mipmapMode = VK_SAMPLER_MIPMAP_MODE_LINEAR;
+            const float minLod = 0.0f;
+            const float maxLod = 1.0f;
+            const float lodBias = 0.0f;
+        };
+
         struct Texture2DCreateFromFileInfo {
             std::string filepath;
             VkFormat format;
             VkImageLayout imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-            uint32_t mipLevels = 1;
+            Texture2DCreateSamplerInfo samplerInfo{};
         };
 
         [[nodiscard]] Texture2DHandle createTexture2DFromFile(Texture2DCreateFromFileInfo createInfo) const;
@@ -118,7 +129,7 @@ namespace Hmck {
             uint32_t height;
             VkFormat format;
             VkImageLayout imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-            uint32_t mipLevels = 1 ;
+            Texture2DCreateSamplerInfo samplerInfo{};
         };
 
         [[nodiscard]] Texture2DHandle createTexture2DFromBuffer(const Texture2DCreateFromBufferInfo &createInfo) const;
@@ -130,7 +141,7 @@ namespace Hmck {
             uint32_t height;
             VkFormat format;
             VkImageLayout imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-            uint32_t mipLevels = 1;
+            Texture2DCreateSamplerInfo samplerInfo{};
         };
 
         [[nodiscard]] Texture2DHandle createHDRTexture2DFromBuffer(const HDRTexture2DCreateFromBufferInfo &createInfo) const;

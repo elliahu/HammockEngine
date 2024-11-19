@@ -56,7 +56,7 @@ void main()
     uv.x = atan(direction.z, direction.x) / (2.0 * 3.14159265358979323846) + 0.5;
     uv.y = asin(direction.y) / 3.14159265358979323846 + 0.5;
     // Sample the environment map in the calculated direction
-    vec3 color = texture(environmentSampler, uv).rgb;
+    vec3 color = textureLod(environmentSampler, uv, 5.0).rgb;
     // Tone mapping
 	color = Uncharted2Tonemap(color * scene.exposure);
 	color = color * (1.0f / Uncharted2Tonemap(vec3(scene.whitePoint)));	
