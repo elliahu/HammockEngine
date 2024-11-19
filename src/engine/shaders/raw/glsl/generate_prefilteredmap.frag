@@ -109,9 +109,9 @@ void main()
 
 
 	// Convert UV to direction vector
-	vec3 N = vec3(
+	vec3 N =  -1.0f *  vec3(
 	sin(uv.y * PI) * cos(uv.x * 2.0 * PI),
-	-cos(uv.y * PI),
+	cos(uv.y * PI),
 	sin(uv.y * PI) * sin(uv.x * 2.0 * PI)
 	);
 

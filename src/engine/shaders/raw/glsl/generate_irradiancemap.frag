@@ -1,15 +1,15 @@
 #version 450
 #define PI 3.1415926535897932384626433832795
 
-layout(set = 0, binding = 0) uniform sampler2D envMap;
+layout (set = 0, binding = 0) uniform sampler2D envMap;
 
-layout(location = 0) in vec2 texCoord;
-layout(location = 0) out vec4 fragColor;
+layout (location = 0) in vec2 texCoord;
+layout (location = 0) out vec4 fragColor;
 
 
-layout(push_constant) uniform PushConsts {
-	float deltaPhi;
-	float deltaTheta;
+layout (push_constant) uniform PushConsts {
+    float deltaPhi;
+    float deltaTheta;
 } consts;
 
 
@@ -32,29 +32,29 @@ vec2 directionToUV(vec3 direction)
 
 void main()
 {
-	// uv to direction
-	vec3 N = vec3(
-	sin(texCoord.y * PI) * cos(texCoord.x * 2.0 * PI),
-	-cos(texCoord.y * PI),
-	sin(texCoord.y * PI) * sin(texCoord.x * 2.0 * PI)
-	);
-	vec3 up = vec3(0.0, 1.0, 0.0);
-	vec3 right = normalize(cross(up, N));
-	up = cross(N, right);
+    // uv to direction
+    vec3 N = -1.0f * vec3(
+    sin(texCoord.y * PI) * cos(texCoord.x * 2.0 * PI),
+    cos(texCoord.y * PI),
+    sin(texCoord.y * PI) * sin(texCoord.x * 2.0 * PI)
+    );
+    vec3 up = vec3(0.0, 1.0, 0.0);
+    vec3 right = normalize(cross(up, N));
+    up = cross(N, right);
 
-	const float TWO_PI = PI * 2.0;
-	const float HALF_PI = PI * 0.5;
+    const float TWO_PI = PI * 2.0;
+    const float HALF_PI = PI * 0.5;
 
-	vec3 color = vec3(0.0);
-	uint sampleCount = 0u;
-	for (float phi = 0.0; phi < TWO_PI; phi += consts.deltaPhi) {
-		for (float theta = 0.0; theta < HALF_PI; theta += consts.deltaTheta) {
-			vec3 tempVec = cos(phi) * right + sin(phi) * up;
-			vec3 sampleVector = cos(theta) * N + sin(theta) * tempVec;
-			color += texture(envMap, directionToUV(sampleVector)).rgb * cos(theta) * sin(theta);
-			sampleCount++;
-		}
-	}
-    
-	fragColor = vec4(PI * color / float(sampleCount), 1.0);
+    vec3 color = vec3(0.0);
+    uint sampleCount = 0u;
+    for (float phi = 0.0; phi < TWO_PI; phi += consts.deltaPhi) {
+        for (float theta = 0.0; theta < HALF_PI; theta += consts.deltaTheta) {
+            vec3 tempVec = cos(phi) * right + sin(phi) * up;
+            vec3 sampleVector = cos(theta) * N + sin(theta) * tempVec;
+            color += texture(envMap, directionToUV(sampleVector)).rgb * cos(theta) * sin(theta);
+            sampleCount++;
+        }
+    }
+
+    fragColor = vec4(PI * color / float(sampleCount), 1.0);
 }
