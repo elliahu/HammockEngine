@@ -14,7 +14,9 @@ The following points are features currently implemented:
 - [x] SSAO
 - [x] Reflections and Cubemaps
 - [x] Volumetric rendering and physically accurate clouds
-- [x] Partial IBL support (needs precomputed maps)
+- [x] Full IBL support 
+- [x] Runtime mipmap generation
+- [x] Runtime environment, generation (prefiltered, irradiance, BRDF lut)
 
 # TODOS ⏱
 - [ ] Indirect drawing 

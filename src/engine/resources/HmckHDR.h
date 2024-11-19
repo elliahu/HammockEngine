@@ -8,18 +8,18 @@
 
 
 namespace Hmck {
-    // TODO should load a mipmap chain for different roughness values
     class Environment {
     public:
-        void load(Device &device, const ResourceManager &memory, const std::string &filepath, VkFormat format);
+        void load(Device &device, const ResourceManager &resources, const std::string &filepath, VkFormat format);
 
-        void generatePrefilteredSphereMipMap(Device &device, ResourceManager &resources,
-                                       VkFormat format = VK_FORMAT_R32G32B32A32_SFLOAT);
         void generatePrefilteredSphere(Device &device, ResourceManager &resources,
+                                       VkFormat format = VK_FORMAT_R32G32B32A32_SFLOAT);
+        void generatePrefilteredSphereWithStaticRoughness(Device &device, ResourceManager &resources,
                                        VkFormat format = VK_FORMAT_R32G32B32A32_SFLOAT);
 
         void generateIrradianceSphere(Device &device, ResourceManager &resources,
-                                      VkFormat format = VK_FORMAT_R32G32B32A32_SFLOAT);
+                                      VkFormat format = VK_FORMAT_R32G32B32A32_SFLOAT,
+                                      float _deltaPhi = 180.0f, float _deltaTheta = 64.0f);
 
         void generateBRDFLUT(Device &device, ResourceManager &resources, uint32_t dim = 512,
                              VkFormat format = VK_FORMAT_R16G16_SFLOAT);

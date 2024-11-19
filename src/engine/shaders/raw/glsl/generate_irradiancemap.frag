@@ -32,8 +32,12 @@ vec2 directionToUV(vec3 direction)
 
 void main()
 {
-
-	vec3 N = uvToSphericalDirection(texCoord);
+	// uv to direction
+	vec3 N = vec3(
+	sin(texCoord.y * PI) * cos(texCoord.x * 2.0 * PI),
+	-cos(texCoord.y * PI),
+	sin(texCoord.y * PI) * sin(texCoord.x * 2.0 * PI)
+	);
 	vec3 up = vec3(0.0, 1.0, 0.0);
 	vec3 right = normalize(cross(up, N));
 	up = cross(N, right);

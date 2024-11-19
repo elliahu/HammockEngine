@@ -107,20 +107,6 @@ void main()
     // Get UV coordinates
     vec2 uv = fragTexCoord;
 
-//    // Convert UV to spherical coordinates
-//    float u = uv.x;
-//    float v = uv.y;
-//    float phi = u * 2.0 * PI;
-//    float theta = v * PI; // Adjust to full 0 to PI range
-//
-//    // Convert spherical coordinates to Cartesian coordinates
-//    vec3 N;
-//    N.x = sin(theta) * cos(phi);
-//    N.y = sin(theta) * sin(phi);
-//    N.z = cos(theta);
-//
-//    // Rotate N 90 degrees clockwise around z-axis inline
-//     N = vec3(N.x, -N.z, N.y); // for some reason the map is sideways so this will be here unti i find the bug, but with my lazyness it will stay here for ever i bet. 5/3/24
 
 	// Convert UV to direction vector
 	vec3 N = vec3(
@@ -131,5 +117,4 @@ void main()
 
     // Sample the prefiltered environment map
     outColor = vec4(prefilterEnvMap(N, consts.roughness), 1.0);
-	//outColor = vec4(1.0, 0.0, 0.0 , 1.0);
 }
