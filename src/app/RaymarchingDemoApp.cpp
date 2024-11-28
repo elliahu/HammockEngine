@@ -3,7 +3,7 @@
 
 #include "io/HmckUserInterface.h"
 #include "scene/HmckCamera.h"
-#include "io/KeyboardMovementController.h"
+#include "KeyboardMovementController.h"
 #include "resources/HmckBuffer.h"
 #include "resources/HmckDescriptors.h"
 #include "scene/HmckGLTF.h"

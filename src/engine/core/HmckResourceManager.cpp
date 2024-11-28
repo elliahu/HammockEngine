@@ -159,8 +159,12 @@ Hmck::Texture2DHandle Hmck::ResourceManager::createTexture2DFromFile(Texture2DCr
 		createInfo.imageLayout,
 		createInfo.samplerInfo.maxLod);
 	if(createInfo.samplerInfo.createSampler) {
-		texture->createSampler(device, createInfo.samplerInfo.filter,
-			createInfo.samplerInfo.maxLod, createInfo.samplerInfo.mipmapMode);
+		texture->createSampler(device,
+			createInfo.samplerInfo.filter,
+			createInfo.samplerInfo.addressMode,
+			createInfo.samplerInfo.borderColor,
+			createInfo.samplerInfo.mipmapMode,
+			createInfo.samplerInfo.maxLod );
 	}
 	texture->updateDescriptor();
 	texture2Ds.emplace(texture2DsLastHandle, std::move(texture));
@@ -180,8 +184,12 @@ Hmck::Texture2DHandle Hmck::ResourceManager::createTexture2DFromBuffer(const Tex
 		createInfo.imageLayout,
 		createInfo.samplerInfo.maxLod);
 	if(createInfo.samplerInfo.createSampler) {
-		texture->createSampler(device, createInfo.samplerInfo.filter,
-			createInfo.samplerInfo.maxLod, createInfo.samplerInfo.mipmapMode);
+		texture->createSampler(device,
+			createInfo.samplerInfo.filter,
+			createInfo.samplerInfo.addressMode,
+			createInfo.samplerInfo.borderColor,
+			createInfo.samplerInfo.mipmapMode,
+			createInfo.samplerInfo.maxLod );
 	}
 	texture->updateDescriptor();
 	texture2Ds.emplace(texture2DsLastHandle, std::move(texture));
@@ -201,8 +209,12 @@ Hmck::Texture2DHandle Hmck::ResourceManager::createHDRTexture2DFromBuffer(const 
 		createInfo.imageLayout,
 		createInfo.samplerInfo.maxLod);
 	if(createInfo.samplerInfo.createSampler) {
-		texture->createSampler(device, createInfo.samplerInfo.filter,
-			createInfo.samplerInfo.maxLod, createInfo.samplerInfo.mipmapMode);
+		texture->createSampler(device,
+			createInfo.samplerInfo.filter,
+			createInfo.samplerInfo.addressMode,
+			createInfo.samplerInfo.borderColor,
+			createInfo.samplerInfo.mipmapMode,
+			createInfo.samplerInfo.maxLod );
 	}
 	texture->updateDescriptor();
 	texture2Ds.emplace(texture2DsLastHandle, std::move(texture));

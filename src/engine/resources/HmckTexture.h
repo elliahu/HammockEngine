@@ -60,7 +60,13 @@ namespace Hmck {
             uint32_t mipLevels = 1
         );
 
-        void createSampler(const Device &device, VkFilter filter = VK_FILTER_LINEAR, float numMips = 0.0f, VkSamplerMipmapMode mipmapMode = VK_SAMPLER_MIPMAP_MODE_LINEAR);
+        void createSampler(const Device &device,
+            VkFilter filter = VK_FILTER_LINEAR,
+            VkSamplerAddressMode addressMode = VK_SAMPLER_ADDRESS_MODE_REPEAT,
+            VkBorderColor borderColor = VK_BORDER_COLOR_INT_OPAQUE_BLACK,
+            VkSamplerMipmapMode mipmapMode = VK_SAMPLER_MIPMAP_MODE_LINEAR,
+            float numMips = 0.0f
+            );
 
         void generateMipMaps(const Device &device, uint32_t mipLevels) const;
     };

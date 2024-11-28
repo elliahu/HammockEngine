@@ -29,6 +29,7 @@ layout (set = 0, binding = 0) uniform SceneUbo
 	OmniLight omniLights[1000];
     uint numOmniLights;
 } scene;
+
 // From http://filmicworlds.com/blog/filmic-tonemapping-operators/
 vec3 Uncharted2Tonemap(vec3 color)
 {
@@ -42,8 +43,7 @@ vec3 Uncharted2Tonemap(vec3 color)
 	return ((color*(A*color+C*B)+D*E)/(color*(A*color+B)+D*F))-E/F;
 }
 
-const float EXPOSURE = 4.0;
-const float GAMMA = 2.2;
+const float PI = 3.14159265358979323846;
 
 void main() 
 {
@@ -53,8 +53,12 @@ void main()
     
     // Convert 3D direction to 2D UV coordinates using equirectangular projection
     vec2 uv;
-    uv.x = atan(direction.z, direction.x) / (2.0 * 3.14159265358979323846) + 0.5;
-    uv.y = asin(direction.y) / 3.14159265358979323846 + 0.5;
+    uv.x = 0.5 + 0.5 * atan(direction.z, direction.x) / PI;
+    uv.y = 0.5 - asin(clamp(direction.y, -1.0, 1.0)) / -PI;
+
+    // Ensure UV wrapping
+    uv = mod(uv, 1.0);
+
     // Sample the environment map in the calculated direction
     vec3 color = texture(environmentSampler, uv).rgb;
     // Tone mapping

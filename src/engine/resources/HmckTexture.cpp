@@ -225,7 +225,7 @@ void Hmck::TextureCubeMap::createSampler(const Device &device, const VkFilter fi
 
 void Hmck::Texture2D::loadFromBuffer(const unsigned char *buffer, const uint32_t bufferSize, const uint32_t width,
                                      const uint32_t height, Device &device, VkFormat format,
-                                     const VkImageLayout imageLayout,uint32_t mipLevels) {
+                                     const VkImageLayout imageLayout, uint32_t mipLevels) {
     this->width = width;
     this->height = height;
     Buffer stagingBuffer
@@ -375,14 +375,19 @@ void Hmck::Texture2D::loadFromBuffer(
 }
 
 
-void Hmck::Texture2D::createSampler(const Device &device, const VkFilter filter, float numMips, VkSamplerMipmapMode mipmapMode) {
+void Hmck::Texture2D::createSampler(const Device &device,
+                                    VkFilter filter,
+                                    VkSamplerAddressMode addressMode,
+                                    VkBorderColor borderColor,
+                                    VkSamplerMipmapMode mipmapMode,
+                                    float numMips) {
     VkSamplerCreateInfo samplerInfo{};
     samplerInfo.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
     samplerInfo.magFilter = filter;
     samplerInfo.minFilter = filter;
-    samplerInfo.addressModeU = VK_SAMPLER_ADDRESS_MODE_REPEAT;
-    samplerInfo.addressModeV = VK_SAMPLER_ADDRESS_MODE_REPEAT;
-    samplerInfo.addressModeW = VK_SAMPLER_ADDRESS_MODE_REPEAT;
+    samplerInfo.addressModeU = addressMode;
+    samplerInfo.addressModeV = addressMode;
+    samplerInfo.addressModeW = addressMode;
     samplerInfo.anisotropyEnable = VK_TRUE;
 
     // retrieve max anisotropy from physical device
@@ -390,7 +395,7 @@ void Hmck::Texture2D::createSampler(const Device &device, const VkFilter filter,
     vkGetPhysicalDeviceProperties(device.getPhysicalDevice(), &properties);
 
     samplerInfo.maxAnisotropy = properties.limits.maxSamplerAnisotropy;
-    samplerInfo.borderColor = VK_BORDER_COLOR_INT_OPAQUE_WHITE;
+    samplerInfo.borderColor = borderColor;
     samplerInfo.unnormalizedCoordinates = VK_FALSE;
     samplerInfo.compareEnable = VK_FALSE;
     samplerInfo.compareOp = VK_COMPARE_OP_ALWAYS;
@@ -408,11 +413,11 @@ void Hmck::Texture2D::generateMipMaps(const Device &device, const uint32_t mipLe
     VkCommandBuffer commandBuffer = device.beginSingleTimeCommands();
 
     setImageLayout(commandBuffer, image, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, {
-        .aspectMask = VK_IMAGE_ASPECT_COLOR_BIT,
-        .baseMipLevel = 0,
-        .levelCount = mipLevels,
-        .layerCount = 1
-    });
+                       .aspectMask = VK_IMAGE_ASPECT_COLOR_BIT,
+                       .baseMipLevel = 0,
+                       .levelCount = mipLevels,
+                       .layerCount = 1
+                   });
 
     VkImageMemoryBarrier barrier{};
     barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
@@ -482,10 +487,10 @@ void Hmck::Texture2D::generateMipMaps(const Device &device, const uint32_t mipLe
     barrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
 
     vkCmdPipelineBarrier(commandBuffer,
-        VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, 0,
-        0, nullptr,
-        0, nullptr,
-        1, &barrier);
+                         VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, 0,
+                         0, nullptr,
+                         0, nullptr,
+                         1, &barrier);
 
     device.endSingleTimeCommands(commandBuffer);
     vkQueueWaitIdle(device.graphicsQueue());

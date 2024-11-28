@@ -28,6 +28,8 @@ void Hmck::Environment::load(Device &device, const ResourceManager &resources, c
         .width = static_cast<uint32_t>(width), .height = static_cast<uint32_t>(height),
         .format = format,
         .samplerInfo = {
+            .filter = VK_FILTER_LINEAR,
+            .addressMode = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE,
             .maxLod = static_cast<float>(mipLevels)
         }
     });
@@ -75,7 +77,10 @@ void Hmck::Environment::generatePrefilteredSphere(Device &device, ResourceManage
     viewCI.image = resources.getTexture2D(prefilteredSphere)->image;
     checkResult(vkCreateImageView(device.device(), &viewCI, nullptr, &resources.getTexture2D(prefilteredSphere)->view));
     // sampler and descriptor
-    resources.getTexture2D(prefilteredSphere)->createSampler(device, VK_FILTER_LINEAR, mipLevels);
+    resources.getTexture2D(prefilteredSphere)->createSampler(device,
+                                                             VK_FILTER_LINEAR, VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE,
+                                                             VK_BORDER_COLOR_INT_OPAQUE_BLACK,
+                                                             VK_SAMPLER_MIPMAP_MODE_LINEAR, mipLevels);
     resources.getTexture2D(prefilteredSphere)->layout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
     resources.getTexture2D(prefilteredSphere)->updateDescriptor();
 
@@ -324,13 +329,13 @@ void Hmck::Environment::generatePrefilteredSphere(Device &device, ResourceManage
         copyRegion.srcSubresource.baseArrayLayer = 0;
         copyRegion.srcSubresource.mipLevel = 0;
         copyRegion.srcSubresource.layerCount = 1;
-        copyRegion.srcOffset = { 0, 0, 0 };
+        copyRegion.srcOffset = {0, 0, 0};
 
         copyRegion.dstSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
         copyRegion.dstSubresource.baseArrayLayer = 0;
         copyRegion.dstSubresource.mipLevel = m;
         copyRegion.dstSubresource.layerCount = 1;
-        copyRegion.dstOffset = { 0, 0, 0 };
+        copyRegion.dstOffset = {0, 0, 0};
 
         copyRegion.extent.width = static_cast<uint32_t>(viewport.width);
         copyRegion.extent.height = static_cast<uint32_t>(viewport.height);
@@ -355,11 +360,11 @@ void Hmck::Environment::generatePrefilteredSphere(Device &device, ResourceManage
     }
 
     setImageLayout(
-            cmdBuf,
-            resources.getTexture2D(prefilteredSphere)->image,
-            VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
-            VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
-            subresourceRange);
+        cmdBuf,
+        resources.getTexture2D(prefilteredSphere)->image,
+        VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+        VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+        subresourceRange);
 
     device.endSingleTimeCommands(cmdBuf);
     vkQueueWaitIdle(device.graphicsQueue());
@@ -377,7 +382,8 @@ void Hmck::Environment::generatePrefilteredSphere(Device &device, ResourceManage
     Logger::log(LogLevel::HMCK_LOG_LEVEL_DEBUG, "Generating prefiltered sphere took %f ms\n", tDiff);
 }
 
-void Hmck::Environment::generatePrefilteredSphereWithStaticRoughness(Device &device, ResourceManager &resources, VkFormat format) {
+void Hmck::Environment::generatePrefilteredSphereWithStaticRoughness(Device &device, ResourceManager &resources,
+                                                                     VkFormat format) {
     assert(environmentSphere > 0 && "Env map not set");
     auto tStart = std::chrono::high_resolution_clock::now();
     uint32_t width = resources.getTexture2D(environmentSphere)->width;
@@ -585,7 +591,8 @@ void Hmck::Environment::generatePrefilteredSphereWithStaticRoughness(Device &dev
     Logger::log(LogLevel::HMCK_LOG_LEVEL_DEBUG, "Generating prefiltered sphere took %f ms\n", tDiff);
 }
 
-void Hmck::Environment::generateIrradianceSphere(Device &device, ResourceManager &resources, VkFormat format, float _deltaPhi, float _deltaTheta) {
+void Hmck::Environment::generateIrradianceSphere(Device &device, ResourceManager &resources, VkFormat format,
+                                                 float _deltaPhi, float _deltaTheta) {
     assert(environmentSphere > 0 && "Env map not set");
     auto tStart = std::chrono::high_resolution_clock::now();
     uint32_t width = resources.getTexture2D(environmentSphere)->width;
@@ -773,10 +780,10 @@ void Hmck::Environment::generateIrradianceSphere(Device &device, ResourceManager
         // Sampling deltas
         float deltaPhi;
         float deltaTheta;
-    } pushBlock {
-        .deltaPhi = (2.0f * static_cast<float>(M_PI)) / _deltaPhi,
-        .deltaTheta = (0.5f * static_cast<float>(M_PI)) / _deltaTheta
-    };
+    } pushBlock{
+                .deltaPhi = (2.0f * static_cast<float>(M_PI)) / _deltaPhi,
+                .deltaTheta = (0.5f * static_cast<float>(M_PI)) / _deltaTheta
+            };
     vkCmdPushConstants(commandBuffer, pipeline->graphicsPipelineLayout, VK_SHADER_STAGE_FRAGMENT_BIT, 0,
                        2 * sizeof(float), &pushBlock);
     vkCmdDraw(commandBuffer, 3, 1, 0, 0);
