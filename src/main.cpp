@@ -4,6 +4,7 @@
 #include "app/PBRApp.h"
 #include "app/RaymarchingDemoApp.h"
 #include "app/CloudsApp.h"
+#include "app/VolumeApp.h"
 #include "engine/scene/HmckEntity.h"
 
 
@@ -11,7 +12,8 @@ int main() {
     try {
         while (true) {
             int demo;
-            std::cout << "Enter a demo ID:\n0 - Exit\n1 - PBR Demo\n2 - Pretty clouds\n3 - Physicaly accurate clouds\n";
+            std::cout <<
+                    "Enter a demo ID:\n0 - Exit\n1 - PBR Demo\n2 - Pretty clouds\n3 - Physicaly accurate clouds\n4 - Volume data rendering from 3D texture\n";
             std::cin >> demo;
 
             if (demo == 0) {
@@ -24,6 +26,9 @@ int main() {
                 app.run();
             } else if (demo == 3) {
                 Hmck::CloudsApp app{};
+                app.run();
+            } else if (demo == 4) {
+                Hmck::VolumeApp app{};
                 app.run();
             }
 

@@ -1,7 +1,11 @@
 #include "HmckTexture.h"
+
+#include <format>
 #include <stb_image.h>
+#include <string.h>
 
 #include "HmckBuffer.h"
+#include "utils/HmckLogger.h"
 
 
 void Hmck::ITexture::updateDescriptor() {
@@ -494,4 +498,121 @@ void Hmck::Texture2D::generateMipMaps(const Device &device, const uint32_t mipLe
 
     device.endSingleTimeCommands(commandBuffer);
     vkQueueWaitIdle(device.graphicsQueue());
+}
+
+void Hmck::Texture3D::loadFromBuffer(Device &device, const void *buffer, VkDeviceSize instanceSize, uint32_t width,
+                                     uint32_t height, uint32_t channels, uint32_t depth, VkFormat format,
+                                     VkImageLayout imageLayout) {
+    this->width = width;
+    this->height = height;
+    this->depth = depth;
+    this->channels = channels;
+    this->layout = imageLayout;
+
+    // Format support check
+    // 3D texture support in Vulkan is mandatory so there is no need to check if it is supported
+    VkFormatProperties formatProperties;
+    vkGetPhysicalDeviceFormatProperties(device.getPhysicalDevice(), format, &formatProperties);
+    // Check if format supports transfer
+    if (!(formatProperties.optimalTilingFeatures & VK_FORMAT_FEATURE_TRANSFER_DST_BIT)) {
+        Logger::log(HMCK_LOG_LEVEL_ERROR,
+                    "Error: Device does not support flag TRANSFER_DST for selected texture format!\n");
+        throw std::runtime_error("Error: Device does not support flag TRANSFER_DST for selected!");
+    }
+    // Check if GPU supports requested 3D texture dimensions
+    uint32_t maxImageDimension3D(device.properties.limits.maxImageDimension3D);
+    if (width > maxImageDimension3D || height > maxImageDimension3D || depth > maxImageDimension3D) {
+        Logger::log(HMCK_LOG_LEVEL_ERROR,
+                    "Error: Requested texture dimensions is greater than supported 3D texture dimension!\n");
+        throw std::runtime_error("Error: Requested texture dimensions is greater than supported 3D texture dimension!");
+    }
+
+    VkImageCreateInfo imageCreateInfo = Init::imageCreateInfo();
+    imageCreateInfo.imageType = VK_IMAGE_TYPE_3D;
+    imageCreateInfo.format = format;
+    imageCreateInfo.mipLevels = this->mipLevels;
+    imageCreateInfo.arrayLayers = 1;
+    imageCreateInfo.samples = VK_SAMPLE_COUNT_1_BIT;
+    imageCreateInfo.tiling = VK_IMAGE_TILING_OPTIMAL;
+    imageCreateInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+    imageCreateInfo.extent.width = this->width;
+    imageCreateInfo.extent.height = this->height;
+    imageCreateInfo.extent.depth = this->depth;
+    // Set initial layout of the image to undefined
+    imageCreateInfo.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+    imageCreateInfo.usage = VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT;
+    checkResult(vkCreateImage(device.device(), &imageCreateInfo, nullptr, &this->image));
+
+    // Device local memory to back up image
+    VkMemoryAllocateInfo memAllocInfo = Init::memoryAllocateInfo();
+    VkMemoryRequirements memReqs = {};
+    vkGetImageMemoryRequirements(device.device(), this->image, &memReqs);
+    memAllocInfo.allocationSize = memReqs.size;
+    memAllocInfo.memoryTypeIndex = device.findMemoryType(memReqs.memoryTypeBits, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
+    checkResult(vkAllocateMemory(device.device(), &memAllocInfo, nullptr, &this->memory));
+    checkResult(vkBindImageMemory(device.device(), this->image, this->memory, 0));
+
+    // Create image view
+    VkImageViewCreateInfo view = Init::imageViewCreateInfo();
+    view.image = this->image;
+    view.viewType = VK_IMAGE_VIEW_TYPE_3D;
+    view.format = format;
+    view.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+    view.subresourceRange.baseMipLevel = 0;
+    view.subresourceRange.baseArrayLayer = 0;
+    view.subresourceRange.layerCount = 1;
+    view.subresourceRange.levelCount = 1;
+    checkResult(vkCreateImageView(device.device(), &view, nullptr, &this->view));
+
+    const uint32_t bufferSize = width * height * channels * depth;
+
+    // Create a host-visible staging buffer that contains the raw image data
+    Buffer stagingBuffer{
+        device,
+        instanceSize,
+        bufferSize,
+        VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
+        VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
+    };
+
+    stagingBuffer.map();
+    stagingBuffer.writeToBuffer(buffer);
+
+    device.transitionImageLayout(
+        this->image,
+        VK_IMAGE_LAYOUT_UNDEFINED,
+        VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL
+    );
+
+    device.copyBufferToImage(
+        stagingBuffer.getBuffer(),
+        image, static_cast<uint32_t>(width),
+        static_cast<uint32_t>(height),
+        1, 0, depth
+    );
+
+    device.transitionImageLayout(
+        this->image,
+        VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+        imageLayout
+    );
+}
+
+void Hmck::Texture3D::createSampler(Device &device, VkFilter filter, VkSamplerAddressMode addressMode) {
+    // Create sampler
+    VkSamplerCreateInfo sampler = Init::samplerCreateInfo();
+    sampler.magFilter = filter;
+    sampler.minFilter = filter;
+    sampler.mipmapMode = VK_SAMPLER_MIPMAP_MODE_LINEAR;
+    sampler.addressModeU = addressMode;
+    sampler.addressModeV = addressMode;
+    sampler.addressModeW = addressMode;
+    sampler.mipLodBias = 0.0f;
+    sampler.compareOp = VK_COMPARE_OP_NEVER;
+    sampler.minLod = 0.0f;
+    sampler.maxLod = 0.0f;
+    sampler.maxAnisotropy = 1.0;
+    sampler.anisotropyEnable = VK_FALSE;
+    sampler.borderColor = VK_BORDER_COLOR_FLOAT_OPAQUE_WHITE;
+    checkResult(vkCreateSampler(device.device(), &sampler, nullptr, &this->sampler));
 }

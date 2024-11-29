@@ -77,7 +77,7 @@ namespace Hmck {
 
         void copyBufferToImage(
             VkBuffer buffer, VkImage image, uint32_t width, uint32_t height, uint32_t layerCount,
-            uint32_t baseArrayLayer = 0) const;
+            uint32_t baseArrayLayer = 0, uint32_t depth = 1) const;
 
         // Image helper functionss
         void createImageWithInfo(

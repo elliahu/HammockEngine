@@ -11,6 +11,7 @@
 #include <glm/gtc/type_ptr.hpp>
 #include "HmckEntity3D.h"
 #include "HmckLights.h"
+#include "utils/HmckLogger.h"
 
 namespace gltf = tinygltf;
 
@@ -36,15 +37,17 @@ void Hmck::GltfLoader::load(std::string filename, uint32_t fileLoadingFlags) {
     }
 
     if (!warn.empty()) {
-        std::cout << "glTF warinng: " << warn << "\n";
+        Logger::log(HMCK_LOG_LEVEL_WARN, "glTF warinng: %s\n", warn.c_str());
     }
 
     if (!err.empty()) {
-        std::cerr << "glTF ERROR: " << err << "\n";
+        Logger::log(HMCK_LOG_LEVEL_ERROR, "glTF ERROR: %s\n", err.c_str());
+        throw std::runtime_error{"glTF ERROR: " + err + "\n"};
     }
 
     if (!loaded) {
-        std::cerr << "Failed to parse glTF\n";
+        Logger::log(HMCK_LOG_LEVEL_ERROR, "Failed to parse glTF\n");
+        throw std::runtime_error{"Failed to parse glTF\n"};
     }
 
     imagesOffset = scene->images.size();
@@ -100,7 +103,6 @@ void Hmck::GltfLoader::loadImages(gltf::Model &model) const {
         // Get the image data from the glTF loader
         unsigned char *buffer = nullptr;
         uint32_t bufferSize = 0;
-        bool deleteBuffer = false;
         // We convert RGB-only images to RGBA, as most devices don't support RGB-formats in Vulkan
         if (glTFImage.component == 3) {
             throw std::runtime_error("3-component images not supported");
@@ -118,9 +120,6 @@ void Hmck::GltfLoader::loadImages(gltf::Model &model) const {
             .height = static_cast<uint32_t>(glTFImage.height),
             .format = VK_FORMAT_R8G8B8A8_UNORM
         });
-        if (deleteBuffer) {
-            delete[] buffer;
-        }
     }
 }
 

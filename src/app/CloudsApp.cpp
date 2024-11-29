@@ -2,7 +2,7 @@
 
 #include "io/HmckUserInterface.h"
 #include "scene/HmckCamera.h"
-#include "KeyboardMovementController.h"
+#include "controllers/KeyboardMovementController.h"
 #include "resources//HmckBuffer.h"
 #include "resources/HmckDescriptors.h"
 #include "utils/HmckLogger.h"
@@ -92,7 +92,8 @@ void Hmck::CloudsApp::run() {
 
         // gameloop timing
         auto newTime = std::chrono::high_resolution_clock::now();
-        const float frameTime = std::chrono::duration<float, std::chrono::seconds::period>(newTime - currentTime).count();
+        const float frameTime = std::chrono::duration<float, std::chrono::seconds::period>(newTime - currentTime).
+                count();
         currentTime = newTime;
         elapsedTime += frameTime;
 
@@ -119,7 +120,8 @@ void Hmck::CloudsApp::run() {
 
             renderer.beginSwapChainRenderPass(commandBuffer);
 
-            draw(frameIndex, elapsedTime, commandBuffer); {
+            draw(frameIndex, elapsedTime, commandBuffer);
+            {
                 ui.beginUserInterface();
                 this->ui();
                 ui.showDebugStats(scene->getActiveCamera());

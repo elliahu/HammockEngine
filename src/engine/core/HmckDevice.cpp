@@ -542,7 +542,7 @@ namespace Hmck {
 
     void Device::copyBufferToImage(
         const VkBuffer buffer, const VkImage image, const uint32_t width, const uint32_t height,
-        const uint32_t layerCount, const uint32_t baseArrayLayer) const {
+        const uint32_t layerCount, const uint32_t baseArrayLayer, uint32_t depth) const {
         const VkCommandBuffer commandBuffer = beginSingleTimeCommands();
 
         VkBufferImageCopy region{};
@@ -556,7 +556,7 @@ namespace Hmck {
         region.imageSubresource.layerCount = layerCount;
 
         region.imageOffset = {0, 0, 0};
-        region.imageExtent = {width, height, 1};
+        region.imageExtent = {width, height, depth};
 
         vkCmdCopyBufferToImage(
             commandBuffer,

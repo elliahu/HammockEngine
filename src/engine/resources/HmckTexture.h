@@ -20,8 +20,8 @@ namespace Hmck {
         VkImage image;
         VkImageView view;
         VkImageLayout layout;
-        int width, height, channels;
-        uint32_t layerCount;
+        int width{0}, height{0}, channels{0}, mipLevels{1};
+        uint32_t layerCount{1};
         VkDescriptorImageInfo descriptor;
 
         void updateDescriptor();
@@ -30,7 +30,7 @@ namespace Hmck {
     };
 
 
-    class Texture2D : public ITexture {
+    class Texture2D final: public ITexture{
     public:
         void loadFromFile(
             const std::string &filepath,
@@ -40,7 +40,8 @@ namespace Hmck {
             uint32_t mipLevels = 1
         );
 
-        void loadFromBuffer(
+        // TODO to be removed
+         [[deprecated("Use the standard float buffer. To be removed")]]void loadFromBuffer(
             const unsigned char *buffer,
             uint32_t bufferSize,
             uint32_t width, uint32_t height,
@@ -73,6 +74,8 @@ namespace Hmck {
 
     class TextureCubeMap : public ITexture {
     public:
+        // TODO loadFromBuffer
+
         void loadFromFiles(
             const std::vector<std::string> &filenames,
             VkFormat format,
@@ -80,5 +83,25 @@ namespace Hmck {
             VkImageLayout imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
 
         void createSampler(const Device &device, VkFilter filter = VK_FILTER_LINEAR);
+    };
+
+    class Texture3D final: public ITexture {
+    public:
+        int depth{0};
+
+        // Recommended format VK_FORMAT_R8_UNORM
+        void loadFromBuffer(Device &device,
+            const void * buffer,
+            VkDeviceSize instanceSize,
+            uint32_t width,
+            uint32_t height,
+            uint32_t channels,
+            uint32_t depth,
+            VkFormat format,
+            VkImageLayout imageLayout);
+
+        void createSampler(Device& device,
+            VkFilter filter = VK_FILTER_LINEAR,
+            VkSamplerAddressMode addressMode = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE);
     };
 }

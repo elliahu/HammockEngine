@@ -141,9 +141,6 @@ void main() {
     uv -= 0.5;
     uv.x *= push.resX / push.resY;
 
-    // Flip the Y-coordinate for Vulkan
-    uv.y *= -1.0;
-
     // Ray Origin - camera
     vec3 ro = data.inverseView[3].xyz; // scene.inverseView[3].xyz is camera position
 
@@ -151,7 +148,7 @@ void main() {
     vec3 rd = normalize(vec3(uv, 1.0));
 
     // Transform ray direction by the camera's orientation
-    rd = (data.inverseView * vec4(rd, 0.0)).xyz;
+    rd = (data.view * vec4(rd, 0.0)).xyz;
 
 
   
@@ -160,7 +157,6 @@ void main() {
   // Sun and Sky
   vec3 sunColor = data.sunColor.rgb;
   vec3 sunDirection = normalize(data.sunPosition.rgb);
-  sunDirection.y *= -1;
   float sun = clamp(dot(sunDirection, rd), 0.0, 1.0);
   // Base sky color
   color = data.baseSkyColor.rgb;

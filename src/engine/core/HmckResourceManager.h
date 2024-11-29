@@ -13,6 +13,7 @@ namespace Hmck {
     typedef uint32_t DescriptorSetLayoutHandle;
     typedef uint32_t Texture2DHandle;
     typedef uint32_t TextureCubeMapHandle;
+    typedef uint32_t Texture3DHandle;
 
     class ResourceManager {
     public:
@@ -122,6 +123,7 @@ namespace Hmck {
 
         [[nodiscard]] Texture2DHandle createTexture2DFromFile(Texture2DCreateFromFileInfo createInfo) const;
 
+        // TODO to be removed
         struct Texture2DCreateFromBufferInfo {
             unsigned char *buffer;
             uint32_t bufferSize;
@@ -131,7 +133,7 @@ namespace Hmck {
             VkImageLayout imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
             Texture2DCreateSamplerInfo samplerInfo{};
         };
-
+        // TODO to be removed
         [[nodiscard]] Texture2DHandle createTexture2DFromBuffer(const Texture2DCreateFromBufferInfo &createInfo) const;
 
         struct HDRTexture2DCreateFromBufferInfo {
@@ -143,7 +145,7 @@ namespace Hmck {
             VkImageLayout imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
             Texture2DCreateSamplerInfo samplerInfo{};
         };
-
+        // TODO rename to createTexture2D
         [[nodiscard]] Texture2DHandle createHDRTexture2DFromBuffer(const HDRTexture2DCreateFromBufferInfo &createInfo) const;
 
 
@@ -155,6 +157,25 @@ namespace Hmck {
 
         [[nodiscard]] TextureCubeMapHandle createTextureCubeMapFromFiles(const TextureCubeMapCreateFromFilesInfo &createInfo) const;
 
+        struct Texture3DCreateSamplerInfo {
+            bool createSampler = true;
+            VkFilter filter = VK_FILTER_LINEAR;
+            VkSamplerAddressMode addressMode = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
+        };
+
+        struct Texture3DCreateFromBufferInfo{
+            const void *buffer;
+            uint32_t instanceSize;
+            uint32_t width;
+            uint32_t height;
+            uint32_t channels;
+            uint32_t depth;
+            VkFormat format;
+            VkImageLayout imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+            Texture3DCreateSamplerInfo samplerInfo{};
+        };
+
+        [[nodiscard]] Texture3DHandle createTexture3DFromBuffer(const Texture3DCreateFromBufferInfo &createInfo) const;
 
         static DescriptorSetLayout &getDescriptorSetLayout(DescriptorSetLayoutHandle handle);
 
@@ -169,6 +190,10 @@ namespace Hmck {
         static std::unique_ptr<TextureCubeMap> &getTextureCubeMap(TextureCubeMapHandle handle);
 
         static VkDescriptorImageInfo getTextureCubeMapDescriptorImageInfo(TextureCubeMapHandle handle);
+
+        static std::unique_ptr<Texture3D> &getTexture3D(Texture3DHandle handle);
+
+        static VkDescriptorImageInfo getTexture3DDescriptorImageInfo(Texture3DHandle handle);
 
         static void bindDescriptorSet(
             VkCommandBuffer commandBuffer,
@@ -196,6 +221,8 @@ namespace Hmck {
 
         void destroyTextureCubeMap(TextureCubeMapHandle handle) const;
 
+        void destroyTexture3D(Texture3DHandle handle) const;
+
         void copyBuffer(BufferHandle from, BufferHandle to) const;
 
     private:
@@ -211,11 +238,13 @@ namespace Hmck {
         // textures
         static std::unordered_map<Texture2DHandle, std::unique_ptr<Texture2D> > texture2Ds;
         static std::unordered_map<Texture2DHandle, std::unique_ptr<TextureCubeMap> > textureCubeMaps;
+        static std::unordered_map<Texture3DHandle, std::unique_ptr<Texture3D> > texture3Ds;
 
         static uint32_t buffersLastHandle;
         static uint32_t descriptorSetsLastHandle;
         static uint32_t descriptorSetLayoutsLastHandle;
         static uint32_t texture2DsLastHandle;
         static uint32_t textureCubeMapsLastHandle;
+        static uint32_t texture3DsLastHandle;
     };
 }

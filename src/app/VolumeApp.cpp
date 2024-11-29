@@ -1,19 +1,14 @@
-#include "RaymarchingDemoApp.h"
-#include "io/HmckWindow.h"
+#include "VolumeApp.h"
 
-#include "io/HmckUserInterface.h"
-#include "scene/HmckCamera.h"
 #include "controllers/KeyboardMovementController.h"
-#include "resources/HmckBuffer.h"
-#include "resources/HmckDescriptors.h"
-#include "scene/HmckGLTF.h"
 #include "core/HmckRenderer.h"
+#include "scene/HmckGLTF.h"
 
-Hmck::RaymarchingDemoApp::RaymarchingDemoApp() {
+Hmck::VolumeApp::VolumeApp() {
     load();
 }
 
-void Hmck::RaymarchingDemoApp::run() {
+void Hmck::VolumeApp::run() {
     Renderer renderer{window, device};
 
     pipeline = GraphicsPipeline::createGraphicsPipelinePtr({
@@ -26,7 +21,7 @@ void Hmck::RaymarchingDemoApp::run() {
         },
         .FS
         {
-            .byteCode = Hmck::Filesystem::readFile("../src/engine/shaders/compiled/raymarch_pretty.frag.spv"),
+            .byteCode = Hmck::Filesystem::readFile("../src/engine/shaders/compiled/raymarch_3d_texture.frag.spv"),
             .entryFunc = "main"
         },
         .descriptorSetLayouts =
@@ -48,22 +43,8 @@ void Hmck::RaymarchingDemoApp::run() {
             .blendAtaAttachmentStates{},
             .vertexBufferBindings
             {
-                .vertexBindingDescriptions =
-                {
-                    {
-                        .binding = 0,
-                        .stride = sizeof(Vertex),
-                        .inputRate = VK_VERTEX_INPUT_RATE_VERTEX
-                    }
-                },
-                .vertexAttributeDescriptions =
-                {
-                    {0, 0, VK_FORMAT_R32G32B32_SFLOAT, offsetof(Vertex, position)},
-                    {1, 0, VK_FORMAT_R32G32B32_SFLOAT, offsetof(Vertex, color)},
-                    {2, 0, VK_FORMAT_R32G32B32_SFLOAT, offsetof(Vertex, normal)},
-                    {3, 0, VK_FORMAT_R32G32_SFLOAT, offsetof(Vertex, uv)},
-                    {4, 0, VK_FORMAT_R32G32B32_SFLOAT, offsetof(Vertex, tangent)}
-                }
+                .vertexBindingDescriptions = Vertex::vertexInputBindingDescriptions(),
+                .vertexAttributeDescriptions = Vertex::vertexInputAttributeDescriptions()
             }
         },
         .renderPass = renderer.getSwapChainRenderPass()
@@ -79,12 +60,11 @@ void Hmck::RaymarchingDemoApp::run() {
     KeyboardMovementController cameraController{};
     const UserInterface ui{device, renderer.getSwapChainRenderPass(), window};
 
-
     float elapsedTime = 0.f;
     auto currentTime = std::chrono::high_resolution_clock::now();
+
     while (!window.shouldClose()) {
         window.pollEvents();
-
 
         // gameloop timing
         auto newTime = std::chrono::high_resolution_clock::now();
@@ -94,7 +74,6 @@ void Hmck::RaymarchingDemoApp::run() {
 
         // camera
         cameraController.moveInPlaneXZ(window, frameTime, scene->getActiveCamera());
-
         scene->getActiveCamera()->update();
 
 
@@ -110,7 +89,9 @@ void Hmck::RaymarchingDemoApp::run() {
 
             renderer.beginSwapChainRenderPass(commandBuffer);
 
-            draw(frameIndex, elapsedTime, commandBuffer); {
+            draw(frameIndex, elapsedTime, commandBuffer);
+
+            {
                 ui.beginUserInterface();
                 this->ui();
                 ui.showDebugStats(scene->getActiveCamera());
@@ -128,17 +109,19 @@ void Hmck::RaymarchingDemoApp::run() {
     destroy();
 }
 
-void Hmck::RaymarchingDemoApp::load() {
+void Hmck::VolumeApp::load() {
+    // Scene
     Scene::SceneCreateInfo info = {
         .device = device,
         .memory = resources,
-        .name = "Volumetric scene",
+        .name = "3D texture rendering",
     };
     scene = std::make_unique<Scene>(info);
 
     GltfLoader gltfloader{device, resources, scene};
     gltfloader.load("../data/models/Sphere/Sphere.glb");
 
+    // Resources
     descriptorSets.resize(SwapChain::MAX_FRAMES_IN_FLIGHT);
     buffers.resize(SwapChain::MAX_FRAMES_IN_FLIGHT);
 
@@ -163,14 +146,23 @@ void Hmck::RaymarchingDemoApp::load() {
             .memoryPropertyFlags = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT
         });
 
-    noiseTexture = resources.createTexture2DFromFile({
-        .filepath = "../data/noise/noise2.png",
-        .format = VK_FORMAT_R8G8B8A8_UNORM
+    // Load the volume texture
+    int w,h,c,d;
+    const auto volumeImages = Filesystem::ls("../data/textures/volumes/female_ankle");
+    const float * volumeData = Filesystem::readVolume(volumeImages,w,h,c,d, Filesystem::ReadImageFlags::GRAYSCALE);
+    bufferData.textureDim = {static_cast<float>(w), static_cast<float>(h), static_cast<float>(d), static_cast<float>(c)};
+    texture = resources.createTexture3DFromBuffer({
+        .buffer = static_cast<const void*>(volumeData),
+        .instanceSize = sizeof(float),
+        .width = static_cast<uint32_t>(w), .height = static_cast<uint32_t>(h),
+        .channels = static_cast<uint32_t>(c), .depth = static_cast<uint32_t>(d),
+        .format = VK_FORMAT_R32_SFLOAT,
+        .imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL
     });
 
     for (int i = 0; i < SwapChain::MAX_FRAMES_IN_FLIGHT; i++) {
         auto fbufferInfo = resources.getBuffer(buffers[i])->descriptorInfo();
-        auto imageInfo = resources.getTexture2DDescriptorImageInfo(noiseTexture);
+        auto imageInfo =resources.getTexture3DDescriptorImageInfo(texture);
         descriptorSets[i] = resources.createDescriptorSet({
             .descriptorSetLayout = descriptorSetLayout,
             .bufferWrites = {{0, fbufferInfo}},
@@ -191,15 +183,13 @@ void Hmck::RaymarchingDemoApp::load() {
     });
 }
 
-void Hmck::RaymarchingDemoApp::draw(int frameIndex, float elapsedTime, VkCommandBuffer commandBuffer) {
+void Hmck::VolumeApp::draw(int frameIndex, float elapsedTime, VkCommandBuffer commandBuffer) {
     resources.bindVertexBuffer(vertexBuffer, indexBuffer, commandBuffer);
-
     pipeline->bind(commandBuffer);
 
     bufferData.projection = scene->getActiveCamera()->getProjection();
     bufferData.view = scene->getActiveCamera()->getView();
     bufferData.inverseView = scene->getActiveCamera()->getInverseView();
-
     resources.getBuffer(buffers[frameIndex])->writeToBuffer(&bufferData);
 
     resources.bindDescriptorSet(
@@ -219,8 +209,8 @@ void Hmck::RaymarchingDemoApp::draw(int frameIndex, float elapsedTime, VkCommand
     vkCmdDraw(commandBuffer, 3, 1, 0, 0);
 }
 
-void Hmck::RaymarchingDemoApp::destroy() {
-    resources.destroyTexture2D(noiseTexture);
+void Hmck::VolumeApp::destroy() {
+    resources.destroyTexture3D(texture);
 
     for (auto &uniformBuffer: buffers)
         resources.destroyBuffer(uniformBuffer);
@@ -231,20 +221,10 @@ void Hmck::RaymarchingDemoApp::destroy() {
     resources.destroyBuffer(indexBuffer);
 }
 
-void Hmck::RaymarchingDemoApp::ui() {
+void Hmck::VolumeApp::ui() {
     const ImGuiWindowFlags window_flags = ImGuiWindowFlags_AlwaysAutoResize;
-    ImGui::Begin("Cloud editor", (bool *) false, ImGuiWindowFlags_AlwaysAutoResize);
-    ImGui::Text("Edit cloud properties", window_flags);
-
-    float sunPosition[4] = {
-        bufferData.sunPosition.x, bufferData.sunPosition.y, bufferData.sunPosition.z, bufferData.sunPosition.w
-    };
-    ImGui::DragFloat4("Sun position", &sunPosition[0], 0.1f);
-    bufferData.sunPosition = {sunPosition[0], sunPosition[1], sunPosition[2], sunPosition[3]};
-
-    float sunColor[4] = {bufferData.sunColor.x, bufferData.sunColor.y, bufferData.sunColor.z, bufferData.sunColor.w};
-    ImGui::ColorEdit4("Sun color", &sunColor[0]);
-    bufferData.sunColor = {sunColor[0], sunColor[1], sunColor[2], sunColor[3]};
+    ImGui::Begin("Volume editor", (bool *) false, ImGuiWindowFlags_AlwaysAutoResize);
+    ImGui::Text("Edit rendering properties", window_flags);
 
     float baseSkyColor[4] = {
         bufferData.baseSkyColor.x, bufferData.baseSkyColor.y, bufferData.baseSkyColor.z, bufferData.baseSkyColor.w
@@ -252,15 +232,31 @@ void Hmck::RaymarchingDemoApp::ui() {
     ImGui::ColorEdit4("Base sky color", &baseSkyColor[0]);
     bufferData.baseSkyColor = {baseSkyColor[0], baseSkyColor[1], baseSkyColor[2], baseSkyColor[3]};
 
-    float gradientSkyColor[4] = {
-        bufferData.gradientSkyColor.x, bufferData.gradientSkyColor.y, bufferData.gradientSkyColor.z,
-        bufferData.gradientSkyColor.w
-    };
-    ImGui::ColorEdit4("Gradient sky color", &gradientSkyColor[0]);
-    bufferData.gradientSkyColor = {gradientSkyColor[0], gradientSkyColor[1], gradientSkyColor[2], gradientSkyColor[3]};
-
     ImGui::DragFloat("Max steps", &pushData.maxSteps, 1.0f, 0.001f);
-    ImGui::DragFloat("March size", &pushData.marchSize, 0.01f, 0.001f);
+    ImGui::DragFloat("March size", &pushData.marchSize, 0.001f, 0.001f);
+    ImGui::DragFloat("Air threshold", &pushData.airTrheshold, 0.01f, 0.001f, 1.0f);
+    ImGui::DragFloat("Tissue threshold", &pushData.tissueThreshold, 0.01f, 0.001f,1.0f);
+    ImGui::DragFloat("Fat threshold", &pushData.fatThreshold, 0.01f, 0.001f, 1.0f);
+
+    float tissueColor[4] = {
+        bufferData.tissueColor.x, bufferData.tissueColor.y, bufferData.tissueColor.z, bufferData.tissueColor.w
+    };
+    ImGui::ColorEdit4("Tissue color", &tissueColor[0]);
+    bufferData.tissueColor = {tissueColor[0], tissueColor[1], tissueColor[2], tissueColor[3]};
+
+    float fatColor[4] = {
+        bufferData.fatColor.x, bufferData.fatColor.y, bufferData.fatColor.z, bufferData.fatColor.w
+    };
+    ImGui::ColorEdit4("Fat color", &fatColor[0]);
+    bufferData.fatColor = {fatColor[0], fatColor[1], fatColor[2], fatColor[3]};
+
+    float boneColor[4] = {
+        bufferData.boneColor.x, bufferData.boneColor.y, bufferData.boneColor.z, bufferData.boneColor.w
+    };
+    ImGui::ColorEdit4("Bone color", &boneColor[0]);
+    bufferData.boneColor = {boneColor[0], boneColor[1], boneColor[2], boneColor[3]};
+
+    ImGui::Checkbox("Blinn-phong", &pushData.nDotL);
 
     ImGui::End();
 }

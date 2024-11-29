@@ -7,17 +7,22 @@
 #include <glm/gtx/matrix_decompose.hpp>
 
 #include <functional>
+#include <filesystem>
 #include <fstream>
 #include <iostream>
 #include <string>
 #include <random>
 #include <cmath>
 #include <memory>
+#include <stb_image.h>
 
+#include "HmckLogger.h"
 #include "resources/HmckDescriptors.h"
 #include "resources/HmckBuffer.h"
 
 namespace Hmck {
+    class Logger;
+
     namespace Init {
         inline VkImageCreateInfo imageCreateInfo() {
             VkImageCreateInfo imageCreateInfo{};
@@ -547,6 +552,93 @@ namespace Hmck {
                 throw std::runtime_error("could not dump into file!");
             }
         }
+
+        inline std::vector<std::string> ls(const std::string& directoryPath) {
+            std::vector<std::string> fileList;
+
+            try {
+                for (const auto& entry : std::filesystem::directory_iterator(directoryPath)) {
+                    if (entry.is_regular_file()) { // Check if it's a regular file
+                        fileList.push_back(entry.path().string());
+                    }
+                }
+            } catch (const std::filesystem::filesystem_error& e) {
+                Logger::log(HMCK_LOG_LEVEL_ERROR, "Error: Error accessing directory %s\n", directoryPath.c_str());
+                throw std::runtime_error("Error: Error accessing directory");
+            }
+
+            return fileList;
+        }
+        enum ReadImageFlags {
+            GRAYSCALE =  0x00000000,
+            COLOR = 0x00000001,
+            COLOR_NO_ALPHA  = 0x00000002,
+            FLIPY = 0x00000003
+        };
+        inline const float* readImage(const std::string &filename, int& width, int& height, int& channels, const uint32_t flags = ReadImageFlags::COLOR) {
+            int desiredChannes = 1;
+            if(flags & ReadImageFlags::GRAYSCALE)
+                desiredChannes = 1;
+            else if(flags &  ReadImageFlags::COLOR_NO_ALPHA)
+                desiredChannes = 4;
+            else if(flags &  ReadImageFlags::COLOR)
+                desiredChannes = 3;
+
+            stbi_set_flip_vertically_on_load(flags & ReadImageFlags::FLIPY);
+            const float* data = stbi_loadf(filename.c_str(), &width, &height, &channels, desiredChannes);
+            stbi_set_flip_vertically_on_load(false);
+            if (!data) {
+                Logger::log(HMCK_LOG_LEVEL_ERROR, "Error: Failed to load image!\n");
+                throw std::runtime_error("Image loading failed.");
+            }
+
+            if(desiredChannes != channels) {
+                channels = desiredChannes;
+            }
+
+            return data;
+        }
+
+        inline const float* readVolume(const std::vector<std::string>& slices, int& width, int& height, int& channels, int& depth, const uint32_t flags = ReadImageFlags::COLOR) {
+            if (slices.empty()) {
+                Logger::log(HMCK_LOG_LEVEL_ERROR, "Error: No slice file paths provided\n");
+                throw std::runtime_error("Error: No slice file paths provided.");
+            }
+
+            // Read the first slice to determine width, height, and channels
+            const float* firstSlice = readImage(slices[0], width, height, channels, flags);
+            depth = slices.size(); // The number of slices determines the depth
+
+            // Allocate memory for the 3D texture
+            size_t sliceSize = width * height * channels;
+            float* volumeData = new float[sliceSize * depth];
+
+            // Copy the first slice into the buffer
+            std::copy(firstSlice, firstSlice + sliceSize, volumeData);
+            stbi_image_free(const_cast<float*>(firstSlice)); // Free the first slice
+
+            // Read and copy the remaining slices
+            for (size_t i = 1; i < slices.size(); ++i) {
+                int currentWidth, currentHeight, currentChannels;
+                const float* sliceData = readImage(slices[i], currentWidth, currentHeight, currentChannels, flags);
+
+                // Validate dimensions match
+                if (currentWidth != width || currentHeight != height || currentChannels != channels) {
+                    delete[] volumeData;
+                    stbi_image_free(const_cast<float*>(sliceData));
+                    Logger::log(HMCK_LOG_LEVEL_ERROR, "Error: Slice dimensions or channels mismatch in slice %d\n", i);
+                    throw std::runtime_error("Error: Slice dimensions or channels mismatch!");
+                }
+
+                // Copy the slice into the correct position in the 3D buffer
+                std::copy(sliceData, sliceData + sliceSize, volumeData + i * sliceSize);
+                stbi_image_free(const_cast<float*>(sliceData)); // Free the current slice
+            }
+
+            return volumeData;
+        }
+
+
     } // namespace Filesystem
 
     namespace Math {

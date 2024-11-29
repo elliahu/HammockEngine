@@ -1,6 +1,6 @@
 #include "PBRApp.h"
 
-#include "KeyboardMovementController.h"
+#include "controllers/KeyboardMovementController.h"
 #include "scene/HmckGLTF.h"
 #include "scene/HmckLights.h"
 #include "utils/HmckLogger.h"
