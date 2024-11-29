@@ -12,6 +12,7 @@ layout (set = 0, binding = 0) uniform SceneUbo {
     mat4 view;
     mat4 inverseView;
     vec4 textureDim;
+    vec4 lightPosition;
     vec4 baseSkyColor;
     vec4 tissueColor;
     vec4 fatColor;
@@ -30,7 +31,7 @@ layout (push_constant) uniform PushConstants {
     float airFactor;
     float tissueFactor;
     float fatFactor;
-    bool nDotL;
+    int nDotL;
 } push;
 
 // Transfer function with smooth transitions
@@ -110,13 +111,78 @@ void main() {
     vec3 color = data.baseSkyColor.rgb;
 
     // Volume rendering with corrected aspect ratio
-    if(push.nDotL){
-        // TODO calculate bling phong reflection models
+    if (push.nDotL == 1) {
+        // Raymarch to find the first tissue voxel
+        float depth = 0.0;
+        vec3 hitPos = vec3(0.0);
+        vec3 p = rayOrigin;
+
+        // Aspect ratio of the texture: 512x512x150
+        const vec3 aspectRatio = vec3(1.0, 1.0, data.textureDim.b / data.textureDim.r);
+
+        bool foundTissue = false;
+
+        for (int i = 0; i < int(push.maxSteps); i++) {
+            // Compute the current position in the volume
+            p = rayOrigin + depth * rayDirection;
+
+            // Convert world coordinates to texture coordinates
+            vec3 textureCoords = (p * 0.5 + 0.5) / aspectRatio; // Normalize by aspect ratio
+
+            // Sample density
+            float d = density(textureCoords);
+
+            // Check if the density corresponds to tissue
+            if (d >= push.airFactor && d <= push.tissueFactor) {
+                foundTissue = true;
+                hitPos = textureCoords; // Save the hit position
+                break;
+            }
+
+            // Advance ray
+            depth += push.marchSize;
+        }
+
+        if (foundTissue) {
+            // Compute normals via central differences
+            vec3 gradient = vec3(
+            density(hitPos + vec3(push.marchSize, 0.0, 0.0)) - density(hitPos - vec3(push.marchSize, 0.0, 0.0)),
+            density(hitPos + vec3(0.0, push.marchSize, 0.0)) - density(hitPos - vec3(0.0, push.marchSize, 0.0)),
+            density(hitPos + vec3(0.0, 0.0, push.marchSize)) - density(hitPos - vec3(0.0, 0.0, push.marchSize))
+            );
+
+            vec3 normal = normalize(gradient); // Surface normal
+
+            // Light direction (assumes a directional light)
+            vec3 lightDir = normalize(data.lightPosition.xyz - p);
+
+            // View direction
+            vec3 viewDir = normalize(-rayDirection);
+
+            // Ambient component
+            vec3 ambient = 0.1 * data.tissueColor.rgb;
+
+            // Diffuse component (Lambertian reflection)
+            float diffuseFactor = max(dot(normal, lightDir), 0.0);
+            vec3 diffuse = diffuseFactor * data.tissueColor.rgb;
+
+            // Specular component (Blinn-Phong reflection)
+            vec3 halfwayDir = normalize(lightDir + viewDir);
+            float specularFactor = pow(max(dot(normal, halfwayDir), 0.0), 16.0); // Shininess factor
+            vec3 specular = specularFactor * vec3(1.0); // White highlights
+
+            // Combine all components
+            color = ambient + diffuse + specular;
+        } else {
+            // No tissue was hit, render background
+            color = data.baseSkyColor.rgb;
+        }
+
+        outColor = vec4(color, 1.0);
         return;
     }
 
     vec4 volumeColor = raymarch(rayOrigin, rayDirection);
     color = color * (1.0 - volumeColor.a) + volumeColor.rgb;
     outColor = vec4(color, 1.0);
-
 }

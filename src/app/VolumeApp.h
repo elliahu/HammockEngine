@@ -48,6 +48,7 @@ namespace Hmck {
             glm::mat4 view{1};
             glm::mat4 inverseView{1};
             glm::vec4 textureDim{1.f, 1.f, 1.f, 1.0f};
+            glm::vec4 sunPosition{-10.f, -10.f, 10.f, 1.f};
             glm::vec4 baseSkyColor{0.043f, 0.043f, 0.043f, 0.0f};
             glm::vec4 tissueColor{0.8f, 0.5f, 0.4f, 0.2f};
             glm::vec4 fatColor{1.0f, 0.8f, 0.6f, 0.4f};
@@ -63,7 +64,7 @@ namespace Hmck {
             float airTrheshold = 0.1f;
             float tissueThreshold = 0.3f;
             float fatThreshold = 0.6f;
-            bool nDotL = false;
+            int  nDotL = false;
         } pushData;
 
         Texture3DHandle texture{};

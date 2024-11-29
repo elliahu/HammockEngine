@@ -89,9 +89,7 @@ void Hmck::VolumeApp::run() {
 
             renderer.beginSwapChainRenderPass(commandBuffer);
 
-            draw(frameIndex, elapsedTime, commandBuffer);
-
-            {
+            draw(frameIndex, elapsedTime, commandBuffer); {
                 ui.beginUserInterface();
                 this->ui();
                 ui.showDebugStats(scene->getActiveCamera());
@@ -147,12 +145,16 @@ void Hmck::VolumeApp::load() {
         });
 
     // Load the volume texture
-    int w,h,c,d;
+    int w, h, c, d;
     const auto volumeImages = Filesystem::ls("../data/textures/volumes/female_ankle");
-    const float * volumeData = Filesystem::readVolume(volumeImages,w,h,c,d, Filesystem::ReadImageFlags::GRAYSCALE);
-    bufferData.textureDim = {static_cast<float>(w), static_cast<float>(h), static_cast<float>(d), static_cast<float>(c)};
+    const float *volumeData = Filesystem::readVolume(volumeImages, w, h, c, d,
+                                                     Filesystem::ReadImageFlags::R32_SFLOAT |
+                                                     Filesystem::ReadImageFlags::FLIPY);
+    bufferData.textureDim = {
+        static_cast<float>(w), static_cast<float>(h), static_cast<float>(d), static_cast<float>(c)
+    };
     texture = resources.createTexture3DFromBuffer({
-        .buffer = static_cast<const void*>(volumeData),
+        .buffer = static_cast<const void *>(volumeData),
         .instanceSize = sizeof(float),
         .width = static_cast<uint32_t>(w), .height = static_cast<uint32_t>(h),
         .channels = static_cast<uint32_t>(c), .depth = static_cast<uint32_t>(d),
@@ -162,7 +164,7 @@ void Hmck::VolumeApp::load() {
 
     for (int i = 0; i < SwapChain::MAX_FRAMES_IN_FLIGHT; i++) {
         auto fbufferInfo = resources.getBuffer(buffers[i])->descriptorInfo();
-        auto imageInfo =resources.getTexture3DDescriptorImageInfo(texture);
+        auto imageInfo = resources.getTexture3DDescriptorImageInfo(texture);
         descriptorSets[i] = resources.createDescriptorSet({
             .descriptorSetLayout = descriptorSetLayout,
             .bufferWrites = {{0, fbufferInfo}},
@@ -226,16 +228,16 @@ void Hmck::VolumeApp::ui() {
     ImGui::Begin("Volume editor", (bool *) false, ImGuiWindowFlags_AlwaysAutoResize);
     ImGui::Text("Edit rendering properties", window_flags);
 
-    float baseSkyColor[4] = {
+   float baseSkyColor[4] = {
         bufferData.baseSkyColor.x, bufferData.baseSkyColor.y, bufferData.baseSkyColor.z, bufferData.baseSkyColor.w
     };
     ImGui::ColorEdit4("Base sky color", &baseSkyColor[0]);
     bufferData.baseSkyColor = {baseSkyColor[0], baseSkyColor[1], baseSkyColor[2], baseSkyColor[3]};
 
     ImGui::DragFloat("Max steps", &pushData.maxSteps, 1.0f, 0.001f);
-    ImGui::DragFloat("March size", &pushData.marchSize, 0.001f, 0.001f);
+    ImGui::DragFloat("March size", &pushData.marchSize, 0.0001f, 0.0001f,100.f, "%.5f");
     ImGui::DragFloat("Air threshold", &pushData.airTrheshold, 0.01f, 0.001f, 1.0f);
-    ImGui::DragFloat("Tissue threshold", &pushData.tissueThreshold, 0.01f, 0.001f,1.0f);
+    ImGui::DragFloat("Tissue threshold", &pushData.tissueThreshold, 0.01f, 0.001f, 1.0f);
     ImGui::DragFloat("Fat threshold", &pushData.fatThreshold, 0.01f, 0.001f, 1.0f);
 
     float tissueColor[4] = {
@@ -256,7 +258,9 @@ void Hmck::VolumeApp::ui() {
     ImGui::ColorEdit4("Bone color", &boneColor[0]);
     bufferData.boneColor = {boneColor[0], boneColor[1], boneColor[2], boneColor[3]};
 
-    ImGui::Checkbox("Blinn-phong", &pushData.nDotL);
+    bool nDotL = pushData.nDotL == 1;
+    ImGui::Checkbox("Blinn-phong", &nDotL);
+    pushData.nDotL = (nDotL) ? 1 : 0;
 
     ImGui::End();
 }

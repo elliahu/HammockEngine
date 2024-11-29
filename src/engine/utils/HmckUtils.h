@@ -570,18 +570,19 @@ namespace Hmck {
             return fileList;
         }
         enum ReadImageFlags {
-            GRAYSCALE =  0x00000000,
-            COLOR = 0x00000001,
-            COLOR_NO_ALPHA  = 0x00000002,
-            FLIPY = 0x00000003
+            R32_SFLOAT = 0x00000001,        // 1 << 0
+            R32G32B32A32_SFLOAT = 0x00000002, // 1 << 1
+            R32G32B32_SFLOAT = 0x00000004,    // 1 << 2
+            FLIPY = 0x00000008               // 1 << 3
         };
-        inline const float* readImage(const std::string &filename, int& width, int& height, int& channels, const uint32_t flags = ReadImageFlags::COLOR) {
+
+        inline const float* readImage(const std::string &filename, int& width, int& height, int& channels, const uint32_t flags = ReadImageFlags::R32G32B32A32_SFLOAT) {
             int desiredChannes = 1;
-            if(flags & ReadImageFlags::GRAYSCALE)
+            if(flags & ReadImageFlags::R32_SFLOAT)
                 desiredChannes = 1;
-            else if(flags &  ReadImageFlags::COLOR_NO_ALPHA)
+            else if(flags &  ReadImageFlags::R32G32B32_SFLOAT)
                 desiredChannes = 4;
-            else if(flags &  ReadImageFlags::COLOR)
+            else if(flags &  ReadImageFlags::R32G32B32A32_SFLOAT)
                 desiredChannes = 3;
 
             stbi_set_flip_vertically_on_load(flags & ReadImageFlags::FLIPY);
@@ -599,7 +600,7 @@ namespace Hmck {
             return data;
         }
 
-        inline const float* readVolume(const std::vector<std::string>& slices, int& width, int& height, int& channels, int& depth, const uint32_t flags = ReadImageFlags::COLOR) {
+        inline const float* readVolume(const std::vector<std::string>& slices, int& width, int& height, int& channels, int& depth, const uint32_t flags = ReadImageFlags::R32G32B32A32_SFLOAT) {
             if (slices.empty()) {
                 Logger::log(HMCK_LOG_LEVEL_ERROR, "Error: No slice file paths provided\n");
                 throw std::runtime_error("Error: No slice file paths provided.");
