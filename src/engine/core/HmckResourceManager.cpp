@@ -148,7 +148,7 @@ Hmck::DescriptorSetHandle Hmck::ResourceManager::createDescriptorSet(const Descr
     throw std::runtime_error("Faild to create descriptor!");
 }
 
-Hmck::Texture2DHandle Hmck::ResourceManager::createTexture2DFromBuffer(
+Hmck::Texture2DHandle Hmck::ResourceManager::createTexture2D(
     const Texture2DCreateFromBufferInfo &createInfo) const {
     std::unique_ptr<Texture2D> texture = std::make_unique<Texture2D>();
     texture->loadFromBuffer(
@@ -198,7 +198,7 @@ Hmck::TextureCubeMapHandle Hmck::ResourceManager::createTextureCubeMapFromFiles(
     return handle;
 }
 
-Hmck::Texture3DHandle Hmck::ResourceManager::createTexture3DFromBuffer(
+Hmck::Texture3DHandle Hmck::ResourceManager::createTexture3D(
     const Texture3DCreateFromBufferInfo &createInfo) const {
     std::unique_ptr<Texture3D> texture = std::make_unique<Texture3D>();
     texture->loadFromBuffer(

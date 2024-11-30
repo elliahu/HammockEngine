@@ -178,7 +178,7 @@ void Hmck::CloudsApp::load() {
         // Load textures
         int w, h, c;
         ScopedMemory noiseData{Filesystem::readImage("../data/noise/noise2.png", w, h, c)};
-        noiseTexture = resources.createTexture2DFromBuffer({
+        noiseTexture = resources.createTexture2D({
             .buffer = noiseData.get(),
             .instanceSize = sizeof(float),
             .width = static_cast<uint32_t>(w), .height = static_cast<uint32_t>(h), .channels = static_cast<uint32_t>(c),
@@ -186,7 +186,7 @@ void Hmck::CloudsApp::load() {
         });
 
         ScopedMemory blueNoiseData{Filesystem::readImage("../data/noise/blue_noise.jpg", w, h, c)};
-        blueNoiseTexture = resources.createTexture2DFromBuffer({
+        blueNoiseTexture = resources.createTexture2D({
             .buffer = blueNoiseData.get(),
             .instanceSize = sizeof(float),
             .width = static_cast<uint32_t>(w), .height = static_cast<uint32_t>(h), .channels = static_cast<uint32_t>(c),

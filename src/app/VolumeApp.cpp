@@ -153,7 +153,7 @@ void Hmck::VolumeApp::load() {
         bufferData.textureDim = {
             static_cast<float>(w), static_cast<float>(h), static_cast<float>(d), static_cast<float>(c)
         };
-        texture = resources.createTexture3DFromBuffer({
+        texture = resources.createTexture3D({
             .buffer = volumeData.get(),
             .instanceSize = sizeof(float),
             .width = static_cast<uint32_t>(w), .height = static_cast<uint32_t>(h),

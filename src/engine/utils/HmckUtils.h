@@ -630,6 +630,7 @@ namespace Hmck {
             throw std::runtime_error("Failed to load image!");
         }
 
+        // Can also be used to read cube map faces
         inline const float* readVolume(const std::vector<std::string>& slices, int& width, int& height, int& channels, int& depth, const ImageFormat format = ImageFormat::R32G32B32A32_SFLOAT, uint32_t flags = 0) {
             if (slices.empty()) {
                 Logger::log(HMCK_LOG_LEVEL_ERROR, "Error: No slice file paths provided\n");

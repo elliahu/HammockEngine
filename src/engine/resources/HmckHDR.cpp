@@ -22,7 +22,7 @@ void Hmck::Environment::load(Device &device, const ResourceManager &resources, c
     channels = 4;
     const uint32_t mipLevels = getNumberOfMipLevels(static_cast<uint32_t>(width), static_cast<uint32_t>(height));
 
-    environmentSphere = resources.createTexture2DFromBuffer({
+    environmentSphere = resources.createTexture2D({
         .buffer = pixels,
         .instanceSize = sizeof(float),
         .width = static_cast<uint32_t>(width), .height = static_cast<uint32_t>(height), .channels = 4,

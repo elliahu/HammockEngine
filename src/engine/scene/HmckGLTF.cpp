@@ -112,7 +112,7 @@ void Hmck::GltfLoader::loadImages(gltf::Model &model) const {
         scene->images[i].uri = glTFImage.uri;
         scene->images[i].name = glTFImage.name;
         // TODO load mip maps as well
-        scene->images[i].texture = resources.createTexture2DFromBuffer({
+        scene->images[i].texture = resources.createTexture2D({
             .buffer = static_cast<const void*>(buffer),
             .instanceSize = sizeof(unsigned char),
             .width = static_cast<uint32_t>(glTFImage.width),

@@ -168,7 +168,7 @@ void Hmck::RaymarchingDemoApp::load() {
     {
         int w,h,c;
         ScopedMemory noiseData{Filesystem::readImage("../data/noise/noise2.png",w,h,c)};
-        noiseTexture = resources.createTexture2DFromBuffer({
+        noiseTexture = resources.createTexture2D({
             .buffer = noiseData.get(),
             .instanceSize = sizeof(float),
             .width = static_cast<uint32_t>(w), .height = static_cast<uint32_t>(h), .channels = static_cast<uint32_t>(c),

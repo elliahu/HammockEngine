@@ -125,7 +125,7 @@ namespace Hmck {
             Texture2DCreateSamplerInfo samplerInfo{};
         };
 
-        [[nodiscard]] Texture2DHandle createTexture2DFromBuffer(const Texture2DCreateFromBufferInfo &createInfo) const;
+        [[nodiscard]] Texture2DHandle createTexture2D(const Texture2DCreateFromBufferInfo &createInfo) const;
 
         struct TextureCubeMapCreateFromFilesInfo {
             std::vector<std::string> filenames;
@@ -153,7 +153,7 @@ namespace Hmck {
             Texture3DCreateSamplerInfo samplerInfo{};
         };
 
-        [[nodiscard]] Texture3DHandle createTexture3DFromBuffer(const Texture3DCreateFromBufferInfo &createInfo) const;
+        [[nodiscard]] Texture3DHandle createTexture3D(const Texture3DCreateFromBufferInfo &createInfo) const;
 
         static DescriptorSetLayout &getDescriptorSetLayout(DescriptorSetLayoutHandle handle);
 
