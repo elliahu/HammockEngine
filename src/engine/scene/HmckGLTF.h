@@ -13,14 +13,14 @@ namespace Hmck {
     class GltfLoader {
     public:
         enum LoadingFlags {
-            None = 0x00000000,
-            FlipY = 0x00000001,
-            PreTransformVertices = 0x00000002
+            None = 0x00000001,
+            FlipY = 0x00000002,
+            PreTransformVertices = 0x00000004
         };
 
         GltfLoader(Device &device, ResourceManager &memory, std::unique_ptr<Scene> &scene);
 
-        void load(std::string filename, uint32_t fileLoadingFlags = LoadingFlags::None);
+        void load(const std::string &filename, uint32_t fileLoadingFlags = LoadingFlags::None);
 
     private:
         Device &device;

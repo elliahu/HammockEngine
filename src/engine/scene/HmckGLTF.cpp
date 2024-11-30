@@ -23,7 +23,7 @@ Hmck::GltfLoader::GltfLoader(Device &device, ResourceManager &memory, std::uniqu
     materialsOffset = scene->materials.size();
 }
 
-void Hmck::GltfLoader::load(std::string filename, uint32_t fileLoadingFlags) {
+void Hmck::GltfLoader::load(const std::string &filename, uint32_t fileLoadingFlags) {
     gltf::TinyGLTF loader;
     gltf::Model model;
     std::string err;
@@ -102,23 +102,23 @@ void Hmck::GltfLoader::loadImages(gltf::Model &model) const {
         gltf::Image &glTFImage = model.images[i - imagesOffset];
         // Get the image data from the glTF loader
         unsigned char *buffer = nullptr;
-        uint32_t bufferSize = 0;
         // We convert RGB-only images to RGBA, as most devices don't support RGB-formats in Vulkan
         if (glTFImage.component == 3) {
             throw std::runtime_error("3-component images not supported");
         } else {
             buffer = &glTFImage.image[0];
-            bufferSize = glTFImage.image.size();
         }
         // Load texture from image buffer
         scene->images[i].uri = glTFImage.uri;
         scene->images[i].name = glTFImage.name;
+        // TODO load mip maps as well
         scene->images[i].texture = resources.createTexture2DFromBuffer({
-            .buffer = buffer,
-            .bufferSize = bufferSize,
+            .buffer = static_cast<const void*>(buffer),
+            .instanceSize = sizeof(unsigned char),
             .width = static_cast<uint32_t>(glTFImage.width),
             .height = static_cast<uint32_t>(glTFImage.height),
-            .format = VK_FORMAT_R8G8B8A8_UNORM
+            .channels = 4,
+            .format = VK_FORMAT_R8G8B8A8_UNORM,
         });
     }
 }

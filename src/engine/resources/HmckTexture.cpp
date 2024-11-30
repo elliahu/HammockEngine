@@ -26,92 +26,6 @@ void Hmck::ITexture::destroy(const Device &device) {
     vkFreeMemory(device.device(), memory, nullptr);
 }
 
-void Hmck::Texture2D::loadFromFile(
-    const std::string &filepath,
-    Device &device,
-    VkFormat format,
-    const VkImageLayout imageLayout,
-    uint32_t mipLevels
-) {
-    stbi_set_flip_vertically_on_load(true);
-    stbi_uc *pixels = stbi_load(filepath.c_str(), &width, &height, &channels, STBI_rgb_alpha);
-    stbi_set_flip_vertically_on_load(false);
-    if (!pixels) {
-        throw std::runtime_error("Could not load image from disk");
-    }
-
-    VkDeviceSize imageSize = static_cast<VkDeviceSize>(width) * height * 4;
-
-    // create staging buffer and copy image data to the staging buffer
-
-    Buffer stagingBuffer
-    {
-        device,
-        sizeof(pixels[0]),
-        static_cast<uint32_t>(width * height * 4),
-        VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
-        VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
-    };
-
-    stagingBuffer.map();
-    stagingBuffer.writeToBuffer((void *) pixels);
-
-    stbi_image_free(pixels);
-
-    // create VkImage
-    VkImageCreateInfo imageInfo{};
-    imageInfo.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
-    imageInfo.imageType = VK_IMAGE_TYPE_2D;
-    imageInfo.extent.width = static_cast<uint32_t>(width);
-    imageInfo.extent.height = static_cast<uint32_t>(height);
-    imageInfo.extent.depth = 1;
-    imageInfo.mipLevels = mipLevels;
-    imageInfo.arrayLayers = 1;
-    imageInfo.format = format;
-    imageInfo.tiling = VK_IMAGE_TILING_OPTIMAL;
-    imageInfo.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-    imageInfo.usage = VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT;
-    imageInfo.samples = VK_SAMPLE_COUNT_1_BIT;
-    imageInfo.flags = 0; // Optional
-
-    device.createImageWithInfo(imageInfo, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, image, memory);
-
-    // copy data from staging buffer to VkImage
-    device.transitionImageLayout(
-        image,
-        VK_IMAGE_LAYOUT_UNDEFINED,
-        VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL
-    );
-    device.copyBufferToImage(
-        stagingBuffer.getBuffer(),
-        image, static_cast<uint32_t>(width),
-        static_cast<uint32_t>(height),
-        1
-    );
-    device.transitionImageLayout(
-        image,
-        VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
-        imageLayout
-    );
-    layout = imageLayout;
-
-    // create image view
-    VkImageViewCreateInfo viewInfo{};
-    viewInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
-    viewInfo.image = image;
-    viewInfo.viewType = VK_IMAGE_VIEW_TYPE_2D;
-    viewInfo.format = format;
-    viewInfo.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-    viewInfo.subresourceRange.baseMipLevel = 0;
-    viewInfo.subresourceRange.levelCount = mipLevels;
-    viewInfo.subresourceRange.baseArrayLayer = 0;
-    viewInfo.subresourceRange.layerCount = 1;
-
-    if (vkCreateImageView(device.device(), &viewInfo, nullptr, &view) != VK_SUCCESS) {
-        throw std::runtime_error("Failed to create image view!");
-    }
-}
-
 void Hmck::TextureCubeMap::loadFromFiles(const std::vector<std::string> &filenames, const VkFormat format,
                                          Device &device, const VkImageLayout imageLayout) {
     std::vector<stbi_uc *> pixels{6};
@@ -227,15 +141,17 @@ void Hmck::TextureCubeMap::createSampler(const Device &device, const VkFilter fi
     }
 }
 
-void Hmck::Texture2D::loadFromBuffer(const unsigned char *buffer, const uint32_t bufferSize, const uint32_t width,
-                                     const uint32_t height, Device &device, VkFormat format,
+void Hmck::Texture2D::loadFromBuffer(const void *buffer, const uint32_t instanceSize, const uint32_t width,
+                                     const uint32_t height, const uint32_t channels, Device &device, VkFormat format,
                                      const VkImageLayout imageLayout, uint32_t mipLevels) {
     this->width = width;
     this->height = height;
+    const uint32_t bufferSize = width * height * channels;
+
     Buffer stagingBuffer
     {
         device,
-        sizeof(buffer[0]),
+        instanceSize,
         bufferSize,
         VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
         VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
@@ -243,9 +159,6 @@ void Hmck::Texture2D::loadFromBuffer(const unsigned char *buffer, const uint32_t
 
     stagingBuffer.map();
     stagingBuffer.writeToBuffer(buffer);
-
-    // create VkImage
-    format = format;
 
     VkImageCreateInfo imageInfo{};
     imageInfo.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
@@ -258,7 +171,7 @@ void Hmck::Texture2D::loadFromBuffer(const unsigned char *buffer, const uint32_t
     imageInfo.format = format;
     imageInfo.tiling = VK_IMAGE_TILING_OPTIMAL;
     imageInfo.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-    imageInfo.usage = VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT;
+    imageInfo.usage = VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT| VK_IMAGE_USAGE_SAMPLED_BIT;
     imageInfo.samples = VK_SAMPLE_COUNT_1_BIT;
     imageInfo.flags = 0; // Optional
 
@@ -272,8 +185,8 @@ void Hmck::Texture2D::loadFromBuffer(const unsigned char *buffer, const uint32_t
     );
     device.copyBufferToImage(
         stagingBuffer.getBuffer(),
-        image, static_cast<uint32_t>(width),
-        static_cast<uint32_t>(height),
+        image,
+        width,height,
         1
     );
     device.transitionImageLayout(
@@ -299,85 +212,6 @@ void Hmck::Texture2D::loadFromBuffer(const unsigned char *buffer, const uint32_t
         throw std::runtime_error("Failed to create image view!");
     }
 }
-
-void Hmck::Texture2D::loadFromBuffer(
-    const float *buffer,
-    const uint32_t bufferSize,
-    const uint32_t width,
-    const uint32_t height,
-    Device &device,
-    VkFormat format,
-    const VkImageLayout imageLayout,
-    uint32_t mipLevels
-) {
-    this->width = width;
-    this->height = height;
-    Buffer stagingBuffer
-    {
-        device,
-        sizeof(buffer[0]),
-        bufferSize,
-        VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
-        VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
-    };
-
-    stagingBuffer.map();
-    stagingBuffer.writeToBuffer(buffer);
-
-    // create VkImage
-    VkImageCreateInfo imageInfo{};
-    imageInfo.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
-    imageInfo.imageType = VK_IMAGE_TYPE_2D;
-    imageInfo.extent.width = static_cast<uint32_t>(width);
-    imageInfo.extent.height = static_cast<uint32_t>(height);
-    imageInfo.extent.depth = 1;
-    imageInfo.mipLevels = mipLevels;
-    imageInfo.arrayLayers = 1;
-    imageInfo.format = format;
-    imageInfo.tiling = VK_IMAGE_TILING_OPTIMAL;
-    imageInfo.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-    imageInfo.usage = VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT;
-    imageInfo.samples = VK_SAMPLE_COUNT_1_BIT;
-    imageInfo.flags = 0; // Optional
-
-    device.createImageWithInfo(imageInfo, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, image, memory);
-
-    // copy data from staging buffer to VkImage
-    device.transitionImageLayout(
-        image,
-        VK_IMAGE_LAYOUT_UNDEFINED,
-        VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL
-    );
-    device.copyBufferToImage(
-        stagingBuffer.getBuffer(),
-        image, static_cast<uint32_t>(width),
-        static_cast<uint32_t>(height),
-        1
-    );
-    device.transitionImageLayout(
-        image,
-        VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
-        imageLayout
-    );
-    layout = imageLayout;
-
-    // create image view
-    VkImageViewCreateInfo viewInfo{};
-    viewInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
-    viewInfo.image = image;
-    viewInfo.viewType = VK_IMAGE_VIEW_TYPE_2D;
-    viewInfo.format = format;
-    viewInfo.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-    viewInfo.subresourceRange.baseMipLevel = 0;
-    viewInfo.subresourceRange.levelCount = mipLevels;
-    viewInfo.subresourceRange.baseArrayLayer = 0;
-    viewInfo.subresourceRange.layerCount = 1;
-
-    if (vkCreateImageView(device.device(), &viewInfo, nullptr, &view) != VK_SUCCESS) {
-        throw std::runtime_error("Failed to create image view!");
-    }
-}
-
 
 void Hmck::Texture2D::createSampler(const Device &device,
                                     VkFilter filter,

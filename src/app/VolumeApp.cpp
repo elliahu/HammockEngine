@@ -3,6 +3,7 @@
 #include "controllers/KeyboardMovementController.h"
 #include "core/HmckRenderer.h"
 #include "scene/HmckGLTF.h"
+#include "utils/HmckScopedMemory.h"
 
 Hmck::VolumeApp::VolumeApp() {
     load();
@@ -144,23 +145,25 @@ void Hmck::VolumeApp::load() {
             .memoryPropertyFlags = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT
         });
 
-    // Load the volume texture
-    int w, h, c, d;
-    const auto volumeImages = Filesystem::ls("../data/textures/volumes/female_ankle");
-    const float *volumeData = Filesystem::readVolume(volumeImages, w, h, c, d,
-                                                     Filesystem::ReadImageFlags::R32_SFLOAT |
-                                                     Filesystem::ReadImageFlags::FLIPY);
-    bufferData.textureDim = {
-        static_cast<float>(w), static_cast<float>(h), static_cast<float>(d), static_cast<float>(c)
-    };
-    texture = resources.createTexture3DFromBuffer({
-        .buffer = static_cast<const void *>(volumeData),
-        .instanceSize = sizeof(float),
-        .width = static_cast<uint32_t>(w), .height = static_cast<uint32_t>(h),
-        .channels = static_cast<uint32_t>(c), .depth = static_cast<uint32_t>(d),
-        .format = VK_FORMAT_R32_SFLOAT,
-        .imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL
-    });
+
+    { // Load the volume texture
+        int w, h, c, d;
+        const auto volumeImages = Filesystem::ls("../data/textures/volumes/female_ankle");
+        ScopedMemory volumeData{Filesystem::readVolume(volumeImages, w, h, c, d,
+                                                         Filesystem::ReadImageFlags::R32_SFLOAT |
+                                                         Filesystem::ReadImageFlags::FLIPY)};
+        bufferData.textureDim = {
+            static_cast<float>(w), static_cast<float>(h), static_cast<float>(d), static_cast<float>(c)
+        };
+        texture = resources.createTexture3DFromBuffer({
+            .buffer = volumeData.get(),
+            .instanceSize = sizeof(float),
+            .width = static_cast<uint32_t>(w), .height = static_cast<uint32_t>(h),
+            .channels = static_cast<uint32_t>(c), .depth = static_cast<uint32_t>(d),
+            .format = VK_FORMAT_R32_SFLOAT,
+            .imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL
+        });
+    }
 
     for (int i = 0; i < SwapChain::MAX_FRAMES_IN_FLIGHT; i++) {
         auto fbufferInfo = resources.getBuffer(buffers[i])->descriptorInfo();

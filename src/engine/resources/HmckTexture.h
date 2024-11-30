@@ -32,29 +32,10 @@ namespace Hmck {
 
     class Texture2D final: public ITexture{
     public:
-        void loadFromFile(
-            const std::string &filepath,
-            Device &device,
-            VkFormat format,
-            VkImageLayout imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
-            uint32_t mipLevels = 1
-        );
-
-        // TODO to be removed
-         [[deprecated("Use the standard float buffer. To be removed")]]void loadFromBuffer(
-            const unsigned char *buffer,
-            uint32_t bufferSize,
-            uint32_t width, uint32_t height,
-            Device &device,
-            VkFormat format,
-            VkImageLayout imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
-            uint32_t mipLevels = 1
-        );
-
-        void loadFromBuffer(
-            const float *buffer,
-            uint32_t bufferSize,
-            uint32_t width, uint32_t height,
+         void loadFromBuffer(
+            const void *buffer,
+            uint32_t instanceSize,
+            uint32_t width, uint32_t height, uint32_t channels,
             Device &device,
             VkFormat format,
             VkImageLayout imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
@@ -74,8 +55,9 @@ namespace Hmck {
 
     class TextureCubeMap : public ITexture {
     public:
-        // TODO loadFromBuffer
+        // TODO implement loadFromBuffer
 
+        // TODO to be removed
         void loadFromFiles(
             const std::vector<std::string> &filenames,
             VkFormat format,

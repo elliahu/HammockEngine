@@ -581,9 +581,9 @@ namespace Hmck {
             if(flags & ReadImageFlags::R32_SFLOAT)
                 desiredChannes = 1;
             else if(flags &  ReadImageFlags::R32G32B32_SFLOAT)
-                desiredChannes = 4;
-            else if(flags &  ReadImageFlags::R32G32B32A32_SFLOAT)
                 desiredChannes = 3;
+            else if(flags &  ReadImageFlags::R32G32B32A32_SFLOAT)
+                desiredChannes = 4;
 
             stbi_set_flip_vertically_on_load(flags & ReadImageFlags::FLIPY);
             const float* data = stbi_loadf(filename.c_str(), &width, &height, &channels, desiredChannes);

@@ -114,40 +114,18 @@ namespace Hmck {
             const float lodBias = 0.0f;
         };
 
-        struct Texture2DCreateFromFileInfo {
-            std::string filepath;
-            VkFormat format;
-            VkImageLayout imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-            Texture2DCreateSamplerInfo samplerInfo{};
-        };
-
-        [[nodiscard]] Texture2DHandle createTexture2DFromFile(Texture2DCreateFromFileInfo createInfo) const;
-
-        // TODO to be removed
         struct Texture2DCreateFromBufferInfo {
-            unsigned char *buffer;
-            uint32_t bufferSize;
+            const void *buffer;
+            uint32_t instanceSize;
             uint32_t width;
             uint32_t height;
+            uint32_t channels;
             VkFormat format;
             VkImageLayout imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
             Texture2DCreateSamplerInfo samplerInfo{};
         };
-        // TODO to be removed
+
         [[nodiscard]] Texture2DHandle createTexture2DFromBuffer(const Texture2DCreateFromBufferInfo &createInfo) const;
-
-        struct HDRTexture2DCreateFromBufferInfo {
-            float *buffer;
-            uint32_t bufferSize;
-            uint32_t width;
-            uint32_t height;
-            VkFormat format;
-            VkImageLayout imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-            Texture2DCreateSamplerInfo samplerInfo{};
-        };
-        // TODO rename to createTexture2D
-        [[nodiscard]] Texture2DHandle createHDRTexture2DFromBuffer(const HDRTexture2DCreateFromBufferInfo &createInfo) const;
-
 
         struct TextureCubeMapCreateFromFilesInfo {
             std::vector<std::string> filenames;

@@ -148,62 +148,13 @@ Hmck::DescriptorSetHandle Hmck::ResourceManager::createDescriptorSet(const Descr
     throw std::runtime_error("Faild to create descriptor!");
 }
 
-Hmck::Texture2DHandle Hmck::ResourceManager::createTexture2DFromFile(Texture2DCreateFromFileInfo createInfo) const {
-    std::unique_ptr<Texture2D> texture = std::make_unique<Texture2D>();
-    texture->loadFromFile(
-        createInfo.filepath,
-        device,
-        createInfo.format,
-        createInfo.imageLayout,
-        createInfo.samplerInfo.maxLod);
-    if (createInfo.samplerInfo.createSampler) {
-        texture->createSampler(device,
-                               createInfo.samplerInfo.filter,
-                               createInfo.samplerInfo.addressMode,
-                               createInfo.samplerInfo.borderColor,
-                               createInfo.samplerInfo.mipmapMode,
-                               createInfo.samplerInfo.maxLod);
-    }
-    texture->updateDescriptor();
-    texture2Ds.emplace(texture2DsLastHandle, std::move(texture));
-    Texture2DHandle handle = texture2DsLastHandle;
-    texture2DsLastHandle++;
-    return handle;
-}
-
 Hmck::Texture2DHandle Hmck::ResourceManager::createTexture2DFromBuffer(
     const Texture2DCreateFromBufferInfo &createInfo) const {
     std::unique_ptr<Texture2D> texture = std::make_unique<Texture2D>();
     texture->loadFromBuffer(
         createInfo.buffer,
-        createInfo.bufferSize,
-        createInfo.width, createInfo.height,
-        device,
-        createInfo.format,
-        createInfo.imageLayout,
-        createInfo.samplerInfo.maxLod);
-    if (createInfo.samplerInfo.createSampler) {
-        texture->createSampler(device,
-                               createInfo.samplerInfo.filter,
-                               createInfo.samplerInfo.addressMode,
-                               createInfo.samplerInfo.borderColor,
-                               createInfo.samplerInfo.mipmapMode,
-                               createInfo.samplerInfo.maxLod);
-    }
-    texture->updateDescriptor();
-    texture2Ds.emplace(texture2DsLastHandle, std::move(texture));
-    Texture2DHandle handle = texture2DsLastHandle;
-    texture2DsLastHandle++;
-    return handle;
-}
-
-Hmck::Texture2DHandle Hmck::ResourceManager::createHDRTexture2DFromBuffer(
-    const HDRTexture2DCreateFromBufferInfo &createInfo) const {
-    std::unique_ptr<Texture2D> texture = std::make_unique<Texture2D>();
-    texture->loadFromBuffer(
-        createInfo.buffer,
-        createInfo.bufferSize,
-        createInfo.width, createInfo.height,
+        createInfo.instanceSize,
+        createInfo.width, createInfo.height, createInfo.channels,
         device,
         createInfo.format,
         createInfo.imageLayout,
