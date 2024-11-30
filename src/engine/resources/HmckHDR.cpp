@@ -22,6 +22,7 @@ void Hmck::Environment::load(Device &device, const ResourceManager &resources, c
     channels = 4;
     const uint32_t mipLevels = getNumberOfMipLevels(static_cast<uint32_t>(width), static_cast<uint32_t>(height));
 
+    // Mip maps will be generated automatically
     environmentSphere = resources.createTexture2D({
         .buffer = pixels,
         .instanceSize = sizeof(float),
@@ -33,10 +34,6 @@ void Hmck::Environment::load(Device &device, const ResourceManager &resources, c
             .maxLod = static_cast<float>(mipLevels)
         }
     });
-
-    // generate mip maps for the texture
-    resources.getTexture2D(environmentSphere)->generateMipMaps(
-        device, mipLevels);
 
     // Free the memory allocated by stb_image
     stbi_image_free(pixels);

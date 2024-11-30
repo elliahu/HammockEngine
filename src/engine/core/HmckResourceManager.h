@@ -124,7 +124,8 @@ namespace Hmck {
             VkImageLayout imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
             Texture2DCreateSamplerInfo samplerInfo{};
         };
-
+        // Creates a 2D texture from buffer
+        // Set createInfo.samplerInfo.maxLod > 1 to automatically generate mip maps
         [[nodiscard]] Texture2DHandle createTexture2D(const Texture2DCreateFromBufferInfo &createInfo) const;
 
         struct TextureCubeMapCreateFromFilesInfo {

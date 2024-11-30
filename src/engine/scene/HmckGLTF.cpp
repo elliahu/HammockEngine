@@ -119,6 +119,9 @@ void Hmck::GltfLoader::loadImages(gltf::Model &model) const {
             .height = static_cast<uint32_t>(glTFImage.height),
             .channels = 4,
             .format = VK_FORMAT_R8G8B8A8_UNORM,
+            .samplerInfo = {
+                .maxLod = static_cast<float>(getNumberOfMipLevels(static_cast<uint32_t>(glTFImage.width), static_cast<uint32_t>(glTFImage.height))),
+            }
         });
     }
 }

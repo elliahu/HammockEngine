@@ -151,6 +151,7 @@ Hmck::DescriptorSetHandle Hmck::ResourceManager::createDescriptorSet(const Descr
 Hmck::Texture2DHandle Hmck::ResourceManager::createTexture2D(
     const Texture2DCreateFromBufferInfo &createInfo) const {
     std::unique_ptr<Texture2D> texture = std::make_unique<Texture2D>();
+
     texture->loadFromBuffer(
         createInfo.buffer,
         createInfo.instanceSize,
@@ -159,6 +160,7 @@ Hmck::Texture2DHandle Hmck::ResourceManager::createTexture2D(
         createInfo.format,
         createInfo.imageLayout,
         createInfo.samplerInfo.maxLod);
+
     if (createInfo.samplerInfo.createSampler) {
         texture->createSampler(device,
                                createInfo.samplerInfo.filter,
@@ -167,6 +169,11 @@ Hmck::Texture2DHandle Hmck::ResourceManager::createTexture2D(
                                createInfo.samplerInfo.mipmapMode,
                                createInfo.samplerInfo.maxLod);
     }
+
+    if (createInfo.samplerInfo.maxLod > 1) {
+        texture->generateMipMaps(device,createInfo.samplerInfo.maxLod);
+    }
+
     texture->updateDescriptor();
     texture2Ds.emplace(texture2DsLastHandle, std::move(texture));
     Texture2DHandle handle = texture2DsLastHandle;
