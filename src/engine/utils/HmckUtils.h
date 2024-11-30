@@ -569,45 +569,80 @@ namespace Hmck {
 
             return fileList;
         }
-        enum ReadImageFlags {
-            R32_SFLOAT = 0x00000001,        // 1 << 0
-            R32G32B32A32_SFLOAT = 0x00000002, // 1 << 1
-            R32G32B32_SFLOAT = 0x00000004,    // 1 << 2
-            FLIPY = 0x00000008               // 1 << 3
+
+        enum ReadImageLoadingFlags {
+            FLIP_Y = 0x00000001
         };
 
-        inline const float* readImage(const std::string &filename, int& width, int& height, int& channels, const uint32_t flags = ReadImageFlags::R32G32B32A32_SFLOAT) {
-            int desiredChannes = 1;
-            if(flags & ReadImageFlags::R32_SFLOAT)
+        enum class ImageFormat {
+            R32_SFLOAT,
+            R32G32B32A32_SFLOAT,
+            R32G32B32_SFLOAT,
+            R8_UNORM,
+            R8G8B8A8_UNORM,
+            R8G8B8_UNORM,
+        };
+
+        inline const void* readImage(const std::string &filename, int& width, int& height, int& channels, const ImageFormat format = ImageFormat::R32G32B32A32_SFLOAT, uint32_t flags = 0) {
+            int desiredChannes = 4;
+            if(format ==  ImageFormat::R32_SFLOAT || format  ==  ImageFormat::R8_UNORM)
                 desiredChannes = 1;
-            else if(flags &  ReadImageFlags::R32G32B32_SFLOAT)
+            else if(format ==  ImageFormat::R32G32B32_SFLOAT || format == ImageFormat::R8G8B8_UNORM)
                 desiredChannes = 3;
-            else if(flags &  ReadImageFlags::R32G32B32A32_SFLOAT)
+            else if(format == ImageFormat::R32G32B32A32_SFLOAT || format == ImageFormat::R8G8B8A8_UNORM)
                 desiredChannes = 4;
 
-            stbi_set_flip_vertically_on_load(flags & ReadImageFlags::FLIPY);
-            const float* data = stbi_loadf(filename.c_str(), &width, &height, &channels, desiredChannes);
-            stbi_set_flip_vertically_on_load(false);
-            if (!data) {
-                Logger::log(HMCK_LOG_LEVEL_ERROR, "Error: Failed to load image!\n");
-                throw std::runtime_error("Image loading failed.");
+            stbi_set_flip_vertically_on_load(flags & FLIP_Y);
+
+            if(format == ImageFormat::R32_SFLOAT || format == ImageFormat::R32G32B32_SFLOAT || format == ImageFormat::R32G32B32A32_SFLOAT) {
+                // HDR data
+                const float* data = stbi_loadf(filename.c_str(), &width, &height, &channels, desiredChannes);
+                stbi_set_flip_vertically_on_load(false);
+                if (!data) {
+                    Logger::log(HMCK_LOG_LEVEL_ERROR, "Error: Failed to load image!\n");
+                    throw std::runtime_error("Image loading failed.");
+                }
+
+                if(desiredChannes != channels) {
+                    channels = desiredChannes;
+                }
+
+                return data;
             }
 
-            if(desiredChannes != channels) {
-                channels = desiredChannes;
+            if(format == ImageFormat::R8_UNORM || format == ImageFormat::R8G8B8_UNORM || format == ImageFormat::R8G8B8A8_UNORM) {
+                // SDR data
+                const unsigned char * data = stbi_load(filename.c_str(), &width, &height, &channels, desiredChannes);
+                stbi_set_flip_vertically_on_load(false);
+                if (!data) {
+                    Logger::log(HMCK_LOG_LEVEL_ERROR, "Error: Failed to load image!\n");
+                    throw std::runtime_error("Image loading failed.");
+                }
+
+                if(desiredChannes != channels) {
+                    channels = desiredChannes;
+                }
+
+                return data;
             }
 
-            return data;
+            Logger::log(HMCK_LOG_LEVEL_ERROR, "Error: Reached unreachable code path in readImage\n");
+            throw std::runtime_error("Failed to load image!");
         }
 
-        inline const float* readVolume(const std::vector<std::string>& slices, int& width, int& height, int& channels, int& depth, const uint32_t flags = ReadImageFlags::R32G32B32A32_SFLOAT) {
+        inline const float* readVolume(const std::vector<std::string>& slices, int& width, int& height, int& channels, int& depth, const ImageFormat format = ImageFormat::R32G32B32A32_SFLOAT, uint32_t flags = 0) {
             if (slices.empty()) {
                 Logger::log(HMCK_LOG_LEVEL_ERROR, "Error: No slice file paths provided\n");
                 throw std::runtime_error("Error: No slice file paths provided.");
             }
+            // TODO make this general to support uint buffer as well as float buffers
+            if(format == ImageFormat::R8_UNORM || format == ImageFormat::R8G8B8_UNORM || format == ImageFormat::R8G8B8A8_UNORM) {
+                Logger::log(HMCK_LOG_LEVEL_ERROR, "Error: SDR content not supported\n");
+                throw std::runtime_error("Error: SDR content not supported.");
+            }
 
             // Read the first slice to determine width, height, and channels
-            const float* firstSlice = readImage(slices[0], width, height, channels, flags);
+            const float* firstSlice = static_cast<const float*>(readImage(slices[0], width, height, channels, format, flags));
             depth = slices.size(); // The number of slices determines the depth
 
             // Allocate memory for the 3D texture
@@ -621,7 +656,7 @@ namespace Hmck {
             // Read and copy the remaining slices
             for (size_t i = 1; i < slices.size(); ++i) {
                 int currentWidth, currentHeight, currentChannels;
-                const float* sliceData = readImage(slices[i], currentWidth, currentHeight, currentChannels, flags);
+                const float* sliceData = static_cast<const float*>(readImage(slices[i], currentWidth, currentHeight, currentChannels, format, flags));
 
                 // Validate dimensions match
                 if (currentWidth != width || currentHeight != height || currentChannels != channels) {

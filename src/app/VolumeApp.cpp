@@ -149,9 +149,7 @@ void Hmck::VolumeApp::load() {
     { // Load the volume texture
         int w, h, c, d;
         const auto volumeImages = Filesystem::ls("../data/textures/volumes/female_ankle");
-        ScopedMemory volumeData{Filesystem::readVolume(volumeImages, w, h, c, d,
-                                                         Filesystem::ReadImageFlags::R32_SFLOAT |
-                                                         Filesystem::ReadImageFlags::FLIPY)};
+        ScopedMemory volumeData{Filesystem::readVolume(volumeImages, w, h, c, d, Filesystem::ImageFormat::R32_SFLOAT, Filesystem::ReadImageLoadingFlags::FLIP_Y)};
         bufferData.textureDim = {
             static_cast<float>(w), static_cast<float>(h), static_cast<float>(d), static_cast<float>(c)
         };

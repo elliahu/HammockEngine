@@ -165,10 +165,10 @@ void Hmck::PBRApp::load() {
     scene->environment->generateBRDFLUT(device, resources);
 
     GltfLoader gltfloader{device, resources, scene};
-    //gltfloader.load("../data/models/helmet/helmet.glb");
+    gltfloader.load("../data/models/helmet/helmet.glb");
     //gltfloader.load("../data/models/helmet/DamagedHelmet.glb");
     //gltfloader.load("../data/models/sponza/sponza.glb");
-    gltfloader.load("../data/models/MetalRoughSpheres.glb");
+    //gltfloader.load("../data/models/MetalRoughSpheres.glb");
 
     geometry.vertexBuffer = resources.createVertexBuffer({
         .vertexSize = sizeof(scene->vertices[0]),
