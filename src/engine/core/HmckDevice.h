@@ -8,6 +8,8 @@
 // std lib headers
 #include <string>
 
+#include "HmckVulkanInstance.h"
+
 namespace Hmck {
     struct SwapChainSupportDetails {
         VkSurfaceCapabilitiesKHR capabilities;
@@ -25,13 +27,7 @@ namespace Hmck {
 
     class Device {
     public:
-#ifdef NDEBUG
-		const bool enableValidationLayers = false;
-#else
-        const bool enableValidationLayers = true;
-#endif
-
-        explicit Device(Window &window);
+        Device(VulkanInstance &instance, VkSurfaceKHR surface);
 
         ~Device();
 
@@ -46,17 +42,19 @@ namespace Hmck {
 
         [[nodiscard]] VkCommandPool getCommandPool() const { return commandPool; }
         [[nodiscard]] VkDevice device() const { return device_; }
-        [[nodiscard]] VkInstance getInstance() const { return instance; }
+        [[nodiscard]] VkInstance getInstance() const { return instance.getInstance(); }
         [[nodiscard]] VkPhysicalDevice getPhysicalDevice() const { return physicalDevice; }
         [[nodiscard]] VkSurfaceKHR surface() const { return surface_; }
         [[nodiscard]] VkQueue graphicsQueue() const { return graphicsQueue_; }
         [[nodiscard]] VkQueue presentQueue() const { return presentQueue_; }
 
-        SwapChainSupportDetails getSwapChainSupport() { return querySwapChainSupport(physicalDevice); }
+        [[nodiscard]] SwapChainSupportDetails getSwapChainSupport() const {
+            return querySwapChainSupport(physicalDevice);
+        }
 
         uint32_t findMemoryType(uint32_t typeFilter, VkMemoryPropertyFlags properties) const;
 
-        QueueFamilyIndices findPhysicalQueueFamilies() { return findQueueFamilies(physicalDevice); }
+        [[nodiscard]] QueueFamilyIndices findPhysicalQueueFamilies() const { return findQueueFamilies(physicalDevice); }
 
         VkFormat findSupportedFormat(
             const std::vector<VkFormat> &candidates, VkImageTiling tiling, VkFormatFeatureFlags features) const;
@@ -100,11 +98,9 @@ namespace Hmck {
         VkPhysicalDeviceProperties properties;
 
     private:
-        void createInstance();
+        // TODO create instance
 
         void setupDebugMessenger();
-
-        void createSurface();
 
         void pickPhysicalDevice();
 
@@ -115,32 +111,22 @@ namespace Hmck {
         // helper functions
         bool isDeviceSuitable(VkPhysicalDevice device);
 
-        std::vector<const char *> getRequiredExtensions() const;
+        QueueFamilyIndices findQueueFamilies(VkPhysicalDevice device) const; // <- surface needed here
 
-        bool checkValidationLayerSupport() const;
-
-        QueueFamilyIndices findQueueFamilies(VkPhysicalDevice device) const;
-
-        static void populateDebugMessengerCreateInfo(VkDebugUtilsMessengerCreateInfoEXT &createInfo);
-
-        void hasGflwRequiredInstanceExtensions() const;
 
         bool checkDeviceExtensionSupport(VkPhysicalDevice device) const;
 
-        SwapChainSupportDetails querySwapChainSupport(VkPhysicalDevice device) const;
+        SwapChainSupportDetails querySwapChainSupport(VkPhysicalDevice device) const; // <- surface needed here
 
-        VkInstance instance;
-        VkDebugUtilsMessengerEXT debugMessenger;
+        VulkanInstance &instance;
         VkPhysicalDevice physicalDevice = VK_NULL_HANDLE;
-        Window &window;
         VkCommandPool commandPool;
 
         VkDevice device_;
-        VkSurfaceKHR surface_;
+        VkSurfaceKHR surface_; // <- window is needed for this
         VkQueue graphicsQueue_;
         VkQueue presentQueue_;
 
-        const std::vector<const char *> validationLayers = {"VK_LAYER_KHRONOS_validation"};
         const std::vector<const char *> deviceExtensions =
         {
             VK_KHR_SWAPCHAIN_EXTENSION_NAME,

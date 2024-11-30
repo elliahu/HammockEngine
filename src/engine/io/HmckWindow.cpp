@@ -1,7 +1,9 @@
 #include "HmckWindow.h"
-
+#include <vulkan/vulkan.h>
 #include <stdexcept>
 #include <utility>
+
+#include "core/HmckVulkanInstance.h"
 
 void Hmck::Window::initWindow(const int width, const int height) {
     if (!glfwInit()) {
@@ -32,14 +34,15 @@ Hmck::Window::Window(const int windowWidth, const int windowHeight, std::string 
 Hmck::Window::~Window() {
     glfwDestroyWindow(window);
     glfwTerminate();
+    //vkDestroySurfaceKHR(instance, surface_, nullptr);
 }
 
 bool Hmck::Window::shouldClose() const {
     return glfwWindowShouldClose(window);
 }
 
-void Hmck::Window::createWindowSurface(const VkInstance instance, VkSurfaceKHR *surface) const {
-    if (glfwCreateWindowSurface(instance, window, nullptr, surface) != VK_SUCCESS) {
+void Hmck::Window::createWindowSurface(VulkanInstance &instance){
+    if (glfwCreateWindowSurface(instance.getInstance(), window, nullptr, &surface) != VK_SUCCESS) {
         throw std::runtime_error("failed to create window surface");
     }
 }

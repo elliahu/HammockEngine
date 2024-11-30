@@ -3,15 +3,24 @@
 #include <core/HmckDevice.h>
 #include <core/HmckResourceManager.h>
 
+#include "core/HmckVulkanInstance.h"
+
 namespace Hmck {
     class IApp {
     public:
-        virtual ~IApp() = default;
 
         static constexpr int WINDOW_WIDTH = 1920;
         static constexpr int WINDOW_HEIGHT = 1080;
 
-        IApp() {
+        IApp()
+            : device(instance, [&] {
+                  window.createWindowSurface(instance);
+                  return window.getSurface();
+              }()) {
+        }
+
+        virtual ~IApp() {
+            vkDestroySurfaceKHR(instance.getInstance(), window.getSurface(), nullptr);
         }
 
         // delete copy constructor and copy destructor
@@ -23,9 +32,9 @@ namespace Hmck {
 
     protected:
         virtual void load() = 0;
-
         Window window{WINDOW_WIDTH, WINDOW_HEIGHT, "Hammock Engine"};
-        Device device{window}; // TODO this is wrong, device should not be dependent on window -> should be otherway around
+        VulkanInstance instance;
+        Device device;
         ResourceManager resources{device};
     };
 }

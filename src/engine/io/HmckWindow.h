@@ -5,6 +5,7 @@
 #include <string>
 
 #include "HmckInputHandler.h"
+#include "core/HmckVulkanInstance.h"
 
 namespace Hmck {
     enum WindowMode {
@@ -32,7 +33,9 @@ namespace Hmck {
             return {static_cast<uint32_t>(width), static_cast<uint32_t>(height)};
         }
 
-        void createWindowSurface(VkInstance instance, VkSurfaceKHR *surface) const;
+        void createWindowSurface(VulkanInstance &instance);
+
+        [[nodiscard]] VkSurfaceKHR getSurface() const { return surface; }
 
         [[nodiscard]] bool wasWindowResized() const { return framebufferResized; }
         void resetWindowResizedFlag() { framebufferResized = false; }
@@ -50,6 +53,7 @@ namespace Hmck {
 
     private:
         GLFWwindow *window;
+        VkSurfaceKHR surface;
         int monitorsCount;
         GLFWmonitor **monitors = nullptr;
         int monitorIndex = 0;
