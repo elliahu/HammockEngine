@@ -1,6 +1,7 @@
 #include "PBRApp.h"
 
 #include "controllers/KeyboardMovementController.h"
+#include "controllers/OrbitalMovementController.h"
 #include "scene/HmckGLTF.h"
 #include "scene/HmckLights.h"
 #include "utils/HmckLogger.h"
@@ -31,13 +32,14 @@ Hmck::PBRApp::~PBRApp() {
 
 void Hmck::PBRApp::run() {
     Renderer renderer{window, device};
-    KeyboardMovementController cameraController{};
+    OrbitalMovementController cameraController{};
     UserInterface ui{device, renderer.getSwapChainRenderPass(), window};
 
     auto camera = std::make_shared<Camera>();
     scene->add(camera, scene->getRoot());
     scene->setActiveCamera(camera->id);
     scene->getActiveCamera()->flipY = true;
+    scene->getActiveCamera()->transform.translation = glm::vec3(0.f, 0.f, -2.f);
     scene->getActiveCamera()->setPerspectiveProjection(glm::radians(50.f), renderer.getAspectRatio(), 0.1f, 512.0f);
 
     std::shared_ptr<OmniLight> light = std::make_shared<OmniLight>();
@@ -65,7 +67,7 @@ void Hmck::PBRApp::run() {
         currentTime = newTime;
 
         // camera
-        cameraController.moveInPlaneXZ(window, frameTime, scene->getActiveCamera());
+        cameraController.freeOrbit(scene->getActiveCamera(), {0.f, 0.f, 0.f}, window, frameTime);
         scene->getActiveCamera()->update();
 
 

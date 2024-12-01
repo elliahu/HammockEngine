@@ -5,6 +5,7 @@
 
 #include "core/HmckVulkanInstance.h"
 
+
 void Hmck::Window::initWindow(const int width, const int height) {
     if (!glfwInit()) {
         throw std::runtime_error("Failed to initialize GLFW");
@@ -25,8 +26,10 @@ void Hmck::Window::framebufferResizeCallback(GLFWwindow *window, int width, int 
     window_->height = height;
 }
 
+
+
 Hmck::Window::Window(const int windowWidth, const int windowHeight, std::string _windowName) : width{windowWidth},
-    height{windowHeight}, windowName{std::move(_windowName)} {
+                                                                                               height{windowHeight}, windowName{std::move(_windowName)} {
     initWindow(width, height);
     inputHandler.setWindow(window);
 }

@@ -92,7 +92,8 @@ namespace Hmck {
             return viewport;
         }
 
-        inline VkViewport viewportFlipped(const float width, const float height, const float minDepth, const float maxDepth) {
+        inline VkViewport viewportFlipped(const float width, const float height, const float minDepth,
+                                          const float maxDepth) {
             VkViewport viewport{};
             viewport.width = width;
             viewport.height = -height;
@@ -103,7 +104,8 @@ namespace Hmck {
             return viewport;
         }
 
-        inline VkRect2D rect2D(const int32_t width, const int32_t height, const int32_t offsetX, const int32_t offsetY) {
+        inline VkRect2D rect2D(const int32_t width, const int32_t height, const int32_t offsetX,
+                               const int32_t offsetY) {
             VkRect2D rect2D{};
             rect2D.extent.width = width;
             rect2D.extent.height = height;
@@ -113,7 +115,8 @@ namespace Hmck {
         }
 
         /** @brief Initialize a map entry for a shader specialization constant */
-        inline VkSpecializationMapEntry specializationMapEntry(const uint32_t constantID, const uint32_t offset, const size_t size) {
+        inline VkSpecializationMapEntry specializationMapEntry(const uint32_t constantID, const uint32_t offset,
+                                                               const size_t size) {
             VkSpecializationMapEntry specializationMapEntry{};
             specializationMapEntry.constantID = constantID;
             specializationMapEntry.offset = offset;
@@ -123,7 +126,8 @@ namespace Hmck {
 
         /** @brief Initialize a specialization constant info structure to pass to a shader stage */
         inline VkSpecializationInfo specializationInfo(const uint32_t mapEntryCount,
-                                                       const VkSpecializationMapEntry *mapEntries, const size_t dataSize,
+                                                       const VkSpecializationMapEntry *mapEntries,
+                                                       const size_t dataSize,
                                                        const void *data) {
             VkSpecializationInfo specializationInfo{};
             specializationInfo.mapEntryCount = mapEntryCount;
@@ -553,16 +557,17 @@ namespace Hmck {
             }
         }
 
-        inline std::vector<std::string> ls(const std::string& directoryPath) {
+        inline std::vector<std::string> ls(const std::string &directoryPath) {
             std::vector<std::string> fileList;
 
             try {
-                for (const auto& entry : std::filesystem::directory_iterator(directoryPath)) {
-                    if (entry.is_regular_file()) { // Check if it's a regular file
+                for (const auto &entry: std::filesystem::directory_iterator(directoryPath)) {
+                    if (entry.is_regular_file()) {
+                        // Check if it's a regular file
                         fileList.push_back(entry.path().string());
                     }
                 }
-            } catch (const std::filesystem::filesystem_error& e) {
+            } catch (const std::filesystem::filesystem_error &e) {
                 Logger::log(HMCK_LOG_LEVEL_ERROR, "Error: Error accessing directory %s\n", directoryPath.c_str());
                 throw std::runtime_error("Error: Error accessing directory");
             }
@@ -583,43 +588,46 @@ namespace Hmck {
             R8G8B8_UNORM,
         };
 
-        inline const void* readImage(const std::string &filename, int& width, int& height, int& channels, const ImageFormat format = ImageFormat::R32G32B32A32_SFLOAT, uint32_t flags = 0) {
+        inline const void *readImage(const std::string &filename, int &width, int &height, int &channels,
+                                     const ImageFormat format = ImageFormat::R32G32B32A32_SFLOAT, uint32_t flags = 0) {
             int desiredChannes = 4;
-            if(format ==  ImageFormat::R32_SFLOAT || format  ==  ImageFormat::R8_UNORM)
+            if (format == ImageFormat::R32_SFLOAT || format == ImageFormat::R8_UNORM)
                 desiredChannes = 1;
-            else if(format ==  ImageFormat::R32G32B32_SFLOAT || format == ImageFormat::R8G8B8_UNORM)
+            else if (format == ImageFormat::R32G32B32_SFLOAT || format == ImageFormat::R8G8B8_UNORM)
                 desiredChannes = 3;
-            else if(format == ImageFormat::R32G32B32A32_SFLOAT || format == ImageFormat::R8G8B8A8_UNORM)
+            else if (format == ImageFormat::R32G32B32A32_SFLOAT || format == ImageFormat::R8G8B8A8_UNORM)
                 desiredChannes = 4;
 
             stbi_set_flip_vertically_on_load(flags & FLIP_Y);
 
-            if(format == ImageFormat::R32_SFLOAT || format == ImageFormat::R32G32B32_SFLOAT || format == ImageFormat::R32G32B32A32_SFLOAT) {
+            if (format == ImageFormat::R32_SFLOAT || format == ImageFormat::R32G32B32_SFLOAT || format ==
+                ImageFormat::R32G32B32A32_SFLOAT) {
                 // HDR data
-                const float* data = stbi_loadf(filename.c_str(), &width, &height, &channels, desiredChannes);
+                const float *data = stbi_loadf(filename.c_str(), &width, &height, &channels, desiredChannes);
                 stbi_set_flip_vertically_on_load(false);
                 if (!data) {
                     Logger::log(HMCK_LOG_LEVEL_ERROR, "Error: Failed to load image!\n");
                     throw std::runtime_error("Image loading failed.");
                 }
 
-                if(desiredChannes != channels) {
+                if (desiredChannes != channels) {
                     channels = desiredChannes;
                 }
 
                 return data;
             }
 
-            if(format == ImageFormat::R8_UNORM || format == ImageFormat::R8G8B8_UNORM || format == ImageFormat::R8G8B8A8_UNORM) {
+            if (format == ImageFormat::R8_UNORM || format == ImageFormat::R8G8B8_UNORM || format ==
+                ImageFormat::R8G8B8A8_UNORM) {
                 // SDR data
-                const unsigned char * data = stbi_load(filename.c_str(), &width, &height, &channels, desiredChannes);
+                const unsigned char *data = stbi_load(filename.c_str(), &width, &height, &channels, desiredChannes);
                 stbi_set_flip_vertically_on_load(false);
                 if (!data) {
                     Logger::log(HMCK_LOG_LEVEL_ERROR, "Error: Failed to load image!\n");
                     throw std::runtime_error("Image loading failed.");
                 }
 
-                if(desiredChannes != channels) {
+                if (desiredChannes != channels) {
                     channels = desiredChannes;
                 }
 
@@ -631,51 +639,54 @@ namespace Hmck {
         }
 
         // Can also be used to read cube map faces
-        inline const float* readVolume(const std::vector<std::string>& slices, int& width, int& height, int& channels, int& depth, const ImageFormat format = ImageFormat::R32G32B32A32_SFLOAT, uint32_t flags = 0) {
+        inline const float *readVolume(const std::vector<std::string> &slices, int &width, int &height, int &channels,
+                                       int &depth, const ImageFormat format = ImageFormat::R32G32B32A32_SFLOAT,
+                                       uint32_t flags = 0) {
             if (slices.empty()) {
                 Logger::log(HMCK_LOG_LEVEL_ERROR, "Error: No slice file paths provided\n");
                 throw std::runtime_error("Error: No slice file paths provided.");
             }
             // TODO make this general to support uint buffer as well as float buffers
-            if(format == ImageFormat::R8_UNORM || format == ImageFormat::R8G8B8_UNORM || format == ImageFormat::R8G8B8A8_UNORM) {
+            if (format == ImageFormat::R8_UNORM || format == ImageFormat::R8G8B8_UNORM || format ==
+                ImageFormat::R8G8B8A8_UNORM) {
                 Logger::log(HMCK_LOG_LEVEL_ERROR, "Error: SDR content not supported\n");
                 throw std::runtime_error("Error: SDR content not supported.");
             }
 
             // Read the first slice to determine width, height, and channels
-            const float* firstSlice = static_cast<const float*>(readImage(slices[0], width, height, channels, format, flags));
+            const float *firstSlice = static_cast<const float *>(readImage(
+                slices[0], width, height, channels, format, flags));
             depth = slices.size(); // The number of slices determines the depth
 
             // Allocate memory for the 3D texture
             size_t sliceSize = width * height * channels;
-            float* volumeData = new float[sliceSize * depth];
+            float *volumeData = new float[sliceSize * depth];
 
             // Copy the first slice into the buffer
             std::copy(firstSlice, firstSlice + sliceSize, volumeData);
-            stbi_image_free(const_cast<float*>(firstSlice)); // Free the first slice
+            stbi_image_free(const_cast<float *>(firstSlice)); // Free the first slice
 
             // Read and copy the remaining slices
             for (size_t i = 1; i < slices.size(); ++i) {
                 int currentWidth, currentHeight, currentChannels;
-                const float* sliceData = static_cast<const float*>(readImage(slices[i], currentWidth, currentHeight, currentChannels, format, flags));
+                const float *sliceData = static_cast<const float *>(readImage(
+                    slices[i], currentWidth, currentHeight, currentChannels, format, flags));
 
                 // Validate dimensions match
                 if (currentWidth != width || currentHeight != height || currentChannels != channels) {
                     delete[] volumeData;
-                    stbi_image_free(const_cast<float*>(sliceData));
+                    stbi_image_free(const_cast<float *>(sliceData));
                     Logger::log(HMCK_LOG_LEVEL_ERROR, "Error: Slice dimensions or channels mismatch in slice %d\n", i);
                     throw std::runtime_error("Error: Slice dimensions or channels mismatch!");
                 }
 
                 // Copy the slice into the correct position in the 3D buffer
                 std::copy(sliceData, sliceData + sliceSize, volumeData + i * sliceSize);
-                stbi_image_free(const_cast<float*>(sliceData)); // Free the current slice
+                stbi_image_free(const_cast<float *>(sliceData)); // Free the current slice
             }
 
             return volumeData;
         }
-
-
     } // namespace Filesystem
 
     namespace Math {
@@ -709,6 +720,60 @@ namespace Hmck {
 
         inline uint32_t padSizeToMinAlignment(uint32_t originalSize, uint32_t minAlignment) {
             return (originalSize + minAlignment - 1) & ~(minAlignment - 1);
+        }
+
+        /**
+         * Calculates the orbital position around a center point.
+         *
+         * @param center      The center point of the orbit (glm::vec3).
+         * @param radius      The radius of the orbit (float).
+         * @param azimuth     The azimuth angle in radians (horizontal rotation, float).
+         * @param elevation   The elevation angle in radians (vertical rotation, float).
+         * @return            The calculated orbital position (glm::vec3).
+         */
+        inline glm::vec3 orbitalPosition(const glm::vec3 &center, float radius, float azimuth, float elevation) {
+            // Calculate the position in spherical coordinates
+            float x = radius * cos(elevation) * cos(azimuth);
+            float y = radius * sin(elevation);
+            float z = radius * cos(elevation) * sin(azimuth);
+
+            // Translate the position relative to the center
+            glm::vec3 orbitalPosition = center + glm::vec3(x, y, z);
+            return orbitalPosition;
+        }
+
+        /**
+         * Computes the Euler angles (pitch, yaw, roll) to orient an object to "look at" a target.
+         *
+         * @param position The position of the object (glm::vec3).
+         * @param target   The target position to look at (glm::vec3).
+         * @param up       The up vector for the object's orientation (glm::vec3).
+         * @return         The Euler angles (pitch, yaw, roll) as glm::vec3 in radians.
+         */
+        inline glm::vec3 lookAtEulerAngles(glm::vec3 position, glm::vec3 target, glm::vec3 up) {
+            // Calculate the direction vector from position to target
+            glm::vec3 direction = glm::normalize(target - position);
+
+            // Calculate pitch (rotation around X-axis)
+            float pitch = std::asin(-direction.y);
+
+            // Calculate yaw (rotation around Y-axis)
+            float yaw = std::atan2(direction.x, direction.z);
+
+            // Calculate roll (rotation around Z-axis)
+            // This is more complex as it requires computing the local right vector
+            glm::vec3 worldUp = glm::normalize(up);
+            glm::vec3 right = glm::normalize(glm::cross(direction, worldUp));
+            glm::vec3 correctedUp = glm::normalize(glm::cross(right, direction));
+
+            // Compute roll using the dot product between the corrected up and world up
+            float roll = std::atan2(
+                glm::dot(right, worldUp),
+                glm::dot(correctedUp, worldUp)
+            );
+
+            // Return Euler angles in radians (pitch, yaw, roll)
+            return glm::vec3(pitch, yaw, roll);
         }
     }
 

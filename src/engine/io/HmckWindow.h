@@ -41,7 +41,7 @@ namespace Hmck {
         void resetWindowResizedFlag() { framebufferResized = false; }
         [[nodiscard]] GLFWwindow *getGLFWwindow() const { return window; }
         static void pollEvents() { glfwPollEvents(); }
-        InputManager &getInputManager() { return inputHandler; }
+        InputHandler &getInputHandler() { return inputHandler; }
 
         void setCursorVisibility(bool visible) const;
 
@@ -62,10 +62,11 @@ namespace Hmck {
         bool framebufferResized = false;
         std::string windowName;
 
-        InputManager inputHandler;
+        InputHandler inputHandler;
 
         void initWindow(int width, int height);
 
         static void framebufferResizeCallback(GLFWwindow *window, int width, int height);
+        //static void scrollCallback(GLFWwindow* window, double xOffset, double yOffset);
     };
 }

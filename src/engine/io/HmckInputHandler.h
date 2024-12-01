@@ -27,7 +27,7 @@ namespace Hmck {
         __HMCK_MOUSE_KEY_COUNT__
     };
 
-    class InputManager {
+    class InputHandler {
     public:
         void setWindow(GLFWwindow *_window) { window = _window; };
 
@@ -35,7 +35,10 @@ namespace Hmck {
 
         bool isMouseKeyDown(MouseKey key);
 
+
     private:
+        static double scrollOffset;
+
         std::map<KeyboardKey, int> keyboardKeyMap = {
             {HMCK_KEY_W, GLFW_KEY_W},
             {HMCK_KEY_A, GLFW_KEY_A},

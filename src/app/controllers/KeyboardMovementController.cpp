@@ -4,12 +4,12 @@
 
 void Hmck::KeyboardMovementController::moveInPlaneXZ(Window &window, float dt, std::shared_ptr<Entity> entity) {
     glm::vec3 rotate{0};
-    if (window.getInputManager().isKeyboardKeyDown(HMCK_KEY_RIGHT)) rotate.y -= 1.f;
-    if (window.getInputManager().isKeyboardKeyDown(HMCK_KEY_LEFT)) rotate.y += 1.f;
-    if (window.getInputManager().isKeyboardKeyDown(HMCK_KEY_UP)) rotate.x -= 1.f;
-    if (window.getInputManager().isKeyboardKeyDown(HMCK_KEY_DOWN)) rotate.x += 1.f;
+    if (window.getInputHandler().isKeyboardKeyDown(HMCK_KEY_RIGHT)) rotate.y -= 1.f;
+    if (window.getInputHandler().isKeyboardKeyDown(HMCK_KEY_LEFT)) rotate.y += 1.f;
+    if (window.getInputHandler().isKeyboardKeyDown(HMCK_KEY_UP)) rotate.x -= 1.f;
+    if (window.getInputHandler().isKeyboardKeyDown(HMCK_KEY_DOWN)) rotate.x += 1.f;
 
-    if (window.getInputManager().isMouseKeyDown(HMCK_MOUSE_RIGHT) && !mouseInMotion) {
+    if (window.getInputHandler().isMouseKeyDown(HMCK_MOUSE_RIGHT) && !mouseInMotion) {
         mouseInMotion = true;
         window.setCursorVisibility(false);
         double x, y;
@@ -18,7 +18,7 @@ void Hmck::KeyboardMovementController::moveInPlaneXZ(Window &window, float dt, s
         mouseMotionStartY = y;
     }
 
-    if (!window.getInputManager().isMouseKeyDown(HMCK_MOUSE_RIGHT) && mouseInMotion) {
+    if (!window.getInputHandler().isMouseKeyDown(HMCK_MOUSE_RIGHT) && mouseInMotion) {
         mouseInMotion = false;
         window.setCursorVisibility(true);
     }
@@ -51,12 +51,12 @@ void Hmck::KeyboardMovementController::moveInPlaneXZ(Window &window, float dt, s
     constexpr glm::vec3 upDir{0.0f, 1.f, 0.0f};
 
     glm::vec3 moveDir{0.0f};
-    if (window.getInputManager().isKeyboardKeyDown(HMCK_KEY_W)) moveDir += forwardDir;
-    if (window.getInputManager().isKeyboardKeyDown(HMCK_KEY_S)) moveDir -= forwardDir;
-    if (window.getInputManager().isKeyboardKeyDown(HMCK_KEY_D)) moveDir -= rightDir;
-    if (window.getInputManager().isKeyboardKeyDown(HMCK_KEY_A)) moveDir += rightDir;
-    if (window.getInputManager().isKeyboardKeyDown(HMCK_KEY_SPACE)) moveDir += upDir;
-    if (window.getInputManager().isKeyboardKeyDown(HMCK_KEY_LSHIFT)) moveDir -= upDir;
+    if (window.getInputHandler().isKeyboardKeyDown(HMCK_KEY_W)) moveDir += forwardDir;
+    if (window.getInputHandler().isKeyboardKeyDown(HMCK_KEY_S)) moveDir -= forwardDir;
+    if (window.getInputHandler().isKeyboardKeyDown(HMCK_KEY_D)) moveDir -= rightDir;
+    if (window.getInputHandler().isKeyboardKeyDown(HMCK_KEY_A)) moveDir += rightDir;
+    if (window.getInputHandler().isKeyboardKeyDown(HMCK_KEY_SPACE)) moveDir += upDir;
+    if (window.getInputHandler().isKeyboardKeyDown(HMCK_KEY_LSHIFT)) moveDir -= upDir;
 
     if (glm::dot(moveDir, moveDir) > std::numeric_limits<float>::epsilon()) {
         entity->transform.translation += moveSpeed * dt * glm::normalize(moveDir);
