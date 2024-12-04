@@ -23,7 +23,6 @@ Hmck::ResourceManager::ResourceManager(Device &device) : device{device} {
             .setMaxSets(20000)
             .addPoolSize(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 10000)
             .addPoolSize(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 10000)
-            .addPoolSize(VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR, 10000)
             .build();
 }
 
