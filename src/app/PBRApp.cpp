@@ -24,7 +24,7 @@ Hmck::PBRApp::~PBRApp() {
     resources.destroyDescriptorSetLayout(sceneDescriptors.descriptorSetLayout);
     resources.destroyDescriptorSetLayout(entityDescriptors.descriptorSetLayout);
     resources.destroyDescriptorSetLayout(primitiveDescriptors.descriptorSetLayout);
-    resources.destroyDescriptorSetLayout(gBufferDescriptors.descriptorSetLayout);
+    resources.destroyDescriptorSetLayout(compositionDescriptors.descriptorSetLayout);
 
     resources.destroyBuffer(geometry.vertexBuffer);
     resources.destroyBuffer(geometry.indexBuffer);
@@ -78,7 +78,7 @@ void Hmck::PBRApp::run() {
             const int frameIndex = renderer.getFrameIndex();
 
             resources.bindVertexBuffer(geometry.vertexBuffer, geometry.indexBuffer, commandBuffer);
-            renderer.beginRenderPass(offscreenPass.framebuffer, commandBuffer, {
+            renderer.beginRenderPass(opaqueGeometryPass.framebuffer, commandBuffer, {
                                          {.color = {0.0f, 0.0f, 0.0f, 0.0f}},
                                          {.color = {0.0f, 0.0f, 0.0f, 0.0f}},
                                          {.color = {0.0f, 0.0f, 0.0f, 0.0f}},
@@ -115,11 +115,24 @@ void Hmck::PBRApp::run() {
 
             vkCmdDraw(commandBuffer, 3, 1, 0, 0);
 
-            offscreenPass.pipeline->bind(commandBuffer);
-            blend = false;
-            renderEntity(frameIndex, commandBuffer, offscreenPass.pipeline, scene->getRoot());
+            opaqueGeometryPass.pipeline->bind(commandBuffer);
+
+            renderEntity(frameIndex, commandBuffer, opaqueGeometryPass.pipeline, scene->getRoot(), RenderMode::OPAQUE_EXCLUSIVE);
 
             renderer.endRenderPass(commandBuffer);
+
+            { // transparent pass
+                renderer.beginRenderPass(transparentGeometryPass.framebuffer, commandBuffer, {
+                                         {.color = {0.0f, 0.0f, 0.0f, 0.0f}},
+                                         {.color = {0.0f, 0.0f, 0.0f, 0.0f}},
+                                         {.depthStencil = {1.0f, 0}}
+                                     });
+                transparentGeometryPass.pipeline->bind(commandBuffer);
+                renderEntity(frameIndex, commandBuffer, transparentGeometryPass.pipeline, scene->getRoot(), RenderMode::TRANSPARENT_EXCLUSIVE);
+                renderer.endRenderPass(commandBuffer);
+            }
+
+
             renderer.beginSwapChainRenderPass(commandBuffer);
 
             compositionPass.pipeline->bind(commandBuffer);
@@ -128,18 +141,12 @@ void Hmck::PBRApp::run() {
                 commandBuffer,
                 VK_PIPELINE_BIND_POINT_GRAPHICS,
                 compositionPass.pipeline->graphicsPipelineLayout,
-                gBufferDescriptors.binding, 1,
-                gBufferDescriptors.descriptorSets[frameIndex],
+                compositionDescriptors.binding, 1,
+                compositionDescriptors.descriptorSets[frameIndex],
                 0, nullptr);
 
             // draw deffered
-            vkCmdDraw(commandBuffer, 3, 1, 0, 0);
-
-
-            // Transparency pass
-            transparencyPass.pipeline->bind(commandBuffer);
-            blend = true;
-            renderEntity(frameIndex, commandBuffer, offscreenPass.pipeline, scene->getRoot()); {
+            vkCmdDraw(commandBuffer, 3, 1, 0, 0); {
                 ui.beginUserInterface();
                 ui.showDebugStats(scene->getActiveCamera());
                 ui.showWindowControls();
@@ -303,31 +310,39 @@ void Hmck::PBRApp::init() {
         });
     }
 
-    gBufferDescriptors.descriptorSets.resize(SwapChain::MAX_FRAMES_IN_FLIGHT);
-    gBufferDescriptors.descriptorSetLayout = resources.createDescriptorSetLayout({
+    compositionDescriptors.descriptorSets.resize(SwapChain::MAX_FRAMES_IN_FLIGHT);
+    compositionDescriptors.descriptorSetLayout = resources.createDescriptorSetLayout({
         .bindings = {
             {
                 .binding = 0, .descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
                 .stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT
-            }, // position
+            }, // position buffer
             {
                 .binding = 1, .descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
                 .stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT
-            }, // albedo
+            }, // albedo buffer
             {
                 .binding = 2, .descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
                 .stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT
-            }, // normal
+            }, // normal buffer
             {
                 .binding = 3, .descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
                 .stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT
-            }, // material (roughness, metalness, ao)
+            }, // material (roughness, metalness, ao) buffer
+            {
+                .binding = 4, .descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
+                .stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT
+            }, // accumulation buffer
+            {
+                .binding = 5, .descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
+                .stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT
+            }, // transparency weight buffer
         }
     });
 }
 
 void Hmck::PBRApp::renderEntity(const uint32_t frameIndex, const VkCommandBuffer commandBuffer,
-                                std::unique_ptr<GraphicsPipeline> &pipeline, const std::shared_ptr<Entity> &entity) {
+                                std::unique_ptr<GraphicsPipeline> &pipeline, const std::shared_ptr<Entity> &entity, RenderMode renderMode) {
     // don't render invisible nodes
     if (isInstanceOf<Entity, Entity3D>(entity) && entity->visible) {
         if (const auto _entity = cast<Entity, Entity3D>(entity); !_entity->mesh.primitives.empty()) {
@@ -352,9 +367,8 @@ void Hmck::PBRApp::renderEntity(const uint32_t frameIndex, const VkCommandBuffer
                             metallicRoughnessTextureIndex, occlusionTextureIndex, alphaMode, alphaCutOff, metallicFactor
                             , roughnessFactor, doubleSided, dataChanged] = scene->materials[materialIndex];
 
-                        if (alphaMode == "BLEND" && !blend) continue; // skip blend in this pass
-
-                        if (alphaMode == "OPAQUE" && blend) continue; // skip opaque in this pass
+                        if(alphaMode == "BLEND" && renderMode == RenderMode::OPAQUE_EXCLUSIVE) {continue;}
+                        if(alphaMode == "OPAQUE" && renderMode == RenderMode::TRANSPARENT_EXCLUSIVE) {continue;}
 
                         PrimitiveBufferData primitiveData{
                             .baseColorFactor = baseColorFactor,
@@ -371,7 +385,7 @@ void Hmck::PBRApp::renderEntity(const uint32_t frameIndex, const VkCommandBuffer
                             .occlusionTextureIndex = (occlusionTextureIndex != TextureIndex::Invalid)
                                                          ? scene->textures[occlusionTextureIndex].imageIndex
                                                          : TextureIndex::Invalid,
-                            .alphaCutoff = alphaCutOff,
+                            .alphaMode = alphaMode == "OPAQUE" ? 1.0f : 0.0f,
                             .metallicFactor = metallicFactor,
                             .roughnessFactor = roughnessFactor
                         };
@@ -400,7 +414,7 @@ void Hmck::PBRApp::renderEntity(const uint32_t frameIndex, const VkCommandBuffer
     }
 
     for (auto &child: entity->children) {
-        renderEntity(frameIndex, commandBuffer, pipeline, child);
+        renderEntity(frameIndex, commandBuffer, pipeline, child, renderMode);
     }
 }
 
@@ -412,7 +426,7 @@ void Hmck::PBRApp::createPipelines(const Renderer &renderer) {
         VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT);
 
 
-    offscreenPass.framebuffer = Framebuffer::createFramebufferPtr({
+    opaqueGeometryPass.framebuffer = Framebuffer::createFramebufferPtr({
         .device = device,
         .width = IApp::WINDOW_WIDTH, .height = IApp::WINDOW_HEIGHT,
         .attachments{
@@ -454,6 +468,27 @@ void Hmck::PBRApp::createPipelines(const Renderer &renderer) {
         }
     });
 
+    transparentGeometryPass.framebuffer = Framebuffer::createFrameBufferPtrWithSharedAttachments({
+        .device = device,
+        .width = IApp::WINDOW_WIDTH, .height = IApp::WINDOW_HEIGHT,
+        .attachments{
+            // 0 accumulator
+            {
+                .width = IApp::WINDOW_WIDTH, .height = IApp::WINDOW_HEIGHT,
+                .layerCount = 1,
+                .format = VK_FORMAT_R16G16B16A16_SFLOAT,
+                .usage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,
+            },
+            // 1 transparency weight
+            {
+                .width = IApp::WINDOW_WIDTH, .height = IApp::WINDOW_HEIGHT,
+                .layerCount = 1,
+                .format = VK_FORMAT_R16_SFLOAT,
+                .usage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,
+            }
+        }
+    }, {std::ref(opaqueGeometryPass.framebuffer->attachments[4])});
+
     environmentPass.pipeline = GraphicsPipeline::createGraphicsPipelinePtr({
         .debugName = "skybox_pass",
         .device = device,
@@ -477,7 +512,7 @@ void Hmck::PBRApp::createPipelines(const Renderer &renderer) {
                 Hmck::Init::pipelineColorBlendAttachmentState(0xf, VK_FALSE),
                 Hmck::Init::pipelineColorBlendAttachmentState(0xf, VK_FALSE),
                 Hmck::Init::pipelineColorBlendAttachmentState(0xf, VK_FALSE),
-                Hmck::Init::pipelineColorBlendAttachmentState(0xf, VK_FALSE)
+                Hmck::Init::pipelineColorBlendAttachmentState(0xf, VK_FALSE),
             },
             .vertexBufferBindings
             {
@@ -485,10 +520,10 @@ void Hmck::PBRApp::createPipelines(const Renderer &renderer) {
                 .vertexAttributeDescriptions = Vertex::vertexInputAttributeDescriptions(),
             }
         },
-        .renderPass = offscreenPass.framebuffer->renderPass
+        .renderPass = opaqueGeometryPass.framebuffer->renderPass
     });
 
-    offscreenPass.pipeline = GraphicsPipeline::createGraphicsPipelinePtr({
+    opaqueGeometryPass.pipeline = GraphicsPipeline::createGraphicsPipelinePtr({
         .debugName = "gbuffer_pass",
         .device = device,
         .VS{
@@ -522,84 +557,83 @@ void Hmck::PBRApp::createPipelines(const Renderer &renderer) {
                 .vertexAttributeDescriptions = Vertex::vertexInputAttributeDescriptions(),
             }
         },
-        .renderPass = offscreenPass.framebuffer->renderPass
+        .renderPass = opaqueGeometryPass.framebuffer->renderPass
     });
 
-    for (unsigned int &descriptorSet: gBufferDescriptors.descriptorSets) {
-        std::vector<VkDescriptorImageInfo> gbufferImageInfos = {
+    transparentGeometryPass.pipeline = GraphicsPipeline::createGraphicsPipelinePtr({
+        .debugName = "transparency_pass",
+        .device = device,
+        .VS{
+            .byteCode = Hmck::Filesystem::readFile("../src/engine/shaders/compiled/gbuffer.vert.spv"),
+            .entryFunc = "main"
+        },
+        .FS{
+            .byteCode = Hmck::Filesystem::readFile("../src/engine/shaders/compiled/wboitbuffer.frag.spv"),
+            .entryFunc = "main"
+        },
+        .descriptorSetLayouts = {
+            resources.getDescriptorSetLayout(sceneDescriptors.descriptorSetLayout).getDescriptorSetLayout(),
+            resources.getDescriptorSetLayout(entityDescriptors.descriptorSetLayout).getDescriptorSetLayout(),
+            resources.getDescriptorSetLayout(primitiveDescriptors.descriptorSetLayout).getDescriptorSetLayout()
+        },
+        .pushConstantRanges{},
+        .graphicsState{
+            .depthTest = VK_TRUE,
+            .depthTestCompareOp = VK_COMPARE_OP_LESS_OR_EQUAL,
+            .cullMode = VK_CULL_MODE_BACK_BIT,
+            .frontFace = VK_FRONT_FACE_COUNTER_CLOCKWISE,
+            .blendAtaAttachmentStates{
+                Hmck::Init::pipelineColorBlendAttachmentState(0xf, VK_FALSE),
+                Hmck::Init::pipelineColorBlendAttachmentState(0xf, VK_FALSE),
+            },
+            .vertexBufferBindings
             {
-                .sampler = offscreenPass.framebuffer->sampler,
-                .imageView = offscreenPass.framebuffer->attachments[0].view,
+                .vertexBindingDescriptions = Vertex::vertexInputBindingDescriptions(),
+                .vertexAttributeDescriptions = Vertex::vertexInputAttributeDescriptions(),
+            }
+        },
+        .renderPass = transparentGeometryPass.framebuffer->renderPass
+    });
+
+    for (unsigned int &descriptorSet: compositionDescriptors.descriptorSets) {
+        std::vector<VkDescriptorImageInfo> compositionImageInfos = {
+            {
+                .sampler = opaqueGeometryPass.framebuffer->sampler,
+                .imageView = opaqueGeometryPass.framebuffer->attachments[0].view,
                 .imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL
             },
             {
-                .sampler = offscreenPass.framebuffer->sampler,
-                .imageView = offscreenPass.framebuffer->attachments[1].view,
+                .sampler = opaqueGeometryPass.framebuffer->sampler,
+                .imageView = opaqueGeometryPass.framebuffer->attachments[1].view,
                 .imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL
             },
             {
-                .sampler = offscreenPass.framebuffer->sampler,
-                .imageView = offscreenPass.framebuffer->attachments[2].view,
+                .sampler = opaqueGeometryPass.framebuffer->sampler,
+                .imageView = opaqueGeometryPass.framebuffer->attachments[2].view,
                 .imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL
             },
             {
-                .sampler = offscreenPass.framebuffer->sampler,
-                .imageView = offscreenPass.framebuffer->attachments[3].view,
+                .sampler = opaqueGeometryPass.framebuffer->sampler,
+                .imageView = opaqueGeometryPass.framebuffer->attachments[3].view,
+                .imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL
+            },
+            {
+                .sampler = transparentGeometryPass.framebuffer->sampler,
+                .imageView = transparentGeometryPass.framebuffer->attachments[0].view,
+                .imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL
+            },
+            {
+                .sampler = transparentGeometryPass.framebuffer->sampler,
+                .imageView = transparentGeometryPass.framebuffer->attachments[1].view,
                 .imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL
             },
         };
 
         descriptorSet = resources.createDescriptorSet({
-            .descriptorSetLayout = gBufferDescriptors.descriptorSetLayout,
-            .imageArrayWrites = {{0, gbufferImageInfos}},
+            .descriptorSetLayout = compositionDescriptors.descriptorSetLayout,
+            .imageArrayWrites = {{0, compositionImageInfos}},
         });
     }
-
-    // ssaoPass.framebuffer = Framebuffer::createFramebufferPtr({
-    //     .device = device,
-    //     .width = IApp::WINDOW_WIDTH, .height = IApp::WINDOW_HEIGHT,
-    //     .attachments{
-    //         // 0 ssao
-    //         {
-    //             .width = IApp::WINDOW_WIDTH, .height = IApp::WINDOW_HEIGHT,
-    //             .layerCount = 1,
-    //             .format = VK_FORMAT_R8_UNORM,
-    //             .usage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,
-    //         },
-    //     }
-    // });
-    //
-    // ssaoPass.pipeline = GraphicsPipeline::createGraphicsPipelinePtr({
-    //         .debugName = "ssao_pass",
-    //         .device = device,
-    //         .VS{
-    //             .byteCode = Hmck::Filesystem::readFile("../src/engine/shaders/compiled/fullscreen.vert.spv"),
-    //             .entryFunc = "main"
-    //         },
-    //         .FS{
-    //             .byteCode = Hmck::Filesystem::readFile("../src/engine/shaders/compiled/ssao.frag.spv"),
-    //             .entryFunc = "main"
-    //         },
-    //         .descriptorSetLayouts = {
-    //             resources.getDescriptorSetLayout(sceneDescriptors.descriptorSetLayout).getDescriptorSetLayout(),
-    //             resources.getDescriptorSetLayout(entityDescriptors.descriptorSetLayout).getDescriptorSetLayout(),
-    //             resources.getDescriptorSetLayout(primitiveDescriptors.descriptorSetLayout).getDescriptorSetLayout(),
-    //             resources.getDescriptorSetLayout(gBufferDescriptors.descriptorSetLayout).getDescriptorSetLayout()
-    //         },
-    //         .pushConstantRanges{},
-    //         .graphicsState{
-    //             .depthTest = VK_FALSE,
-    //             .cullMode = VK_CULL_MODE_NONE,
-    //             .blendAtaAttachmentStates{},
-    //             .vertexBufferBindings
-    //             {
-    //                 .vertexBindingDescriptions = Vertex::vertexInputBindingDescriptions(),
-    //                 .vertexAttributeDescriptions = Vertex::vertexInputAttributeDescriptions(),
-    //             }
-    //         },
-    //         .renderPass = ssaoPass.framebuffer->renderPass
-    // });
-
 
     compositionPass.pipeline = GraphicsPipeline::createGraphicsPipelinePtr({
         .debugName = "deferred_pass",
@@ -616,45 +650,13 @@ void Hmck::PBRApp::createPipelines(const Renderer &renderer) {
             resources.getDescriptorSetLayout(sceneDescriptors.descriptorSetLayout).getDescriptorSetLayout(),
             resources.getDescriptorSetLayout(entityDescriptors.descriptorSetLayout).getDescriptorSetLayout(),
             resources.getDescriptorSetLayout(primitiveDescriptors.descriptorSetLayout).getDescriptorSetLayout(),
-            resources.getDescriptorSetLayout(gBufferDescriptors.descriptorSetLayout).getDescriptorSetLayout()
+            resources.getDescriptorSetLayout(compositionDescriptors.descriptorSetLayout).getDescriptorSetLayout()
         },
         .pushConstantRanges{},
         .graphicsState{
             .depthTest = VK_FALSE,
             .cullMode = VK_CULL_MODE_NONE,
             .blendAtaAttachmentStates{},
-            .vertexBufferBindings
-            {
-                .vertexBindingDescriptions = Vertex::vertexInputBindingDescriptions(),
-                .vertexAttributeDescriptions = Vertex::vertexInputAttributeDescriptions(),
-            }
-        },
-        .renderPass = renderer.getSwapChainRenderPass()
-    });
-
-    transparencyPass.pipeline = GraphicsPipeline::createGraphicsPipelinePtr({
-        .debugName = "deferred_pass",
-        .device = device,
-        .VS{
-            .byteCode = Hmck::Filesystem::readFile("../src/engine/shaders/compiled/gbuffer.vert.spv"),
-            .entryFunc = "main"
-        },
-        .FS{
-            .byteCode = Hmck::Filesystem::readFile("../src/engine/shaders/compiled/transparency_pass.frag.spv"),
-            .entryFunc = "main"
-        },
-        .descriptorSetLayouts = {
-            resources.getDescriptorSetLayout(sceneDescriptors.descriptorSetLayout).getDescriptorSetLayout(),
-            resources.getDescriptorSetLayout(entityDescriptors.descriptorSetLayout).getDescriptorSetLayout(),
-            resources.getDescriptorSetLayout(primitiveDescriptors.descriptorSetLayout).getDescriptorSetLayout(),
-            resources.getDescriptorSetLayout(gBufferDescriptors.descriptorSetLayout).getDescriptorSetLayout(),
-        },
-        .pushConstantRanges{},
-        .graphicsState{
-            .depthTest = VK_FALSE,
-            .cullMode = VK_CULL_MODE_BACK_BIT,
-            .frontFace = VK_FRONT_FACE_COUNTER_CLOCKWISE,
-            .blendAtaAttachmentStates{Hmck::Init::pipelineColorBlendAttachmentState(0xf, VK_TRUE)},
             .vertexBufferBindings
             {
                 .vertexBindingDescriptions = Vertex::vertexInputBindingDescriptions(),

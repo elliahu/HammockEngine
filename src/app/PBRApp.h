@@ -49,7 +49,7 @@ namespace Hmck {
             uint32_t normalTextureIndex = TextureIndex::Invalid;
             uint32_t metallicRoughnessTextureIndex = TextureIndex::Invalid;
             uint32_t occlusionTextureIndex = TextureIndex::Invalid;
-            float alphaCutoff = 1.0f;
+            float alphaMode = 1.0f;
             float metallicFactor = 0.0f;
             float roughnessFactor = 1.0f;
         };
@@ -65,25 +65,26 @@ namespace Hmck {
 
         void init();
 
+        enum class RenderMode {
+            OPAQUE_EXCLUSIVE,
+            TRANSPARENT_EXCLUSIVE,
+        };
         void renderEntity(
             uint32_t frameIndex,
             VkCommandBuffer commandBuffer,
             std::unique_ptr<GraphicsPipeline> &pipeline,
-            const std::shared_ptr<Entity> &entity);
+            const std::shared_ptr<Entity> &entity, RenderMode renderMode);
 
     private:
         void createPipelines(const Renderer &renderer);
 
         std::unique_ptr<Scene> scene{};
 
-        bool blend = false;
-
         struct {
             BufferHandle vertexBuffer;
             BufferHandle indexBuffer;
             uint32_t numTriangles = 0;
         } geometry;
-
 
         // Descriptors
         // per frame (scene info updated every frame)
@@ -110,17 +111,13 @@ namespace Hmck {
             Binding binding = 2;
         } primitiveDescriptors;
 
-        // gbuffer descriptors
+        // composition descriptors
         struct {
             std::vector<DescriptorSetHandle> descriptorSets{};
             DescriptorSetLayoutHandle descriptorSetLayout;
             Binding binding = 3;
-        } gBufferDescriptors;
+        } compositionDescriptors;
 
-        // SSAO descriptor
-        struct {
-
-        };
 
         // Render passes
         // renders environment sphere into gbuffer color attachments and clears depth buffer
@@ -132,23 +129,18 @@ namespace Hmck {
         // constructs gbuffer
         struct {
             std::unique_ptr<GraphicsPipeline> pipeline{};
-            std::unique_ptr<Framebuffer> framebuffer{}; // TODO probably shoul be bufferd as well
-        } offscreenPass;
+            std::unique_ptr<Framebuffer> framebuffer{};
+        } opaqueGeometryPass;
 
+        // construct wb-oit buffer
         struct {
             std::unique_ptr<GraphicsPipeline> pipeline{};
             std::unique_ptr<Framebuffer> framebuffer{};
-        } ssaoPass;
+        } transparentGeometryPass;
 
         // composes image from gbuffer attachments
         struct {
             std::unique_ptr<GraphicsPipeline> pipeline{};
         } compositionPass;
-
-        // forward transparency pass
-        struct {
-            std::unique_ptr<GraphicsPipeline> pipeline{};
-            // uses swapchain render pass
-        } transparencyPass;
     };
 }

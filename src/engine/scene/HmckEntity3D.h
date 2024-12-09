@@ -30,7 +30,7 @@ namespace Hmck {
         uint32_t metallicRoughnessTextureIndex = TextureIndex::Invalid;
         uint32_t occlusionTextureIndex = TextureIndex::Invalid;
         std::string alphaMode = "OPAQUE";
-        float alphaCutOff;
+        float alphaCutOff = 1.0f;
         float metallicFactor = 0.f;
         float roughnessFactor = 1.f;
         bool doubleSided = false;

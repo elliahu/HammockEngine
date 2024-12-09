@@ -77,6 +77,9 @@ namespace Hmck {
         VkFormat format;
         VkImageUsageFlags usage;
         VkSampleCountFlagBits imageSampleCount = VK_SAMPLE_COUNT_1_BIT;
+        VkAttachmentLoadOp loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
+        VkAttachmentStoreOp storeOp = VK_ATTACHMENT_STORE_OP_STORE;
+        VkImageLayout initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
     };
 
     /**
@@ -102,6 +105,7 @@ namespace Hmck {
         VkRenderPass renderPass = nullptr;
         VkSampler sampler = nullptr;
         std::vector<FramebufferAttachment> attachments;
+        std::vector<FramebufferAttachment> sharedAttachments;
 
         /**
         * Default constructor
@@ -145,6 +149,11 @@ namespace Hmck {
             return fb;
         }
 
+        /**
+        * Create framebuffer smart pointer with renderpass and attachments using configuration struct
+        * @param createInfo Configuration struct
+        * @return created Framebuffer smart pointer
+        */
         static std::unique_ptr<Framebuffer> createFramebufferPtr(FramebufferCreateInfo createInfo) {
             auto fb = std::make_unique<Framebuffer>(createInfo.device);
             fb->width = createInfo.width;
@@ -153,6 +162,35 @@ namespace Hmck {
                                           createInfo.sampler.addressMode));
             for (const FramebufferAttachmentCreateInfo &at: createInfo.attachments) {
                 fb->addAttachment(at);
+            }
+            checkResult(fb->createRenderPass());
+            return fb;
+        }
+
+        /**
+        * Create framebuffer smart pointer with renderpass and attachments using configuration struct
+        * @param createInfo Configuration struct
+        * @param sharedAttachments Attachments belonging to a different render pass
+        * @return created Framebuffer smart pointer
+        * TODO allow for custom order
+        */
+        static std::unique_ptr<Framebuffer> createFrameBufferPtrWithSharedAttachments(FramebufferCreateInfo createInfo, const std::vector<std::reference_wrapper<Hmck::FramebufferAttachment>>& sharedAttachments) {
+            auto fb = std::make_unique<Framebuffer>(createInfo.device);
+            fb->width = createInfo.width;
+            fb->height = createInfo.height;
+            checkResult(fb->createSampler(createInfo.sampler.magFilter, createInfo.sampler.minFilter,
+                                          createInfo.sampler.addressMode));
+            for (const FramebufferAttachmentCreateInfo &at: createInfo.attachments) {
+                fb->addAttachment(at);
+            }
+            for (const auto& shared_at: sharedAttachments) {
+                FramebufferAttachment& at = shared_at.get();
+                at.description.loadOp = VK_ATTACHMENT_LOAD_OP_LOAD;
+                at.description.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
+                if(at.hasDepth()) {
+                    at.description.initialLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL  ;
+                }
+                fb->sharedAttachments.push_back(at);
             }
             checkResult(fb->createRenderPass());
             return fb;
@@ -240,14 +278,14 @@ namespace Hmck {
             // Fill attachment description
             attachment.description = {};
             attachment.description.samples = createinfo.imageSampleCount;
-            attachment.description.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
+            attachment.description.loadOp = createinfo.loadOp;
             attachment.description.storeOp = (createinfo.usage & VK_IMAGE_USAGE_SAMPLED_BIT)
                                                  ? VK_ATTACHMENT_STORE_OP_STORE
-                                                 : VK_ATTACHMENT_STORE_OP_DONT_CARE;
+                                                 : createinfo.storeOp;
             attachment.description.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
             attachment.description.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
             attachment.description.format = createinfo.format;
-            attachment.description.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+            attachment.description.initialLayout = createinfo.initialLayout;
             // Final layout
             // If not, final layout depends on attachment type
             if (attachment.hasDepth() || attachment.hasStencil()) {
@@ -295,9 +333,13 @@ namespace Hmck {
         VkResult createRenderPass() {
             assert(width > 0 && height > 0 && "Cannot create renderpass - width has to > 0, height has to be > 0");
 
+            std::vector<std::reference_wrapper<FramebufferAttachment>> _attachments{};
+            for(auto& attachment : attachments) {_attachments.push_back(attachment);}
+            for (auto& attachment : sharedAttachments) {_attachments.push_back(attachment);}
+
             std::vector<VkAttachmentDescription> attachmentDescriptions;
-            for (auto &attachment: attachments) {
-                attachmentDescriptions.push_back(attachment.description);
+            for (auto &attachment: _attachments) {
+                attachmentDescriptions.push_back(attachment.get().description);
             };
 
             // Collect attachment references
@@ -308,8 +350,8 @@ namespace Hmck {
 
             uint32_t attachmentIndex = 0;
 
-            for (auto &attachment: attachments) {
-                if (attachment.isDepthStencil()) {
+            for (auto &attachment: _attachments) {
+                if (attachment.get().isDepthStencil()) {
                     // Only one depth attachment allowed
                     assert(!hasDepth);
                     depthReference.attachment = attachmentIndex;
@@ -366,15 +408,15 @@ namespace Hmck {
             }
 
             std::vector<VkImageView> attachmentViews;
-            for (auto [image, memory, view, format, subresourceRange, description]: attachments) {
-                attachmentViews.push_back(view);
+            for (auto& at: _attachments) {
+                attachmentViews.push_back(at.get().view);
             }
 
             // Find. max number of layers across attachments
             uint32_t maxLayers = 0;
-            for (const auto &[image, memory, view, format, subresourceRange, description]: attachments) {
-                if (subresourceRange.layerCount > maxLayers) {
-                    maxLayers = subresourceRange.layerCount;
+            for (const auto&at: _attachments) {
+                if (at.get().subresourceRange.layerCount > maxLayers) {
+                    maxLayers = at.get().subresourceRange.layerCount;
                 }
             }
 
