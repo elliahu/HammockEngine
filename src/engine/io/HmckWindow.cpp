@@ -24,6 +24,7 @@ void Hmck::Window::framebufferResizeCallback(GLFWwindow *window, int width, int 
     window_->framebufferResized = true;
     window_->width = width;
     window_->height = height;
+    window_->trigger(WINDOW_RESIZED, nullptr);
 }
 
 

@@ -6,6 +6,7 @@
 
 #include "HmckInputHandler.h"
 #include "core/HmckVulkanInstance.h"
+#include "utils/HmckEventEmitter.h"
 
 namespace Hmck {
     enum WindowMode {
@@ -14,7 +15,12 @@ namespace Hmck {
         HMCK_WINDOW_MODE_WINDOWED
     };
 
-    class Window {
+    enum WindowEvent {
+        WINDOW_EVENT_NONE,
+        WINDOW_RESIZED
+    };
+
+    class Window : public EventEmitter{
     public:
         Window(int windowWidth, int windowHeight, std::string _windowName);
 
