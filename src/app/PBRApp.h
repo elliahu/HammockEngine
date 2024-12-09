@@ -117,6 +117,11 @@ namespace Hmck {
             Binding binding = 3;
         } gBufferDescriptors;
 
+        // SSAO descriptor
+        struct {
+
+        };
+
         // Render passes
         // renders environment sphere into gbuffer color attachments and clears depth buffer
         struct {
@@ -128,7 +133,12 @@ namespace Hmck {
         struct {
             std::unique_ptr<GraphicsPipeline> pipeline{};
             std::unique_ptr<Framebuffer> framebuffer{}; // TODO probably shoul be bufferd as well
-        } gbufferPass;
+        } offscreenPass;
+
+        struct {
+            std::unique_ptr<GraphicsPipeline> pipeline{};
+            std::unique_ptr<Framebuffer> framebuffer{};
+        } ssaoPass;
 
         // composes image from gbuffer attachments
         struct {

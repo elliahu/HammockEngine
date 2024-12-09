@@ -32,7 +32,8 @@ Hmck::PBRApp::~PBRApp() {
 
 void Hmck::PBRApp::run() {
     Renderer renderer{window, device};
-    OrbitalMovementController cameraController{};
+    OrbitalMovementController orbitalCameraController{};
+    KeyboardMovementController keyboardMovementController{};
     UserInterface ui{device, renderer.getSwapChainRenderPass(), window};
 
     auto camera = std::make_shared<Camera>();
@@ -67,7 +68,8 @@ void Hmck::PBRApp::run() {
         currentTime = newTime;
 
         // camera
-        cameraController.freeOrbit(scene->getActiveCamera(), {0.f, 0.f, 0.f}, window, frameTime);
+        //rbitalCameraController.freeOrbit(scene->getActiveCamera(), {0.f, 0.f, 0.f}, window, frameTime);
+        keyboardMovementController.moveInPlaneXZ(window, frameTime, camera);
         scene->getActiveCamera()->update();
 
 
@@ -76,7 +78,7 @@ void Hmck::PBRApp::run() {
             const int frameIndex = renderer.getFrameIndex();
 
             resources.bindVertexBuffer(geometry.vertexBuffer, geometry.indexBuffer, commandBuffer);
-            renderer.beginRenderPass(gbufferPass.framebuffer, commandBuffer, {
+            renderer.beginRenderPass(offscreenPass.framebuffer, commandBuffer, {
                                          {.color = {0.0f, 0.0f, 0.0f, 0.0f}},
                                          {.color = {0.0f, 0.0f, 0.0f, 0.0f}},
                                          {.color = {0.0f, 0.0f, 0.0f, 0.0f}},
@@ -113,9 +115,9 @@ void Hmck::PBRApp::run() {
 
             vkCmdDraw(commandBuffer, 3, 1, 0, 0);
 
-            gbufferPass.pipeline->bind(commandBuffer);
+            offscreenPass.pipeline->bind(commandBuffer);
             blend = false;
-            renderEntity(frameIndex, commandBuffer, gbufferPass.pipeline, scene->getRoot());
+            renderEntity(frameIndex, commandBuffer, offscreenPass.pipeline, scene->getRoot());
 
             renderer.endRenderPass(commandBuffer);
             renderer.beginSwapChainRenderPass(commandBuffer);
@@ -137,7 +139,7 @@ void Hmck::PBRApp::run() {
             // Transparency pass
             transparencyPass.pipeline->bind(commandBuffer);
             blend = true;
-            renderEntity(frameIndex, commandBuffer, gbufferPass.pipeline, scene->getRoot()); {
+            renderEntity(frameIndex, commandBuffer, offscreenPass.pipeline, scene->getRoot()); {
                 ui.beginUserInterface();
                 ui.showDebugStats(scene->getActiveCamera());
                 ui.showWindowControls();
@@ -410,7 +412,7 @@ void Hmck::PBRApp::createPipelines(const Renderer &renderer) {
         VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT);
 
 
-    gbufferPass.framebuffer = Framebuffer::createFramebufferPtr({
+    offscreenPass.framebuffer = Framebuffer::createFramebufferPtr({
         .device = device,
         .width = IApp::WINDOW_WIDTH, .height = IApp::WINDOW_HEIGHT,
         .attachments{
@@ -479,28 +481,14 @@ void Hmck::PBRApp::createPipelines(const Renderer &renderer) {
             },
             .vertexBufferBindings
             {
-                .vertexBindingDescriptions =
-                {
-                    {
-                        .binding = 0,
-                        .stride = sizeof(Vertex),
-                        .inputRate = VK_VERTEX_INPUT_RATE_VERTEX
-                    }
-                },
-                .vertexAttributeDescriptions =
-                {
-                    {0, 0, VK_FORMAT_R32G32B32_SFLOAT, offsetof(Vertex, position)},
-                    {1, 0, VK_FORMAT_R32G32B32_SFLOAT, offsetof(Vertex, color)},
-                    {2, 0, VK_FORMAT_R32G32B32_SFLOAT, offsetof(Vertex, normal)},
-                    {3, 0, VK_FORMAT_R32G32_SFLOAT, offsetof(Vertex, uv)},
-                    {4, 0, VK_FORMAT_R32G32B32_SFLOAT, offsetof(Vertex, tangent)}
-                }
+                .vertexBindingDescriptions = Vertex::vertexInputBindingDescriptions(),
+                .vertexAttributeDescriptions = Vertex::vertexInputAttributeDescriptions(),
             }
         },
-        .renderPass = gbufferPass.framebuffer->renderPass
+        .renderPass = offscreenPass.framebuffer->renderPass
     });
 
-    gbufferPass.pipeline = GraphicsPipeline::createGraphicsPipelinePtr({
+    offscreenPass.pipeline = GraphicsPipeline::createGraphicsPipelinePtr({
         .debugName = "gbuffer_pass",
         .device = device,
         .VS{
@@ -530,47 +518,33 @@ void Hmck::PBRApp::createPipelines(const Renderer &renderer) {
             },
             .vertexBufferBindings
             {
-                .vertexBindingDescriptions =
-                {
-                    {
-                        .binding = 0,
-                        .stride = sizeof(Vertex),
-                        .inputRate = VK_VERTEX_INPUT_RATE_VERTEX
-                    }
-                },
-                .vertexAttributeDescriptions =
-                {
-                    {0, 0, VK_FORMAT_R32G32B32_SFLOAT, offsetof(Vertex, position)},
-                    {1, 0, VK_FORMAT_R32G32B32_SFLOAT, offsetof(Vertex, color)},
-                    {2, 0, VK_FORMAT_R32G32B32_SFLOAT, offsetof(Vertex, normal)},
-                    {3, 0, VK_FORMAT_R32G32_SFLOAT, offsetof(Vertex, uv)},
-                    {4, 0, VK_FORMAT_R32G32B32_SFLOAT, offsetof(Vertex, tangent)}
-                }
+                .vertexBindingDescriptions = Vertex::vertexInputBindingDescriptions(),
+                .vertexAttributeDescriptions = Vertex::vertexInputAttributeDescriptions(),
             }
         },
-        .renderPass = gbufferPass.framebuffer->renderPass
+        .renderPass = offscreenPass.framebuffer->renderPass
     });
 
     for (unsigned int &descriptorSet: gBufferDescriptors.descriptorSets) {
         std::vector<VkDescriptorImageInfo> gbufferImageInfos = {
             {
-                .sampler = gbufferPass.framebuffer->sampler,
-                .imageView = gbufferPass.framebuffer->attachments[0].view,
+                .sampler = offscreenPass.framebuffer->sampler,
+                .imageView = offscreenPass.framebuffer->attachments[0].view,
                 .imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL
             },
             {
-                .sampler = gbufferPass.framebuffer->sampler,
-                .imageView = gbufferPass.framebuffer->attachments[1].view,
+                .sampler = offscreenPass.framebuffer->sampler,
+                .imageView = offscreenPass.framebuffer->attachments[1].view,
                 .imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL
             },
             {
-                .sampler = gbufferPass.framebuffer->sampler,
-                .imageView = gbufferPass.framebuffer->attachments[2].view,
+                .sampler = offscreenPass.framebuffer->sampler,
+                .imageView = offscreenPass.framebuffer->attachments[2].view,
                 .imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL
             },
             {
-                .sampler = gbufferPass.framebuffer->sampler,
-                .imageView = gbufferPass.framebuffer->attachments[3].view,
+                .sampler = offscreenPass.framebuffer->sampler,
+                .imageView = offscreenPass.framebuffer->attachments[3].view,
                 .imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL
             },
         };
@@ -580,6 +554,51 @@ void Hmck::PBRApp::createPipelines(const Renderer &renderer) {
             .imageArrayWrites = {{0, gbufferImageInfos}},
         });
     }
+
+    // ssaoPass.framebuffer = Framebuffer::createFramebufferPtr({
+    //     .device = device,
+    //     .width = IApp::WINDOW_WIDTH, .height = IApp::WINDOW_HEIGHT,
+    //     .attachments{
+    //         // 0 ssao
+    //         {
+    //             .width = IApp::WINDOW_WIDTH, .height = IApp::WINDOW_HEIGHT,
+    //             .layerCount = 1,
+    //             .format = VK_FORMAT_R8_UNORM,
+    //             .usage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,
+    //         },
+    //     }
+    // });
+    //
+    // ssaoPass.pipeline = GraphicsPipeline::createGraphicsPipelinePtr({
+    //         .debugName = "ssao_pass",
+    //         .device = device,
+    //         .VS{
+    //             .byteCode = Hmck::Filesystem::readFile("../src/engine/shaders/compiled/fullscreen.vert.spv"),
+    //             .entryFunc = "main"
+    //         },
+    //         .FS{
+    //             .byteCode = Hmck::Filesystem::readFile("../src/engine/shaders/compiled/ssao.frag.spv"),
+    //             .entryFunc = "main"
+    //         },
+    //         .descriptorSetLayouts = {
+    //             resources.getDescriptorSetLayout(sceneDescriptors.descriptorSetLayout).getDescriptorSetLayout(),
+    //             resources.getDescriptorSetLayout(entityDescriptors.descriptorSetLayout).getDescriptorSetLayout(),
+    //             resources.getDescriptorSetLayout(primitiveDescriptors.descriptorSetLayout).getDescriptorSetLayout(),
+    //             resources.getDescriptorSetLayout(gBufferDescriptors.descriptorSetLayout).getDescriptorSetLayout()
+    //         },
+    //         .pushConstantRanges{},
+    //         .graphicsState{
+    //             .depthTest = VK_FALSE,
+    //             .cullMode = VK_CULL_MODE_NONE,
+    //             .blendAtaAttachmentStates{},
+    //             .vertexBufferBindings
+    //             {
+    //                 .vertexBindingDescriptions = Vertex::vertexInputBindingDescriptions(),
+    //                 .vertexAttributeDescriptions = Vertex::vertexInputAttributeDescriptions(),
+    //             }
+    //         },
+    //         .renderPass = ssaoPass.framebuffer->renderPass
+    // });
 
 
     compositionPass.pipeline = GraphicsPipeline::createGraphicsPipelinePtr({
@@ -606,22 +625,8 @@ void Hmck::PBRApp::createPipelines(const Renderer &renderer) {
             .blendAtaAttachmentStates{},
             .vertexBufferBindings
             {
-                .vertexBindingDescriptions =
-                {
-                    {
-                        .binding = 0,
-                        .stride = sizeof(Vertex),
-                        .inputRate = VK_VERTEX_INPUT_RATE_VERTEX
-                    }
-                },
-                .vertexAttributeDescriptions =
-                {
-                    {0, 0, VK_FORMAT_R32G32B32_SFLOAT, offsetof(Vertex, position)},
-                    {1, 0, VK_FORMAT_R32G32B32_SFLOAT, offsetof(Vertex, color)},
-                    {2, 0, VK_FORMAT_R32G32B32_SFLOAT, offsetof(Vertex, normal)},
-                    {3, 0, VK_FORMAT_R32G32_SFLOAT, offsetof(Vertex, uv)},
-                    {4, 0, VK_FORMAT_R32G32B32_SFLOAT, offsetof(Vertex, tangent)}
-                }
+                .vertexBindingDescriptions = Vertex::vertexInputBindingDescriptions(),
+                .vertexAttributeDescriptions = Vertex::vertexInputAttributeDescriptions(),
             }
         },
         .renderPass = renderer.getSwapChainRenderPass()
@@ -652,22 +657,8 @@ void Hmck::PBRApp::createPipelines(const Renderer &renderer) {
             .blendAtaAttachmentStates{Hmck::Init::pipelineColorBlendAttachmentState(0xf, VK_TRUE)},
             .vertexBufferBindings
             {
-                .vertexBindingDescriptions =
-                {
-                    {
-                        .binding = 0,
-                        .stride = sizeof(Vertex),
-                        .inputRate = VK_VERTEX_INPUT_RATE_VERTEX
-                    }
-                },
-                .vertexAttributeDescriptions =
-                {
-                    {0, 0, VK_FORMAT_R32G32B32_SFLOAT, offsetof(Vertex, position)},
-                    {1, 0, VK_FORMAT_R32G32B32_SFLOAT, offsetof(Vertex, color)},
-                    {2, 0, VK_FORMAT_R32G32B32_SFLOAT, offsetof(Vertex, normal)},
-                    {3, 0, VK_FORMAT_R32G32_SFLOAT, offsetof(Vertex, uv)},
-                    {4, 0, VK_FORMAT_R32G32B32_SFLOAT, offsetof(Vertex, tangent)}
-                }
+                .vertexBindingDescriptions = Vertex::vertexInputBindingDescriptions(),
+                .vertexAttributeDescriptions = Vertex::vertexInputAttributeDescriptions(),
             }
         },
         .renderPass = renderer.getSwapChainRenderPass()

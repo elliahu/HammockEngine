@@ -6,18 +6,22 @@ layout (location = 0) in vec2 inUV;
 // outputs
 layout (location = 0) out float outFragColor;
 
-layout (set = 0, binding = 0) uniform GlobalUbo
+
+layout (set = 0, binding = 0) uniform SceneUbo
 {
-    mat4 projection;
-    mat4 view;
-} ubo;
+	mat4 projection;
+	mat4 view;
+	mat4 inverseView;
+} scene;
 
 layout (constant_id = 0) const int SSAO_KERNEL_SIZE = 64;
-layout (constant_id = 1) const float SSAO_RADIUS = 0.9;
+layout (constant_id = 1) const float SSAO_RADIUS = 0.3;
 
-layout (set = 1, binding = 0) uniform sampler2D samplerPositionDepth;
-layout (set = 1, binding = 1) uniform sampler2D samplerNormal;
-layout (set = 1, binding = 2) uniform sampler2D ssaoNoise;
+// gbuffer attachments
+layout(set = 3, binding = 0) uniform sampler2D positionSampler;
+layout(set = 3, binding = 1) uniform sampler2D albedoSampler;
+layout(set = 3, binding = 2) uniform sampler2D normalSampler;
+layout(set = 3, binding = 3) uniform sampler2D materialPropertySampler;
 
 layout (set = 1, binding = 3) uniform UBOSSAOKernel
 {
