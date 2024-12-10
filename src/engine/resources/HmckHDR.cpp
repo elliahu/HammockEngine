@@ -4,7 +4,7 @@
 #include <stb_image.h>
 #include <chrono>
 
-#include "core/HmckPipeline.h"
+#include "core/HmckGraphicsPipeline.h"
 #include "core/HmckFramebuffer.h"
 #include "utils/HmckLogger.h"
 #include "shaders/HmckShader.h"

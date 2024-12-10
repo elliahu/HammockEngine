@@ -7,7 +7,7 @@
 
 #include "HmckEntity.h"
 #include "core/HmckFramebuffer.h"
-#include "core/HmckPipeline.h"
+#include "core/HmckGraphicsPipeline.h"
 #include "core/HmckResourceManager.h"
 
 namespace Hmck {

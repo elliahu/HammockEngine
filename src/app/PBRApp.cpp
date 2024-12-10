@@ -133,20 +133,24 @@ void Hmck::PBRApp::run() {
             }
 
 
-            renderer.beginSwapChainRenderPass(commandBuffer);
+            { // composition
+                renderer.beginSwapChainRenderPass(commandBuffer);
 
-            compositionPass.pipeline->bind(commandBuffer);
+                compositionPass.pipeline->bind(commandBuffer);
 
-            resources.bindDescriptorSet(
-                commandBuffer,
-                VK_PIPELINE_BIND_POINT_GRAPHICS,
-                compositionPass.pipeline->graphicsPipelineLayout,
-                compositionDescriptors.binding, 1,
-                compositionDescriptors.descriptorSets[frameIndex],
-                0, nullptr);
+                resources.bindDescriptorSet(
+                    commandBuffer,
+                    VK_PIPELINE_BIND_POINT_GRAPHICS,
+                    compositionPass.pipeline->graphicsPipelineLayout,
+                    compositionDescriptors.binding, 1,
+                    compositionDescriptors.descriptorSets[frameIndex],
+                    0, nullptr);
 
-            // draw deffered
-            vkCmdDraw(commandBuffer, 3, 1, 0, 0); {
+                // draw deffered
+                vkCmdDraw(commandBuffer, 3, 1, 0, 0);
+            }
+
+            { // UI
                 ui.beginUserInterface();
                 ui.showDebugStats(scene->getActiveCamera());
                 ui.showWindowControls();

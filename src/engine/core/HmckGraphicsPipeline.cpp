@@ -1,4 +1,4 @@
-#include "HmckPipeline.h"
+#include "HmckGraphicsPipeline.h"
 
 Hmck::GraphicsPipeline Hmck::GraphicsPipeline::createGraphicsPipeline(GraphicsPipelineCreateInfo createInfo) {
     return Hmck::GraphicsPipeline(createInfo);

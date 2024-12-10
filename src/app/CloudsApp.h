@@ -10,7 +10,7 @@
 
 
 #include "core/HmckDevice.h"
-#include "core/HmckPipeline.h"
+#include "core/HmckGraphicsPipeline.h"
 #include "IApp.h"
 #include "scene/HmckEntity.h"
 #include "scene/HmckScene.h"

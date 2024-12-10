@@ -14,7 +14,7 @@
 #include "scene/HmckEntity.h"
 #include "scene/HmckScene.h"
 #include "core/HmckResourceManager.h"
-#include "core/HmckPipeline.h"
+#include "core/HmckGraphicsPipeline.h"
 #include "utils/HmckBenchmarkRunner.h"
 
 
