@@ -10,7 +10,7 @@ elif platform.system() == 'Linux':
 else:
     raise EnvironmentError("Unsupported OS")
 
-raw_shaders = r'../src/engine/shaders/raw/glsl'
+raw_shaders = r'../src/engine/shaders/raw'
 compiled_shaders = r'../src/engine/shaders/compiled'
 
 # Ensure the compiled shaders directory exists
