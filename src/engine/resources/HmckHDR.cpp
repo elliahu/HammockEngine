@@ -12,9 +12,9 @@
 void Hmck::Environment::load(Device &device, const ResourceManager &resources, const std::string &filepath,
                              const VkFormat format) {
     int width = 0, height = 0, channels = 0;
-    stbi_set_flip_vertically_on_load(true);
+
     float *pixels = stbi_loadf(filepath.c_str(), &width, &height, &channels, STBI_rgb_alpha);
-    stbi_set_flip_vertically_on_load(false);
+
     if (!pixels) {
         throw std::runtime_error("Failed to load image from disk");
     }

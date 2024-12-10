@@ -1,6 +1,6 @@
 #version 450
 
-layout(set = 0, binding = 2) uniform sampler2D environmentSampler; // 2 env, 3 prefiltered end, 4 lut BRDF, 5 irradiance
+layout(set = 0, binding = 3) uniform sampler2D environmentSampler; // 2 env, 3 prefiltered end, 4 lut BRDF, 5 irradiance
 
 layout(location = 0) in vec2 in_uv;
 
@@ -54,13 +54,13 @@ void main()
     // Convert 3D direction to 2D UV coordinates using equirectangular projection
     vec2 uv;
     uv.x = 0.5 + 0.5 * atan(direction.z, direction.x) / PI;
-    uv.y = 0.5 - asin(clamp(direction.y, -1.0, 1.0)) / -PI;
+    uv.y = 0.5 - asin(clamp(direction.y, -1.0, 1.0)) / PI;
 
     // Ensure UV wrapping
     uv = mod(uv, 1.0);
 
     // Sample the environment map in the calculated direction
-    vec3 color = texture(environmentSampler, uv).rgb;
+    vec3 color = textureLod(environmentSampler, uv, 0.5).rgb;
     // Tone mapping
 	color = Uncharted2Tonemap(color * scene.exposure);
 	color = color * (1.0f / Uncharted2Tonemap(vec3(scene.whitePoint)));	

@@ -174,15 +174,15 @@ void Hmck::PBRApp::load() {
         .name = "Physically based rendering demo",
     });
 
-    scene->environment->load(device, resources, "../data/env/ibl/sunset.hdr", VK_FORMAT_R32G32B32A32_SFLOAT);
+    scene->environment->load(device, resources, "../data/env/ibl/lebombo.hdr", VK_FORMAT_R32G32B32A32_SFLOAT);
     scene->environment->generatePrefilteredSphere(device, resources);
     scene->environment->generateIrradianceSphere(device, resources);
     scene->environment->generateBRDFLUT(device, resources);
 
     GltfLoader gltfloader{device, resources, scene};
     //gltfloader.load("../data/models/helmet/helmet.glb");
-    //gltfloader.load("../data/models/helmet/DamagedHelmet.glb");
-    gltfloader.load("../data/models/sponza/sponza.glb");
+    gltfloader.load("../data/models/helmet/DamagedHelmet.glb");
+    //gltfloader.load("../data/models/sponza/sponza.glb");
     //gltfloader.load("../data/models/MetalRoughSpheres.glb");
 
     geometry.vertexBuffer = resources.createVertexBuffer({
