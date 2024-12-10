@@ -177,7 +177,7 @@ void Hmck::PBRApp::load() {
 
     {
         int32_t w,h,c;
-        ScopedMemory environmentData = ScopedMemory(Filesystem::readImage("../data/env/ibl/lebombo.hdr",w,h,c, Filesystem::ImageFormat::R32G32B32A32_SFLOAT));
+        ScopedMemory environmentData = ScopedMemory(Filesystem::readImage("../data/env/ibl/sunset.hdr",w,h,c, Filesystem::ImageFormat::R32G32B32A32_SFLOAT));
         scene->environment->readEnvironmentMap(environmentData.get(), sizeof(float), w,h,c, resources, VK_FORMAT_R32G32B32A32_SFLOAT);
         scene->environment->generatePrefilteredMap(device, resources);
         scene->environment->generateIrradianceMap(device, resources);
@@ -187,8 +187,8 @@ void Hmck::PBRApp::load() {
 
     GltfLoader gltfloader{device, resources, scene};
     //gltfloader.load("../data/models/helmet/helmet.glb");
-    gltfloader.load("../data/models/helmet/DamagedHelmet.glb");
-    //gltfloader.load("../data/models/sponza/sponza.glb");
+    //gltfloader.load("../data/models/helmet/DamagedHelmet.glb");
+    gltfloader.load("../data/models/sponza/sponza_lights.glb");
     //gltfloader.load("../data/models/MetalRoughSpheres.glb");
 
     geometry.vertexBuffer = resources.createVertexBuffer({

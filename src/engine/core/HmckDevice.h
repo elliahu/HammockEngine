@@ -101,9 +101,6 @@ namespace Hmck {
         VkPhysicalDeviceProperties properties;
 
     private:
-        // TODO create instance
-
-        void setupDebugMessenger();
 
         void pickPhysicalDevice();
 
@@ -114,19 +111,19 @@ namespace Hmck {
         // helper functions
         bool isDeviceSuitable(VkPhysicalDevice device);
 
-        QueueFamilyIndices findQueueFamilies(VkPhysicalDevice device) const; // <- surface needed here
+        QueueFamilyIndices findQueueFamilies(VkPhysicalDevice device) const;
 
 
         bool checkDeviceExtensionSupport(VkPhysicalDevice device) const;
 
-        SwapChainSupportDetails querySwapChainSupport(VkPhysicalDevice device) const; // <- surface needed here
+        SwapChainSupportDetails querySwapChainSupport(VkPhysicalDevice device) const;
 
         VulkanInstance &instance;
         VkPhysicalDevice physicalDevice = VK_NULL_HANDLE;
         VkCommandPool commandPool;
 
         VkDevice device_;
-        VkSurfaceKHR surface_; // <- window is needed for this
+        VkSurfaceKHR surface_;
         VkQueue graphicsQueue_;
         VkQueue presentQueue_;
 
