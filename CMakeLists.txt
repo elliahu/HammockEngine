@@ -8,6 +8,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 # Add subdirectories
 add_subdirectory(src/engine)
 add_subdirectory(src/app)
+add_subdirectory(tools/generate_environment_maps)
 
 # Define the executable
 add_executable(hammock src/main.cpp)

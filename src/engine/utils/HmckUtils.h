@@ -15,6 +15,7 @@
 #include <cmath>
 #include <memory>
 #include <stb_image.h>
+#include <stb_image_write.h>
 
 #include "HmckLogger.h"
 #include "resources/HmckDescriptors.h"
@@ -686,6 +687,60 @@ namespace Hmck {
             }
 
             return volumeData;
+        }
+
+        enum class WriteImageDefinition {
+            SDR, HDR
+        };
+
+        inline void writeImage(const std::string &filename, const void *buffer, uint32_t instanceSize, uint32_t width,
+                               uint32_t height, uint32_t channels,
+                               WriteImageDefinition definition = WriteImageDefinition::SDR) {
+            // Handle SDR and HDR separately
+            if (definition == WriteImageDefinition::SDR) {
+                // For SDR, normalize to 8-bit and save as PNG
+                unsigned char *normalizedBuffer = nullptr;
+                if (instanceSize > 1) {
+                    normalizedBuffer = new unsigned char[width * height * channels];
+                    const float *floatBuffer = static_cast<const float *>(buffer);
+                    for (size_t i = 0; i < width * height * channels; ++i) {
+                        normalizedBuffer[i] = static_cast<unsigned char>(std::clamp(
+                            floatBuffer[i] * 255.0f, 0.0f, 255.0f));
+                    }
+                } else {
+                    // If instance size is already 1 byte, cast the buffer
+                    normalizedBuffer = const_cast<unsigned char *>(static_cast<const unsigned char *>(buffer));
+                }
+
+                // Use stb_image_write to save the image as PNG
+                int success = stbi_write_png(filename.c_str(), width, height, channels, normalizedBuffer,
+                                             width * channels);
+                if (!success) {
+                    Logger::log(HMCK_LOG_LEVEL_ERROR, "Error: Failed to save SDR image!");
+                    throw std::runtime_error("Failed to save image: " + filename);
+                }
+
+                // Clean up if normalization was done
+                if (instanceSize > 1) {
+                    delete[] normalizedBuffer;
+                }
+            } else if (definition == WriteImageDefinition::HDR) {
+                // For HDR, save as HDR file using float buffer directly
+                if (instanceSize != sizeof(float)) {
+                    Logger::log(HMCK_LOG_LEVEL_ERROR, "Error: HDR requires float data!");
+                    throw std::runtime_error("HDR images require buffer with float data.");
+                }
+
+                const float *floatBuffer = static_cast<const float *>(buffer);
+                int success = stbi_write_hdr(filename.c_str(), width, height, channels, floatBuffer);
+                if (!success) {
+                    Logger::log(HMCK_LOG_LEVEL_ERROR, "Error: Failed to save HDR image!");
+                    throw std::runtime_error("Failed to save HDR image: " + filename);
+                }
+            } else {
+                Logger::log(HMCK_LOG_LEVEL_ERROR, "Error: Unknown image definition!");
+                throw std::invalid_argument("Unknown image definition specified.");
+            }
         }
     } // namespace Filesystem
 

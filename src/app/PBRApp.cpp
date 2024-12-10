@@ -178,10 +178,10 @@ void Hmck::PBRApp::load() {
     {
         int32_t w,h,c;
         ScopedMemory environmentData = ScopedMemory(Filesystem::readImage("../data/env/ibl/lebombo.hdr",w,h,c, Filesystem::ImageFormat::R32G32B32A32_SFLOAT));
-        scene->environment->load(environmentData.get(), sizeof(float), w,h,c, resources, VK_FORMAT_R32G32B32A32_SFLOAT);
-        scene->environment->generatePrefilteredSphere(device, resources);
-        scene->environment->generateIrradianceSphere(device, resources);
-        scene->environment->generateBRDFLUT(device, resources);
+        scene->environment->readEnvironmentMap(environmentData.get(), sizeof(float), w,h,c, resources, VK_FORMAT_R32G32B32A32_SFLOAT);
+        scene->environment->generatePrefilteredMap(device, resources);
+        scene->environment->generateIrradianceMap(device, resources);
+        scene->environment->generateBRDFLookUpTable(device, resources);
     }
 
 
@@ -262,10 +262,10 @@ void Hmck::PBRApp::init() {
             .descriptorSetLayout = sceneDescriptors.descriptorSetLayout,
             .bufferWrites = {{0, fbufferInfo}},
             .imageWrites = {
-                {2, resources.getTexture2DDescriptorImageInfo(scene->environment->environmentSphere)},
-                {3, resources.getTexture2DDescriptorImageInfo(scene->environment->prefilteredSphere)},
-                {4, resources.getTexture2DDescriptorImageInfo(scene->environment->brdfLUT)},
-                {5, resources.getTexture2DDescriptorImageInfo(scene->environment->irradianceSphere)},
+                {2, resources.getTexture2DDescriptorImageInfo(scene->environment->environmentMap)},
+                {3, resources.getTexture2DDescriptorImageInfo(scene->environment->prefilteredMap)},
+                {4, resources.getTexture2DDescriptorImageInfo(scene->environment->brdfLookUpTable)},
+                {5, resources.getTexture2DDescriptorImageInfo(scene->environment->irradianceMap)},
             },
             .imageArrayWrites = {{1, imageInfos}}
         });

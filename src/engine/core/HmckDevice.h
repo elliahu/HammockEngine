@@ -94,6 +94,9 @@ namespace Hmck {
             uint32_t baseLevel = 0
         ) const;
 
+        void copyImageToHostVisibleImage(VkImage srcImage, VkImage dstImage,
+                                         uint32_t width, uint32_t height) const;
+
 
         VkPhysicalDeviceProperties properties;
 

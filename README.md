@@ -19,6 +19,7 @@ The following points are features currently implemented:
 - [ ] SSAO
 - [ ] Headless rendering
 - [ ] Optional RTX features
+- [ ] Multithreaded command-buffer generation
 - Will see what more
 
 
