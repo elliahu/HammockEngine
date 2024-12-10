@@ -23,6 +23,7 @@ layout (set = 2, binding = 0) uniform MaterialPropertyUbo
     uint metallicRoughnessTextureIndex;
     uint occlusionTextureIndex;
     float alphaMode;
+    float alphaCutOff;
     float metallicFactor;
     float roughnessFactor;
 } material;
@@ -53,7 +54,15 @@ void main()
     1.0 : texture(textures[material.occlusionTextureIndex], inUv).r;
 
     positionBuffer = position;
-    albedoBuffer = albedo;
+
+    if (albedo.a < material.alphaCutOff)
+    {
+        discard;
+    }
+    else{
+        albedoBuffer = albedo;
+    }
+
     materialBuffer = vec4(roughness, metallic, ambientOcclusion, material.alphaMode);
     if (material.normalTextureIndex != INVALID_TEXTURE)
     {

@@ -180,9 +180,9 @@ void Hmck::PBRApp::load() {
     scene->environment->generateBRDFLUT(device, resources);
 
     GltfLoader gltfloader{device, resources, scene};
-    gltfloader.load("../data/models/helmet/helmet.glb");
+    //gltfloader.load("../data/models/helmet/helmet.glb");
     //gltfloader.load("../data/models/helmet/DamagedHelmet.glb");
-    //gltfloader.load("../data/models/sponza/sponza.glb");
+    gltfloader.load("../data/models/sponza/sponza.glb");
     //gltfloader.load("../data/models/MetalRoughSpheres.glb");
 
     geometry.vertexBuffer = resources.createVertexBuffer({
@@ -390,6 +390,7 @@ void Hmck::PBRApp::renderEntity(const uint32_t frameIndex, const VkCommandBuffer
                                                          ? scene->textures[occlusionTextureIndex].imageIndex
                                                          : TextureIndex::Invalid,
                             .alphaMode = alphaMode == "OPAQUE" ? 1.0f : 0.0f,
+                            .alphaCutOff = alphaCutOff,
                             .metallicFactor = metallicFactor,
                             .roughnessFactor = roughnessFactor
                         };
