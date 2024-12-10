@@ -25,6 +25,28 @@ void Hmck::Environment::readEnvironmentMap(const void *buffer, uint32_t instance
     });
 }
 
+void Hmck::Environment::readIrradianceMap(const void *buffer, uint32_t instanceSize, uint32_t width, uint32_t height,
+    uint32_t channels, const ResourceManager &resources, VkFormat format) {
+
+    irradianceMap = resources.createTexture2D({
+        .buffer = buffer,
+        .instanceSize = instanceSize,
+        .width = width, .height = height, .channels = channels,
+        .format = format,
+    });
+}
+
+void Hmck::Environment::readBRDFLookUpTable(const void *buffer, uint32_t instanceSize, uint32_t width, uint32_t height,
+    uint32_t channels, const ResourceManager &resources, VkFormat format) {
+
+    brdfLookUpTable = resources.createTexture2D({
+        .buffer = buffer,
+        .instanceSize = instanceSize,
+        .width = width, .height = height, .channels = channels,
+        .format = format,
+    });
+}
+
 void Hmck::Environment::generatePrefilteredMap(Device &device, ResourceManager &resources, VkFormat format) {
     assert(environmentMap > 0 && "Env map not set");
     auto tStart = std::chrono::high_resolution_clock::now();
