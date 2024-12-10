@@ -42,6 +42,5 @@ During the development I've also created some tools that are using Hammock under
 ![img](https://raw.githubusercontent.com/elliahu/HammockEngine/master/docs/img/sponza.png)
 ![img](https://raw.githubusercontent.com/elliahu/HammockEngine/master/docs/img/helmet.png)
 ![img](https://raw.githubusercontent.com/elliahu/HammockEngine/master/docs/img/cloud.png)
-![img](https://raw.githubusercontent.com/elliahu/HammockEngine/master/docs/img/cloud.png)
 
 
