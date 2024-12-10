@@ -9,24 +9,13 @@
 #include "utils/HmckLogger.h"
 #include "shaders/HmckShader.h"
 
-void Hmck::Environment::load(Device &device, const ResourceManager &resources, const std::string &filepath,
-                             const VkFormat format) {
-    int width = 0, height = 0, channels = 0;
-
-    float *pixels = stbi_loadf(filepath.c_str(), &width, &height, &channels, STBI_rgb_alpha);
-
-    if (!pixels) {
-        throw std::runtime_error("Failed to load image from disk");
-    }
-
-    channels = 4;
-    const uint32_t mipLevels = getNumberOfMipLevels(static_cast<uint32_t>(width), static_cast<uint32_t>(height));
-
+void Hmck::Environment::load(const void *buffer, uint32_t instanceSize, uint32_t width, uint32_t height, uint32_t channels, const ResourceManager &resources, VkFormat format) {
+    const uint32_t mipLevels = getNumberOfMipLevels(width, height);
     // Mip maps will be generated automatically
     environmentSphere = resources.createTexture2D({
-        .buffer = pixels,
-        .instanceSize = sizeof(float),
-        .width = static_cast<uint32_t>(width), .height = static_cast<uint32_t>(height), .channels = 4,
+        .buffer = buffer,
+        .instanceSize = instanceSize,
+        .width = width, .height = height, .channels = channels,
         .format = format,
         .samplerInfo = {
             .filter = VK_FILTER_LINEAR,
@@ -34,9 +23,6 @@ void Hmck::Environment::load(Device &device, const ResourceManager &resources, c
             .maxLod = static_cast<float>(mipLevels)
         }
     });
-
-    // Free the memory allocated by stb_image
-    stbi_image_free(pixels);
 }
 
 void Hmck::Environment::generatePrefilteredSphere(Device &device, ResourceManager &resources, VkFormat format) {

@@ -5,6 +5,7 @@
 #include "scene/HmckGLTF.h"
 #include "scene/HmckLights.h"
 #include "utils/HmckLogger.h"
+#include "utils/HmckScopedMemory.h"
 
 
 Hmck::PBRApp::PBRApp() {
@@ -174,10 +175,15 @@ void Hmck::PBRApp::load() {
         .name = "Physically based rendering demo",
     });
 
-    scene->environment->load(device, resources, "../data/env/ibl/lebombo.hdr", VK_FORMAT_R32G32B32A32_SFLOAT);
-    scene->environment->generatePrefilteredSphere(device, resources);
-    scene->environment->generateIrradianceSphere(device, resources);
-    scene->environment->generateBRDFLUT(device, resources);
+    {
+        int32_t w,h,c;
+        ScopedMemory environmentData = ScopedMemory(Filesystem::readImage("../data/env/ibl/lebombo.hdr",w,h,c, Filesystem::ImageFormat::R32G32B32A32_SFLOAT));
+        scene->environment->load(environmentData.get(), sizeof(float), w,h,c, resources, VK_FORMAT_R32G32B32A32_SFLOAT);
+        scene->environment->generatePrefilteredSphere(device, resources);
+        scene->environment->generateIrradianceSphere(device, resources);
+        scene->environment->generateBRDFLUT(device, resources);
+    }
+
 
     GltfLoader gltfloader{device, resources, scene};
     //gltfloader.load("../data/models/helmet/helmet.glb");

@@ -10,7 +10,7 @@
 namespace Hmck {
     class Environment {
     public:
-        void load(Device &device, const ResourceManager &resources, const std::string &filepath, VkFormat format);
+        void load(const void *buffer, uint32_t instanceSize, uint32_t width, uint32_t height, uint32_t channels, const ResourceManager &resources, VkFormat format);
 
         void generatePrefilteredSphere(Device &device, ResourceManager &resources,
                                        VkFormat format = VK_FORMAT_R32G32B32A32_SFLOAT);
