@@ -24,5 +24,5 @@ for path in os.listdir(raw_shaders):
     # Check if current path is a file
     if os.path.isfile(shader_in):
         # Compile
-        subprocess.check_call([compiler, shader_in, '-o', shader_out, '--target-env=vulkan1.2', '--target-spv=spv1.4'])
+        subprocess.check_call([compiler, "-I"+os.path.abspath(os.path.join(raw_shaders, "include")) , shader_in, '-o', shader_out, '--target-env=vulkan1.3', '--target-spv=spv1.4'])
         print(path + ' compiled successfully')

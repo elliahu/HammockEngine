@@ -1,0 +1,8 @@
+#ifndef CONSTS_GLSL
+#define CONSTS_GLSL
+
+#define INVALID_TEXTURE 4294967295
+
+const float PI = 3.14159265359;
+
+#endif // CONSTS_GLSL

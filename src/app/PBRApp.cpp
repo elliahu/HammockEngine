@@ -93,6 +93,7 @@ void Hmck::PBRApp::run() {
             sceneData.projection = scene->getActiveCamera()->getProjection();
             sceneData.view = scene->getActiveCamera()->getView();
             sceneData.inverseView = scene->getActiveCamera()->getInverseView();
+
             uint32_t ldx = 0;
             for (int i = 0; i < scene->lights.size(); i++) {
                 uint32_t lightId = scene->lights[i];
@@ -188,10 +189,12 @@ void Hmck::PBRApp::load() {
 
 
     GltfLoader gltfloader{device, resources, scene};
-    gltfloader.load("../data/models/helmet/helmet.glb");
+    //gltfloader.load("../data/models/helmet/helmet.glb");
     //gltfloader.load("../data/models/helmet/DamagedHelmet.glb");
-    //gltfloader.load("../data/models/sponza/sponza_lights.glb");
+    gltfloader.load("../data/models/sponza/sponza_lights.glb");
     //gltfloader.load("../data/models/MetalRoughSpheres.glb");
+
+    Logger::log(HMCK_LOG_LEVEL_DEBUG, "Loaded %d lights and %d cameras\n", scene->lights.size(), scene->cameras.size());
 
     geometry.vertexBuffer = resources.createVertexBuffer({
         .vertexSize = sizeof(scene->vertices[0]),

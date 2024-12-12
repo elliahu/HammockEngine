@@ -33,6 +33,10 @@ namespace Hmck {
             struct OmniLight {
                 glm::vec4 position;
                 glm::vec4 color;
+                float linear = 1.0f;
+                float quadratic = 1.0f;
+                float _padding1 = 0.0f;     // 4 bytes
+                float _padding2 = 0.0f;     // 4 bytes
             } omniLights[1000];
 
             uint32_t numOmniLights = 0;

@@ -1,5 +1,9 @@
 #version 450
 
+#include "common/types.glsl"
+#include "common/consts.glsl"
+#include "common/functions.glsl"
+
 //inputs
 layout (location = 0) in vec2 uv;
 
@@ -19,11 +23,7 @@ layout (set = 3, binding = 3) uniform sampler2D materialPropertySampler;
 layout (set = 3, binding = 4) uniform sampler2D accumulationSampler;
 layout (set = 3, binding = 5) uniform sampler2D transparencyWeightSampler;
 
-struct OmniLight
-{
-    vec4 position;
-    vec4 color;
-};
+
 layout (set = 0, binding = 0) uniform SceneUbo
 {
     mat4 projection;
@@ -37,8 +37,6 @@ layout (set = 0, binding = 0) uniform SceneUbo
     OmniLight omniLights[1000];
     uint numOmniLights;
 } scene;
-
-const float PI = 3.14159265359;
 
 // Normal Distribution function --------------------------------------
 float D_GGX(float dotNH, float roughness)
@@ -97,15 +95,6 @@ vec3 specularContribution(vec3 L, vec3 V, vec3 N, vec3 F0, vec3 albedo, float me
     return color;
 }
 
-// Function to calculate spherical UV coordinates from a direction vector
-vec2 toSphericalUV(vec3 direction)
-{
-    float phi = atan(direction.z, direction.x);
-    float theta = acos(direction.y);
-    float u = phi / (2.0 * PI) + 0.5;
-    float v = theta / PI;
-    return vec2(u, v);
-}
 
 // From http://filmicgames.com/archives/75
 vec3 Uncharted2Tonemap(vec3 x)
@@ -144,6 +133,9 @@ void main()
     float metallic = material.g;
     float ao = material.b;
     float alphaMode = material.a;
+    vec3 accumulatedColor = texture(accumulationSampler, uv).rgb;
+    float transparencyWeight = texture(transparencyWeightSampler, uv).r;
+
 
     if (material == vec4(-1.0)) // Background pixels are skipped
     {
@@ -178,10 +170,6 @@ void main()
     vec3 ambient = (kD * diffuse + specular + Lo) * vec3(ao);
 
     vec3 color = ambient * ao;
-
-    // Sample accumulation and weight buffers
-    vec3 accumulatedColor = texture(accumulationSampler, uv).rgb;
-    float transparencyWeight = texture(transparencyWeightSampler, uv).r;
 
     // Combine the color with the accumulation buffer
     if (transparencyWeight > 0.0) {
