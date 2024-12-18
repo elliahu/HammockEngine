@@ -8,9 +8,10 @@
 #include <chrono>
 
 #include "core/HmckDevice.h"
-#include "core/HmckRenderer.h"
+#include "core/HmckRenderContext.h"
 #include "resources/HmckDescriptors.h"
 #include "IApp.h"
+#include "core/HmckBindingTypes.h"
 #include "core/HmckDeviceStorage.h"
 #include "core/HmckGraphicsPipeline.h"
 #include "utils/HmckBenchmarkRunner.h"
@@ -30,41 +31,14 @@ namespace Hmck {
         void init();
 
     private:
-        void createPipelines(const Renderer &renderer);
+        void createPipelines(const RenderContext &renderer);
 
         // Data
-        struct alignas(16) GlobalBuffer {
-            static constexpr size_t MAX_MESHES = 256;
+        GlobalDataBuffer globalBuffer{};
+        FrameDataBuffer projectionBuffer{};
+        PushBlockDataBuffer meshPushBlock{};
 
-            alignas(16) HmckVec4 baseColorFactors[MAX_MESHES]; // w is padding
-            alignas(16) HmckVec4 metallicRoughnessAlphaCutOffFactors[MAX_MESHES]; // w is padding
-
-            // todo make this a global type
-            struct alignas(16) IntPadding {
-                int32_t value;
-                int32_t padding[3]; // Explicit padding to 16 bytes
-            };
-
-            IntPadding baseColorTextureIndexes[MAX_MESHES];
-            IntPadding normalTextureIndexes[MAX_MESHES];
-            IntPadding metallicRoughnessTextureIndexes[MAX_MESHES];
-            IntPadding occlusionTextureIndexes[MAX_MESHES];
-            IntPadding visibilityFlags[MAX_MESHES];
-        }globalBuffer{};
-
-        // Projection buffer bound every frame
-        struct ProjectionBuffer {
-            HmckMat4 projectionMat;
-            HmckMat4 viewMat;
-            HmckMat4 inverseViewMat;
-            HmckVec4 exposureGammaWhitePoint{4.5f, 1.0f, 11.0f};
-        } projectionBuffer{};
-
-        // Push block pushed for each mesh
-        struct MeshPushBlock {
-            HmckMat4 modelMat;
-            uint32_t meshIndex;
-        } meshPushBlock{};
+        float radius = 1.0f, azimuth = 0.0f, elevation = 0.0f;
 
         struct {
             Texture2DHandle environmentMap;

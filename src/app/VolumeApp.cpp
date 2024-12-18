@@ -1,6 +1,6 @@
 #include "VolumeApp.h"
 
-#include "core/HmckRenderer.h"
+#include "core/HmckRenderContext.h"
 #include "scene/HmckAssetDelivery.h"
 #include "scene/HmckCamera.h"
 #include "utils/HmckScopedMemory.h"
@@ -10,7 +10,7 @@ Hmck::VolumeApp::VolumeApp() {
 }
 
 void Hmck::VolumeApp::run() {
-    Renderer renderer{window, device};
+    RenderContext renderer{window, device};
 
     pipeline = GraphicsPipeline::createGraphicsPipelinePtr({
         .debugName = "standard_forward_pass",
@@ -171,8 +171,7 @@ void Hmck::VolumeApp::draw(int frameIndex, float elapsedTime, VkCommandBuffer co
     deviceStorage.bindVertexBuffer(vertexBuffer, indexBuffer, commandBuffer);
     pipeline->bind(commandBuffer);
 
-    bufferData.projection = Projection().perspective(70.0f, static_cast<float>(WINDOW_WIDTH) / WINDOW_HEIGHT, 0.1f, 64.0f,
-                                                                      true);
+    bufferData.projection = Projection().perspective(70.0f, static_cast<float>(WINDOW_WIDTH) / WINDOW_HEIGHT, 0.1f, 64.0f);
     bufferData.view = Projection().view(HmckVec3{0.0f, 0.0f, -2.0f}, HmckVec3{0.0f, 0.0f, 0.0f},
                                                          HmckVec3{0.0f, 1.0f, 0.0f});
     bufferData.inverseView = Projection().inverseView(HmckVec3{0.0f, 0.0f, -2.0f},

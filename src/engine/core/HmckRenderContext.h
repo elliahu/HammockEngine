@@ -24,16 +24,16 @@
 #define SSAO_RES_MULTIPLIER 1.0
 
 namespace Hmck {
-    class Renderer {
+    class RenderContext {
     public:
-        Renderer(Window &window, Device &device);
+        RenderContext(Window &window, Device &device);
 
-        ~Renderer();
+        ~RenderContext();
 
         // delete copy constructor and copy destructor
-        Renderer(const Renderer &) = delete;
+        RenderContext(const RenderContext &) = delete;
 
-        Renderer &operator=(const Renderer &) = delete;
+        RenderContext &operator=(const RenderContext &) = delete;
 
         [[nodiscard]] VkRenderPass getSwapChainRenderPass() const { return hmckSwapChain->getRenderPass(); }
         [[nodiscard]] float getAspectRatio() const { return hmckSwapChain->extentAspectRatio(); }

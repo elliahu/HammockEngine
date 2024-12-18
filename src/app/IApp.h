@@ -4,7 +4,7 @@
 #include <core/HmckDeviceStorage.h>
 
 #include "core/HmckVulkanInstance.h"
-#include "scene/HmckState.h"
+#include "scene/HmckGeometry.h"
 
 namespace Hmck {
     class IApp {
@@ -37,6 +37,6 @@ namespace Hmck {
         VulkanInstance instance;
         Device device;
         DeviceStorage deviceStorage{device};
-        State state{};
+        Geometry state{};
     };
 }

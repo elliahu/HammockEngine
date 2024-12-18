@@ -6,7 +6,7 @@
 #include "scene/HmckCamera.h"
 #include "utils/HmckLogger.h"
 #include "utils/HmckScopedMemory.h"
-
+#include "utils/HmckUtils.h"
 
 Hmck::PBRApp::PBRApp() {
     load();
@@ -30,7 +30,7 @@ Hmck::PBRApp::~PBRApp() {
 }
 
 void Hmck::PBRApp::run() {
-    Renderer renderer{window, device};
+    RenderContext renderer{window, device};
     init();
     createPipelines(renderer);
     UserInterface ui{device, renderer.getSwapChainRenderPass(), window};
@@ -70,10 +70,18 @@ void Hmck::PBRApp::run() {
 
 
             // do per frame calculations
+
+            if(window.getInputHandler().isKeyboardKeyDown(HMCK_KEY_A)) azimuth += 1.f * frameTime;
+            if(window.getInputHandler().isKeyboardKeyDown(HMCK_KEY_D)) azimuth -= 1.f * frameTime;
+            if(window.getInputHandler().isKeyboardKeyDown(HMCK_KEY_W)) elevation += 1.f * frameTime;
+            if(window.getInputHandler().isKeyboardKeyDown(HMCK_KEY_S)) elevation -= 1.f * frameTime;
+            if(window.getInputHandler().isKeyboardKeyDown(HMCK_KEY_DOWN)) radius += 1.f * frameTime;
+            if(window.getInputHandler().isKeyboardKeyDown(HMCK_KEY_UP)) radius -= 1.f * frameTime;
+            HmckVec3 pos = Math::orbitalPosition(HmckVec3{.0f,.0f,.0f}, radius, azimuth, elevation);
+
             // write to projection buffer
-            projectionBuffer.projectionMat = Projection().perspective(45.0f, renderer.getAspectRatio(), 0.1f, 64.0f,
-                                                                      true);
-            projectionBuffer.viewMat = Projection().view(HmckVec3{0.0f, 0.0f, -3.0f}, HmckVec3{0.0f, 0.0f, 0.0f},
+            projectionBuffer.projectionMat = Projection().perspective(45.0f, renderer.getAspectRatio(), 0.1f, 64.0f);
+            projectionBuffer.viewMat = Projection().view(pos, HmckVec3{0.0f, 0.0f, 0.0f},
                                                          HmckVec3{0.0f, 1.0f, 0.0f});
             projectionBuffer.inverseViewMat = Projection().inverseView(HmckVec3{0.0f, 0.0f, -2.0f},
                                                                        HmckVec3{0.0f, 0.0f, 0.0f},
@@ -121,14 +129,15 @@ void Hmck::PBRApp::run() {
 
             // Draw opaque, bind push block for each mesh
             for (int i = 0; i < state.renderMeshes.size(); i++) {
-                State::RenderMesh &mesh = state.renderMeshes[i];
-                if (mesh.visibilityFlags & State::VisibilityFlags::OPAQUE) {
+                Geometry::MeshInstance &mesh = state.renderMeshes[i];
+                if ((mesh.visibilityFlags & Geometry::VisibilityFlags::VISIBLE) ==  Geometry::VisibilityFlags::NONE) { continue;}
+                if (mesh.visibilityFlags & Geometry::VisibilityFlags::OPAQUE) {
                     meshPushBlock.modelMat = mesh.transform;
                     meshPushBlock.meshIndex = i;
 
                     vkCmdPushConstants(commandBuffer, opaqueGeometryPass.pipeline->graphicsPipelineLayout,
                                        VK_SHADER_STAGE_FRAGMENT_BIT | VK_SHADER_STAGE_VERTEX_BIT, 0,
-                                       sizeof(MeshPushBlock), &meshPushBlock);
+                                       sizeof(PushBlockDataBuffer), &meshPushBlock);
 
                     vkCmdDrawIndexed(commandBuffer, mesh.indexCount, 1, mesh.firstIndex, 0,
                                      0);
@@ -147,14 +156,16 @@ void Hmck::PBRApp::run() {
 
             // Draw transparent, bind push block for each mesh
             for (int i = 0; i < state.renderMeshes.size(); i++) {
-                State::RenderMesh &mesh = state.renderMeshes[i];
-                if (mesh.visibilityFlags & State::VisibilityFlags::TRANSPARENT) {
+                Geometry::MeshInstance &mesh = state.renderMeshes[i];
+                if ((mesh.visibilityFlags & Geometry::VisibilityFlags::VISIBLE) ==  Geometry::VisibilityFlags::NONE) { continue;}
+                if (mesh.visibilityFlags & Geometry::VisibilityFlags::TRANSPARENT) {
+                    // FIXME overdraw here
                     meshPushBlock.modelMat = mesh.transform;
                     meshPushBlock.meshIndex = i;
 
                     vkCmdPushConstants(commandBuffer, opaqueGeometryPass.pipeline->graphicsPipelineLayout,
                                        VK_SHADER_STAGE_FRAGMENT_BIT | VK_SHADER_STAGE_VERTEX_BIT, 0,
-                                       sizeof(MeshPushBlock), &meshPushBlock);
+                                       sizeof(PushBlockDataBuffer), &meshPushBlock);
 
                     vkCmdDrawIndexed(commandBuffer, mesh.indexCount, 1, mesh.firstIndex, 0,
                                      0);
@@ -309,7 +320,7 @@ void Hmck::PBRApp::init() {
     globalDescriptors.descriptorSets.resize(SwapChain::MAX_FRAMES_IN_FLIGHT);
     for (int i = 0; i < SwapChain::MAX_FRAMES_IN_FLIGHT; i++) {
         globalDescriptors.buffers[i] = deviceStorage.createBuffer({
-            .instanceSize = sizeof(GlobalBuffer),
+            .instanceSize = sizeof(GlobalDataBuffer),
             .instanceCount = 1,
             .usageFlags = VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
             .memoryPropertyFlags = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT
@@ -343,7 +354,7 @@ void Hmck::PBRApp::init() {
     projectionDescriptors.descriptorSets.resize(SwapChain::MAX_FRAMES_IN_FLIGHT);
     for (int i = 0; i < SwapChain::MAX_FRAMES_IN_FLIGHT; i++) {
         projectionDescriptors.buffers[i] = deviceStorage.createBuffer({
-            .instanceSize = sizeof(ProjectionBuffer),
+            .instanceSize = sizeof(FrameDataBuffer),
             .instanceCount = 1,
             .usageFlags = VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
             .memoryPropertyFlags = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT
@@ -393,7 +404,7 @@ void Hmck::PBRApp::init() {
 }
 
 
-void Hmck::PBRApp::createPipelines(const Renderer &renderer) {
+void Hmck::PBRApp::createPipelines(const RenderContext &renderer) {
     // create piplines and framebuffers
     auto depthFormat = device.findSupportedFormat(
         {VK_FORMAT_D32_SFLOAT, VK_FORMAT_D32_SFLOAT_S8_UINT, VK_FORMAT_D24_UNORM_S8_UINT},
@@ -483,7 +494,7 @@ void Hmck::PBRApp::createPipelines(const Renderer &renderer) {
             {
                 .stageFlags = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT,
                 .offset = 0,
-                .size = sizeof(MeshPushBlock)
+                .size = sizeof(PushBlockDataBuffer)
             }
         },
         .graphicsState{
@@ -523,14 +534,14 @@ void Hmck::PBRApp::createPipelines(const Renderer &renderer) {
             {
                 .stageFlags = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT,
                 .offset = 0,
-                .size = sizeof(MeshPushBlock)
+                .size = sizeof(PushBlockDataBuffer)
             }
         },
         .graphicsState{
             .depthTest = VK_TRUE,
             .depthTestCompareOp = VK_COMPARE_OP_LESS_OR_EQUAL,
             .cullMode = VK_CULL_MODE_BACK_BIT,
-            .frontFace = VK_FRONT_FACE_CLOCKWISE,
+            .frontFace = VK_FRONT_FACE_COUNTER_CLOCKWISE,
             .blendAtaAttachmentStates{
                 Hmck::Init::pipelineColorBlendAttachmentState(0xf, VK_FALSE),
                 Hmck::Init::pipelineColorBlendAttachmentState(0xf, VK_FALSE),
@@ -565,14 +576,14 @@ void Hmck::PBRApp::createPipelines(const Renderer &renderer) {
             {
                 .stageFlags = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT,
                 .offset = 0,
-                .size = sizeof(MeshPushBlock)
+                .size = sizeof(PushBlockDataBuffer)
             }
         },
         .graphicsState{
             .depthTest = VK_TRUE,
             .depthTestCompareOp = VK_COMPARE_OP_LESS_OR_EQUAL,
             .cullMode = VK_CULL_MODE_BACK_BIT,
-            .frontFace = VK_FRONT_FACE_CLOCKWISE,
+            .frontFace = VK_FRONT_FACE_COUNTER_CLOCKWISE,
             .blendAtaAttachmentStates{
                 Hmck::Init::pipelineColorBlendAttachmentState(0xf, VK_FALSE),
                 Hmck::Init::pipelineColorBlendAttachmentState(0xf, VK_FALSE),
@@ -647,7 +658,7 @@ void Hmck::PBRApp::createPipelines(const Renderer &renderer) {
             {
                 .stageFlags = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT,
                 .offset = 0,
-                .size = sizeof(MeshPushBlock)
+                .size = sizeof(PushBlockDataBuffer)
             }
         },
         .graphicsState{

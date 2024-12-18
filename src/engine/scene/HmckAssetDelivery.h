@@ -2,7 +2,7 @@
 
 #include <tiny_gltf.h>
 
-#include "HmckState.h"
+#include "HmckGeometry.h"
 #include "Utils/HmckLogger.h"
 #include "scene/HmckVertex.h"
 #include "tiny_obj_loader.h"
@@ -13,11 +13,11 @@ namespace Hmck {
     namespace gltf = tinygltf;
 
     struct Loader {
-        State &state;
+        Geometry &state;
         Device &device;
         DeviceStorage &deviceStorage;
 
-        explicit Loader(State &state, Device &device, DeviceStorage &storage): state(state), device{device},
+        explicit Loader(Geometry &state, Device &device, DeviceStorage &storage): state(state), device{device},
                                                                                deviceStorage{storage} {
         }
 
@@ -392,25 +392,25 @@ namespace Hmck {
                     currentParent = currentParent->parent;
                 }
 
-                int32_t visibilityFlags = State::VisibilityFlags::NONE;
+                int32_t visibilityFlags = Geometry::VisibilityFlags::NONE;
 
                 if (!node->mesh.primitives.empty()) {
-                    visibilityFlags |= State::VisibilityFlags::VISIBLE;
+                    visibilityFlags |= Geometry::VisibilityFlags::VISIBLE;
                     for (gPrimitive &primitive: node->mesh.primitives) {
                         gMaterial defaultMaterial{};
                         gMaterial &material = (primitive.materialIndex > -1)
                                                   ? materials[primitive.materialIndex]
                                                   : defaultMaterial;
                         if (material.alphaMode == "OPAQUE") {
-                            visibilityFlags |= State::VisibilityFlags::OPAQUE;
+                            visibilityFlags |= Geometry::VisibilityFlags::OPAQUE;
                         }
 
                         if (material.alphaMode == "BLEND") {
-                            visibilityFlags |= State::VisibilityFlags::TRANSPARENT;
+                            visibilityFlags |= Geometry::VisibilityFlags::TRANSPARENT;
                         }
 
-                        visibilityFlags |= State::VisibilityFlags::CASTS_SHADOW |
-                                State::VisibilityFlags::RECIEVES_SHADOW;
+                        visibilityFlags |= Geometry::VisibilityFlags::CASTS_SHADOW |
+                                Geometry::VisibilityFlags::RECIEVES_SHADOW;
 
                         state.renderMeshes.push_back({
                             model,
