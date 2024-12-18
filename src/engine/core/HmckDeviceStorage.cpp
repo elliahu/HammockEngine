@@ -13,9 +13,6 @@ Hmck::DeviceStorage::DeviceStorage(Device &device) : device{device}{
             .build();
 }
 
-Hmck::DeviceStorage::~DeviceStorage() {
-}
-
 Hmck::BufferHandle Hmck::DeviceStorage::createBuffer(BufferCreateInfo createInfo) {
     auto buffer = std::make_unique<Buffer>(
         device,

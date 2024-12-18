@@ -31,6 +31,27 @@ void Hmck::UserInterface::endUserInterface(VkCommandBuffer commandBuffer) {
     ImGui_ImplVulkan_RenderDrawData(ImGui::GetDrawData(), commandBuffer);
 }
 
+void Hmck::UserInterface::showDebugStats(const HmckMat4 &view) {
+    const ImGuiIO &io = ImGui::GetIO();
+    constexpr ImGuiWindowFlags window_flags = ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_AlwaysAutoResize |
+                                              ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_NoFocusOnAppearing |
+                                              ImGuiWindowFlags_NoNav;
+    ImGui::SetNextWindowPos({10, 10});
+    ImGui::SetNextWindowBgAlpha(0.35f);
+    ImGui::Begin(window.getWindowName().c_str(), (bool *) nullptr, window_flags);
+    const auto cameraPosition = view.Columns[3].XYZ;
+
+    ImGui::Text("Camera world position: ( %.2f, %.2f, %.2f )", cameraPosition.X, cameraPosition.Y, cameraPosition.Z);
+    if (ImGui::IsMousePosValid())
+        ImGui::Text("Mouse Position: (%.1f,%.1f)", io.MousePos.x, io.MousePos.y);
+    else
+        ImGui::Text("Mouse Position: <invalid or hidden>");
+    ImGui::Text("Window resolution: (%d x %d)", window.getExtent().width, window.getExtent().height);
+    ImGui::Text("Application average %.3f ms/frame (%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate,
+                ImGui::GetIO().Framerate);
+    ImGui::End();
+}
+
 void Hmck::UserInterface::showWindowControls() const {
     constexpr ImGuiWindowFlags window_flags = ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_AlwaysAutoResize |
                                               ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_NoFocusOnAppearing |
@@ -70,10 +91,6 @@ void Hmck::UserInterface::showColorSettings(float *exposure, float *gamma, float
     ImGui::DragFloat("Gamma", gamma, 0.01f, 0.01f);
     ImGui::DragFloat("White point", whitePoint, 0.01f, 0.01f);
     endWindow();
-}
-
-void Hmck::UserInterface::showLog() {
-    // TODO
 }
 
 void Hmck::UserInterface::forward(const int button, const bool state) {

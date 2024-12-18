@@ -3,7 +3,7 @@
 #include "core/HmckDevice.h"
 #include "imgui.h"
 #include "core/HmckRenderContext.h"
-
+#include "HandmadeMath.h"
 #include <memory>
 
 
@@ -22,15 +22,10 @@ namespace Hmck {
 
         static void showDemoWindow() { ImGui::ShowDemoWindow(); }
 
-
+        void showDebugStats(const HmckMat4 &view);
 
         void showWindowControls() const;
-
-
         void showColorSettings(float *exposure, float *gamma, float *whitePoint);
-
-        static void showLog();
-
         // forwarding events to ImGUI
         static void forward(int button, bool state);
 

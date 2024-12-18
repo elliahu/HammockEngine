@@ -235,6 +235,9 @@ namespace Hmck {
                 }
                 if (inputNode.rotation.size() == 4) {
                     // TODO handle rotation
+                    HmckQuat quat{
+                        static_cast<float>(inputNode.rotation[0]), static_cast<float>(inputNode.rotation[1]),static_cast<float>(inputNode.rotation[2]), static_cast<float>(inputNode.rotation[3]),
+                    };
                 }
                 if (inputNode.scale.size() == 3) {
                     node->matrix = HmckScale(HmckVec3{
@@ -412,16 +415,35 @@ namespace Hmck {
                         visibilityFlags |= Geometry::VisibilityFlags::CASTS_SHADOW |
                                 Geometry::VisibilityFlags::RECIEVES_SHADOW;
 
-                        // FIXME needs to check for invalid indexes
+                        int32_t baseColorTextureIndex = -1;
+                        if(material.albedoTexture > -1) {
+                            baseColorTextureIndex = material.albedoTexture;
+                        }
+
+                        int32_t normalTextureIndex = -1;
+                        if(material.normalTexture > -1) {
+                            normalTextureIndex = material.normalTexture;
+                        }
+
+                        int32_t metallicRoughnessTextureIndex = -1;
+                        if(material.metallicRoughnessTexture > -1) {
+                            metallicRoughnessTextureIndex = material.metallicRoughnessTexture;
+                        }
+
+                        int32_t occlusionTextureIndex = -1;
+                        if(material.occlusionTexture > -1) {
+                            occlusionTextureIndex = material.occlusionTexture;
+                        }
+
                         state.renderMeshes.push_back({
                             model,
                             visibilityFlags,
                             material.baseColorFactor,
                             HmckVec3{material.metallicFactor, material.roughnessFactor, material.alphaCutOff},
-                            textures[material.albedoTexture].imageIndex,
-                            textures[material.normalTexture].imageIndex,
-                            textures[material.metallicRoughnessTexture].imageIndex,
-                            textures[material.occlusionTexture].imageIndex,
+                            baseColorTextureIndex,
+                            normalTextureIndex,
+                            metallicRoughnessTextureIndex,
+                            occlusionTextureIndex,
                             primitive.firstIndex, primitive.indexCount
                         });
                     }

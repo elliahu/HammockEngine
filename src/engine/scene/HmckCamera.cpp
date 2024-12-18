@@ -6,7 +6,7 @@
 HmckMat4 Hmck::Projection::perspective(float fovy, float aspect, float zNear, float zFar) {
     assert(HmckABS(aspect - std::numeric_limits<float>::epsilon()) > 0.0f);
     HmckMat4 perspective =  HmckPerspective_RH_ZO(fovy, aspect, zNear, zFar);
-    perspective[1][1] *=  -1.0f; // flip vertically as in vulkan, -y is up
+    perspective[1][1] *=  -1.0f; // flip vertically as in vulkan,
     return perspective;
 }
 

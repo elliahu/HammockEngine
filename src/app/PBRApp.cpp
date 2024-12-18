@@ -193,6 +193,7 @@ void Hmck::PBRApp::run() {
 
             // draw ui
             ui.beginUserInterface();
+            ui.showDebugStats(projectionBuffer.viewMat);
             ui.showWindowControls();
             ui.endUserInterface(commandBuffer);
 
@@ -209,7 +210,7 @@ void Hmck::PBRApp::load() {
     // Load the meshes
     Loader loader(state, device, deviceStorage);
     loader.loadglTF("../data/models/helmet/helmet.glb");
-    //loader.loadglTF("../data/models/Sphere/Sphere.glb");
+    //loader.loadglTF("../data/models/blender.glb");
     //loader.loadglTF("../data/models/sponza/sponza.glb");
 
     int32_t w, h, c;

@@ -20,10 +20,7 @@ namespace Hmck {
     public:
         static const uint32_t INVALID_HANDLE;
 
-        // TODO make desctructor so it is cleaned when it goes out of scope
         explicit DeviceStorage(Device &device);
-
-        ~DeviceStorage();
 
         struct BufferCreateInfo {
             VkDeviceSize instanceSize;
