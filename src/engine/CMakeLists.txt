@@ -24,6 +24,3 @@ target_link_libraries(hammock_engine PUBLIC Vulkan::Vulkan)
 
 find_package(glfw3 CONFIG REQUIRED)
 target_link_libraries(hammock_engine PUBLIC glfw)
-
-find_package(glm CONFIG REQUIRED)
-target_link_libraries(hammock_engine PUBLIC glm::glm)
