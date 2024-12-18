@@ -8,13 +8,7 @@
 #include "utils/HmckLogger.h"
 
 
-void Hmck::ITexture::updateDescriptor() {
-    descriptor.sampler = sampler;
-    descriptor.imageView = view;
-    descriptor.imageLayout = layout;
-}
-
-void Hmck::ITexture::destroy(const Device &device) {
+Hmck::ITexture::~ITexture() {
     // if image have sampler, destroy it
     if (sampler != VK_NULL_HANDLE) {
         vkDestroySampler(device.device(), sampler, nullptr);
@@ -24,6 +18,12 @@ void Hmck::ITexture::destroy(const Device &device) {
     vkDestroyImageView(device.device(), view, nullptr);
     vkDestroyImage(device.device(), image, nullptr);
     vkFreeMemory(device.device(), memory, nullptr);
+}
+
+void Hmck::ITexture::updateDescriptor() {
+    descriptor.sampler = sampler;
+    descriptor.imageView = view;
+    descriptor.imageLayout = layout;
 }
 
 void Hmck::TextureCubeMap::loadFromFiles(const std::vector<std::string> &filenames, const VkFormat format,

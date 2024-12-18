@@ -13,6 +13,9 @@ Hmck::DeviceStorage::DeviceStorage(Device &device) : device{device}{
             .build();
 }
 
+Hmck::DeviceStorage::~DeviceStorage() {
+}
+
 Hmck::BufferHandle Hmck::DeviceStorage::createBuffer(BufferCreateInfo createInfo) {
     auto buffer = std::make_unique<Buffer>(
         device,
@@ -136,7 +139,7 @@ Hmck::DescriptorSetHandle Hmck::DeviceStorage::createDescriptorSet(const Descrip
 
 Hmck::Texture2DHandle Hmck::DeviceStorage::createTexture2D(
     const Texture2DCreateFromBufferInfo &createInfo) {
-    std::unique_ptr<Texture2D> texture = std::make_unique<Texture2D>();
+    std::unique_ptr<Texture2D> texture = std::make_unique<Texture2D>(device);
 
     texture->loadFromBuffer(
         createInfo.buffer,
@@ -168,7 +171,7 @@ Hmck::Texture2DHandle Hmck::DeviceStorage::createTexture2D(
 }
 
 Hmck::Texture2DHandle Hmck::DeviceStorage::createEmptyTexture2D() {
-    std::unique_ptr<Texture2D> texture = std::make_unique<Texture2D>();
+    std::unique_ptr<Texture2D> texture = std::make_unique<Texture2D>(device);
     texture2Ds.emplace(texture2DsLastHandle, std::move(texture));
     Texture2DHandle handle = texture2DsLastHandle;
     texture2DsLastHandle++;
@@ -178,7 +181,7 @@ Hmck::Texture2DHandle Hmck::DeviceStorage::createEmptyTexture2D() {
 
 Hmck::Texture3DHandle Hmck::DeviceStorage::createTexture3D(
     const Texture3DCreateFromBufferInfo &createInfo) {
-    std::unique_ptr<Texture3D> texture = std::make_unique<Texture3D>();
+    std::unique_ptr<Texture3D> texture = std::make_unique<Texture3D>(device);
     texture->loadFromBuffer(
         device,
         createInfo.buffer,
@@ -276,7 +279,6 @@ void Hmck::DeviceStorage::destroyDescriptorSetLayout(const DescriptorSetLayoutHa
 }
 
 void Hmck::DeviceStorage::destroyTexture2D(const Texture2DHandle handle){
-    getTexture2D(handle)->destroy(device);
     texture2Ds.erase(handle);
 }
 
@@ -298,7 +300,6 @@ void Hmck::DeviceStorage::bindIndexBuffer(const BufferHandle handle, const VkCom
 }
 
 void Hmck::DeviceStorage::destroyTexture3D(Texture3DHandle handle) {
-    getTexture3D(handle)->destroy(device);
     texture3Ds.erase(handle);
 }
 

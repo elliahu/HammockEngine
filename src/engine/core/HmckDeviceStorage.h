@@ -23,6 +23,8 @@ namespace Hmck {
         // TODO make desctructor so it is cleaned when it goes out of scope
         explicit DeviceStorage(Device &device);
 
+        ~DeviceStorage();
+
         struct BufferCreateInfo {
             VkDeviceSize instanceSize;
             uint32_t instanceCount;
