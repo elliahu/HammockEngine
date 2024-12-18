@@ -1,9 +1,9 @@
 #include "PBRApp.h"
 
-#include "controllers/KeyboardMovementController.h"
-#include "controllers/OrbitalMovementController.h"
-#include "scene/HmckGLTF.h"
-#include "scene/HmckLights.h"
+#include <resources/HmckGenerator.h>
+
+#include "scene/HmckAssetDelivery.h"
+#include "scene/HmckCamera.h"
 #include "utils/HmckLogger.h"
 #include "utils/HmckScopedMemory.h"
 
@@ -13,49 +13,44 @@ Hmck::PBRApp::PBRApp() {
 }
 
 Hmck::PBRApp::~PBRApp() {
-    for (const unsigned int sceneBuffer: sceneDescriptors.sceneBuffers)
-        resources.destroyBuffer(sceneBuffer);
+    // destroy global buffer
+    for (const unsigned int buffer: globalDescriptors.buffers)
+        deviceStorage.destroyBuffer(buffer);
 
-    for (const auto &[fst, snd]: entityDescriptors.entityBuffers)
-        resources.destroyBuffer(entityDescriptors.entityBuffers[fst]);
+    // destroy projection buffers
+    for (const unsigned int buffer: projectionDescriptors.buffers)
+        deviceStorage.destroyBuffer(buffer);
 
-    for (int i = 0; i < primitiveDescriptors.primitiveBuffers.size(); i++)
-        resources.destroyBuffer(primitiveDescriptors.primitiveBuffers[i]);
+    deviceStorage.destroyDescriptorSetLayout(globalDescriptors.descriptorSetLayout);
+    deviceStorage.destroyDescriptorSetLayout(projectionDescriptors.descriptorSetLayout);
+    deviceStorage.destroyDescriptorSetLayout(compositionDescriptors.descriptorSetLayout);
 
-    resources.destroyDescriptorSetLayout(sceneDescriptors.descriptorSetLayout);
-    resources.destroyDescriptorSetLayout(entityDescriptors.descriptorSetLayout);
-    resources.destroyDescriptorSetLayout(primitiveDescriptors.descriptorSetLayout);
-    resources.destroyDescriptorSetLayout(compositionDescriptors.descriptorSetLayout);
-
-    resources.destroyBuffer(geometry.vertexBuffer);
-    resources.destroyBuffer(geometry.indexBuffer);
+    deviceStorage.destroyBuffer(geometry.vertexBuffer);
+    deviceStorage.destroyBuffer(geometry.indexBuffer);
 }
 
 void Hmck::PBRApp::run() {
     Renderer renderer{window, device};
-    OrbitalMovementController orbitalCameraController{};
-    KeyboardMovementController keyboardMovementController{};
-    UserInterface ui{device, renderer.getSwapChainRenderPass(), window};
-
-    auto camera = std::make_shared<Camera>();
-    scene->add(camera, scene->getRoot());
-    scene->setActiveCamera(camera->id);
-    scene->getActiveCamera()->flipY = true;
-    scene->getActiveCamera()->transform.translation = glm::vec3(0.f, 0.f, -2.f);
-    scene->getActiveCamera()->setPerspectiveProjection(glm::radians(50.f), renderer.getAspectRatio(), 0.1f, 512.0f);
-
-    std::shared_ptr<OmniLight> light = std::make_shared<OmniLight>();
-    light->transform.translation = {0.0f, 2.0f, -8.0f};
-    scene->add(light, scene->getRoot());
-
     init();
     createPipelines(renderer);
+    UserInterface ui{device, renderer.getSwapChainRenderPass(), window};
 
-    SceneBufferData sceneData{
-        .projection = scene->getActiveCamera()->getProjection(),
-        .view = scene->getActiveCamera()->getView(),
-        .inverseView = scene->getActiveCamera()->getInverseView()
-    };
+
+    int r = 0;
+    for (auto &mesh: state.renderMeshes) {
+        globalBuffer.baseColorFactors[r] = HmckVec4{mesh.baseColorFactor};
+        globalBuffer.metallicRoughnessAlphaCutOffFactors[r] =  HmckVec4{mesh.metallicRoughnessAlphaCutOffFactor};
+        globalBuffer.baseColorTextureIndexes[r].value = mesh.baseColorTextureIndex;
+        globalBuffer.normalTextureIndexes[r].value = mesh.normalTextureIndex;
+        globalBuffer.metallicRoughnessTextureIndexes[r].value = mesh.metallicRoughnessTextureIndex;
+        globalBuffer.occlusionTextureIndexes[r].value = mesh.occlusionTextureIndex;
+        globalBuffer.visibilityFlags[r].value = mesh.visibilityFlags;
+        r++;
+    }
+    for (int i = 0; i < SwapChain::MAX_FRAMES_IN_FLIGHT; i++) {
+        deviceStorage.getBuffer(globalDescriptors.buffers[i])->writeToBuffer(&globalBuffer);
+    }
+
 
 
     auto currentTime = std::chrono::high_resolution_clock::now();
@@ -68,17 +63,26 @@ void Hmck::PBRApp::run() {
         float frameTime = std::chrono::duration<float, std::chrono::seconds::period>(newTime - currentTime).count();
         currentTime = newTime;
 
-        // camera
-        //rbitalCameraController.freeOrbit(scene->getActiveCamera(), {0.f, 0.f, 0.f}, window, frameTime);
-        keyboardMovementController.moveInPlaneXZ(window, frameTime, camera);
-        scene->getActiveCamera()->update();
-
 
         // start a new frame
         if (const auto commandBuffer = renderer.beginFrame()) {
             const int frameIndex = renderer.getFrameIndex();
 
-            resources.bindVertexBuffer(geometry.vertexBuffer, geometry.indexBuffer, commandBuffer);
+
+            // do per frame calculations
+            // write to projection buffer
+            projectionBuffer.projectionMat = Projection().perspective(45.0f, renderer.getAspectRatio(), 0.1f, 64.0f,
+                                                                      true);
+            projectionBuffer.viewMat = Projection().view(HmckVec3{0.0f, 0.0f, -3.0f}, HmckVec3{0.0f, 0.0f, 0.0f},
+                                                         HmckVec3{0.0f, 1.0f, 0.0f});
+            projectionBuffer.inverseViewMat = Projection().inverseView(HmckVec3{0.0f, 0.0f, -2.0f},
+                                                                       HmckVec3{0.0f, 0.0f, 0.0f},
+                                                                       HmckVec3{0.0f, 1.0f, 0.0f});
+            deviceStorage.getBuffer(projectionDescriptors.buffers[frameIndex])->writeToBuffer(&projectionBuffer);
+
+
+            deviceStorage.bindVertexBuffer(geometry.vertexBuffer, geometry.indexBuffer, commandBuffer);
+            // Opaque geometry pass
             renderer.beginRenderPass(opaqueGeometryPass.framebuffer, commandBuffer, {
                                          {.color = {0.0f, 0.0f, 0.0f, 0.0f}},
                                          {.color = {0.0f, 0.0f, 0.0f, 0.0f}},
@@ -88,79 +92,100 @@ void Hmck::PBRApp::run() {
                                      });
 
 
+            // Environment pipeline
             environmentPass.pipeline->bind(commandBuffer);
 
-            sceneData.projection = scene->getActiveCamera()->getProjection();
-            sceneData.view = scene->getActiveCamera()->getView();
-            sceneData.inverseView = scene->getActiveCamera()->getInverseView();
-
-            uint32_t ldx = 0;
-            for (int i = 0; i < scene->lights.size(); i++) {
-                uint32_t lightId = scene->lights[i];
-                auto l = cast<Entity, OmniLight>(scene->entities[lightId]);
-                sceneData.omniLights[ldx] = {
-                    .position = scene->getActiveCamera()->getView() * glm::vec4(l->transform.translation, 1.0f),
-                    .color = glm::vec4(l->color, 1.0f)
-                };
-                ldx++;
-            }
-            sceneData.numOmniLights = ldx;
-            resources.getBuffer(sceneDescriptors.sceneBuffers[frameIndex])->writeToBuffer(&sceneData);
-            resources.bindDescriptorSet(
+            // Bind global buffer
+            deviceStorage.bindDescriptorSet(
                 commandBuffer,
                 VK_PIPELINE_BIND_POINT_GRAPHICS,
                 environmentPass.pipeline->graphicsPipelineLayout,
-                sceneDescriptors.binding, 1,
-                sceneDescriptors.descriptorSets[frameIndex],
+                globalDescriptors.binding, 1,
+                globalDescriptors.descriptorSets[frameIndex],
                 0, nullptr);
 
+            // Bind projection buffer
+            deviceStorage.bindDescriptorSet(
+                commandBuffer,
+                VK_PIPELINE_BIND_POINT_GRAPHICS,
+                environmentPass.pipeline->graphicsPipelineLayout,
+                projectionDescriptors.binding, 1,
+                projectionDescriptors.descriptorSets[frameIndex],
+                0, nullptr);
 
+            // draw environment
             vkCmdDraw(commandBuffer, 3, 1, 0, 0);
 
+            // opaque pass
             opaqueGeometryPass.pipeline->bind(commandBuffer);
 
-            renderEntity(frameIndex, commandBuffer, opaqueGeometryPass.pipeline, scene->getRoot(), RenderMode::OPAQUE_EXCLUSIVE);
+            // Draw opaque, bind push block for each mesh
+            for (int i = 0; i < state.renderMeshes.size(); i++) {
+                State::RenderMesh &mesh = state.renderMeshes[i];
+                if (mesh.visibilityFlags & State::VisibilityFlags::OPAQUE) {
+                    meshPushBlock.modelMat = mesh.transform;
+                    meshPushBlock.meshIndex = i;
+
+                    vkCmdPushConstants(commandBuffer, opaqueGeometryPass.pipeline->graphicsPipelineLayout,
+                                       VK_SHADER_STAGE_FRAGMENT_BIT | VK_SHADER_STAGE_VERTEX_BIT, 0,
+                                       sizeof(MeshPushBlock), &meshPushBlock);
+
+                    vkCmdDrawIndexed(commandBuffer, mesh.indexCount, 1, mesh.firstIndex, 0,
+                                     0);
+                }
+            }
 
             renderer.endRenderPass(commandBuffer);
 
-            { // transparent pass
-                renderer.beginRenderPass(transparentGeometryPass.framebuffer, commandBuffer, {
+            // transparent pass
+            renderer.beginRenderPass(transparentGeometryPass.framebuffer, commandBuffer, {
                                          {.color = {0.0f, 0.0f, 0.0f, 0.0f}},
                                          {.color = {0.0f, 0.0f, 0.0f, 0.0f}},
                                          {.depthStencil = {1.0f, 0}}
                                      });
-                transparentGeometryPass.pipeline->bind(commandBuffer);
-                renderEntity(frameIndex, commandBuffer, transparentGeometryPass.pipeline, scene->getRoot(), RenderMode::TRANSPARENT_EXCLUSIVE);
-                renderer.endRenderPass(commandBuffer);
+            transparentGeometryPass.pipeline->bind(commandBuffer);
+
+            // Draw transparent, bind push block for each mesh
+            for (int i = 0; i < state.renderMeshes.size(); i++) {
+                State::RenderMesh &mesh = state.renderMeshes[i];
+                if (mesh.visibilityFlags & State::VisibilityFlags::TRANSPARENT) {
+                    meshPushBlock.modelMat = mesh.transform;
+                    meshPushBlock.meshIndex = i;
+
+                    vkCmdPushConstants(commandBuffer, opaqueGeometryPass.pipeline->graphicsPipelineLayout,
+                                       VK_SHADER_STAGE_FRAGMENT_BIT | VK_SHADER_STAGE_VERTEX_BIT, 0,
+                                       sizeof(MeshPushBlock), &meshPushBlock);
+
+                    vkCmdDrawIndexed(commandBuffer, mesh.indexCount, 1, mesh.firstIndex, 0,
+                                     0);
+                }
             }
 
 
-            { // composition
-                renderer.beginSwapChainRenderPass(commandBuffer);
+            renderer.endRenderPass(commandBuffer);
 
-                compositionPass.pipeline->bind(commandBuffer);
+            // composition pass
+            renderer.beginSwapChainRenderPass(commandBuffer);
 
-                resources.bindDescriptorSet(
-                    commandBuffer,
-                    VK_PIPELINE_BIND_POINT_GRAPHICS,
-                    compositionPass.pipeline->graphicsPipelineLayout,
-                    compositionDescriptors.binding, 1,
-                    compositionDescriptors.descriptorSets[frameIndex],
-                    0, nullptr);
+            compositionPass.pipeline->bind(commandBuffer);
+            // bind composition buffer
+            deviceStorage.bindDescriptorSet(
+                commandBuffer,
+                VK_PIPELINE_BIND_POINT_GRAPHICS,
+                compositionPass.pipeline->graphicsPipelineLayout,
+                compositionDescriptors.binding, 1,
+                compositionDescriptors.descriptorSets[frameIndex],
+                0, nullptr);
 
-                // draw deffered
-                vkCmdDraw(commandBuffer, 3, 1, 0, 0);
-            }
+            // draw composed image on screen
+            vkCmdDraw(commandBuffer, 3, 1, 0, 0);
 
-            { // UI
-                ui.beginUserInterface();
-                ui.showDebugStats(scene->getActiveCamera());
-                ui.showWindowControls();
-                ui.showEntityInspector(scene);
-                ui.showColorSettings(&sceneData.exposure, &sceneData.gamma, &sceneData.whitePoint);
-                ui.endUserInterface(commandBuffer);
-            }
+            // draw ui
+            ui.beginUserInterface();
+            ui.showWindowControls();
+            ui.endUserInterface(commandBuffer);
 
+            // end frame
             renderer.endRenderPass(commandBuffer);
             renderer.endFrame();
         }
@@ -170,269 +195,203 @@ void Hmck::PBRApp::run() {
 }
 
 void Hmck::PBRApp::load() {
-    scene = std::make_unique<Scene>(Scene::SceneCreateInfo{
-        .device = device,
-        .memory = resources,
-        .name = "Physically based rendering demo",
+    // Load the meshes
+    Loader loader(state, device, deviceStorage);
+    loader.loadglTF("../data/models/helmet/helmet.glb");
+    //loader.loadglTF("../data/models/Sphere/Sphere.glb");
+    //loader.loadglTF("../data/models/sponza/sponza.glb");
+
+    int32_t w, h, c;
+    ScopedMemory environmentData = ScopedMemory(Filesystem::readImage(
+        "../data/env/ibl/precomp/sunset/env.hdr", w, h, c, Filesystem::ImageFormat::R32G32B32A32_SFLOAT));
+    const uint32_t mipLevels = getNumberOfMipLevels(w, h);
+    environment.environmentMap = deviceStorage.createTexture2D({
+        .buffer = environmentData.get(),
+        .instanceSize = sizeof(float),
+        .width = static_cast<uint32_t>(w), .height = static_cast<uint32_t>(h), .channels = static_cast<uint32_t>(c),
+        .format = VK_FORMAT_R32G32B32A32_SFLOAT,
+        .samplerInfo = {
+            .filter = VK_FILTER_LINEAR,
+            .addressMode = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE,
+            .maxLod = static_cast<float>(mipLevels)
+        }
     });
 
-    {
-        int32_t w,h,c;
-        ScopedMemory environmentData = ScopedMemory(Filesystem::readImage("../data/env/ibl/precomp/sunset/env.hdr",w,h,c, Filesystem::ImageFormat::R32G32B32A32_SFLOAT));
-        scene->environment->readEnvironmentMap(environmentData.get(), sizeof(float), w,h,c, resources, VK_FORMAT_R32G32B32A32_SFLOAT);
-        scene->environment->generatePrefilteredMap(device, resources);
-        ScopedMemory irradianceData = ScopedMemory(Filesystem::readImage("../data/env/ibl/precomp/sunset/irradiance.hdr",w,h,c, Filesystem::ImageFormat::R32G32B32A32_SFLOAT));
-        scene->environment->readIrradianceMap(irradianceData.get(), sizeof(float), w,h,c, resources, VK_FORMAT_R32G32B32A32_SFLOAT);
-        ScopedMemory brdfLutData = ScopedMemory(Filesystem::readImage("../data/env/ibl/precomp/sunset/brdf_lut.hdr",w,h,c, Filesystem::ImageFormat::R32G32_SFLOAT));
-        scene->environment->readBRDFLookUpTable(brdfLutData.get(), sizeof(float), w,h,c, resources, VK_FORMAT_R32G32_SFLOAT);
-    }
+    Generator generator{};
+    environment.prefilteredEnvMap = generator.generatePrefilteredMap(device, environment.environmentMap, deviceStorage);
 
-
-    GltfLoader gltfloader{device, resources, scene};
-    //gltfloader.load("../data/models/helmet/helmet.glb");
-    //gltfloader.load("../data/models/helmet/DamagedHelmet.glb");
-    gltfloader.load("../data/models/sponza/sponza_lights.glb");
-    //gltfloader.load("../data/models/MetalRoughSpheres.glb");
-
-    Logger::log(HMCK_LOG_LEVEL_DEBUG, "Loaded %d lights and %d cameras\n", scene->lights.size(), scene->cameras.size());
-
-    geometry.vertexBuffer = resources.createVertexBuffer({
-        .vertexSize = sizeof(scene->vertices[0]),
-        .vertexCount = static_cast<uint32_t>(scene->vertices.size()),
-        .data = static_cast<void *>(scene->vertices.data())
+    ScopedMemory irradianceData = ScopedMemory(Filesystem::readImage(
+        "../data/env/ibl/precomp/sunset/irradiance.hdr", w, h, c, Filesystem::ImageFormat::R32G32B32A32_SFLOAT));
+    environment.irradianceMap = deviceStorage.createTexture2D({
+        .buffer = irradianceData.get(),
+        .instanceSize = sizeof(float),
+        .width = static_cast<uint32_t>(w), .height = static_cast<uint32_t>(h), .channels = static_cast<uint32_t>(c),
+        .format = VK_FORMAT_R32G32B32A32_SFLOAT,
     });
 
-    geometry.indexBuffer = resources.createIndexBuffer({
-        .indexSize = sizeof(scene->indices[0]),
-        .indexCount = static_cast<uint32_t>(scene->indices.size()),
-        .data = static_cast<void *>(scene->indices.data())
+    ScopedMemory brdfLutData = ScopedMemory(Filesystem::readImage("../data/env/ibl/precomp/sunset/brdf_lut.hdr", w,
+                                                                  h, c, Filesystem::ImageFormat::R32G32_SFLOAT));
+    environment.brdfLut = deviceStorage.createTexture2D({
+        .buffer = brdfLutData.get(),
+        .instanceSize = sizeof(float),
+        .width = static_cast<uint32_t>(w), .height = static_cast<uint32_t>(h), .channels = static_cast<uint32_t>(c),
+        .format = VK_FORMAT_R32G32_SFLOAT,
     });
 
-    geometry.numTriangles = static_cast<uint32_t>(scene->vertices.size()) / 3;
 
-    Logger::log(HMCK_LOG_LEVEL_DEBUG, "Number of triangles: %d\n", geometry.numTriangles);
+    geometry.vertexBuffer = deviceStorage.createVertexBuffer({
+        .vertexSize = sizeof(state.vertices[0]),
+        .vertexCount = static_cast<uint32_t>(state.vertices.size()),
+        .data = static_cast<void *>(state.vertices.data())
+    });
 
-    scene->vertices.clear();
-    scene->indices.clear();
+    geometry.indexBuffer = deviceStorage.createIndexBuffer({
+        .indexSize = sizeof(state.indices[0]),
+        .indexCount = static_cast<uint32_t>(state.indices.size()),
+        .data = static_cast<void *>(state.indices.data())
+    });
+
+    geometry.numTriangles = static_cast<uint32_t>(state.vertices.size()) / 3;
+    Logger::log(HMCK_LOG_LEVEL_DEBUG, "Vertex buffer created. Number of vertices: %d, Number of triangles: %d\n",
+                state.vertices.size(), geometry.numTriangles);
+    Logger::log(HMCK_LOG_LEVEL_DEBUG, "Index buffer created. Number of indices: %d\n", state.indices.size());
+
+    // free the host memory
+    state.vertices.clear();
+    state.indices.clear();
 }
 
 void Hmck::PBRApp::init() {
-    std::vector<VkDescriptorImageInfo> imageInfos{scene->images.size()};
-    for (int im = 0; im < scene->images.size(); im++) {
-        imageInfos[im] = resources.getTexture2D(scene->images[im].texture)->descriptor;
+    // Setup global descriptor set
+    // Descriptor image infos for all textures in the bindless texture array
+    std::vector<VkDescriptorImageInfo> imageInfos{state.textures.size()};
+    for (int im = 0; im < state.textures.size(); im++) {
+        imageInfos[im] = deviceStorage.getTexture2D(state.textures[im])->descriptor;
     }
-
-    sceneDescriptors.descriptorSets.resize(SwapChain::MAX_FRAMES_IN_FLIGHT);
-    sceneDescriptors.sceneBuffers.resize(SwapChain::MAX_FRAMES_IN_FLIGHT);
-    sceneDescriptors.descriptorSetLayout = resources.createDescriptorSetLayout({
+    globalDescriptors.descriptorSetLayout = deviceStorage.createDescriptorSetLayout({
         .bindings = {
             {
+                // Uniform buffer with the state data of all meshes
                 .binding = 0, .descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
                 .stageFlags = VK_SHADER_STAGE_ALL_GRAPHICS
             },
             {
+                // Bindless texture array
                 .binding = 1, .descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
                 .stageFlags = VK_SHADER_STAGE_ALL_GRAPHICS, .count = 2000,
                 .bindingFlags = VK_DESCRIPTOR_BINDING_PARTIALLY_BOUND_BIT
-            }, // bindless textures
+            },
             {
+                // env map
                 .binding = 2, .descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
                 .stageFlags = VK_SHADER_STAGE_ALL_GRAPHICS
-            }, // env map
+            },
             {
+                // prefiltered env map
                 .binding = 3, .descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
                 .stageFlags = VK_SHADER_STAGE_ALL_GRAPHICS
-            }, // prefiltered env map
+            },
             {
+                //  brdfLUT
                 .binding = 4, .descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
                 .stageFlags = VK_SHADER_STAGE_ALL_GRAPHICS
-            }, //  brdfLUT
+            },
             {
+                //  irradiance map
                 .binding = 5, .descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
                 .stageFlags = VK_SHADER_STAGE_ALL_GRAPHICS
-            }, //  irradiance map
+            },
         }
     });
 
+
+    globalDescriptors.buffers.resize(SwapChain::MAX_FRAMES_IN_FLIGHT);
+    globalDescriptors.descriptorSets.resize(SwapChain::MAX_FRAMES_IN_FLIGHT);
     for (int i = 0; i < SwapChain::MAX_FRAMES_IN_FLIGHT; i++) {
-        sceneDescriptors.sceneBuffers[i] = resources.createBuffer({
-            .instanceSize = sizeof(SceneBufferData),
+        globalDescriptors.buffers[i] = deviceStorage.createBuffer({
+            .instanceSize = sizeof(GlobalBuffer),
             .instanceCount = 1,
             .usageFlags = VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
             .memoryPropertyFlags = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT
         });
 
-        auto fbufferInfo = resources.getBuffer(sceneDescriptors.sceneBuffers[i])->descriptorInfo();
-        sceneDescriptors.descriptorSets[i] = resources.createDescriptorSet({
-            .descriptorSetLayout = sceneDescriptors.descriptorSetLayout,
-            .bufferWrites = {{0, fbufferInfo}},
+        globalDescriptors.descriptorSets[i] = deviceStorage.createDescriptorSet({
+            .descriptorSetLayout = globalDescriptors.descriptorSetLayout,
+            .bufferWrites = {{0, deviceStorage.getBuffer(globalDescriptors.buffers[i])->descriptorInfo()}},
             .imageWrites = {
-                {2, resources.getTexture2DDescriptorImageInfo(scene->environment->environmentMap)},
-                {3, resources.getTexture2DDescriptorImageInfo(scene->environment->prefilteredMap)},
-                {4, resources.getTexture2DDescriptorImageInfo(scene->environment->brdfLookUpTable)},
-                {5, resources.getTexture2DDescriptorImageInfo(scene->environment->irradianceMap)},
+                {2, deviceStorage.getTexture2DDescriptorImageInfo(environment.environmentMap)},
+                {3, deviceStorage.getTexture2DDescriptorImageInfo(environment.prefilteredEnvMap)},
+                {4, deviceStorage.getTexture2DDescriptorImageInfo(environment.brdfLut)},
+                {5, deviceStorage.getTexture2DDescriptorImageInfo(environment.irradianceMap)},
             },
             .imageArrayWrites = {{1, imageInfos}}
         });
     }
 
-    entityDescriptors.descriptorSetLayout = resources.createDescriptorSetLayout({
+
+    // setup projection descriptors
+    projectionDescriptors.descriptorSetLayout = deviceStorage.createDescriptorSetLayout({
         .bindings = {
             {
+                // Uniform buffer with the state data of all meshes
                 .binding = 0, .descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
                 .stageFlags = VK_SHADER_STAGE_ALL_GRAPHICS
-            },
+            }
         }
     });
-
-    for (const auto &ep: scene->entities) {
-        entityDescriptors.entityBuffers[ep.first] = resources.createBuffer({
-            .instanceSize = sizeof(EntityBufferData),
+    projectionDescriptors.buffers.resize(SwapChain::MAX_FRAMES_IN_FLIGHT);
+    projectionDescriptors.descriptorSets.resize(SwapChain::MAX_FRAMES_IN_FLIGHT);
+    for (int i = 0; i < SwapChain::MAX_FRAMES_IN_FLIGHT; i++) {
+        projectionDescriptors.buffers[i] = deviceStorage.createBuffer({
+            .instanceSize = sizeof(ProjectionBuffer),
             .instanceCount = 1,
             .usageFlags = VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
             .memoryPropertyFlags = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT
         });
-        auto ebufferInfo = resources.getBuffer(entityDescriptors.entityBuffers[ep.first])->descriptorInfo();
-        entityDescriptors.descriptorSets[ep.first] = resources.createDescriptorSet({
-            .descriptorSetLayout = entityDescriptors.descriptorSetLayout,
-            .bufferWrites = {{0, ebufferInfo}},
+        projectionDescriptors.descriptorSets[i] = deviceStorage.createDescriptorSet({
+            .descriptorSetLayout = projectionDescriptors.descriptorSetLayout,
+            .bufferWrites = {{0, deviceStorage.getBuffer(projectionDescriptors.buffers[i])->descriptorInfo()}},
         });
     }
 
-    primitiveDescriptors.descriptorSets.resize(scene->materials.size());
-    primitiveDescriptors.primitiveBuffers.resize(scene->materials.size());
-    primitiveDescriptors.descriptorSetLayout = resources.createDescriptorSetLayout({
-        .bindings = {
-            {
-                .binding = 0, .descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
-                .stageFlags = VK_SHADER_STAGE_ALL_GRAPHICS
-            },
-        }
-    });
-
-    for (size_t i = 0; i < primitiveDescriptors.descriptorSets.size(); i++) {
-        primitiveDescriptors.primitiveBuffers[i] = resources.createBuffer({
-            .instanceSize = sizeof(PrimitiveBufferData),
-            .instanceCount = 1,
-            .usageFlags = VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
-            .memoryPropertyFlags = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT
-        });
-
-        auto pbufferInfo = resources.getBuffer(primitiveDescriptors.primitiveBuffers[i])->descriptorInfo();
-        primitiveDescriptors.descriptorSets[i] = resources.createDescriptorSet({
-            .descriptorSetLayout = primitiveDescriptors.descriptorSetLayout,
-            .bufferWrites = {{0, pbufferInfo}},
-        });
-    }
-
+    // setup composition descriptors
     compositionDescriptors.descriptorSets.resize(SwapChain::MAX_FRAMES_IN_FLIGHT);
-    compositionDescriptors.descriptorSetLayout = resources.createDescriptorSetLayout({
+    compositionDescriptors.descriptorSetLayout = deviceStorage.createDescriptorSetLayout({
         .bindings = {
             {
+                // position buffer
                 .binding = 0, .descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
                 .stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT
-            }, // position buffer
+            },
             {
+                // albedo buffer
                 .binding = 1, .descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
                 .stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT
-            }, // albedo buffer
+            },
             {
+                // normal buffer
                 .binding = 2, .descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
                 .stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT
-            }, // normal buffer
+            },
             {
+                // material (roughness, metalness, ao) buffer
                 .binding = 3, .descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
                 .stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT
-            }, // material (roughness, metalness, ao) buffer
+            },
             {
+                // accumulation buffer
                 .binding = 4, .descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
                 .stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT
-            }, // accumulation buffer
+            },
             {
+                // transparency weight buffer
                 .binding = 5, .descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
                 .stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT
-            }, // transparency weight buffer
+            },
         }
     });
 }
 
-void Hmck::PBRApp::renderEntity(const uint32_t frameIndex, const VkCommandBuffer commandBuffer,
-                                std::unique_ptr<GraphicsPipeline> &pipeline, const std::shared_ptr<Entity> &entity, RenderMode renderMode) {
-    // don't render invisible nodes
-    if (isInstanceOf<Entity, Entity3D>(entity) && entity->visible) {
-        if (const auto _entity = cast<Entity, Entity3D>(entity); !_entity->mesh.primitives.empty()) {
-            if (_entity->dataChanged) {
-                const EntityBufferData entityData{.model = _entity->mat4(), .normal = _entity->mat4N()};
-                resources.getBuffer(entityDescriptors.entityBuffers[entity->id])->writeToBuffer(&entityData);
-                _entity->dataChanged = false;
-            }
-
-            resources.bindDescriptorSet(
-                commandBuffer,
-                VK_PIPELINE_BIND_POINT_GRAPHICS,
-                pipeline->graphicsPipelineLayout,
-                entityDescriptors.binding, 1,
-                entityDescriptors.descriptorSets[entity->id],
-                0, nullptr);
-
-            for (const auto &[firstIndex, indexCount, materialIndex]: _entity->mesh.primitives) {
-                if (indexCount > 0) {
-                    if (materialIndex >= 0) {
-                        auto &[name, baseColorFactor, baseColorTextureIndex, normalTextureIndex,
-                            metallicRoughnessTextureIndex, occlusionTextureIndex, alphaMode, alphaCutOff, metallicFactor
-                            , roughnessFactor, doubleSided, dataChanged] = scene->materials[materialIndex];
-
-                        if(alphaMode == "BLEND" && renderMode == RenderMode::OPAQUE_EXCLUSIVE) {continue;}
-                        if(alphaMode == "OPAQUE" && renderMode == RenderMode::TRANSPARENT_EXCLUSIVE) {continue;}
-
-                        PrimitiveBufferData primitiveData{
-                            .baseColorFactor = baseColorFactor,
-                            .baseColorTextureIndex = (baseColorTextureIndex != TextureIndex::Invalid)
-                                                         ? scene->textures[baseColorTextureIndex].imageIndex
-                                                         : TextureIndex::Invalid,
-                            .normalTextureIndex = (normalTextureIndex != TextureIndex::Invalid)
-                                                      ? scene->textures[normalTextureIndex].imageIndex
-                                                      : TextureIndex::Invalid,
-                            .metallicRoughnessTextureIndex =
-                            (metallicRoughnessTextureIndex != TextureIndex::Invalid)
-                                ? scene->textures[metallicRoughnessTextureIndex].imageIndex
-                                : TextureIndex::Invalid,
-                            .occlusionTextureIndex = (occlusionTextureIndex != TextureIndex::Invalid)
-                                                         ? scene->textures[occlusionTextureIndex].imageIndex
-                                                         : TextureIndex::Invalid,
-                            .alphaMode = alphaMode == "OPAQUE" ? 1.0f : 0.0f,
-                            .alphaCutOff = alphaCutOff,
-                            .metallicFactor = metallicFactor,
-                            .roughnessFactor = roughnessFactor
-                        };
-
-                        if (dataChanged) {
-                            resources.getBuffer(primitiveDescriptors.primitiveBuffers[materialIndex])->
-                                    writeToBuffer(&primitiveData);
-                            dataChanged = false;
-                        }
-                    }
-
-                    resources.bindDescriptorSet(
-                        commandBuffer,
-                        VK_PIPELINE_BIND_POINT_GRAPHICS,
-                        pipeline->graphicsPipelineLayout,
-                        primitiveDescriptors.binding, 1,
-                        primitiveDescriptors.descriptorSets[(
-                            materialIndex >= 0 ? materialIndex : 0)],
-                        0, nullptr);
-
-                    // draw
-                    vkCmdDrawIndexed(commandBuffer, indexCount, 1, firstIndex, 0, 0);
-                }
-            }
-        }
-    }
-
-    for (auto &child: entity->children) {
-        renderEntity(frameIndex, commandBuffer, pipeline, child, renderMode);
-    }
-}
 
 void Hmck::PBRApp::createPipelines(const Renderer &renderer) {
     // create piplines and framebuffers
@@ -517,12 +476,18 @@ void Hmck::PBRApp::createPipelines(const Renderer &renderer) {
             .entryFunc = "main"
         },
         .descriptorSetLayouts = {
-            resources.getDescriptorSetLayout(sceneDescriptors.descriptorSetLayout).getDescriptorSetLayout()
+            deviceStorage.getDescriptorSetLayout(globalDescriptors.descriptorSetLayout).getDescriptorSetLayout(),
+            deviceStorage.getDescriptorSetLayout(projectionDescriptors.descriptorSetLayout).getDescriptorSetLayout()
         },
-        .pushConstantRanges{},
+        .pushConstantRanges{
+            {
+                .stageFlags = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT,
+                .offset = 0,
+                .size = sizeof(MeshPushBlock)
+            }
+        },
         .graphicsState{
             .depthTest = VK_FALSE,
-            .depthTestCompareOp = VK_COMPARE_OP_LESS_OR_EQUAL,
             .cullMode = VK_CULL_MODE_NONE,
             .blendAtaAttachmentStates{
                 Hmck::Init::pipelineColorBlendAttachmentState(0xf, VK_FALSE),
@@ -551,16 +516,21 @@ void Hmck::PBRApp::createPipelines(const Renderer &renderer) {
             .entryFunc = "main"
         },
         .descriptorSetLayouts = {
-            resources.getDescriptorSetLayout(sceneDescriptors.descriptorSetLayout).getDescriptorSetLayout(),
-            resources.getDescriptorSetLayout(entityDescriptors.descriptorSetLayout).getDescriptorSetLayout(),
-            resources.getDescriptorSetLayout(primitiveDescriptors.descriptorSetLayout).getDescriptorSetLayout()
+            deviceStorage.getDescriptorSetLayout(globalDescriptors.descriptorSetLayout).getDescriptorSetLayout(),
+            deviceStorage.getDescriptorSetLayout(projectionDescriptors.descriptorSetLayout).getDescriptorSetLayout()
         },
-        .pushConstantRanges{},
+        .pushConstantRanges{
+            {
+                .stageFlags = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT,
+                .offset = 0,
+                .size = sizeof(MeshPushBlock)
+            }
+        },
         .graphicsState{
             .depthTest = VK_TRUE,
             .depthTestCompareOp = VK_COMPARE_OP_LESS_OR_EQUAL,
             .cullMode = VK_CULL_MODE_BACK_BIT,
-            .frontFace = VK_FRONT_FACE_COUNTER_CLOCKWISE,
+            .frontFace = VK_FRONT_FACE_CLOCKWISE,
             .blendAtaAttachmentStates{
                 Hmck::Init::pipelineColorBlendAttachmentState(0xf, VK_FALSE),
                 Hmck::Init::pipelineColorBlendAttachmentState(0xf, VK_FALSE),
@@ -588,16 +558,21 @@ void Hmck::PBRApp::createPipelines(const Renderer &renderer) {
             .entryFunc = "main"
         },
         .descriptorSetLayouts = {
-            resources.getDescriptorSetLayout(sceneDescriptors.descriptorSetLayout).getDescriptorSetLayout(),
-            resources.getDescriptorSetLayout(entityDescriptors.descriptorSetLayout).getDescriptorSetLayout(),
-            resources.getDescriptorSetLayout(primitiveDescriptors.descriptorSetLayout).getDescriptorSetLayout()
+            deviceStorage.getDescriptorSetLayout(globalDescriptors.descriptorSetLayout).getDescriptorSetLayout(),
+            deviceStorage.getDescriptorSetLayout(projectionDescriptors.descriptorSetLayout).getDescriptorSetLayout()
         },
-        .pushConstantRanges{},
+        .pushConstantRanges{
+            {
+                .stageFlags = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT,
+                .offset = 0,
+                .size = sizeof(MeshPushBlock)
+            }
+        },
         .graphicsState{
             .depthTest = VK_TRUE,
             .depthTestCompareOp = VK_COMPARE_OP_LESS_OR_EQUAL,
             .cullMode = VK_CULL_MODE_BACK_BIT,
-            .frontFace = VK_FRONT_FACE_COUNTER_CLOCKWISE,
+            .frontFace = VK_FRONT_FACE_CLOCKWISE,
             .blendAtaAttachmentStates{
                 Hmck::Init::pipelineColorBlendAttachmentState(0xf, VK_FALSE),
                 Hmck::Init::pipelineColorBlendAttachmentState(0xf, VK_FALSE),
@@ -611,6 +586,7 @@ void Hmck::PBRApp::createPipelines(const Renderer &renderer) {
         .renderPass = transparentGeometryPass.framebuffer->renderPass
     });
 
+    // setup composition descriptor sat here as it samples from gbuffer and transparency accumulator
     for (unsigned int &descriptorSet: compositionDescriptors.descriptorSets) {
         std::vector<VkDescriptorImageInfo> compositionImageInfos = {
             {
@@ -645,7 +621,7 @@ void Hmck::PBRApp::createPipelines(const Renderer &renderer) {
             },
         };
 
-        descriptorSet = resources.createDescriptorSet({
+        descriptorSet = deviceStorage.createDescriptorSet({
             .descriptorSetLayout = compositionDescriptors.descriptorSetLayout,
             .imageArrayWrites = {{0, compositionImageInfos}},
         });
@@ -663,12 +639,17 @@ void Hmck::PBRApp::createPipelines(const Renderer &renderer) {
             .entryFunc = "main"
         },
         .descriptorSetLayouts = {
-            resources.getDescriptorSetLayout(sceneDescriptors.descriptorSetLayout).getDescriptorSetLayout(),
-            resources.getDescriptorSetLayout(entityDescriptors.descriptorSetLayout).getDescriptorSetLayout(),
-            resources.getDescriptorSetLayout(primitiveDescriptors.descriptorSetLayout).getDescriptorSetLayout(),
-            resources.getDescriptorSetLayout(compositionDescriptors.descriptorSetLayout).getDescriptorSetLayout()
+            deviceStorage.getDescriptorSetLayout(globalDescriptors.descriptorSetLayout).getDescriptorSetLayout(),
+            deviceStorage.getDescriptorSetLayout(projectionDescriptors.descriptorSetLayout).getDescriptorSetLayout(),
+            deviceStorage.getDescriptorSetLayout(compositionDescriptors.descriptorSetLayout).getDescriptorSetLayout()
         },
-        .pushConstantRanges{},
+        .pushConstantRanges{
+            {
+                .stageFlags = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT,
+                .offset = 0,
+                .size = sizeof(MeshPushBlock)
+            }
+        },
         .graphicsState{
             .depthTest = VK_FALSE,
             .cullMode = VK_CULL_MODE_NONE,

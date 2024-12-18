@@ -11,54 +11,13 @@
 #include "core/HmckRenderer.h"
 #include "resources/HmckDescriptors.h"
 #include "IApp.h"
-#include "scene/HmckEntity.h"
-#include "scene/HmckScene.h"
-#include "core/HmckResourceManager.h"
+#include "core/HmckDeviceStorage.h"
 #include "core/HmckGraphicsPipeline.h"
 #include "utils/HmckBenchmarkRunner.h"
-
 
 namespace Hmck {
     class PBRApp final : public IApp, public BenchmarkRunner {
     public:
-        struct SceneBufferData {
-            glm::mat4 projection{1.f};
-            glm::mat4 view{1.f};
-            glm::mat4 inverseView{1.f};
-
-            float exposure = 4.5f;
-            float gamma = 1.0f;
-            float whitePoint = 11.2f;
-
-            struct OmniLight {
-                glm::vec4 position;
-                glm::vec4 color;
-                float linear = 1.0f;
-                float quadratic = 1.0f;
-                float _padding1 = 0.0f;     // 4 bytes
-                float _padding2 = 0.0f;     // 4 bytes
-            } omniLights[1000];
-
-            uint32_t numOmniLights = 0;
-        };
-
-        struct EntityBufferData {
-            glm::mat4 model{1.f};
-            glm::mat4 normal{1.f};
-        };
-
-        struct PrimitiveBufferData {
-            glm::vec4 baseColorFactor{1.0f, 1.0f, 1.0f, 1.0f};
-            uint32_t baseColorTextureIndex = TextureIndex::Invalid;
-            uint32_t normalTextureIndex = TextureIndex::Invalid;
-            uint32_t metallicRoughnessTextureIndex = TextureIndex::Invalid;
-            uint32_t occlusionTextureIndex = TextureIndex::Invalid;
-            float alphaMode = 1.0f;
-            float alphaCutOff = 0.5f;
-            float metallicFactor = 0.0f;
-            float roughnessFactor = 1.0f;
-        };
-
         PBRApp();
 
         ~PBRApp() override;
@@ -70,20 +29,49 @@ namespace Hmck {
 
         void init();
 
-        enum class RenderMode {
-            OPAQUE_EXCLUSIVE,
-            TRANSPARENT_EXCLUSIVE,
-        };
-        void renderEntity(
-            uint32_t frameIndex,
-            VkCommandBuffer commandBuffer,
-            std::unique_ptr<GraphicsPipeline> &pipeline,
-            const std::shared_ptr<Entity> &entity, RenderMode renderMode);
-
     private:
         void createPipelines(const Renderer &renderer);
 
-        std::unique_ptr<Scene> scene{};
+        // Data
+        struct alignas(16) GlobalBuffer {
+            static constexpr size_t MAX_MESHES = 256;
+
+            alignas(16) HmckVec4 baseColorFactors[MAX_MESHES]; // w is padding
+            alignas(16) HmckVec4 metallicRoughnessAlphaCutOffFactors[MAX_MESHES]; // w is padding
+
+            // todo make this a global type
+            struct alignas(16) IntPadding {
+                int32_t value;
+                int32_t padding[3]; // Explicit padding to 16 bytes
+            };
+
+            IntPadding baseColorTextureIndexes[MAX_MESHES];
+            IntPadding normalTextureIndexes[MAX_MESHES];
+            IntPadding metallicRoughnessTextureIndexes[MAX_MESHES];
+            IntPadding occlusionTextureIndexes[MAX_MESHES];
+            IntPadding visibilityFlags[MAX_MESHES];
+        }globalBuffer{};
+
+        // Projection buffer bound every frame
+        struct ProjectionBuffer {
+            HmckMat4 projectionMat;
+            HmckMat4 viewMat;
+            HmckMat4 inverseViewMat;
+            HmckVec4 exposureGammaWhitePoint{4.5f, 1.0f, 11.0f};
+        } projectionBuffer{};
+
+        // Push block pushed for each mesh
+        struct MeshPushBlock {
+            HmckMat4 modelMat;
+            uint32_t meshIndex;
+        } meshPushBlock{};
+
+        struct {
+            Texture2DHandle environmentMap;
+            Texture2DHandle prefilteredEnvMap;
+            Texture2DHandle irradianceMap;
+            Texture2DHandle brdfLut;
+        } environment;
 
         struct {
             BufferHandle vertexBuffer;
@@ -92,35 +80,26 @@ namespace Hmck {
         } geometry;
 
         // Descriptors
-        // per frame (scene info updated every frame)
+        // global descriptor
         struct {
-            std::vector<DescriptorSetHandle> descriptorSets{};
+            std::vector<DescriptorSetHandle> descriptorSets;
             DescriptorSetLayoutHandle descriptorSetLayout;
-            std::vector<BufferHandle> sceneBuffers{};
+            std::vector<BufferHandle> buffers;
             Binding binding = 0;
-        } sceneDescriptors;
+        } globalDescriptors;
 
-        // per entity
-        struct {
-            std::unordered_map<EntityHandle, DescriptorSetHandle> descriptorSets{};
-            DescriptorSetLayoutHandle descriptorSetLayout;
-            std::unordered_map<EntityHandle, BufferHandle> entityBuffers{};
-            Binding binding = 1;
-        } entityDescriptors;
-
-        // per primitive
         struct {
             std::vector<DescriptorSetHandle> descriptorSets{};
             DescriptorSetLayoutHandle descriptorSetLayout;
-            std::vector<BufferHandle> primitiveBuffers{};
-            Binding binding = 2;
-        } primitiveDescriptors;
+            std::vector<BufferHandle> buffers{};
+            Binding binding = 1;
+        } projectionDescriptors;
 
         // composition descriptors
         struct {
             std::vector<DescriptorSetHandle> descriptorSets{};
             DescriptorSetLayoutHandle descriptorSetLayout;
-            Binding binding = 3;
+            Binding binding = 2;
         } compositionDescriptors;
 
 

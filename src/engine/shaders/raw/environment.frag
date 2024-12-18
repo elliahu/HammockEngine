@@ -1,6 +1,8 @@
 #version 450
 
-layout(set = 0, binding = 3) uniform sampler2D environmentSampler; // 2 env, 3 prefiltered end, 4 lut BRDF, 5 irradiance
+#include "common/global_binding.glsl"
+#include "common/projection_binding.glsl"
+
 
 layout(location = 0) in vec2 in_uv;
 
@@ -9,26 +11,6 @@ layout(location = 1) out vec4 outFragColor;
 layout(location = 2) out vec4 outNormal;
 layout(location = 3) out vec4 outMaterial;
 
-struct OmniLight
-{
-    vec4 position;
-    vec4 color;
-};
-
-
-layout (set = 0, binding = 0) uniform SceneUbo
-{
-    mat4 projection;
-    mat4 view;
-    mat4 inverseView;
-	
-	float exposure;
-	float gamma;
-	float whitePoint;
-
-	OmniLight omniLights[1000];
-    uint numOmniLights;
-} scene;
 
 // From http://filmicworlds.com/blog/filmic-tonemapping-operators/
 vec3 Uncharted2Tonemap(vec3 color)
@@ -43,12 +25,14 @@ vec3 Uncharted2Tonemap(vec3 color)
 	return ((color*(A*color+C*B)+D*E)/(color*(A*color+B)+D*F))-E/F;
 }
 
-const float PI = 3.14159265358979323846;
-
 void main() 
 {
+    float exposure = projection.exposureGammaWhitePoint.x;
+    float gamma = projection.exposureGammaWhitePoint.y;
+    float whitePoint = projection.exposureGammaWhitePoint.z;
+
     // Transform UV coordinates to a direction in view space
-    vec4 direction_view = inverse(scene.projection * scene.view) * vec4(in_uv * 2.0 - 1.0, 1.0, 1.0);
+    vec4 direction_view = inverse(projection.projection * projection.view) * vec4(in_uv * 2.0 - 1.0, 1.0, 1.0);
     vec3 direction = normalize(direction_view.xyz / direction_view.w);
     
     // Convert 3D direction to 2D UV coordinates using equirectangular projection
@@ -62,10 +46,10 @@ void main()
     // Sample the environment map in the calculated direction
     vec3 color = textureLod(environmentSampler, uv, 0.5).rgb;
     // Tone mapping
-	color = Uncharted2Tonemap(color * scene.exposure);
-	color = color * (1.0f / Uncharted2Tonemap(vec3(scene.whitePoint)));	
+	color = Uncharted2Tonemap(color * exposure);
+	color = color * (1.0f / Uncharted2Tonemap(vec3(whitePoint)));
 	// Gamma correction
-	color = pow(color, vec3(1.0f / scene.gamma));
+	color = pow(color, vec3(1.0f / gamma));
 
     // Output the environment color as fragment color
     outFragColor = vec4(color, 1.0);

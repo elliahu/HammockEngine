@@ -13,7 +13,6 @@
 #include "HmckSwapChain.h"
 #include "io/HmckUserInterface.h"
 #include "HmckFramebuffer.h"
-#include "scene/HmckScene.h"
 
 // black clear color
 #define HMCK_CLEAR_COLOR {0.f,0.f,0.f} //{ 0.f,171.f / 255.f,231.f / 255.f,1.f }

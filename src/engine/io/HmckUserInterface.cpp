@@ -3,7 +3,6 @@
 #include "backends/imgui_impl_glfw.h" // !important
 #include "backends/imgui_impl_vulkan.h"
 #include "utils/HmckUtils.h"
-#include "scene/HmckLights.h"
 #include <deque>
 #include <string>
 
@@ -30,28 +29,6 @@ void Hmck::UserInterface::beginUserInterface() {
 void Hmck::UserInterface::endUserInterface(VkCommandBuffer commandBuffer) {
     ImGui::Render();
     ImGui_ImplVulkan_RenderDrawData(ImGui::GetDrawData(), commandBuffer);
-}
-
-void Hmck::UserInterface::showDebugStats(const std::shared_ptr<Entity> &camera) const {
-    const ImGuiIO &io = ImGui::GetIO();
-    constexpr ImGuiWindowFlags window_flags = ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_AlwaysAutoResize |
-                                              ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_NoFocusOnAppearing |
-                                              ImGuiWindowFlags_NoNav;
-    ImGui::SetNextWindowPos({10, 10});
-    ImGui::SetNextWindowBgAlpha(0.35f);
-    ImGui::Begin(window.getWindowName().c_str(), (bool *) nullptr, window_flags);
-    const auto cameraPosition = camera->transform.translation;
-    const auto cameraRotation = camera->transform.rotation;
-    ImGui::Text("Camera world position: ( %.2f, %.2f, %.2f )", cameraPosition.x, cameraPosition.y, cameraPosition.z);
-    ImGui::Text("Camera world rotaion: ( %.2f, %.2f, %.2f )", cameraRotation.x, cameraRotation.y, cameraRotation.z);
-    if (ImGui::IsMousePosValid())
-        ImGui::Text("Mouse Position: (%.1f,%.1f)", io.MousePos.x, io.MousePos.y);
-    else
-        ImGui::Text("Mouse Position: <invalid or hidden>");
-    ImGui::Text("Window resolution: (%d x %d)", window.getExtent().width, window.getExtent().height);
-    ImGui::Text("Application average %.3f ms/frame (%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate,
-                ImGui::GetIO().Framerate);
-    ImGui::End();
 }
 
 void Hmck::UserInterface::showWindowControls() const {
@@ -85,16 +62,6 @@ void Hmck::UserInterface::showWindowControls() const {
     ImGui::End();
 }
 
-void Hmck::UserInterface::showEntityInspector(std::unique_ptr<Scene> &scene) {
-    const ImGuiWindowFlags window_flags = ImGuiWindowFlags_AlwaysAutoResize;
-    ImGui::SetNextWindowPos({10, 130}, ImGuiCond_Once, {0, 0});
-    ImGui::SetNextWindowSizeConstraints({300, 200}, ImVec2(static_cast<float>(window.getExtent().width), 500));
-    beginWindow("Entity Inspector", (bool *) false, ImGuiWindowFlags_AlwaysAutoResize);
-    ImGui::Text("Scene props");
-    ImGui::Text("Inspect all entities in the scene", window_flags);
-    inspectEntity(scene->getRoot(), scene);
-    endWindow();
-}
 
 void Hmck::UserInterface::showColorSettings(float *exposure, float *gamma, float *whitePoint) {
     constexpr ImGuiWindowFlags window_flags = ImGuiWindowFlags_AlwaysAutoResize;
@@ -270,60 +237,4 @@ void Hmck::UserInterface::beginWindow(const char *title, bool *open, ImGuiWindow
 
 void Hmck::UserInterface::endWindow() {
     ImGui::End();
-}
-
-void Hmck::UserInterface::entityComponents(const std::shared_ptr<Entity> &entity) {
-    glm::vec3 translation = entity->transform.translation;
-    glm::vec3 rotation = entity->transform.rotation;
-    glm::vec3 scale = entity->transform.scale;
-
-    if (ImGui::CollapsingHeader("Transform")) // Tranform
-    {
-        ImGui::DragFloat3("Translation", &entity->transform.translation.x, 0.01);
-        ImGui::DragFloat3("Rotation", &entity->transform.rotation.x, 0.01);
-        ImGui::DragFloat3("Scale", &entity->transform.scale.x, 0.01);
-    }
-
-    if (isInstanceOf<Entity, ILight>(entity)) // If Light
-    {
-        if (ImGui::CollapsingHeader("Color")) // Light
-        {
-            const std::shared_ptr<ILight> light = cast<Entity, ILight>(entity);
-            ImGui::ColorEdit3("Color", &light->color.x);
-        }
-    }
-
-    if (translation != entity->transform.translation || rotation != entity->transform.rotation || scale != entity->
-        transform.scale) {
-        // Data changed
-        entity->dataChanged = true;
-        entity->notifyChildrenDataChanged();
-    }
-
-    ImGui::Separator();
-}
-
-void Hmck::UserInterface::inspectEntity(const std::shared_ptr<Entity> &entity, std::unique_ptr<Scene> &scene) {
-    std::string name = entity->name + " # " + std::to_string(entity->id);
-    std::string prefix;
-
-    if (isInstanceOf<Entity, Entity3D>(entity))
-        prefix = "3D";
-    else if (isInstanceOf<Entity, OmniLight>(entity))
-        prefix = "L";
-    else if (isInstanceOf<Entity, Camera>(entity))
-        prefix = "C";
-    else prefix = "O";
-
-    name = prefix + " | " + name;
-
-    if (ImGui::TreeNode(name.c_str())) {
-        entityComponents(entity);
-        ImGui::Text("Children:");
-        for (auto &child: entity->children) {
-            inspectEntity(child, scene);
-        }
-
-        ImGui::TreePop();
-    }
 }

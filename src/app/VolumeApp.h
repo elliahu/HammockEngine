@@ -11,9 +11,7 @@
 #include "core/HmckDevice.h"
 #include "core/HmckGraphicsPipeline.h"
 #include "IApp.h"
-#include "scene/HmckEntity.h"
-#include "scene/HmckScene.h"
-#include "core/HmckResourceManager.h"
+#include "core/HmckDeviceStorage.h"
 #include "utils/HmckUtils.h"
 
 namespace Hmck {
@@ -32,8 +30,6 @@ namespace Hmck {
 
         void ui();
 
-        std::unique_ptr<Scene> scene{};
-
         BufferHandle vertexBuffer;
         BufferHandle indexBuffer;
 
@@ -44,15 +40,15 @@ namespace Hmck {
         std::unique_ptr<GraphicsPipeline> pipeline{};
 
         struct BufferData {
-            glm::mat4 projection{1};
-            glm::mat4 view{1};
-            glm::mat4 inverseView{1};
-            glm::vec4 textureDim{1.f, 1.f, 1.f, 1.0f};
-            glm::vec4 sunPosition{-10.f, -10.f, 10.f, 1.f};
-            glm::vec4 baseSkyColor{0.043f, 0.043f, 0.043f, 0.0f};
-            glm::vec4 tissueColor{0.8f, 0.5f, 0.4f, 0.2f};
-            glm::vec4 fatColor{1.0f, 0.8f, 0.6f, 0.4f};
-            glm::vec4 boneColor{1.0f, 1.0f, 1.0f, 0.8f};
+            HmckMat4 projection{1};
+            HmckMat4 view{1};
+            HmckMat4 inverseView{1};
+            HmckVec4 textureDim{1.f, 1.f, 1.f, 1.0f};
+            HmckVec4 sunPosition{-10.f, -10.f, 10.f, 1.f};
+            HmckVec4 baseSkyColor{0.043f, 0.043f, 0.043f, 0.0f};
+            HmckVec4 tissueColor{0.8f, 0.5f, 0.4f, 0.2f};
+            HmckVec4 fatColor{1.0f, 0.8f, 0.6f, 0.4f};
+            HmckVec4 boneColor{1.0f, 1.0f, 1.0f, 0.8f};
         } bufferData;
 
         struct PushData {

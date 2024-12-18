@@ -3,7 +3,7 @@
 #include "core/HmckDevice.h"
 #include "core/HmckResourceManager.h"
 #include "io/HmckWindow.h"
-#include "resources/HmckHDR.h"
+#include "resources/HmckGenerator.h"
 #include "utils/HmckScopedMemory.h"
 #include "utils/HmckUtils.h"
 
@@ -16,8 +16,8 @@ int main(int argc, char * argv[]) {
     Hmck::VulkanInstance instance{};
     window.createWindowSurface(instance);
     Hmck::Device device{instance, window.getSurface()};
-    Hmck::ResourceManager resources{device};
-    Hmck::Environment environment;
+    Hmck::DeviceStorage resources{device};
+    Hmck::Generator environment;
 
     // get the source hdr file
     std::string hdrFilename(argv[1]); // first argument

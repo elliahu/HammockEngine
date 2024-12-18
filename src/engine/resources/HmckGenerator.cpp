@@ -1,4 +1,4 @@
-#include "HmckHDR.h"
+#include "HmckGenerator.h"
 
 #include <glm/glm.hpp>
 #include <stb_image.h>
@@ -9,51 +9,12 @@
 #include "utils/HmckLogger.h"
 #include "shaders/HmckShader.h"
 
-void Hmck::Environment::readEnvironmentMap(const void *buffer, uint32_t instanceSize, uint32_t width, uint32_t height, uint32_t channels, const ResourceManager &resources, VkFormat format) {
-    const uint32_t mipLevels = getNumberOfMipLevels(width, height);
-    // Mip maps will be generated automatically
-    environmentMap = resources.createTexture2D({
-        .buffer = buffer,
-        .instanceSize = instanceSize,
-        .width = width, .height = height, .channels = channels,
-        .format = format,
-        .samplerInfo = {
-            .filter = VK_FILTER_LINEAR,
-            .addressMode = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE,
-            .maxLod = static_cast<float>(mipLevels)
-        }
-    });
-}
-
-void Hmck::Environment::readIrradianceMap(const void *buffer, uint32_t instanceSize, uint32_t width, uint32_t height,
-    uint32_t channels, const ResourceManager &resources, VkFormat format) {
-
-    irradianceMap = resources.createTexture2D({
-        .buffer = buffer,
-        .instanceSize = instanceSize,
-        .width = width, .height = height, .channels = channels,
-        .format = format,
-    });
-}
-
-void Hmck::Environment::readBRDFLookUpTable(const void *buffer, uint32_t instanceSize, uint32_t width, uint32_t height,
-    uint32_t channels, const ResourceManager &resources, VkFormat format) {
-
-    brdfLookUpTable = resources.createTexture2D({
-        .buffer = buffer,
-        .instanceSize = instanceSize,
-        .width = width, .height = height, .channels = channels,
-        .format = format,
-    });
-}
-
-void Hmck::Environment::generatePrefilteredMap(Device &device, ResourceManager &resources, VkFormat format) {
-    assert(environmentMap > 0 && "Env map not set");
+Hmck::Texture2DHandle Hmck::Generator::generatePrefilteredMap(Device &device, Texture2DHandle environmentMap, DeviceStorage &resources, VkFormat format) {
     auto tStart = std::chrono::high_resolution_clock::now();
     uint32_t width = resources.getTexture2D(environmentMap)->width;
     uint32_t height = resources.getTexture2D(environmentMap)->height;
     std::unique_ptr<GraphicsPipeline> pipeline{};
-    prefilteredMap = resources.createTexture2D();
+    Texture2DHandle prefilteredMap = resources.createEmptyTexture2D();
     const uint32_t mipLevels = getNumberOfMipLevels(width, height);
 
     // Image
@@ -385,16 +346,17 @@ void Hmck::Environment::generatePrefilteredMap(Device &device, ResourceManager &
     auto tEnd = std::chrono::high_resolution_clock::now();
     auto tDiff = std::chrono::duration<double, std::milli>(tEnd - tStart).count();
     Logger::log(LogLevel::HMCK_LOG_LEVEL_DEBUG, "Generating prefiltered sphere took %f ms\n", tDiff);
+
+    return prefilteredMap;
 }
 
-void Hmck::Environment::generatePrefilteredMapWithStaticRoughness(Device &device, ResourceManager &resources,
+Hmck::Texture2DHandle Hmck::Generator::generatePrefilteredMapWithStaticRoughness(Device &device, Texture2DHandle environmentMap, DeviceStorage &resources,
                                                                      VkFormat format) {
-    assert(environmentMap > 0 && "Env map not set");
     auto tStart = std::chrono::high_resolution_clock::now();
     uint32_t width = resources.getTexture2D(environmentMap)->width;
     uint32_t height = resources.getTexture2D(environmentMap)->height;
     std::unique_ptr<GraphicsPipeline> pipeline{};
-    prefilteredMap = resources.createTexture2D();
+    Texture2DHandle prefilteredMap = resources.createEmptyTexture2D();
 
     // image, view, sampler
     VkImageCreateInfo imageCI = Init::imageCreateInfo();
@@ -594,16 +556,17 @@ void Hmck::Environment::generatePrefilteredMapWithStaticRoughness(Device &device
     auto tEnd = std::chrono::high_resolution_clock::now();
     auto tDiff = std::chrono::duration<double, std::milli>(tEnd - tStart).count();
     Logger::log(LogLevel::HMCK_LOG_LEVEL_DEBUG, "Generating prefiltered sphere took %f ms\n", tDiff);
+
+    return prefilteredMap;
 }
 
-void Hmck::Environment::generateIrradianceMap(Device &device, ResourceManager &resources, VkFormat format,
+Hmck::Texture2DHandle Hmck::Generator::generateIrradianceMap(Device &device, Texture2DHandle environmentMap, DeviceStorage &resources, VkFormat format,
                                                  float _deltaPhi, float _deltaTheta) {
-    assert(environmentMap > 0 && "Env map not set");
     auto tStart = std::chrono::high_resolution_clock::now();
     uint32_t width = resources.getTexture2D(environmentMap)->width;
     uint32_t height = resources.getTexture2D(environmentMap)->height;
     std::unique_ptr<GraphicsPipeline> pipeline{};
-    irradianceMap = resources.createTexture2D();
+    Texture2DHandle irradianceMap = resources.createEmptyTexture2D();
 
     // image, view, sampler
     VkImageCreateInfo imageCI = Init::imageCreateInfo();
@@ -806,12 +769,14 @@ void Hmck::Environment::generateIrradianceMap(Device &device, ResourceManager &r
     auto tEnd = std::chrono::high_resolution_clock::now();
     auto tDiff = std::chrono::duration<double, std::milli>(tEnd - tStart).count();
     Logger::log(LogLevel::HMCK_LOG_LEVEL_DEBUG, "Generating irradiance sphere took %f ms\n", tDiff);
+
+    return irradianceMap;
 }
 
-void Hmck::Environment::generateBRDFLookUpTable(Device &device, ResourceManager &resources, uint32_t dim, VkFormat format) {
+Hmck::Texture2DHandle Hmck::Generator::generateBRDFLookUpTable(Device &device, DeviceStorage &resources, uint32_t dim, VkFormat format) {
     auto tStart = std::chrono::high_resolution_clock::now();
     std::unique_ptr<GraphicsPipeline> brdfLUTPipeline{};
-    brdfLookUpTable = resources.createTexture2D();
+    Texture2DHandle brdfLookUpTable = resources.createEmptyTexture2D();
 
     // image, view, sampler
     VkImageCreateInfo imageCI = Init::imageCreateInfo();
@@ -977,15 +942,6 @@ void Hmck::Environment::generateBRDFLookUpTable(Device &device, ResourceManager 
     auto tEnd = std::chrono::high_resolution_clock::now();
     auto tDiff = std::chrono::duration<double, std::milli>(tEnd - tStart).count();
     Logger::log(LogLevel::HMCK_LOG_LEVEL_DEBUG, "Generating BRDF LUT took %f ms\n", tDiff);
-}
 
-void Hmck::Environment::destroy(ResourceManager &memory) const {
-    if (environmentMap > 0)
-        memory.destroyTexture2D(environmentMap);
-    if (prefilteredMap > 0)
-        memory.destroyTexture2D(prefilteredMap);
-    if (irradianceMap > 0)
-        memory.destroyTexture2D(irradianceMap);
-    if (brdfLookUpTable > 0)
-        memory.destroyTexture2D(brdfLookUpTable);
+    return brdfLookUpTable;
 }

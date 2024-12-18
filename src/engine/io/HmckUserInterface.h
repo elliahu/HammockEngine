@@ -2,8 +2,6 @@
 
 #include "core/HmckDevice.h"
 #include "imgui.h"
-#include "scene/HmckEntity.h"
-#include "scene/HmckScene.h"
 #include "core/HmckRenderer.h"
 
 #include <memory>
@@ -24,11 +22,10 @@ namespace Hmck {
 
         static void showDemoWindow() { ImGui::ShowDemoWindow(); }
 
-        void showDebugStats(const std::shared_ptr<Entity> &camera) const;
+
 
         void showWindowControls() const;
 
-        void showEntityInspector(std::unique_ptr<Scene> &scene);
 
         void showColorSettings(float *exposure, float *gamma, float *whitePoint);
 
@@ -50,9 +47,6 @@ namespace Hmck {
 
         static void endWindow();
 
-        static void entityComponents(const std::shared_ptr<Entity> &entity);
-
-        static void inspectEntity(const std::shared_ptr<Entity> &entity, std::unique_ptr<Scene> &scene);
 
         Device &device;
         Window &window;
