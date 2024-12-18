@@ -412,6 +412,7 @@ namespace Hmck {
                         visibilityFlags |= Geometry::VisibilityFlags::CASTS_SHADOW |
                                 Geometry::VisibilityFlags::RECIEVES_SHADOW;
 
+                        // FIXME needs to check for invalid indexes
                         state.renderMeshes.push_back({
                             model,
                             visibilityFlags,

@@ -1,6 +1,4 @@
 #include "HmckGenerator.h"
-
-#include <glm/glm.hpp>
 #include <stb_image.h>
 #include <chrono>
 

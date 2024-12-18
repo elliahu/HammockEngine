@@ -1,11 +1,6 @@
 #pragma once
 
-#define GLM_FORCE_RADIANS
-#define GLM_FORCE_DEPTH_ZERO_TO_ONE
-#include <glm/glm.hpp>
-#define GLM_ENABLE_EXPERIMENTAL
-#include <glm/gtx/matrix_decompose.hpp>
-
+#include <cassert>
 #include <functional>
 #include <filesystem>
 #include <fstream>
@@ -808,29 +803,10 @@ namespace Hmck {
             return a + f * (b - a);
         }
 
-        inline glm::mat4 normal(glm::mat4 &model) {
-            return glm::transpose(glm::inverse(model));
+        inline HmckMat4 normal(HmckMat4 &model) {
+            return HmckTranspose(HmckInvGeneral(model));
         }
 
-        inline glm::vec3 decomposeTranslation(glm::mat4 &transform) {
-            return transform[3];
-        }
-
-        inline glm::vec3 decomposeRotation(glm::mat4 &transform) {
-            glm::vec3 scale, translation, skew;
-            glm::vec4 perspective;
-            glm::quat orientation;
-            glm::decompose(transform, scale, orientation, translation, skew, perspective);
-            return glm::eulerAngles(orientation);
-        }
-
-        inline glm::vec3 decomposeScale(glm::mat4 &transform) {
-            return {
-                glm::length(transform[0]),
-                glm::length(transform[1]),
-                glm::length(transform[2])
-            };
-        }
 
         inline uint32_t padSizeToMinAlignment(uint32_t originalSize, uint32_t minAlignment) {
             return (originalSize + minAlignment - 1) & ~(minAlignment - 1);
