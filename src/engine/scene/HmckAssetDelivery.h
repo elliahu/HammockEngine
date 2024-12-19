@@ -473,6 +473,7 @@ namespace Hmck {
                 parseNode(n);
             }
 
+            // TODO make this work for multiple models in row
             // add vertices and indices into buffers
             for (int v = 0; v < vertexBuffer.size(); v++) {
                 state.vertices.push_back(Vertex{

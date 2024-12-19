@@ -25,7 +25,7 @@ void Hmck::PBRApp::run() {
 
     int r = 0;
     for (auto &mesh: state.renderMeshes) {
-        globalBuffer.baseColorFactors[r] = HmckVec4{mesh.baseColorFactor};
+        globalBuffer.baseColorFactors[r] = HmckVec4{mesh.baseColorFactor, 1.0f};
         globalBuffer.metallicRoughnessAlphaCutOffFactors[r] =  HmckVec4{mesh.metallicRoughnessAlphaCutOffFactor};
         globalBuffer.baseColorTextureIndexes[r].value = mesh.baseColorTextureIndex;
         globalBuffer.normalTextureIndexes[r].value = mesh.normalTextureIndex;
@@ -196,8 +196,8 @@ void Hmck::PBRApp::run() {
 void Hmck::PBRApp::load() {
     // Load the meshes
     Loader loader(state, device, deviceStorage);
-    loader.loadglTF("../data/models/helmet/helmet.glb");
-    //loader.loadglTF("../data/models/blender.glb");
+    //loader.loadglTF("../data/models/helmet/helmet.glb");
+    loader.loadglTF("../data/models/blender.glb");
     //loader.loadglTF("../data/models/sponza/sponza.glb");
 
     int32_t w, h, c;
