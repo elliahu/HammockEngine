@@ -26,12 +26,12 @@ namespace Hmck {
 
         void ui();
 
-        BufferHandle vertexBuffer;
-        BufferHandle indexBuffer;
+        ResourceHandle<Buffer> vertexBuffer;
+        ResourceHandle<Buffer> indexBuffer;
 
-        std::vector<DescriptorSetHandle> descriptorSets{};
-        DescriptorSetLayoutHandle descriptorSetLayout;
-        std::vector<BufferHandle> buffers{};
+        std::vector<ResourceHandle<VkDescriptorSet>> descriptorSets{};
+        ResourceHandle<DescriptorSetLayout> descriptorSetLayout;
+        std::vector<ResourceHandle<Buffer>> buffers{};
 
         std::unique_ptr<GraphicsPipeline> pipeline{};
 
@@ -59,6 +59,6 @@ namespace Hmck {
             int  nDotL = false;
         } pushData;
 
-        Texture3DHandle texture{};
+        ResourceHandle<Texture3D> texture{};
     };
 }

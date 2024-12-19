@@ -38,38 +38,38 @@ namespace Hmck {
         float radius = 1.0f, azimuth = 0.0f, elevation = 0.0f;
 
         struct {
-            Texture2DHandle environmentMap;
-            Texture2DHandle prefilteredEnvMap;
-            Texture2DHandle irradianceMap;
-            Texture2DHandle brdfLut;
+            ResourceHandle<Texture2D> environmentMap;
+            ResourceHandle<Texture2D> prefilteredEnvMap;
+            ResourceHandle<Texture2D> irradianceMap;
+            ResourceHandle<Texture2D> brdfLut;
         } environment;
 
         struct {
-            BufferHandle vertexBuffer;
-            BufferHandle indexBuffer;
+            ResourceHandle<Buffer> vertexBuffer;
+             ResourceHandle<Buffer> indexBuffer;
             uint32_t numTriangles = 0;
         } geometry;
 
         // Descriptors
         // global descriptor
         struct {
-            std::vector<DescriptorSetHandle> descriptorSets;
-            DescriptorSetLayoutHandle descriptorSetLayout;
-            std::vector<BufferHandle> buffers;
+            std::vector<ResourceHandle<VkDescriptorSet>> descriptorSets;
+            ResourceHandle<DescriptorSetLayout> descriptorSetLayout;
+            std::vector<ResourceHandle<Buffer>> buffers;
             Binding binding = 0;
         } globalDescriptors;
 
         struct {
-            std::vector<DescriptorSetHandle> descriptorSets{};
-            DescriptorSetLayoutHandle descriptorSetLayout;
-            std::vector<BufferHandle> buffers{};
+            std::vector<ResourceHandle<VkDescriptorSet>> descriptorSets{};
+            ResourceHandle<DescriptorSetLayout> descriptorSetLayout;
+            std::vector<ResourceHandle<Buffer>> buffers{};
             Binding binding = 1;
         } projectionDescriptors;
 
         // composition descriptors
         struct {
-            std::vector<DescriptorSetHandle> descriptorSets{};
-            DescriptorSetLayoutHandle descriptorSetLayout;
+            std::vector<ResourceHandle<VkDescriptorSet>> descriptorSets{};
+            ResourceHandle<DescriptorSetLayout> descriptorSetLayout;
             Binding binding = 2;
         } compositionDescriptors;
 

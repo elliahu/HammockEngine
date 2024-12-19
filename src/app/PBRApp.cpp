@@ -13,27 +13,14 @@ Hmck::PBRApp::PBRApp() {
 }
 
 Hmck::PBRApp::~PBRApp() {
-    // destroy global buffer
-    for (const unsigned int buffer: globalDescriptors.buffers)
-        deviceStorage.destroyBuffer(buffer);
-
-    // destroy projection buffers
-    for (const unsigned int buffer: projectionDescriptors.buffers)
-        deviceStorage.destroyBuffer(buffer);
-
-    deviceStorage.destroyDescriptorSetLayout(globalDescriptors.descriptorSetLayout);
-    deviceStorage.destroyDescriptorSetLayout(projectionDescriptors.descriptorSetLayout);
-    deviceStorage.destroyDescriptorSetLayout(compositionDescriptors.descriptorSetLayout);
-
-    deviceStorage.destroyBuffer(geometry.vertexBuffer);
-    deviceStorage.destroyBuffer(geometry.indexBuffer);
+    // No need for cleanup as all allocated resources are cleaned automatically
 }
 
 void Hmck::PBRApp::run() {
-    RenderContext renderer{window, device};
+    RenderContext renderContext{window, device};
     init();
-    createPipelines(renderer);
-    UserInterface ui{device, renderer.getSwapChainRenderPass(), window};
+    createPipelines(renderContext);
+    UserInterface ui{device, renderContext.getSwapChainRenderPass(), window};
 
 
     int r = 0;
@@ -65,8 +52,8 @@ void Hmck::PBRApp::run() {
 
 
         // start a new frame
-        if (const auto commandBuffer = renderer.beginFrame()) {
-            const int frameIndex = renderer.getFrameIndex();
+        if (const auto commandBuffer = renderContext.beginFrame()) {
+            const int frameIndex = renderContext.getFrameIndex();
 
 
             // do per frame calculations
@@ -80,7 +67,7 @@ void Hmck::PBRApp::run() {
             HmckVec3 pos = Math::orbitalPosition(HmckVec3{.0f,.0f,.0f}, radius, azimuth, elevation);
 
             // write to projection buffer
-            projectionBuffer.projectionMat = Projection().perspective(45.0f, renderer.getAspectRatio(), 0.1f, 64.0f);
+            projectionBuffer.projectionMat = Projection().perspective(45.0f, renderContext.getAspectRatio(), 0.1f, 64.0f);
             projectionBuffer.viewMat = Projection().view(pos, HmckVec3{0.0f, 0.0f, 0.0f},
                                                          HmckVec3{0.0f, 1.0f, 0.0f});
             projectionBuffer.inverseViewMat = Projection().inverseView(HmckVec3{0.0f, 0.0f, -2.0f},
@@ -91,7 +78,7 @@ void Hmck::PBRApp::run() {
 
             deviceStorage.bindVertexBuffer(geometry.vertexBuffer, geometry.indexBuffer, commandBuffer);
             // Opaque geometry pass
-            renderer.beginRenderPass(opaqueGeometryPass.framebuffer, commandBuffer, {
+            renderContext.beginRenderPass(opaqueGeometryPass.framebuffer, commandBuffer, {
                                          {.color = {0.0f, 0.0f, 0.0f, 0.0f}},
                                          {.color = {0.0f, 0.0f, 0.0f, 0.0f}},
                                          {.color = {0.0f, 0.0f, 0.0f, 0.0f}},
@@ -144,10 +131,10 @@ void Hmck::PBRApp::run() {
                 }
             }
 
-            renderer.endRenderPass(commandBuffer);
+            renderContext.endRenderPass(commandBuffer);
 
             // transparent pass
-            renderer.beginRenderPass(transparentGeometryPass.framebuffer, commandBuffer, {
+            renderContext.beginRenderPass(transparentGeometryPass.framebuffer, commandBuffer, {
                                          {.color = {0.0f, 0.0f, 0.0f, 0.0f}},
                                          {.color = {0.0f, 0.0f, 0.0f, 0.0f}},
                                          {.depthStencil = {1.0f, 0}}
@@ -173,10 +160,10 @@ void Hmck::PBRApp::run() {
             }
 
 
-            renderer.endRenderPass(commandBuffer);
+            renderContext.endRenderPass(commandBuffer);
 
             // composition pass
-            renderer.beginSwapChainRenderPass(commandBuffer);
+            renderContext.beginSwapChainRenderPass(commandBuffer);
 
             compositionPass.pipeline->bind(commandBuffer);
             // bind composition buffer
@@ -198,8 +185,8 @@ void Hmck::PBRApp::run() {
             ui.endUserInterface(commandBuffer);
 
             // end frame
-            renderer.endRenderPass(commandBuffer);
-            renderer.endFrame();
+            renderContext.endRenderPass(commandBuffer);
+            renderContext.endFrame();
         }
 
         vkDeviceWaitIdle(device.device());
@@ -598,8 +585,8 @@ void Hmck::PBRApp::createPipelines(const RenderContext &renderer) {
         .renderPass = transparentGeometryPass.framebuffer->renderPass
     });
 
-    // setup composition descriptor sat here as it samples from gbuffer and transparency accumulator
-    for (unsigned int &descriptorSet: compositionDescriptors.descriptorSets) {
+    // setup composition descriptor set here as it samples from gbuffer and transparency accumulator
+    for (int i = 0; i < SwapChain::MAX_FRAMES_IN_FLIGHT; i++) {
         std::vector<VkDescriptorImageInfo> compositionImageInfos = {
             {
                 .sampler = opaqueGeometryPass.framebuffer->sampler,
@@ -633,7 +620,7 @@ void Hmck::PBRApp::createPipelines(const RenderContext &renderer) {
             },
         };
 
-        descriptorSet = deviceStorage.createDescriptorSet({
+        compositionDescriptors.descriptorSets[i] = deviceStorage.createDescriptorSet({
             .descriptorSetLayout = compositionDescriptors.descriptorSetLayout,
             .imageArrayWrites = {{0, compositionImageInfos}},
         });

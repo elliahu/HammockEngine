@@ -7,12 +7,12 @@
 #include "utils/HmckLogger.h"
 #include "shaders/HmckShader.h"
 
-Hmck::Texture2DHandle Hmck::Generator::generatePrefilteredMap(Device &device, Texture2DHandle environmentMap, DeviceStorage &resources, VkFormat format) {
+Hmck:: ResourceHandle<Hmck::Texture2D> Hmck::Generator::generatePrefilteredMap(Device &device,  ResourceHandle<Texture2D> environmentMap, DeviceStorage &resources, VkFormat format) {
     auto tStart = std::chrono::high_resolution_clock::now();
     uint32_t width = resources.getTexture2D(environmentMap)->width;
     uint32_t height = resources.getTexture2D(environmentMap)->height;
     std::unique_ptr<GraphicsPipeline> pipeline{};
-    Texture2DHandle prefilteredMap = resources.createEmptyTexture2D();
+    ResourceHandle<Texture2D> prefilteredMap = resources.createEmptyTexture2D();
     const uint32_t mipLevels = getNumberOfMipLevels(width, height);
 
     // Image
@@ -42,9 +42,9 @@ Hmck::Texture2DHandle Hmck::Generator::generatePrefilteredMap(Device &device, Te
     checkResult(vkCreateImageView(device.device(), &viewCI, nullptr, &resources.getTexture2D(prefilteredMap)->view));
     // sampler and descriptor
     resources.getTexture2D(prefilteredMap)->createSampler(device,
-                                                             VK_FILTER_LINEAR, VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE,
-                                                             VK_BORDER_COLOR_INT_OPAQUE_BLACK,
-                                                             VK_SAMPLER_MIPMAP_MODE_LINEAR, mipLevels);
+                                                          VK_FILTER_LINEAR, VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE,
+                                                          VK_BORDER_COLOR_INT_OPAQUE_BLACK,
+                                                          VK_SAMPLER_MIPMAP_MODE_LINEAR, mipLevels);
     resources.getTexture2D(prefilteredMap)->layout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
     resources.getTexture2D(prefilteredMap)->updateDescriptor();
 
@@ -348,13 +348,13 @@ Hmck::Texture2DHandle Hmck::Generator::generatePrefilteredMap(Device &device, Te
     return prefilteredMap;
 }
 
-Hmck::Texture2DHandle Hmck::Generator::generatePrefilteredMapWithStaticRoughness(Device &device, Texture2DHandle environmentMap, DeviceStorage &resources,
+Hmck::ResourceHandle<Hmck::Texture2D> Hmck::Generator::generatePrefilteredMapWithStaticRoughness(Device &device, ResourceHandle<Texture2D> environmentMap, DeviceStorage &resources,
                                                                      VkFormat format) {
     auto tStart = std::chrono::high_resolution_clock::now();
     uint32_t width = resources.getTexture2D(environmentMap)->width;
     uint32_t height = resources.getTexture2D(environmentMap)->height;
     std::unique_ptr<GraphicsPipeline> pipeline{};
-    Texture2DHandle prefilteredMap = resources.createEmptyTexture2D();
+    ResourceHandle<Texture2D> prefilteredMap = resources.createEmptyTexture2D();
 
     // image, view, sampler
     VkImageCreateInfo imageCI = Init::imageCreateInfo();
@@ -558,13 +558,13 @@ Hmck::Texture2DHandle Hmck::Generator::generatePrefilteredMapWithStaticRoughness
     return prefilteredMap;
 }
 
-Hmck::Texture2DHandle Hmck::Generator::generateIrradianceMap(Device &device, Texture2DHandle environmentMap, DeviceStorage &resources, VkFormat format,
+Hmck::ResourceHandle<Hmck::Texture2D> Hmck::Generator::generateIrradianceMap(Device &device, ResourceHandle<Texture2D> environmentMap, DeviceStorage &resources, VkFormat format,
                                                  float _deltaPhi, float _deltaTheta) {
     auto tStart = std::chrono::high_resolution_clock::now();
     uint32_t width = resources.getTexture2D(environmentMap)->width;
     uint32_t height = resources.getTexture2D(environmentMap)->height;
     std::unique_ptr<GraphicsPipeline> pipeline{};
-    Texture2DHandle irradianceMap = resources.createEmptyTexture2D();
+    ResourceHandle<Texture2D> irradianceMap = resources.createEmptyTexture2D();
 
     // image, view, sampler
     VkImageCreateInfo imageCI = Init::imageCreateInfo();
@@ -771,10 +771,10 @@ Hmck::Texture2DHandle Hmck::Generator::generateIrradianceMap(Device &device, Tex
     return irradianceMap;
 }
 
-Hmck::Texture2DHandle Hmck::Generator::generateBRDFLookUpTable(Device &device, DeviceStorage &resources, uint32_t dim, VkFormat format) {
+Hmck::ResourceHandle<Hmck::Texture2D> Hmck::Generator::generateBRDFLookUpTable(Device &device, DeviceStorage &resources, uint32_t dim, VkFormat format) {
     auto tStart = std::chrono::high_resolution_clock::now();
     std::unique_ptr<GraphicsPipeline> brdfLUTPipeline{};
-    Texture2DHandle brdfLookUpTable = resources.createEmptyTexture2D();
+    ResourceHandle<Texture2D> brdfLookUpTable = resources.createEmptyTexture2D();
 
     // image, view, sampler
     VkImageCreateInfo imageCI = Init::imageCreateInfo();

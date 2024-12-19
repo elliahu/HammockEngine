@@ -95,7 +95,7 @@ namespace Hmck {
             };
 
             struct gImage {
-                Texture2DHandle textureHandle;
+                ResourceHandle<Texture2D> textureHandle;
                 std::string name;
             };
 
@@ -125,7 +125,7 @@ namespace Hmck {
                 }
 
                 // Load texture from image buffer
-                Texture2DHandle imageHandle = deviceStorage.createTexture2D({
+                ResourceHandle<Texture2D> imageHandle = deviceStorage.createTexture2D({
                     .buffer = static_cast<const void *>(buffer),
                     .instanceSize = sizeof(unsigned char),
                     .width = static_cast<uint32_t>(glTFImage.width),

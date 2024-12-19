@@ -36,7 +36,7 @@ namespace Hmck {
         std::vector<MeshInstance> renderMeshes;
         std::vector<Vertex> vertices;
         std::vector<uint32_t> indices;
-        std::vector<Texture2DHandle> textures;
+        std::vector<ResourceHandle<Texture2D>> textures;
 
     };
 }
