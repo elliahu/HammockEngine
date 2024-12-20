@@ -58,8 +58,8 @@ void Hmck::PBRApp::run() {
 
             // do per frame calculations
 
-            if(window.getInputHandler().isKeyboardKeyDown(HMCK_KEY_A)) azimuth += 1.f * frameTime;
-            if(window.getInputHandler().isKeyboardKeyDown(HMCK_KEY_D)) azimuth -= 1.f * frameTime;
+            if(window.getInputHandler().isKeyboardKeyDown(HMCK_KEY_A)) azimuth -= 1.f * frameTime;
+            if(window.getInputHandler().isKeyboardKeyDown(HMCK_KEY_D)) azimuth += 1.f * frameTime;
             if(window.getInputHandler().isKeyboardKeyDown(HMCK_KEY_W)) elevation += 1.f * frameTime;
             if(window.getInputHandler().isKeyboardKeyDown(HMCK_KEY_S)) elevation -= 1.f * frameTime;
             if(window.getInputHandler().isKeyboardKeyDown(HMCK_KEY_DOWN)) radius += 1.f * frameTime;
@@ -69,10 +69,10 @@ void Hmck::PBRApp::run() {
             // write to projection buffer
             projectionBuffer.projectionMat = Projection().perspective(45.0f, renderContext.getAspectRatio(), 0.1f, 64.0f);
             projectionBuffer.viewMat = Projection().view(pos, HmckVec3{0.0f, 0.0f, 0.0f},
-                                                         HmckVec3{0.0f, 1.0f, 0.0f});
+                                                         HmckVec3{0.0f, -1.0f, 0.0f});
             projectionBuffer.inverseViewMat = Projection().inverseView(HmckVec3{0.0f, 0.0f, -2.0f},
                                                                        HmckVec3{0.0f, 0.0f, 0.0f},
-                                                                       HmckVec3{0.0f, 1.0f, 0.0f});
+                                                                       HmckVec3{0.0f, -1.0f, 0.0f});
             deviceStorage.getBuffer(projectionDescriptors.buffers[frameIndex])->writeToBuffer(&projectionBuffer);
 
 
@@ -196,10 +196,10 @@ void Hmck::PBRApp::run() {
 void Hmck::PBRApp::load() {
     // Load the meshes
     Loader(state, device, deviceStorage)
-    //.loadglTF("../data/models/helmet/helmet.glb");
+    .loadglTF("../data/models/helmet/helmet.glb");
     //.loadglTF("../data/models/helmet/DamagedHelmet.glb");
     //.loadglTF("../data/models/blender.glb");
-    .loadglTF("../data/models/sponza/sponza.glb");
+    //.loadglTF("../data/models/sponza/sponza.glb");
 
     int32_t w, h, c;
     ScopedMemory environmentData = ScopedMemory(Filesystem::readImage(
@@ -530,7 +530,7 @@ void Hmck::PBRApp::createPipelines(const RenderContext &renderer) {
             .depthTest = VK_TRUE,
             .depthTestCompareOp = VK_COMPARE_OP_LESS_OR_EQUAL,
             .cullMode = VK_CULL_MODE_BACK_BIT,
-            .frontFace = VK_FRONT_FACE_COUNTER_CLOCKWISE,
+            .frontFace = VK_FRONT_FACE_CLOCKWISE,
             .blendAtaAttachmentStates{
                 Hmck::Init::pipelineColorBlendAttachmentState(0xf, VK_FALSE),
                 Hmck::Init::pipelineColorBlendAttachmentState(0xf, VK_FALSE),
@@ -572,7 +572,7 @@ void Hmck::PBRApp::createPipelines(const RenderContext &renderer) {
             .depthTest = VK_TRUE,
             .depthTestCompareOp = VK_COMPARE_OP_LESS_OR_EQUAL,
             .cullMode = VK_CULL_MODE_BACK_BIT,
-            .frontFace = VK_FRONT_FACE_COUNTER_CLOCKWISE,
+            .frontFace = VK_FRONT_FACE_CLOCKWISE,
             .blendAtaAttachmentStates{
                 Hmck::Init::pipelineColorBlendAttachmentState(0xf, VK_FALSE),
                 Hmck::Init::pipelineColorBlendAttachmentState(0xf, VK_FALSE),

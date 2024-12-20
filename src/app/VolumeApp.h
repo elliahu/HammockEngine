@@ -8,6 +8,7 @@
 #include "core/HmckGraphicsPipeline.h"
 #include "IApp.h"
 #include "core/HmckDeviceStorage.h"
+#include "core/HmckRenderContext.h"
 #include "utils/HmckUtils.h"
 
 namespace Hmck {
@@ -25,6 +26,8 @@ namespace Hmck {
         void destroy();
 
         void ui();
+
+        RenderContext renderContext{window, device};
 
         ResourceHandle<Buffer> vertexBuffer;
         ResourceHandle<Buffer> indexBuffer;

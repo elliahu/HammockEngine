@@ -10,8 +10,6 @@ Hmck::VolumeApp::VolumeApp() {
 }
 
 void Hmck::VolumeApp::run() {
-    RenderContext renderer{window, device};
-
     pipeline = GraphicsPipeline::createGraphicsPipelinePtr({
         .debugName = "standard_forward_pass",
         .device = device,
@@ -48,11 +46,11 @@ void Hmck::VolumeApp::run() {
                 .vertexAttributeDescriptions = Vertex::vertexInputAttributeDescriptions()
             }
         },
-        .renderPass = renderer.getSwapChainRenderPass()
+        .renderPass = renderContext.getSwapChainRenderPass()
     });
 
 
-    const UserInterface ui{device, renderer.getSwapChainRenderPass(), window};
+    const UserInterface ui{device, renderContext.getSwapChainRenderPass(), window};
 
     float elapsedTime = 0.f;
     auto currentTime = std::chrono::high_resolution_clock::now();
@@ -68,8 +66,8 @@ void Hmck::VolumeApp::run() {
 
 
         // start a new frame
-        if (const auto commandBuffer = renderer.beginFrame()) {
-            const int frameIndex = renderer.getFrameIndex();
+        if (const auto commandBuffer = renderContext.beginFrame()) {
+            const int frameIndex = renderContext.getFrameIndex();
 
             vkCmdSetDepthBias(
                 commandBuffer,
@@ -77,7 +75,7 @@ void Hmck::VolumeApp::run() {
                 0.0f,
                 1.75f);
 
-            renderer.beginSwapChainRenderPass(commandBuffer);
+            renderContext.beginSwapChainRenderPass(commandBuffer);
 
             draw(frameIndex, elapsedTime, commandBuffer); {
                 ui.beginUserInterface();
@@ -86,8 +84,8 @@ void Hmck::VolumeApp::run() {
                 ui.endUserInterface(commandBuffer);
             }
 
-            renderer.endRenderPass(commandBuffer);
-            renderer.endFrame();
+            renderContext.endRenderPass(commandBuffer);
+            renderContext.endFrame();
         }
 
         vkDeviceWaitIdle(device.device());
@@ -171,12 +169,12 @@ void Hmck::VolumeApp::draw(int frameIndex, float elapsedTime, VkCommandBuffer co
     deviceStorage.bindVertexBuffer(vertexBuffer, indexBuffer, commandBuffer);
     pipeline->bind(commandBuffer);
 
-    bufferData.projection = Projection().perspective(70.0f, static_cast<float>(WINDOW_WIDTH) / WINDOW_HEIGHT, 0.1f, 64.0f);
+    bufferData.projection = Projection().perspective(45.0f, renderContext.getAspectRatio(), 0.1f, 64.0f);
     bufferData.view = Projection().view(HmckVec3{0.0f, 0.0f, -2.0f}, HmckVec3{0.0f, 0.0f, 0.0f},
-                                                         HmckVec3{0.0f, 1.0f, 0.0f});
+                                                         HmckVec3{0.0f, -1.0f, 0.0f});
     bufferData.inverseView = Projection().inverseView(HmckVec3{0.0f, 0.0f, -2.0f},
                                                                        HmckVec3{0.0f, 0.0f, 0.0f},
-                                                                       HmckVec3{0.0f, 1.0f, 0.0f});
+                                                                       HmckVec3{0.0f, -1.0f, 0.0f});
     deviceStorage.getBuffer(buffers[frameIndex])->writeToBuffer(&bufferData);
 
     deviceStorage.bindDescriptorSet(
