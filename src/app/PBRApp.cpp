@@ -146,7 +146,6 @@ void Hmck::PBRApp::run() {
                 Geometry::MeshInstance &mesh = state.renderMeshes[i];
                 if ((mesh.visibilityFlags & Geometry::VisibilityFlags::VISIBLE) ==  Geometry::VisibilityFlags::NONE) { continue;}
                 if (mesh.visibilityFlags & Geometry::VisibilityFlags::BLEND) {
-                    // FIXME overdraw here
                     meshPushBlock.modelMat = mesh.transform;
                     meshPushBlock.meshIndex = i;
 
