@@ -31,7 +31,7 @@ void Hmck::UserInterface::endUserInterface(VkCommandBuffer commandBuffer) {
     ImGui_ImplVulkan_RenderDrawData(ImGui::GetDrawData(), commandBuffer);
 }
 
-void Hmck::UserInterface::showDebugStats(const HmckMat4 &view) {
+void Hmck::UserInterface::showDebugStats(const HmckMat4 &inverseView) {
     const ImGuiIO &io = ImGui::GetIO();
     constexpr ImGuiWindowFlags window_flags = ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_AlwaysAutoResize |
                                               ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_NoFocusOnAppearing |
@@ -39,7 +39,7 @@ void Hmck::UserInterface::showDebugStats(const HmckMat4 &view) {
     ImGui::SetNextWindowPos({10, 10});
     ImGui::SetNextWindowBgAlpha(0.35f);
     ImGui::Begin(window.getWindowName().c_str(), (bool *) nullptr, window_flags);
-    const auto cameraPosition = view.Columns[3].XYZ;
+    const auto cameraPosition = inverseView.Columns[3].XYZ;
 
     ImGui::Text("Camera world position: ( %.2f, %.2f, %.2f )", cameraPosition.X, cameraPosition.Y, cameraPosition.Z);
     if (ImGui::IsMousePosValid())

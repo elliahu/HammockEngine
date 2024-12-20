@@ -22,7 +22,7 @@ namespace Hmck {
 
         static void showDemoWindow() { ImGui::ShowDemoWindow(); }
 
-        void showDebugStats(const HmckMat4 &view);
+        void showDebugStats(const HmckMat4 &inverseView);
 
         void showWindowControls() const;
         void showColorSettings(float *exposure, float *gamma, float *whitePoint);

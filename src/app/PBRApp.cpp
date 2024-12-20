@@ -69,10 +69,10 @@ void Hmck::PBRApp::run() {
             // write to projection buffer
             projectionBuffer.projectionMat = Projection().perspective(45.0f, renderContext.getAspectRatio(), 0.1f, 64.0f);
             projectionBuffer.viewMat = Projection().view(pos, HmckVec3{0.0f, 0.0f, 0.0f},
-                                                         HmckVec3{0.0f, -1.0f, 0.0f});
+                                                         Projection().upNegY());
             projectionBuffer.inverseViewMat = Projection().inverseView(HmckVec3{0.0f, 0.0f, -2.0f},
                                                                        HmckVec3{0.0f, 0.0f, 0.0f},
-                                                                       HmckVec3{0.0f, -1.0f, 0.0f});
+                                                                       Projection().upNegY());
             deviceStorage.getBuffer(projectionDescriptors.buffers[frameIndex])->writeToBuffer(&projectionBuffer);
 
 
@@ -180,7 +180,7 @@ void Hmck::PBRApp::run() {
 
             // draw ui
             ui.beginUserInterface();
-            ui.showDebugStats(projectionBuffer.viewMat);
+            ui.showDebugStats(projectionBuffer.inverseViewMat);
             ui.showWindowControls();
             ui.endUserInterface(commandBuffer);
 

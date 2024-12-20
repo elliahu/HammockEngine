@@ -8,7 +8,7 @@ layout (location = 0) out vec4 outColor;
 
 // Uniforms
 layout (set = 0, binding = 0) uniform SceneUbo {
-    mat4 projection;
+    mat4 inverseProjection;
     mat4 view;
     mat4 inverseView;
     vec4 textureDim;
@@ -17,6 +17,7 @@ layout (set = 0, binding = 0) uniform SceneUbo {
     vec4 tissueColor;
     vec4 fatColor;
     vec4 boneColor;
+    vec4 cameraPosition;
 } data;
 
 layout (set = 0, binding = 1) uniform sampler3D volumeSampler;
@@ -99,14 +100,15 @@ vec4 raymarch(vec3 rayOrigin, vec3 rayDirection) {
 }
 
 void main() {
-    vec2 uv = gl_FragCoord.xy / vec2(push.resX, push.resY);
-    uv -= 0.5;
-    uv.x *= push.resX / push.resY;
-    uv *= -1.0;
+    vec2 ndc = gl_FragCoord.xy / vec2(push.resX, push.resY);
+    vec2 uv = ndc - vec2(0.5, 0.5); // Center UV in NDC
 
-    vec3 rayOrigin = data.inverseView[3].xyz; // Camera position
-    vec3 rayDirection = normalize(vec3(uv, 1.0));
-    rayDirection = (data.inverseView * vec4(rayDirection, 0.0)).xyz;
+    vec4 clipSpace = vec4(uv, -1.0, 1.0);
+    vec4 cameraSpace = data.inverseProjection * clipSpace;
+    cameraSpace.xyz /= cameraSpace.w;
+
+    vec3 rayOrigin = (data.cameraPosition).xyz;
+    vec3 rayDirection = normalize((data.view * vec4(cameraSpace.xyz, 0.0)).xyz);
 
     vec3 color = data.baseSkyColor.rgb;
 

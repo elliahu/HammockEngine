@@ -7,6 +7,7 @@
 #include "core/HmckDevice.h"
 #include "core/HmckGraphicsPipeline.h"
 #include "IApp.h"
+#include "core/HmckBindingTypes.h"
 #include "core/HmckDeviceStorage.h"
 #include "core/HmckRenderContext.h"
 #include "utils/HmckUtils.h"
@@ -27,6 +28,8 @@ namespace Hmck {
 
         void ui();
 
+
+
         RenderContext renderContext{window, device};
 
         ResourceHandle<Buffer> vertexBuffer;
@@ -39,7 +42,7 @@ namespace Hmck {
         std::unique_ptr<GraphicsPipeline> pipeline{};
 
         struct BufferData {
-            HmckMat4 projection{1};
+            HmckMat4 inverseProjection{1};
             HmckMat4 view{1};
             HmckMat4 inverseView{1};
             HmckVec4 textureDim{1.f, 1.f, 1.f, 1.0f};
@@ -48,6 +51,7 @@ namespace Hmck {
             HmckVec4 tissueColor{0.8f, 0.5f, 0.4f, 0.2f};
             HmckVec4 fatColor{1.0f, 0.8f, 0.6f, 0.4f};
             HmckVec4 boneColor{1.0f, 1.0f, 1.0f, 0.8f};
+            HmckVec4 cameraPosition{0.f, 0.f, 0.f, 0.f};
         } bufferData;
 
         struct PushData {
@@ -63,5 +67,9 @@ namespace Hmck {
         } pushData;
 
         ResourceHandle<Texture3D> texture{};
+
+        float radius = 2.0f, azimuth = 0.0f, elevation = 0.0f;
+        Vec3Padded cameraPosition{0.0f, 0.0f, 2.0f};
+        Vec3Padded cameraTarget{0.0f, 0.0f, -0.8f};
     };
 }

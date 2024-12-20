@@ -50,7 +50,7 @@ void Hmck::VolumeApp::run() {
     });
 
 
-    const UserInterface ui{device, renderContext.getSwapChainRenderPass(), window};
+    UserInterface ui{device, renderContext.getSwapChainRenderPass(), window};
 
     float elapsedTime = 0.f;
     auto currentTime = std::chrono::high_resolution_clock::now();
@@ -63,6 +63,15 @@ void Hmck::VolumeApp::run() {
         float frameTime = std::chrono::duration<float, std::chrono::seconds::period>(newTime - currentTime).count();
         currentTime = newTime;
         elapsedTime += frameTime;
+
+        if (window.getInputHandler().isKeyboardKeyDown(HMCK_KEY_A)) azimuth -= 1.f * frameTime;
+        if (window.getInputHandler().isKeyboardKeyDown(HMCK_KEY_D)) azimuth += 1.f * frameTime;
+        if (window.getInputHandler().isKeyboardKeyDown(HMCK_KEY_W)) elevation += 1.f * frameTime;
+        if (window.getInputHandler().isKeyboardKeyDown(HMCK_KEY_S)) elevation -= 1.f * frameTime;
+        if (window.getInputHandler().isKeyboardKeyDown(HMCK_KEY_DOWN)) radius += 1.f * frameTime;
+        if (window.getInputHandler().isKeyboardKeyDown(HMCK_KEY_UP)) radius -= 1.f * frameTime;
+        cameraPosition.value = Math::orbitalPosition(cameraTarget.value, HmckClamp(0.f, radius, 10.0f), azimuth,
+                                                     elevation);
 
 
         // start a new frame
@@ -81,6 +90,7 @@ void Hmck::VolumeApp::run() {
                 ui.beginUserInterface();
                 this->ui();
                 ui.showWindowControls();
+                ui.showDebugStats(bufferData.inverseView);
                 ui.endUserInterface(commandBuffer);
             }
 
@@ -169,12 +179,14 @@ void Hmck::VolumeApp::draw(int frameIndex, float elapsedTime, VkCommandBuffer co
     deviceStorage.bindVertexBuffer(vertexBuffer, indexBuffer, commandBuffer);
     pipeline->bind(commandBuffer);
 
-    bufferData.projection = Projection().perspective(45.0f, renderContext.getAspectRatio(), 0.1f, 64.0f);
-    bufferData.view = Projection().view(HmckVec3{0.0f, 0.0f, -2.0f}, HmckVec3{0.0f, 0.0f, 0.0f},
-                                                         HmckVec3{0.0f, -1.0f, 0.0f});
-    bufferData.inverseView = Projection().inverseView(HmckVec3{0.0f, 0.0f, -2.0f},
-                                                                       HmckVec3{0.0f, 0.0f, 0.0f},
-                                                                       HmckVec3{0.0f, -1.0f, 0.0f});
+    bufferData.inverseProjection = HmckInvGeneral(
+        Projection().perspective(45.0f, renderContext.getAspectRatio(), 0.1f, 64.0f));
+    bufferData.view = Projection().view(cameraPosition.value, cameraTarget.value,
+                                        Projection().upNegY());
+    bufferData.inverseView = Projection().inverseView(cameraPosition.value,
+                                                      cameraTarget.value,
+                                                      Projection().upNegY());
+    bufferData.cameraPosition = HmckVec4{cameraPosition.value};
     deviceStorage.getBuffer(buffers[frameIndex])->writeToBuffer(&bufferData);
 
     deviceStorage.bindDescriptorSet(
@@ -211,11 +223,8 @@ void Hmck::VolumeApp::ui() {
     ImGui::Begin("Volume editor", (bool *) false, ImGuiWindowFlags_AlwaysAutoResize);
     ImGui::Text("Edit rendering properties", window_flags);
 
-    float baseSkyColor[4] = {
-        bufferData.baseSkyColor.X, bufferData.baseSkyColor.Y, bufferData.baseSkyColor.Z, bufferData.baseSkyColor.W
-    };
-    ImGui::ColorEdit4("Base sky color", &baseSkyColor[0]);
-    bufferData.baseSkyColor = {baseSkyColor[0], baseSkyColor[1], baseSkyColor[2], baseSkyColor[3]};
+
+    ImGui::ColorEdit4("Base sky color", &bufferData.baseSkyColor.Elements[0]);
 
     ImGui::DragFloat("Max steps", &pushData.maxSteps, 1.0f, 0.001f);
     ImGui::DragFloat("March size", &pushData.marchSize, 0.0001f, 0.0001f, 100.f, "%.5f");
@@ -223,27 +232,17 @@ void Hmck::VolumeApp::ui() {
     ImGui::DragFloat("Tissue threshold", &pushData.tissueThreshold, 0.01f, 0.001f, 1.0f);
     ImGui::DragFloat("Fat threshold", &pushData.fatThreshold, 0.01f, 0.001f, 1.0f);
 
-    float tissueColor[4] = {
-        bufferData.tissueColor.X, bufferData.tissueColor.Y, bufferData.tissueColor.Z, bufferData.tissueColor.W
-    };
-    ImGui::ColorEdit4("Tissue color", &tissueColor[0]);
-    bufferData.tissueColor = {tissueColor[0], tissueColor[1], tissueColor[2], tissueColor[3]};
 
-    float fatColor[4] = {
-        bufferData.fatColor.X, bufferData.fatColor.Y, bufferData.fatColor.Z, bufferData.fatColor.W
-    };
-    ImGui::ColorEdit4("Fat color", &fatColor[0]);
-    bufferData.fatColor = {fatColor[0], fatColor[1], fatColor[2], fatColor[3]};
-
-    float boneColor[4] = {
-        bufferData.boneColor.X, bufferData.boneColor.Y, bufferData.boneColor.Z, bufferData.boneColor.W
-    };
-    ImGui::ColorEdit4("Bone color", &boneColor[0]);
-    bufferData.boneColor = {boneColor[0], boneColor[1], boneColor[2], boneColor[3]};
+    ImGui::ColorEdit4("Tissue color", &bufferData.tissueColor.Elements[0]);
+    ImGui::ColorEdit4("Fat color", &bufferData.fatColor.Elements[0]);
+    ImGui::ColorEdit4("Bone color", &bufferData.boneColor.Elements[0]);
 
     bool nDotL = pushData.nDotL == 1;
     ImGui::Checkbox("Blinn-phong", &nDotL);
     pushData.nDotL = (nDotL) ? 1 : 0;
+
+    ImGui::DragFloat3("Camera position", &cameraPosition.value.Elements[0], 0.1f);
+    ImGui::DragFloat3("Camera target", &cameraTarget.value.Elements[0], 0.1f);
 
     ImGui::End();
 }

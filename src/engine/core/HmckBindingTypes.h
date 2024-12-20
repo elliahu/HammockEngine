@@ -4,17 +4,17 @@
 
 namespace Hmck {
 
-    struct alignas(16) IntPadding {
+    struct alignas(16) IntPadded {
         int32_t value;
         int32_t padding[3]; // Explicit padding to 16 bytes
     };
 
-    struct alignas(16) FloatPadding {
+    struct alignas(16) FloatPadded {
         float value;
         float padding[3];
     };
 
-    struct alignas(16) Vec3Padding {
+    struct alignas(16) Vec3Padded {
         HmckVec3 value;
         float padding;
     };
@@ -26,11 +26,11 @@ namespace Hmck {
         alignas(16) HmckVec4 baseColorFactors[MAX_MESHES]; // w is padding
         alignas(16) HmckVec4 metallicRoughnessAlphaCutOffFactors[MAX_MESHES]; // w is padding
 
-        IntPadding baseColorTextureIndexes[MAX_MESHES];
-        IntPadding normalTextureIndexes[MAX_MESHES];
-        IntPadding metallicRoughnessTextureIndexes[MAX_MESHES];
-        IntPadding occlusionTextureIndexes[MAX_MESHES];
-        IntPadding visibilityFlags[MAX_MESHES];
+        IntPadded baseColorTextureIndexes[MAX_MESHES];
+        IntPadded normalTextureIndexes[MAX_MESHES];
+        IntPadded metallicRoughnessTextureIndexes[MAX_MESHES];
+        IntPadded occlusionTextureIndexes[MAX_MESHES];
+        IntPadded visibilityFlags[MAX_MESHES];
     };
 
     // Projection buffer bound every frame
