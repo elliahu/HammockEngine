@@ -13,9 +13,9 @@ namespace Hmck {
             NONE = 0,
             VISIBLE = 1 << 0,
             OPAQUE = 1 << 1,
-            TRANSPARENT = 1 << 2,
+            BLEND = 1 << 2,
             CASTS_SHADOW = 1 << 3,
-            RECIEVES_SHADOW = 1 << 4,
+            RECEIVES_SHADOW = 1 << 4,
         };
 
         struct MeshInstance {

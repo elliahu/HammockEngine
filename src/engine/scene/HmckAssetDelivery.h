@@ -138,7 +138,6 @@ namespace Hmck {
                     }
                 });
                 images.push_back(gImage{imageHandle, glTFImage.name});
-                state.textures.push_back(imageHandle);
             }
 
             // load textures
@@ -409,30 +408,32 @@ namespace Hmck {
                         }
 
                         if (material.alphaMode == "BLEND") {
-                            visibilityFlags |= Geometry::VisibilityFlags::TRANSPARENT;
+                            visibilityFlags |= Geometry::VisibilityFlags::BLEND;
                         }
 
                         visibilityFlags |= Geometry::VisibilityFlags::CASTS_SHADOW |
-                                Geometry::VisibilityFlags::RECIEVES_SHADOW;
+                                Geometry::VisibilityFlags::RECEIVES_SHADOW;
+
+                        const auto indexOffset = static_cast<int32_t>(state.textures.size());
 
                         int32_t baseColorTextureIndex = -1;
                         if(material.albedoTexture > -1) {
-                            baseColorTextureIndex = material.albedoTexture;
+                            baseColorTextureIndex = textures[material.albedoTexture].imageIndex + indexOffset;
                         }
 
                         int32_t normalTextureIndex = -1;
                         if(material.normalTexture > -1) {
-                            normalTextureIndex = material.normalTexture;
+                            normalTextureIndex = textures[material.normalTexture].imageIndex + indexOffset;
                         }
 
                         int32_t metallicRoughnessTextureIndex = -1;
                         if(material.metallicRoughnessTexture > -1) {
-                            metallicRoughnessTextureIndex = material.metallicRoughnessTexture;
+                            metallicRoughnessTextureIndex = textures[material.metallicRoughnessTexture].imageIndex + indexOffset;
                         }
 
                         int32_t occlusionTextureIndex = -1;
                         if(material.occlusionTexture > -1) {
-                            occlusionTextureIndex = material.occlusionTexture;
+                            occlusionTextureIndex = textures[material.occlusionTexture].imageIndex + indexOffset;
                         }
 
                         state.renderMeshes.push_back({
@@ -474,6 +475,10 @@ namespace Hmck {
             }
 
             // TODO make this work for multiple models in row
+            // add texture resources to the list
+            for (int t = 0; t < images.size(); t++) {
+                state.textures.push_back(images[t].textureHandle);
+            }
             // add vertices and indices into buffers
             for (int v = 0; v < vertexBuffer.size(); v++) {
                 state.vertices.push_back(Vertex{
@@ -493,9 +498,6 @@ namespace Hmck {
             for (auto node: nodes) {
                 delete node;
             }
-            vertexBuffer.clear();
-            indexBuffer.clear();
-
             return *this;
         }
     };

@@ -145,7 +145,7 @@ void Hmck::PBRApp::run() {
             for (int i = 0; i < state.renderMeshes.size(); i++) {
                 Geometry::MeshInstance &mesh = state.renderMeshes[i];
                 if ((mesh.visibilityFlags & Geometry::VisibilityFlags::VISIBLE) ==  Geometry::VisibilityFlags::NONE) { continue;}
-                if (mesh.visibilityFlags & Geometry::VisibilityFlags::TRANSPARENT) {
+                if (mesh.visibilityFlags & Geometry::VisibilityFlags::BLEND) {
                     // FIXME overdraw here
                     meshPushBlock.modelMat = mesh.transform;
                     meshPushBlock.meshIndex = i;
@@ -195,10 +195,11 @@ void Hmck::PBRApp::run() {
 
 void Hmck::PBRApp::load() {
     // Load the meshes
-    Loader loader(state, device, deviceStorage);
-    //loader.loadglTF("../data/models/helmet/helmet.glb");
-    loader.loadglTF("../data/models/blender.glb");
-    //loader.loadglTF("../data/models/sponza/sponza.glb");
+    Loader(state, device, deviceStorage)
+    //.loadglTF("../data/models/helmet/helmet.glb");
+    //.loadglTF("../data/models/helmet/DamagedHelmet.glb");
+    //.loadglTF("../data/models/blender.glb");
+    .loadglTF("../data/models/sponza/sponza.glb");
 
     int32_t w, h, c;
     ScopedMemory environmentData = ScopedMemory(Filesystem::readImage(
