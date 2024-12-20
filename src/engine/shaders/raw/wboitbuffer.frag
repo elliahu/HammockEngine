@@ -1,6 +1,10 @@
 #version 450
 #extension GL_EXT_nonuniform_qualifier: enable
 
+#include "common/global_binding.glsl"
+#include "common/projection_binding.glsl"
+#include "common/mesh_binding.glsl"
+#include "common/consts.glsl"
 #include "common/functions.glsl"
 
 // inputs
@@ -13,19 +17,6 @@ layout (location = 3) in vec4 inTangent;
 layout (location = 0) out vec4 accumulationBuffer;
 layout (location = 1) out float transparencyWeightBuffer;
 
-layout (set = 0, binding = 1) uniform sampler2D textures[];
-
-layout (set = 2, binding = 0) uniform MaterialPropertyUbo
-{
-    vec4 baseColorFactor;
-    uint baseColorTextureIndex;
-    uint normalTextureIndex;
-    uint metallicRoughnessTextureIndex;
-    uint occlusionTextureIndex;
-    float alphaMode;
-    float metallicFactor;
-    float roughnessFactor;
-} material;
 
 layout (constant_id = 1) const float nearPlane = 0.1;
 layout (constant_id = 2) const float farPlane = 64.0;
@@ -33,7 +24,8 @@ layout (constant_id = 2) const float farPlane = 64.0;
 
 void main()
 {
-    vec4 albedo = (material.baseColorTextureIndex == INVALID_TEXTURE) ? material.baseColorFactor : texture(textures[material.baseColorTextureIndex], inUv);
+    vec4 albedo = (global.baseColorTextureIndexes[push.meshIndex] == INVALID_TEXTURE) ?
+    global.baseColorFactors[push.meshIndex] : texture(textures[global.baseColorTextureIndexes[push.meshIndex]], inUv);
 
     // Opacity calculation
     float opacity = albedo.a; // Use the alpha channel of the base color texture or factor

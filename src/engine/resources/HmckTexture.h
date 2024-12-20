@@ -6,32 +6,44 @@
 #include "utils/HmckUtils.h"
 
 namespace Hmck {
-    /*
-        Texture represents a texture
-        that can be used to sample from in a shader
-    */
+
     class ITexture {
     public:
+
         // Recommended:
         // VK_FORMAT_R8G8B8A8_UNORM for normals
         // VK_FORMAT_R8G8B8A8_SRGB for images
-        VkSampler sampler;
-        VkDeviceMemory memory;
-        VkImage image;
-        VkImageView view;
-        VkImageLayout layout;
+        VkSampler sampler = VK_NULL_HANDLE;
+        VkDeviceMemory memory = VK_NULL_HANDLE;
+        VkImage image = VK_NULL_HANDLE;
+        VkImageView view = VK_NULL_HANDLE;
+        VkImageLayout layout = VK_IMAGE_LAYOUT_UNDEFINED;
         int width{0}, height{0}, channels{0}, mipLevels{1};
         uint32_t layerCount{1};
-        VkDescriptorImageInfo descriptor;
+        VkDescriptorImageInfo descriptor{};
+        Device& device;
+
+        ITexture(Device& device): device{device} {};
+
+        // Not copyable or movable
+        ITexture(const ITexture &) = delete;
+        ITexture &operator=(const ITexture &) = delete;
+        ITexture(ITexture &&) = delete;
+        ITexture &operator=(ITexture &&) = delete;
+
+        virtual ~ITexture();
 
         void updateDescriptor();
-
-        void destroy(const Device &device);
     };
 
 
     class Texture2D final: public ITexture{
     public:
+
+        Texture2D(Device &device)
+            : ITexture(device) {
+        }
+
          void loadFromBuffer(
             const void *buffer,
             uint32_t instanceSize,
@@ -69,6 +81,11 @@ namespace Hmck {
 
     class Texture3D final: public ITexture {
     public:
+
+        Texture3D(Device &device)
+            : ITexture(device) {
+        }
+
         int depth{0};
 
         // Recommended format VK_FORMAT_R8_UNORM

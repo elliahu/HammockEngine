@@ -1,11 +1,6 @@
 #pragma once
 
-#define GLM_FORCE_RADIANS
-#define GLM_FORCE_DEPTH_ZERO_TO_ONE
-#include <glm/glm.hpp>
-#define GLM_ENABLE_EXPERIMENTAL
-#include <glm/gtx/matrix_decompose.hpp>
-
+#include <cassert>
 #include <functional>
 #include <filesystem>
 #include <fstream>
@@ -20,6 +15,7 @@
 #include "HmckLogger.h"
 #include "resources/HmckDescriptors.h"
 #include "resources/HmckBuffer.h"
+#include "HandmadeMath.h"
 
 namespace Hmck {
     class Logger;
@@ -807,29 +803,10 @@ namespace Hmck {
             return a + f * (b - a);
         }
 
-        inline glm::mat4 normal(glm::mat4 &model) {
-            return glm::transpose(glm::inverse(model));
+        inline HmckMat4 normal(HmckMat4 &model) {
+            return HmckTranspose(HmckInvGeneral(model));
         }
 
-        inline glm::vec3 decomposeTranslation(glm::mat4 &transform) {
-            return transform[3];
-        }
-
-        inline glm::vec3 decomposeRotation(glm::mat4 &transform) {
-            glm::vec3 scale, translation, skew;
-            glm::vec4 perspective;
-            glm::quat orientation;
-            glm::decompose(transform, scale, orientation, translation, skew, perspective);
-            return glm::eulerAngles(orientation);
-        }
-
-        inline glm::vec3 decomposeScale(glm::mat4 &transform) {
-            return {
-                glm::length(transform[0]),
-                glm::length(transform[1]),
-                glm::length(transform[2])
-            };
-        }
 
         inline uint32_t padSizeToMinAlignment(uint32_t originalSize, uint32_t minAlignment) {
             return (originalSize + minAlignment - 1) & ~(minAlignment - 1);
@@ -838,85 +815,24 @@ namespace Hmck {
         /**
          * Calculates the orbital position around a center point.
          *
-         * @param center      The center point of the orbit (glm::vec3).
+         * @param center      The center point of the orbit (Vec3).
          * @param radius      The radius of the orbit (float).
          * @param azimuth     The azimuth angle in radians (horizontal rotation, float).
          * @param elevation   The elevation angle in radians (vertical rotation, float).
-         * @return            The calculated orbital position (glm::vec3).
+         * @return            The calculated orbital position (Vec3).
          */
-        inline glm::vec3 orbitalPosition(const glm::vec3 &center, float radius, float azimuth, float elevation) {
+        inline HmckVec3 orbitalPosition(const HmckVec3 &center, float radius, float azimuth, float elevation) {
             // Calculate the position in spherical coordinates
             float x = radius * cos(elevation) * cos(azimuth);
             float y = radius * sin(elevation);
             float z = radius * cos(elevation) * sin(azimuth);
 
             // Translate the position relative to the center
-            glm::vec3 orbitalPosition = center + glm::vec3(x, y, z);
+            HmckVec3 orbitalPosition = center + HmckVec3{x, y, z};
             return orbitalPosition;
         }
 
-        /**
-         * Computes the Euler angles (pitch, yaw, roll) to orient an object to "look at" a target.
-         *
-         * @param position The position of the object (glm::vec3).
-         * @param target   The target position to look at (glm::vec3).
-         * @param up       The up vector for the object's orientation (glm::vec3).
-         * @return         The Euler angles (pitch, yaw, roll) as glm::vec3 in radians.
-         */
-        inline glm::vec3 lookAtEulerAngles(glm::vec3 position, glm::vec3 target, glm::vec3 up) {
-            // Calculate the direction vector from position to target
-            glm::vec3 direction = glm::normalize(target - position);
-
-            // Calculate pitch (rotation around X-axis)
-            float pitch = std::asin(-direction.y);
-
-            // Calculate yaw (rotation around Y-axis)
-            float yaw = std::atan2(direction.x, direction.z);
-
-            // Calculate roll (rotation around Z-axis)
-            // This is more complex as it requires computing the local right vector
-            glm::vec3 worldUp = glm::normalize(up);
-            glm::vec3 right = glm::normalize(glm::cross(direction, worldUp));
-            glm::vec3 correctedUp = glm::normalize(glm::cross(right, direction));
-
-            // Compute roll using the dot product between the corrected up and world up
-            float roll = std::atan2(
-                glm::dot(right, worldUp),
-                glm::dot(correctedUp, worldUp)
-            );
-
-            // Return Euler angles in radians (pitch, yaw, roll)
-            return glm::vec3(pitch, yaw, roll);
-        }
     }
 
-    namespace Rnd {
-        inline std::unique_ptr<Buffer> createSSAOKernel(Device &device, uint32_t kernelSize) {
-            std::default_random_engine rndEngine((unsigned) time(nullptr));
-            std::uniform_real_distribution<float> rndDist(0.0f, 1.0f);
 
-            std::vector<glm::vec4> ssaoKernel{kernelSize};
-            std::unique_ptr<Buffer> ssaoKernelBuffer{};
-
-            for (uint32_t i = 0; i < kernelSize; ++i) {
-                glm::vec3 sample(rndDist(rndEngine) * 2.0 - 1.0, rndDist(rndEngine) * 2.0 - 1.0, rndDist(rndEngine));
-                sample = glm::normalize(sample);
-                sample *= rndDist(rndEngine);
-                float scale = float(i) / float(kernelSize);
-                scale = Hmck::Math::lerp(0.1f, 1.0f, scale * scale);
-                ssaoKernel[i] = glm::vec4(sample * scale, 0.0f);
-            }
-
-            ssaoKernelBuffer = std::make_unique<Buffer>(
-                device,
-                ssaoKernel.size() * sizeof(glm::vec4),
-                1,
-                VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
-                VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT
-            );
-            ssaoKernelBuffer->map();
-            ssaoKernelBuffer->writeToBuffer(ssaoKernel.data());
-            return ssaoKernelBuffer;
-        }
-    }
 } // namespace Hmck

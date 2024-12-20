@@ -1,8 +1,4 @@
 #pragma once
-#define GLM_FORCE_RADIANS
-#define GLM_FORCE_DEPTH_ZERO_TO_ONE
-#include <glm/glm.hpp>
-
 #include <memory>
 #include <vector>
 #include <chrono>
@@ -11,9 +7,9 @@
 #include "core/HmckDevice.h"
 #include "core/HmckGraphicsPipeline.h"
 #include "IApp.h"
-#include "scene/HmckEntity.h"
-#include "scene/HmckScene.h"
-#include "core/HmckResourceManager.h"
+#include "core/HmckBindingTypes.h"
+#include "core/HmckDeviceStorage.h"
+#include "core/HmckRenderContext.h"
 #include "utils/HmckUtils.h"
 
 namespace Hmck {
@@ -32,27 +28,30 @@ namespace Hmck {
 
         void ui();
 
-        std::unique_ptr<Scene> scene{};
 
-        BufferHandle vertexBuffer;
-        BufferHandle indexBuffer;
 
-        std::vector<DescriptorSetHandle> descriptorSets{};
-        DescriptorSetLayoutHandle descriptorSetLayout;
-        std::vector<BufferHandle> buffers{};
+        RenderContext renderContext{window, device};
+
+        ResourceHandle<Buffer> vertexBuffer;
+        ResourceHandle<Buffer> indexBuffer;
+
+        std::vector<ResourceHandle<VkDescriptorSet>> descriptorSets{};
+        ResourceHandle<DescriptorSetLayout> descriptorSetLayout;
+        std::vector<ResourceHandle<Buffer>> buffers{};
 
         std::unique_ptr<GraphicsPipeline> pipeline{};
 
         struct BufferData {
-            glm::mat4 projection{1};
-            glm::mat4 view{1};
-            glm::mat4 inverseView{1};
-            glm::vec4 textureDim{1.f, 1.f, 1.f, 1.0f};
-            glm::vec4 sunPosition{-10.f, -10.f, 10.f, 1.f};
-            glm::vec4 baseSkyColor{0.043f, 0.043f, 0.043f, 0.0f};
-            glm::vec4 tissueColor{0.8f, 0.5f, 0.4f, 0.2f};
-            glm::vec4 fatColor{1.0f, 0.8f, 0.6f, 0.4f};
-            glm::vec4 boneColor{1.0f, 1.0f, 1.0f, 0.8f};
+            HmckMat4 inverseProjection{1};
+            HmckMat4 view{1};
+            HmckMat4 inverseView{1};
+            HmckVec4 textureDim{1.f, 1.f, 1.f, 1.0f};
+            HmckVec4 sunPosition{-10.f, -10.f, 10.f, 1.f};
+            HmckVec4 baseSkyColor{0.043f, 0.043f, 0.043f, 0.0f};
+            HmckVec4 tissueColor{0.8f, 0.5f, 0.4f, 0.2f};
+            HmckVec4 fatColor{1.0f, 0.8f, 0.6f, 0.4f};
+            HmckVec4 boneColor{1.0f, 1.0f, 1.0f, 0.8f};
+            HmckVec4 cameraPosition{0.f, 0.f, 0.f, 0.f};
         } bufferData;
 
         struct PushData {
@@ -67,6 +66,10 @@ namespace Hmck {
             int  nDotL = false;
         } pushData;
 
-        Texture3DHandle texture{};
+        ResourceHandle<Texture3D> texture{};
+
+        float radius = 2.0f, azimuth = 0.0f, elevation = 0.0f;
+        Vec3Padded cameraPosition{0.0f, 0.0f, 2.0f};
+        Vec3Padded cameraTarget{0.0f, 0.0f, -0.8f};
     };
 }

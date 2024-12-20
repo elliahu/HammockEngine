@@ -8,18 +8,36 @@
 #include <resources/HmckTexture.h>
 
 namespace Hmck {
-    typedef uint32_t BufferHandle;
-    typedef uint32_t DescriptorSetHandle;
-    typedef uint32_t DescriptorSetLayoutHandle;
-    typedef uint32_t Texture2DHandle;
-    typedef uint32_t TextureCubeMapHandle;
-    typedef uint32_t Texture3DHandle;
 
-    class ResourceManager {
+    typedef int32_t id_t;
+
+    template<typename ResourceType>
+    class ResourceHandle {
+    public:
+
+        explicit ResourceHandle(id_t id = 0) : id_(id) {
+        }
+
+
+        id_t id() const { return id_; }
+
+
+        bool isValid() const { return id_ != -1; }
+
+
+        bool operator==(const ResourceHandle &other) const { return id_ == other.id_; }
+
+        bool operator!=(const ResourceHandle &other) const { return id_ != other.id_; }
+
+    private:
+        id_t id_;
+    };
+
+    class DeviceStorage {
     public:
         static const uint32_t INVALID_HANDLE;
 
-        explicit ResourceManager(Device &device);
+        explicit DeviceStorage(Device &device);
 
         struct BufferCreateInfo {
             VkDeviceSize instanceSize;
@@ -30,7 +48,7 @@ namespace Hmck {
             bool map = true;
         };
 
-        [[nodiscard]] BufferHandle createBuffer(BufferCreateInfo createInfo) const;
+        [[nodiscard]] ResourceHandle<Buffer> createBuffer(BufferCreateInfo createInfo);
 
         struct VertexBufferCreateInfo {
             VkDeviceSize vertexSize;
@@ -39,7 +57,7 @@ namespace Hmck {
             VkBufferUsageFlags usageFlags = 0;
         };
 
-        [[nodiscard]] BufferHandle createVertexBuffer(const VertexBufferCreateInfo &createInfo);
+        [[nodiscard]] ResourceHandle<Buffer> createVertexBuffer(const VertexBufferCreateInfo &createInfo);
 
         struct IndexBufferCreateInfo {
             VkDeviceSize indexSize;
@@ -48,7 +66,7 @@ namespace Hmck {
             VkBufferUsageFlags usageFlags = 0;
         };
 
-        [[nodiscard]] BufferHandle createIndexBuffer(const IndexBufferCreateInfo &createInfo);
+        [[nodiscard]] ResourceHandle<Buffer> createIndexBuffer(const IndexBufferCreateInfo &createInfo);
 
         struct DescriptorSetLayoutCreateInfo {
             struct DescriptorSetLayoutBindingCreateInfo {
@@ -62,10 +80,11 @@ namespace Hmck {
             std::vector<DescriptorSetLayoutBindingCreateInfo> bindings;
         };
 
-        [[nodiscard]] DescriptorSetLayoutHandle createDescriptorSetLayout(const DescriptorSetLayoutCreateInfo &createInfo) const;
+        [[nodiscard]] ResourceHandle<DescriptorSetLayout> createDescriptorSetLayout(
+            const DescriptorSetLayoutCreateInfo &createInfo);
 
         struct DescriptorSetCreateInfo {
-            DescriptorSetLayoutHandle descriptorSetLayout;
+            ResourceHandle<DescriptorSetLayout> descriptorSetLayout;
 
             struct DescriptorSetWriteBufferInfo {
                 uint32_t binding;
@@ -99,9 +118,9 @@ namespace Hmck {
             std::vector<DescriptorSetWriteAccelerationStructureInfo> accelerationStructureWrites;
         };
 
-        [[nodiscard]] DescriptorSetHandle createDescriptorSet(const DescriptorSetCreateInfo &createInfo);
+        [[nodiscard]] ResourceHandle<VkDescriptorSet> createDescriptorSet(const DescriptorSetCreateInfo &createInfo);
 
-        static Texture2DHandle createTexture2D();
+        ResourceHandle<Texture2D> createEmptyTexture2D();
 
         struct Texture2DCreateSamplerInfo {
             bool createSampler = true;
@@ -124,17 +143,10 @@ namespace Hmck {
             VkImageLayout imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
             Texture2DCreateSamplerInfo samplerInfo{};
         };
+
         // Creates a 2D texture from buffer
         // Set createInfo.samplerInfo.maxLod > 1 to automatically generate mip maps
-        [[nodiscard]] Texture2DHandle createTexture2D(const Texture2DCreateFromBufferInfo &createInfo) const;
-
-        struct TextureCubeMapCreateFromFilesInfo {
-            std::vector<std::string> filenames;
-            VkFormat format;
-            VkImageLayout imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-        };
-
-        [[nodiscard]] TextureCubeMapHandle createTextureCubeMapFromFiles(const TextureCubeMapCreateFromFilesInfo &createInfo) const;
+        [[nodiscard]] ResourceHandle<Texture2D> createTexture2D(const Texture2DCreateFromBufferInfo &createInfo);
 
         struct Texture3DCreateSamplerInfo {
             bool createSampler = true;
@@ -142,7 +154,7 @@ namespace Hmck {
             VkSamplerAddressMode addressMode = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
         };
 
-        struct Texture3DCreateFromBufferInfo{
+        struct Texture3DCreateFromBufferInfo {
             const void *buffer;
             uint32_t instanceSize;
             uint32_t width;
@@ -154,76 +166,63 @@ namespace Hmck {
             Texture3DCreateSamplerInfo samplerInfo{};
         };
 
-        [[nodiscard]] Texture3DHandle createTexture3D(const Texture3DCreateFromBufferInfo &createInfo) const;
+        [[nodiscard]] ResourceHandle<Texture3D> createTexture3D(const Texture3DCreateFromBufferInfo &createInfo);
 
-        static DescriptorSetLayout &getDescriptorSetLayout(DescriptorSetLayoutHandle handle);
+        DescriptorSetLayout &getDescriptorSetLayout(ResourceHandle<DescriptorSetLayout> handle);
 
-        static VkDescriptorSet getDescriptorSet(DescriptorSetHandle handle);
+        VkDescriptorSet getDescriptorSet(ResourceHandle<VkDescriptorSet> handle);
 
-        static std::unique_ptr<Buffer> &getBuffer(BufferHandle handle);
+        std::unique_ptr<Buffer> &getBuffer(ResourceHandle<Buffer> handle);
 
-        static std::unique_ptr<Texture2D> &getTexture2D(Texture2DHandle handle);
+        std::unique_ptr<Texture2D> &getTexture2D(ResourceHandle<Texture2D> handle);
 
-        static VkDescriptorImageInfo getTexture2DDescriptorImageInfo(Texture2DHandle handle);
+        VkDescriptorImageInfo getTexture2DDescriptorImageInfo(ResourceHandle<Texture2D> handle);
 
-        static std::unique_ptr<TextureCubeMap> &getTextureCubeMap(TextureCubeMapHandle handle);
+        VkDescriptorImageInfo getTextureCubeMapDescriptorImageInfo(ResourceHandle<TextureCubeMap> handle);
 
-        static VkDescriptorImageInfo getTextureCubeMapDescriptorImageInfo(TextureCubeMapHandle handle);
+        std::unique_ptr<Texture3D> &getTexture3D(ResourceHandle<Texture3D> handle);
 
-        static std::unique_ptr<Texture3D> &getTexture3D(Texture3DHandle handle);
+        VkDescriptorImageInfo getTexture3DDescriptorImageInfo(ResourceHandle<Texture3D> handle);
 
-        static VkDescriptorImageInfo getTexture3DDescriptorImageInfo(Texture3DHandle handle);
-
-        static void bindDescriptorSet(
+        void bindDescriptorSet(
             VkCommandBuffer commandBuffer,
             VkPipelineBindPoint bindPoint,
             VkPipelineLayout pipelineLayout,
             uint32_t firstSet,
             uint32_t descriptorCount,
-            DescriptorSetHandle descriptorSet,
+            ResourceHandle<VkDescriptorSet> descriptorSet,
             uint32_t dynamicOffsetCount,
             const uint32_t *pDynamicOffsets);
 
-        static void bindVertexBuffer(BufferHandle vertexBuffer, BufferHandle indexBuffer, VkCommandBuffer commandBuffer,
-                                     VkIndexType indexType = VK_INDEX_TYPE_UINT32);
+        void bindVertexBuffer(ResourceHandle<Buffer> vertexBuffer, ResourceHandle<Buffer> indexBuffer, VkCommandBuffer commandBuffer,
+                              VkIndexType indexType = VK_INDEX_TYPE_UINT32);
 
-        static void bindVertexBuffer(BufferHandle handle, VkCommandBuffer commandBuffer);
+        void bindVertexBuffer(ResourceHandle<Buffer> handle, VkCommandBuffer commandBuffer);
 
-        static void bindIndexBuffer(BufferHandle handle, VkCommandBuffer commandBuffer,
-                                    VkIndexType indexType = VK_INDEX_TYPE_UINT32);
+        void bindIndexBuffer(ResourceHandle<Buffer> handle, VkCommandBuffer commandBuffer,
+                             VkIndexType indexType = VK_INDEX_TYPE_UINT32);
 
-        static void destroyBuffer(BufferHandle handle);
+        void destroyBuffer(ResourceHandle<Buffer> handle);
 
-        static void destroyDescriptorSetLayout(DescriptorSetLayoutHandle handle);
+        void destroyDescriptorSetLayout(ResourceHandle<DescriptorSetLayout> handle);
 
-        void destroyTexture2D(Texture2DHandle handle) const;
+        void destroyTexture2D(ResourceHandle<Texture2D> handle);
 
-        void destroyTextureCubeMap(TextureCubeMapHandle handle) const;
 
-        void destroyTexture3D(Texture3DHandle handle) const;
+        void destroyTexture3D(ResourceHandle<Texture3D> handle);
 
-        void copyBuffer(BufferHandle from, BufferHandle to) const;
+        void copyBuffer(ResourceHandle<Buffer> from, ResourceHandle<Buffer> to);
 
     private:
         Device &device;
         std::unique_ptr<DescriptorPool> descriptorPool;
 
-        // descriptors and buffer
-        static std::unordered_map<BufferHandle, std::unique_ptr<Buffer> > buffers;
-        static std::unordered_map<DescriptorSetHandle, VkDescriptorSet> descriptorSets;
-        static std::unordered_map<DescriptorSetLayoutHandle, std::unique_ptr<DescriptorSetLayout> >
+        std::unordered_map<id_t, std::unique_ptr<Buffer> > buffers;
+        std::unordered_map<id_t, VkDescriptorSet> descriptorSets;
+        std::unordered_map<id_t, std::unique_ptr<DescriptorSetLayout> >
         descriptorSetLayouts;
+        std::unordered_map<id_t, std::unique_ptr<Texture2D> > texture2Ds;
+        std::unordered_map<id_t, std::unique_ptr<Texture3D> > texture3Ds;
 
-        // textures
-        static std::unordered_map<Texture2DHandle, std::unique_ptr<Texture2D> > texture2Ds;
-        static std::unordered_map<Texture2DHandle, std::unique_ptr<TextureCubeMap> > textureCubeMaps;
-        static std::unordered_map<Texture3DHandle, std::unique_ptr<Texture3D> > texture3Ds;
-
-        static uint32_t buffersLastHandle;
-        static uint32_t descriptorSetsLastHandle;
-        static uint32_t descriptorSetLayoutsLastHandle;
-        static uint32_t texture2DsLastHandle;
-        static uint32_t textureCubeMapsLastHandle;
-        static uint32_t texture3DsLastHandle;
     };
 }

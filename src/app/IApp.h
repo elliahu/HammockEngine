@@ -1,9 +1,10 @@
 #pragma once
 #include <io/HmckWindow.h>
 #include <core/HmckDevice.h>
-#include <core/HmckResourceManager.h>
+#include <core/HmckDeviceStorage.h>
 
 #include "core/HmckVulkanInstance.h"
+#include "scene/HmckGeometry.h"
 
 namespace Hmck {
     class IApp {
@@ -35,6 +36,7 @@ namespace Hmck {
         Window window{WINDOW_WIDTH, WINDOW_HEIGHT, "Hammock Engine"};
         VulkanInstance instance;
         Device device;
-        ResourceManager resources{device};
+        DeviceStorage deviceStorage{device};
+        Geometry state{};
     };
 }

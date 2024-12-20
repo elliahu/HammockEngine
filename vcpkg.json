@@ -6,9 +6,6 @@
     "name" : "glfw3",
     "version>=" : "3.4#1"
   }, {
-    "name" : "glm",
-    "version>=" : "1.0.1#3"
-  }, {
     "name" : "vcpkg-cmake-config",
     "version>=" : "2024-05-23"
   }, {

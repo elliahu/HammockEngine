@@ -1,64 +1,21 @@
 #pragma once
-#define GLM_FORCE_RADIANS
-#define GLM_FORCE_DEPTH_ZERO_TO_ONE
-#include <glm/glm.hpp>
 
 #include <memory>
 #include <vector>
 #include <chrono>
 
 #include "core/HmckDevice.h"
-#include "core/HmckRenderer.h"
+#include "core/HmckRenderContext.h"
 #include "resources/HmckDescriptors.h"
 #include "IApp.h"
-#include "scene/HmckEntity.h"
-#include "scene/HmckScene.h"
-#include "core/HmckResourceManager.h"
+#include "core/HmckBindingTypes.h"
+#include "core/HmckDeviceStorage.h"
 #include "core/HmckGraphicsPipeline.h"
 #include "utils/HmckBenchmarkRunner.h"
-
 
 namespace Hmck {
     class PBRApp final : public IApp, public BenchmarkRunner {
     public:
-        struct SceneBufferData {
-            glm::mat4 projection{1.f};
-            glm::mat4 view{1.f};
-            glm::mat4 inverseView{1.f};
-
-            float exposure = 4.5f;
-            float gamma = 1.0f;
-            float whitePoint = 11.2f;
-
-            struct OmniLight {
-                glm::vec4 position;
-                glm::vec4 color;
-                float linear = 1.0f;
-                float quadratic = 1.0f;
-                float _padding1 = 0.0f;     // 4 bytes
-                float _padding2 = 0.0f;     // 4 bytes
-            } omniLights[1000];
-
-            uint32_t numOmniLights = 0;
-        };
-
-        struct EntityBufferData {
-            glm::mat4 model{1.f};
-            glm::mat4 normal{1.f};
-        };
-
-        struct PrimitiveBufferData {
-            glm::vec4 baseColorFactor{1.0f, 1.0f, 1.0f, 1.0f};
-            uint32_t baseColorTextureIndex = TextureIndex::Invalid;
-            uint32_t normalTextureIndex = TextureIndex::Invalid;
-            uint32_t metallicRoughnessTextureIndex = TextureIndex::Invalid;
-            uint32_t occlusionTextureIndex = TextureIndex::Invalid;
-            float alphaMode = 1.0f;
-            float alphaCutOff = 0.5f;
-            float metallicFactor = 0.0f;
-            float roughnessFactor = 1.0f;
-        };
-
         PBRApp();
 
         ~PBRApp() override;
@@ -70,57 +27,50 @@ namespace Hmck {
 
         void init();
 
-        enum class RenderMode {
-            OPAQUE_EXCLUSIVE,
-            TRANSPARENT_EXCLUSIVE,
-        };
-        void renderEntity(
-            uint32_t frameIndex,
-            VkCommandBuffer commandBuffer,
-            std::unique_ptr<GraphicsPipeline> &pipeline,
-            const std::shared_ptr<Entity> &entity, RenderMode renderMode);
-
     private:
-        void createPipelines(const Renderer &renderer);
+        void createPipelines(const RenderContext &renderer);
 
-        std::unique_ptr<Scene> scene{};
+        // Data
+        GlobalDataBuffer globalBuffer{};
+        FrameDataBuffer projectionBuffer{};
+        PushBlockDataBuffer meshPushBlock{};
+
+        float radius = 1.0f, azimuth = 0.0f, elevation = 0.0f;
 
         struct {
-            BufferHandle vertexBuffer;
-            BufferHandle indexBuffer;
+            ResourceHandle<Texture2D> environmentMap;
+            ResourceHandle<Texture2D> prefilteredEnvMap;
+            ResourceHandle<Texture2D> irradianceMap;
+            ResourceHandle<Texture2D> brdfLut;
+        } environment;
+
+        struct {
+            ResourceHandle<Buffer> vertexBuffer;
+             ResourceHandle<Buffer> indexBuffer;
             uint32_t numTriangles = 0;
         } geometry;
 
         // Descriptors
-        // per frame (scene info updated every frame)
+        // global descriptor
         struct {
-            std::vector<DescriptorSetHandle> descriptorSets{};
-            DescriptorSetLayoutHandle descriptorSetLayout;
-            std::vector<BufferHandle> sceneBuffers{};
+            std::vector<ResourceHandle<VkDescriptorSet>> descriptorSets;
+            ResourceHandle<DescriptorSetLayout> descriptorSetLayout;
+            std::vector<ResourceHandle<Buffer>> buffers;
             Binding binding = 0;
-        } sceneDescriptors;
+        } globalDescriptors;
 
-        // per entity
         struct {
-            std::unordered_map<EntityHandle, DescriptorSetHandle> descriptorSets{};
-            DescriptorSetLayoutHandle descriptorSetLayout;
-            std::unordered_map<EntityHandle, BufferHandle> entityBuffers{};
+            std::vector<ResourceHandle<VkDescriptorSet>> descriptorSets{};
+            ResourceHandle<DescriptorSetLayout> descriptorSetLayout;
+            std::vector<ResourceHandle<Buffer>> buffers{};
             Binding binding = 1;
-        } entityDescriptors;
-
-        // per primitive
-        struct {
-            std::vector<DescriptorSetHandle> descriptorSets{};
-            DescriptorSetLayoutHandle descriptorSetLayout;
-            std::vector<BufferHandle> primitiveBuffers{};
-            Binding binding = 2;
-        } primitiveDescriptors;
+        } projectionDescriptors;
 
         // composition descriptors
         struct {
-            std::vector<DescriptorSetHandle> descriptorSets{};
-            DescriptorSetLayoutHandle descriptorSetLayout;
-            Binding binding = 3;
+            std::vector<ResourceHandle<VkDescriptorSet>> descriptorSets{};
+            ResourceHandle<DescriptorSetLayout> descriptorSetLayout;
+            Binding binding = 2;
         } compositionDescriptors;
 
 

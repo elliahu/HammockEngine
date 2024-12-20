@@ -1,9 +1,5 @@
 #pragma once
 
-#define GLM_FORCE_RADIANS
-#define GLM_FORCE_DEPTH_ZERO_TO_ONE
-#include <glm/glm.hpp>
-
 #include <memory>
 #include <vector>
 #include <cassert>
@@ -13,7 +9,6 @@
 #include "HmckSwapChain.h"
 #include "io/HmckUserInterface.h"
 #include "HmckFramebuffer.h"
-#include "scene/HmckScene.h"
 
 // black clear color
 #define HMCK_CLEAR_COLOR {0.f,0.f,0.f} //{ 0.f,171.f / 255.f,231.f / 255.f,1.f }
@@ -25,16 +20,16 @@
 #define SSAO_RES_MULTIPLIER 1.0
 
 namespace Hmck {
-    class Renderer {
+    class RenderContext {
     public:
-        Renderer(Window &window, Device &device);
+        RenderContext(Window &window, Device &device);
 
-        ~Renderer();
+        ~RenderContext();
 
         // delete copy constructor and copy destructor
-        Renderer(const Renderer &) = delete;
+        RenderContext(const RenderContext &) = delete;
 
-        Renderer &operator=(const Renderer &) = delete;
+        RenderContext &operator=(const RenderContext &) = delete;
 
         [[nodiscard]] VkRenderPass getSwapChainRenderPass() const { return hmckSwapChain->getRenderPass(); }
         [[nodiscard]] float getAspectRatio() const { return hmckSwapChain->extentAspectRatio(); }
