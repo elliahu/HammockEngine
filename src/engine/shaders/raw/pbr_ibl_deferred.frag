@@ -117,6 +117,9 @@ void main()
     float gamma = projection.exposureGammaWhitePoint.y;
     float whitePoint = projection.exposureGammaWhitePoint.z;
 
+    if (transparencyWeight > 0.0) {
+        albedo = (albedo * (1.0 - transparencyWeight)) + (accumulatedColor * transparencyWeight);
+    }
 
     if (material == vec4(-1.0)) // Background pixels are skipped
     {
@@ -147,10 +150,7 @@ void main()
 
     vec3 color = ambient * ao;
 
-    // Combine the color with the accumulation buffer
-    if (transparencyWeight > 0.0) {
-        color = (color + accumulatedColor) / (transparencyWeight + 1.0);
-    }
+
 
     // Tone mapping
     color = Uncharted2Tonemap(color * exposure);
