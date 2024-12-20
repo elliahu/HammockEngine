@@ -58,12 +58,12 @@ void Hmck::PBRApp::run() {
 
             // do per frame calculations
 
-            if(window.getInputHandler().isKeyboardKeyDown(HMCK_KEY_A)) azimuth -= 1.f * frameTime;
-            if(window.getInputHandler().isKeyboardKeyDown(HMCK_KEY_D)) azimuth += 1.f * frameTime;
-            if(window.getInputHandler().isKeyboardKeyDown(HMCK_KEY_W)) elevation += 1.f * frameTime;
-            if(window.getInputHandler().isKeyboardKeyDown(HMCK_KEY_S)) elevation -= 1.f * frameTime;
-            if(window.getInputHandler().isKeyboardKeyDown(HMCK_KEY_DOWN)) radius += 1.f * frameTime;
-            if(window.getInputHandler().isKeyboardKeyDown(HMCK_KEY_UP)) radius -= 1.f * frameTime;
+            if(window.getInputHandler().isKeyboardKeyDown(KEY_A)) azimuth -= 1.f * frameTime;
+            if(window.getInputHandler().isKeyboardKeyDown(KEY_D)) azimuth += 1.f * frameTime;
+            if(window.getInputHandler().isKeyboardKeyDown(KEY_W)) elevation += 1.f * frameTime;
+            if(window.getInputHandler().isKeyboardKeyDown(KEY_S)) elevation -= 1.f * frameTime;
+            if(window.getInputHandler().isKeyboardKeyDown(KEY_DOWN)) radius += 1.f * frameTime;
+            if(window.getInputHandler().isKeyboardKeyDown(KEY_UP)) radius -= 1.f * frameTime;
             HmckVec3 pos = Math::orbitalPosition(HmckVec3{.0f,.0f,.0f}, radius, azimuth, elevation);
 
             // write to projection buffer

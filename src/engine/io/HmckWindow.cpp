@@ -16,7 +16,7 @@ void Hmck::Window::initWindow(const int width, const int height) {
     window = glfwCreateWindow(width, height, windowName.c_str(), nullptr, nullptr);
     glfwSetWindowUserPointer(window, this);
     glfwSetFramebufferSizeCallback(window, framebufferResizeCallback);
-    setWindowMode(HMCK_WINDOW_MODE_WINDOWED);
+    setWindowMode(WINDOW_MODE_WINDOWED);
 }
 
 void Hmck::Window::framebufferResizeCallback(GLFWwindow *window, int width, int height) {
@@ -24,7 +24,7 @@ void Hmck::Window::framebufferResizeCallback(GLFWwindow *window, int width, int 
     window_->framebufferResized = true;
     window_->width = width;
     window_->height = height;
-    window_->trigger(WINDOW_RESIZED, nullptr);
+    window_->trigger(RESIZED, nullptr);
 }
 
 
@@ -61,10 +61,10 @@ void Hmck::Window::getCursorPosition(double &x, double &y) const {
 
 void Hmck::Window::setWindowMode(const WindowMode mode) const {
     const GLFWvidmode *vidmode = glfwGetVideoMode(monitors[monitorIndex]);
-    if (mode == HMCK_WINDOW_MODE_FULLSCREEN) {
+    if (mode == WINDOW_MODE_FULLSCREEN) {
         // fullscreen
         glfwSetWindowMonitor(window, monitors[monitorIndex], 0, 0, width, height, vidmode->refreshRate);
-    } else if (mode == HMCK_WINDOW_MODE_BORDERLESS) {
+    } else if (mode == WINDOW_MODE_BORDERLESS) {
         // FIXME doesn't work
         // borderless fullscreen
         glfwWindowHint(GLFW_RED_BITS, vidmode->redBits);
@@ -73,7 +73,7 @@ void Hmck::Window::setWindowMode(const WindowMode mode) const {
         glfwWindowHint(GLFW_REFRESH_RATE, vidmode->refreshRate);
         glfwWindowHint(GLFW_DECORATED, GLFW_FALSE);
         glfwSetWindowMonitor(window, nullptr, 0, 0, vidmode->width, vidmode->height, vidmode->refreshRate);
-    } else if (mode == HMCK_WINDOW_MODE_WINDOWED) {
+    } else if (mode == WINDOW_MODE_WINDOWED) {
         // windowed
         glfwWindowHint(GLFW_DECORATED, GLFW_TRUE);
         glfwSetWindowMonitor(window, nullptr, 450, 450, width, height, vidmode->refreshRate);

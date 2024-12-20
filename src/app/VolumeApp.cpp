@@ -64,12 +64,12 @@ void Hmck::VolumeApp::run() {
         currentTime = newTime;
         elapsedTime += frameTime;
 
-        if (window.getInputHandler().isKeyboardKeyDown(HMCK_KEY_A)) azimuth -= 1.f * frameTime;
-        if (window.getInputHandler().isKeyboardKeyDown(HMCK_KEY_D)) azimuth += 1.f * frameTime;
-        if (window.getInputHandler().isKeyboardKeyDown(HMCK_KEY_W)) elevation += 1.f * frameTime;
-        if (window.getInputHandler().isKeyboardKeyDown(HMCK_KEY_S)) elevation -= 1.f * frameTime;
-        if (window.getInputHandler().isKeyboardKeyDown(HMCK_KEY_DOWN)) radius += 1.f * frameTime;
-        if (window.getInputHandler().isKeyboardKeyDown(HMCK_KEY_UP)) radius -= 1.f * frameTime;
+        if (window.getInputHandler().isKeyboardKeyDown(KEY_A)) azimuth -= 1.f * frameTime;
+        if (window.getInputHandler().isKeyboardKeyDown(KEY_D)) azimuth += 1.f * frameTime;
+        if (window.getInputHandler().isKeyboardKeyDown(KEY_W)) elevation += 1.f * frameTime;
+        if (window.getInputHandler().isKeyboardKeyDown(KEY_S)) elevation -= 1.f * frameTime;
+        if (window.getInputHandler().isKeyboardKeyDown(KEY_DOWN)) radius += 1.f * frameTime;
+        if (window.getInputHandler().isKeyboardKeyDown(KEY_UP)) radius -= 1.f * frameTime;
         cameraPosition.value = Math::orbitalPosition(cameraTarget.value, HmckClamp(0.f, radius, 10.0f), azimuth,
                                                      elevation);
 
