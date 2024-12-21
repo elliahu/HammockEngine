@@ -9,10 +9,11 @@ LRESULT CALLBACK WindowProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam) 
 
     switch (uMsg) {
         case WM_CLOSE:
-            PostQuitMessage(0);
+            window->_shouldClose = true;
+            DestroyWindow(hWnd); // This will trigger WM_DESTROY
             return 0;
         case WM_DESTROY:
-
+            SetWindowLongPtr(hWnd, GWLP_USERDATA, 0); // Clear user data
             PostQuitMessage(0);
             return 0;
         case WM_PAINT:
@@ -144,13 +145,39 @@ Hmck::Window::Window(VulkanInstance &instance, const std::string &_windowName, i
 }
 
 Hmck::Window::~Window() {
-    vkDestroySurfaceKHR(instance.getInstance(), surface, nullptr);
+    // Clear any resources that depend on the window
+    keymap.clear();
+    resizing = false;
+    framebufferResized = false;
+
+    if (surface != VK_NULL_HANDLE) {
+        vkDestroySurfaceKHR(instance.getInstance(), surface, nullptr);
+        surface = VK_NULL_HANDLE;
+    }
 
 #if defined(_WIN32)
-    if (hWnd) {
-        DestroyWindow(hWnd);
+    // Clear message queue for this window
+    MSG msg;
+    while (PeekMessage(&msg, hWnd, 0, 0, PM_REMOVE)) {
+        TranslateMessage(&msg);
+        DispatchMessage(&msg);
     }
-    UnregisterClass(windowName.c_str(), GetModuleHandle(nullptr));
+
+    if (hWnd) {
+        // Don't destroy if already being destroyed
+        if (IsWindow(hWnd)) {
+            // This triggers WM_DESTROY
+            DestroyWindow(hWnd);
+        }
+        hWnd = nullptr;
+    }
+
+    // Only unregister if we're the last window using this class
+    WNDCLASSEX wc = {};
+    wc.cbSize = sizeof(WNDCLASSEX);
+    if (GetClassInfoEx(GetModuleHandle(nullptr), windowName.c_str(), &wc)) {
+        UnregisterClass(windowName.c_str(), GetModuleHandle(nullptr));
+    }
 #endif
 }
 
@@ -177,15 +204,12 @@ Hmck::KeyState Hmck::Window::getKeyState(Keycode key) {
 }
 
 bool Hmck::Window::shouldClose() const {
-#if defined(_WIN32)
-    return msg.message == WM_QUIT;
-#endif
+return _shouldClose;
 }
 
 void Hmck::Window::pollEvents() {
 #if defined(_WIN32)
-    keymap.clear();
-    if (PeekMessage(&msg, nullptr, 0, 0, PM_REMOVE)) {
+    while (PeekMessage(&msg, nullptr, 0, 0, PM_REMOVE)) {
         TranslateMessage(&msg);
         DispatchMessage(&msg);
     }

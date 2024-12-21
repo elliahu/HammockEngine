@@ -68,8 +68,8 @@ void Hmck::VolumeApp::run() {
         if(window.getKeyState(KEY_D) == KeyState::DOWN) azimuth += 1.f * frameTime;
         if(window.getKeyState(KEY_W) == KeyState::DOWN) elevation += 1.f * frameTime;
         if(window.getKeyState(KEY_S) == KeyState::DOWN) elevation -= 1.f * frameTime;
-        if(window.getKeyState(KEY_UP) == KeyState::DOWN) radius += 1.f * frameTime;
-        if(window.getKeyState(KEY_DOWN) == KeyState::DOWN) radius -= 1.f * frameTime;
+        if(window.getKeyState(KEY_UP) == KeyState::DOWN) radius -= 1.f * frameTime;
+        if(window.getKeyState(KEY_DOWN) == KeyState::DOWN) radius += 1.f * frameTime;
         cameraPosition.value = Math::orbitalPosition(cameraTarget.value, HmckClamp(0.f, radius, 10.0f), azimuth,
                                                      elevation);
 

@@ -62,8 +62,8 @@ void Hmck::PBRApp::run() {
             if(window.getKeyState(KEY_D) == KeyState::DOWN) azimuth += 1.f * frameTime;
             if(window.getKeyState(KEY_W) == KeyState::DOWN) elevation += 1.f * frameTime;
             if(window.getKeyState(KEY_S) == KeyState::DOWN) elevation -= 1.f * frameTime;
-            if(window.getKeyState(KEY_UP) == KeyState::DOWN) radius += 1.f * frameTime;
-            if(window.getKeyState(KEY_DOWN) == KeyState::DOWN) radius -= 1.f * frameTime;
+            if(window.getKeyState(KEY_UP) == KeyState::DOWN) radius -= 1.f * frameTime;
+            if(window.getKeyState(KEY_DOWN) == KeyState::DOWN) radius += 1.f * frameTime;
             HmckVec3 pos = Math::orbitalPosition(HmckVec3{.0f,.0f,.0f}, radius, azimuth, elevation);
 
             // write to projection buffer

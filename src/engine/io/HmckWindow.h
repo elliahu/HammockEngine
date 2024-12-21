@@ -44,6 +44,7 @@ namespace Hmck {
         int width;
         int height;
         bool framebufferResized = false;
+        bool _shouldClose = false;
         std::string windowName;
 
 #if defined(_WIN32)
