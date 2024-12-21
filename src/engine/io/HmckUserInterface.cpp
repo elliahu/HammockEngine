@@ -1,6 +1,8 @@
 #include "HmckUserInterface.h"
 #include "core/HmckGraphicsPipeline.h"
-#include "backends/imgui_impl_glfw.h"
+#if defined(_WIN32)
+#include "backends/imgui_impl_win32.h"
+#endif
 #include "backends/imgui_impl_vulkan.h"
 #include "utils/HmckUtils.h"
 #include <deque>
@@ -16,13 +18,17 @@ Hmck::UserInterface::UserInterface(Device &device, const VkRenderPass renderPass
 Hmck::UserInterface::~UserInterface() {
     vkDestroyDescriptorPool(device.device(), imguiPool, nullptr);
     ImGui_ImplVulkan_Shutdown();
-    ImGui_ImplGlfw_Shutdown();
+#if defined(_WIN32)
+    ImGui_ImplWin32_Shutdown();
+#endif
     ImGui::DestroyContext();
 }
 
 void Hmck::UserInterface::beginUserInterface() {
     ImGui_ImplVulkan_NewFrame();
-    ImGui_ImplGlfw_NewFrame();
+#if defined(_WIN32)
+    ImGui_ImplWin32_NewFrame();
+#endif
     ImGui::NewFrame();
 }
 
@@ -104,7 +110,10 @@ void Hmck::UserInterface::init() {
     ImGui::CreateContext();
 
     // initialize for glfw
-    ImGui_ImplGlfw_InitForVulkan(window.getGLFWwindow(), true);
+#if defined(_WIN32)
+    ImGui_ImplWin32_Init(window.hWnd);
+#endif
+
 
     //this initializes imgui for Vulkan
     ImGui_ImplVulkan_InitInfo init_info = {};
@@ -116,16 +125,15 @@ void Hmck::UserInterface::init() {
     init_info.MinImageCount = 3;
     init_info.ImageCount = 3;
     init_info.MSAASamples = VK_SAMPLE_COUNT_1_BIT;
+    init_info.RenderPass = renderPass;
 
-    ImGui_ImplVulkan_Init(&init_info, renderPass);
+    ImGui_ImplVulkan_Init(&init_info);
 
     //execute a gpu command to upload imgui font textures
-    VkCommandBuffer command_buffer = beginSingleTimeCommands();
-    ImGui_ImplVulkan_CreateFontsTexture(command_buffer);
-    endSingleTimeCommands(command_buffer);
+    ImGui_ImplVulkan_CreateFontsTexture();
 
     //clear font textures from cpu data
-    ImGui_ImplVulkan_DestroyFontUploadObjects();
+
 
     //add then destroy the imgui created structures
     // done in the destructor

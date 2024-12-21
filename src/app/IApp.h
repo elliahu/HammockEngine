@@ -12,10 +12,8 @@ namespace Hmck {
         static constexpr int WINDOW_WIDTH = 1920;
         static constexpr int WINDOW_HEIGHT = 1080;
 
-        IApp() : device(instance, window.getSurface()) {
-#ifndef NDEBUG
-            window.printMonitorInfo();
-#endif
+        IApp()
+            : device(instance, window.getSurface()) {
         }
 
         virtual ~IApp() {
@@ -32,7 +30,7 @@ namespace Hmck {
         virtual void load() = 0;
 
         VulkanInstance instance;
-        Window window{instance, WINDOW_WIDTH, WINDOW_HEIGHT, "Hammock Engine"};
+        Window window{instance, "Hammock Engine", WINDOW_WIDTH, WINDOW_HEIGHT};
         Device device;
         DeviceStorage deviceStorage{device};
         Geometry state{};

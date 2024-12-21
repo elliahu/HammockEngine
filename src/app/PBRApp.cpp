@@ -58,12 +58,12 @@ void Hmck::PBRApp::run() {
 
             // do per frame calculations
 
-            if(window.isKeyDown('a')) azimuth -= 1.f * frameTime;
-            if(window.isKeyDown('d')) azimuth += 1.f * frameTime;
-            if(window.isKeyDown('w')) elevation += 1.f * frameTime;
-            if(window.isKeyDown('s')) elevation -= 1.f * frameTime;
-            if(window.isKeyDown(Window::Key::arrowUp)) radius += 1.f * frameTime;
-            if(window.isKeyDown(Window::Key::arrowDown)) radius -= 1.f * frameTime;
+            if(window.getKeyState(KEY_A) == KeyState::DOWN) azimuth -= 1.f * frameTime;
+            if(window.getKeyState(KEY_D) == KeyState::DOWN) azimuth += 1.f * frameTime;
+            if(window.getKeyState(KEY_W) == KeyState::DOWN) elevation += 1.f * frameTime;
+            if(window.getKeyState(KEY_S) == KeyState::DOWN) elevation -= 1.f * frameTime;
+            if(window.getKeyState(KEY_UP) == KeyState::DOWN) radius += 1.f * frameTime;
+            if(window.getKeyState(KEY_DOWN) == KeyState::DOWN) radius -= 1.f * frameTime;
             HmckVec3 pos = Math::orbitalPosition(HmckVec3{.0f,.0f,.0f}, radius, azimuth, elevation);
 
             // write to projection buffer
@@ -117,8 +117,8 @@ void Hmck::PBRApp::run() {
             // Draw opaque, bind push block for each mesh
             for (int i = 0; i < state.renderMeshes.size(); i++) {
                 Geometry::MeshInstance &mesh = state.renderMeshes[i];
-                if ((mesh.visibilityFlags & Geometry::VisibilityFlags::VISIBLE) ==  Geometry::VisibilityFlags::NONE) { continue;}
-                if (mesh.visibilityFlags & Geometry::VisibilityFlags::OPAQUE) {
+                if ((mesh.visibilityFlags & Geometry::VisibilityFlags::VISIBILITY_VISIBLE) ==  Geometry::VisibilityFlags::VISIBILITY_NONE) { continue;}
+                if (mesh.visibilityFlags & Geometry::VisibilityFlags::VISIBILITY_OPAQUE) {
                     meshPushBlock.modelMat = mesh.transform;
                     meshPushBlock.meshIndex = i;
 
@@ -144,8 +144,8 @@ void Hmck::PBRApp::run() {
             // Draw transparent, bind push block for each mesh
             for (int i = 0; i < state.renderMeshes.size(); i++) {
                 Geometry::MeshInstance &mesh = state.renderMeshes[i];
-                if ((mesh.visibilityFlags & Geometry::VisibilityFlags::VISIBLE) ==  Geometry::VisibilityFlags::NONE) { continue;}
-                if (mesh.visibilityFlags & Geometry::VisibilityFlags::BLEND) {
+                if ((mesh.visibilityFlags & Geometry::VisibilityFlags::VISIBILITY_VISIBLE) ==  Geometry::VisibilityFlags::VISIBILITY_NONE) { continue;}
+                if (mesh.visibilityFlags & Geometry::VisibilityFlags::VISIBILITY_BLEND) {
                     meshPushBlock.modelMat = mesh.transform;
                     meshPushBlock.meshIndex = i;
 

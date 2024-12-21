@@ -18,9 +18,17 @@ target_include_directories(hammock_engine PUBLIC $ENV{VULKAN_SDK}/Include)
 target_include_directories(hammock_engine PUBLIC ${PROJECT_SOURCE_DIR}/external)
 target_include_directories(hammock_engine PUBLIC ${PROJECT_SOURCE_DIR}/external/imgui)
 
+# Add platform specific defines
+if(WIN32)
+    target_compile_definitions(hammock_engine PRIVATE VK_USE_PLATFORM_WIN32_KHR)
+    target_link_libraries(hammock_engine PRIVATE Dwmapi)
+elseif(UNIX AND NOT APPLE)
+    target_compile_definitions(hammock_engine PRIVATE VK_USE_PLATFORM_WAYLAND_KHR)
+elseif(APPLE)
+    target_compile_definitions(hammock_engine PRIVATE VK_USE_PLATFORM_METAL_EXT)
+endif()
+
 # Link dependencies
 find_package(Vulkan REQUIRED)
 target_link_libraries(hammock_engine PUBLIC Vulkan::Vulkan)
 
-find_package(glfw3 CONFIG REQUIRED)
-target_link_libraries(hammock_engine PUBLIC glfw)

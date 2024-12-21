@@ -1,176 +1,180 @@
 #include "HmckWindow.h"
 
-#include "scene/HmckAssetDelivery.h"
+#include "utils/HmckLogger.h"
+#include "HmckKeycodes.h"
 
-Hmck::Window::Window(VulkanInstance &vulkanInstance, const int windowWidth, const int windowHeight,
-                     const std::string &_windowName) : instance{vulkanInstance}, width{windowWidth},
-                                                       height{windowHeight}, windowName{_windowName} {
-    TinyWindow::windowSetting_t defaultSetting;
-    defaultSetting.name = _windowName.c_str();
-    defaultSetting.resolution = TinyWindow::vec2_t<unsigned int>(windowWidth, windowHeight);
-    defaultSetting.SetProfile(TinyWindow::profile_t::core);
-    defaultSetting.currentState = TinyWindow::state_t::maximized;
-    defaultSetting.enableSRGB = true;
+#if defined(_WIN32)
+LRESULT CALLBACK WindowProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam) {
+    Hmck::Window *window = reinterpret_cast<Hmck::Window *>(GetWindowLongPtr(hWnd, GWLP_USERDATA));
 
-    manager = std::unique_ptr<TinyWindow::windowManager>();
-    window = std::unique_ptr<TinyWindow::tWindow>(manager->AddWindow(defaultSetting));
+    if (window == nullptr) {
+        // Handle case where the window is not yet initialized.
+        return DefWindowProc(hWnd, uMsg, wParam, lParam);
+    }
 
-    auto onResize = [this](TinyWindow::tWindow *window, const TinyWindow::vec2_t<unsigned int> &windowSize) {
-        // do the actuall resize
-        this->framebufferResized = true;
-        this->width = windowSize.x;
-        this->height = windowSize.y;
+    switch (uMsg) {
+        case WM_CREATE: {
+            // Store the `Window` pointer
+            CREATESTRUCT *cs = reinterpret_cast<CREATESTRUCT *>(lParam);
+            SetWindowLongPtr(hWnd, GWLP_USERDATA, reinterpret_cast<LONG_PTR>(cs->lpCreateParams));
+            return 0;
+        }
+        case WM_CLOSE:
+            PostQuitMessage(0);
+            return 0;
+        case WM_DESTROY:
+            PostQuitMessage(0);
+            return 0;
+        case WM_PAINT:
+            ValidateRect(hWnd, NULL);
+            return 0;
+        case WM_KEYDOWN:
+            if (window) {
+                window->onKeyDown(wParam);
+            }
+            return 0;
+        case WM_KEYUP:
+            if (window) {
+                window->onKeyUp(wParam);
+            }
+            return 0;
+        case WM_LBUTTONDOWN: // mouse left down
+            return 0;
+        case WM_RBUTTONDOWN: // mouse right down
+            return 0;
+        case WM_MBUTTONDOWN: // mouse middle down
+            return 0;
+        case WM_LBUTTONUP: // mouse left up
+            return 0;
+        case WM_RBUTTONUP: // mouse right up
+            return 0;
+        case WM_MBUTTONUP: // mouse middle up
+            return 0;
+        case WM_MOUSEWHEEL:
+            return 0;
+        case WM_MOUSEMOVE:
+            return 0;
+        case WM_SIZE: // size changed
+            if (wParam != SIZE_MINIMIZED) {
+                if ((window->resizing) || ((wParam == SIZE_MAXIMIZED) || (wParam == SIZE_RESTORED))) {
+                    window->width = LOWORD(lParam);
+                    window->height = HIWORD(lParam);
+                    window->framebufferResized = true;
+                }
+            }
+            return 0;
+        case WM_ENTERSIZEMOVE: // resizing started
+            window->resizing = true;
+            return 0;
+        case WM_EXITSIZEMOVE: // resizing stopped
+            window->resizing = false;
+            return 0;
+        case WM_DROPFILES:
+            return 0;
 
-        // dispatch callbacks
-        for (auto &callback: resizeCallbacks)
-            callback(window, windowSize);
-    };
-    manager->resizeEvent = onResize;
+        default:
+            return DefWindowProc(hWnd, uMsg, wParam, lParam);
+    }
+}
+#endif
 
-    auto onKeyPress = [this](TinyWindow::tWindow *window, unsigned int key, TinyWindow::keyState_t keyState) {
-        // add key into keymap
-        keyMap[key] = keyState;
+Hmck::Window::Window(VulkanInstance &instance, const std::string &_windowName, int windowWidth,
+                     int windowHeight) : instance{instance} {
+    width = windowWidth;
+    height = windowHeight;
+    windowName = _windowName;
 
-        // dispatch callbacks
-        for (auto &callback: keyCallbacks)
-            callback(window, key, keyState);
-    };
-    manager->keyEvent = onKeyPress;
+#if defined(_WIN32)
+    // Step 2: Register the window class
+    WNDCLASSEX wc = {};
+    wc.cbSize = sizeof(WNDCLASSEX);
+    wc.style = CS_HREDRAW | CS_VREDRAW;
+    wc.lpfnWndProc = WindowProc; // Window procedure function
+    wc.hInstance = GetModuleHandle(nullptr); // Handle to the application instance
+    wc.hCursor = LoadCursor(nullptr, IDC_ARROW); // Default arrow cursor
+    wc.lpszClassName = _windowName.c_str(); // Window class name
 
-    auto onMouseClick = [this](TinyWindow::tWindow *window, TinyWindow::mouseButton_t button,
-                               TinyWindow::buttonState_t state) {
-        // add button into buttonMap
-        buttonMap[button] = state;
+    if (!RegisterClassEx(&wc)) {
+        Logger::log(LOG_LEVEL_ERROR, "Failed to register window class");
+        throw std::runtime_error("Failed to register window class");
+    }
 
-        // dispatch callbacks
-        for (auto &callback: mouseClickCallbacks)
-            callback(window, button, state);
-    };
-    manager->mouseButtonEvent = onMouseClick;
+    hWnd = CreateWindowEx(
+        0, // Optional window styles
+        wc.lpszClassName, // Window class name
+        _windowName.c_str(), // Window title
+        WS_OVERLAPPEDWINDOW, // Window style
+        CW_USEDEFAULT, CW_USEDEFAULT, // Position (x, y)
+        windowWidth, windowHeight, // Size (width, height)
+        nullptr, // Parent window
+        nullptr, // Menu
+        wc.hInstance, // Application instance
+        nullptr // Additional application data
+    );
 
-    auto onMouseWheel = [this](TinyWindow::tWindow *window, TinyWindow::mouseScroll_t mouseScrollDirection) {
-        // dispatch callbacks
-        for (auto &callback: scrollCallbacks)
-            callback(window, mouseScrollDirection);
-    };
-    manager->mouseWheelEvent = onMouseWheel;
+    if (!hWnd) {
+        Logger::log(LOG_LEVEL_ERROR, "Failed to create window");
+        throw std::runtime_error("Failed to create window");
+    }
 
-    auto onMouseMove = [this](TinyWindow::tWindow *window, const TinyWindow::vec2_t<int> &windowMousePosition,
-                              const TinyWindow::vec2_t<int> &screenMousePosition) {
-        // dispatch callbacks
-        for (auto &callback: mouseMoveCallbacks)
-            callback(window, windowMousePosition, screenMousePosition);
-    };
-    manager->mouseMoveEvent = onMouseMove;
+    ShowWindow(hWnd, SW_SHOW);
 
-    auto onShutdown = [this](TinyWindow::tWindow *window) {
-        // dispatch callbacks
-        for (auto &callback: shutDownCallbacks)
-            callback(window);
-    };
-    manager->destroyedEvent = onShutdown;
+    VkWin32SurfaceCreateInfoKHR surfaceCreateInfo = {};
+    surfaceCreateInfo.sType = VK_STRUCTURE_TYPE_WIN32_SURFACE_CREATE_INFO_KHR;
+    surfaceCreateInfo.hwnd = hWnd;
+    surfaceCreateInfo.hinstance = wc.hInstance;
+
+    if (vkCreateWin32SurfaceKHR(instance.getInstance(), &surfaceCreateInfo, nullptr, &surface) != VK_SUCCESS) {
+        Logger::log(LOG_LEVEL_ERROR, "Failed to create Vulkan surface");
+        throw std::runtime_error("Failed to create Vulkan surface");
+    }
 
 
-    auto onMaximized = [this](TinyWindow::tWindow *window) {
-        // dispatch callbacks
-        for (auto &callback: maximizedCallbacks)
-            callback(window);
-    };
-    manager->maximizedEvent = onMaximized;
-
-    auto onMinimized = [this](TinyWindow::tWindow *window) {
-        // dispatch callbacks
-        for (auto &callback: minimizedCallbacks)
-            callback(window);
-    };
-    manager->minimizedEvent = onMinimized;
-
-    auto onFocusChanged = [this](TinyWindow::tWindow *window, bool isFocused) {
-        // dispatch callbacks
-        for (auto &callback: focusCallbacks)
-            callback(window, isFocused);
-    };
-    manager->focusEvent = onFocusChanged;
-
-    auto onWindowMoved = [this](TinyWindow::tWindow *window, const TinyWindow::vec2_t<int> &windowPosition) {
-        // dispatch callbacks
-        for (auto &callback: windowMoveCallbacks)
-            callback(window, windowPosition);
-    };
-    manager->movedEvent = onWindowMoved;
-
-    auto onFileDrop = [this](TinyWindow::tWindow *window, const std::vector<std::string> &files,
-                             const TinyWindow::vec2_t<int> &windowMousePosition) {
-        // dispatch callbacks
-        for (auto &callback: fileDropCallbacks)
-            callback(window, files, windowMousePosition);
-    };
-    manager->fileDropEvent = onFileDrop;
+#endif
 }
 
 Hmck::Window::~Window() {
-    manager->ShutDown();
-    TinyWindow::tWindow *tempWindow = window.release();
-    delete tempWindow;
-    vkDestroySurfaceKHR(instance.getInstance(), getSurface(), nullptr);
+    vkDestroySurfaceKHR(instance.getInstance(), surface, nullptr);
+
+#if defined(_WIN32)
+    if (hWnd) {
+        DestroyWindow(hWnd);
+    }
+    UnregisterClass("VulkanWindowClass", GetModuleHandle(nullptr));
+#endif
 }
 
-void Hmck::Window::printMonitorInfo() {
-    for (auto monitorIter: manager->GetMonitors()) {
-        printf("%s \n", monitorIter->deviceName.c_str());
-        printf("%s \n", monitorIter->monitorName.c_str());
-        printf("%s \n", monitorIter->displayName.c_str());
-        printf("resolution:\t current width: %i | current height: %i \n", monitorIter->currentSetting->resolution.width,
-               monitorIter->currentSetting->resolution.height);
-        printf("extents:\t top: %i | left: %i | bottom: %i | right: %i \n", monitorIter->extents.top,
-               monitorIter->extents.left, monitorIter->extents.bottom, monitorIter->extents.right);
-        for (auto settingIter: monitorIter->settings) {
-            printf("width %i | height %i | frequency %i | pixel depth: %i",
-                   settingIter->resolution.width, settingIter->resolution.height, settingIter->displayFrequency,
-                   settingIter->bitsPerPixel);
-#if defined(TW_WINDOWS)
-            printf(" | flags %i", settingIter->displayFlags);
-            switch (settingIter->fixedOutput) {
-                case DMDFO_DEFAULT: {
-                    printf(" | output: %s", "default");
-                    break;
-                }
 
-                case DMDFO_CENTER: {
-                    printf(" | output: %s", "center");
-                    break;
-                }
+Hmck::KeyState Hmck::Window::getKeyState(Keycode key) {
+    if (keymap.contains(key)) return keymap[key];
+    return KeyState::NONE;
+}
 
-                case DMDFO_STRETCH: {
-                    printf(" | output: %s", "stretch");
-                    break;
-                }
-            }
+bool Hmck::Window::shouldClose() const {
+#if defined(_WIN32)
+    return msg.message == WM_QUIT;
 #endif
-            printf("\n");
-        }
-        printf("\n");
-    }
 }
 
 void Hmck::Window::pollEvents() {
-    keyMap.clear();
-    buttonMap.clear();
-    manager->PollForEvents();
+#if defined(_WIN32)
+    keymap.clear();
+    if (PeekMessage(&msg, nullptr, 0, 0, PM_REMOVE)) {
+        TranslateMessage(&msg);
+        DispatchMessage(&msg);
+    }
+#endif
 }
 
-bool Hmck::Window::isKeyDown(unsigned int key) const {
-    return keyMap.contains(key) && keyMap.at(key) == KeyState::down;
+#if defined(_WIN32)
+void Hmck::Window::onKeyDown(WPARAM key) {
+    Logger::log(LOG_LEVEL_DEBUG, "Key down.");
+    keymap[key] = KeyState::DOWN;
 }
+#endif
 
-bool Hmck::Window::isButtonDown(MouseButton button) const {
-    return buttonMap.contains(button) && buttonMap.at(button) == ButtonState::down;
+#if defined(_WIN32)
+void Hmck::Window::onKeyUp(WPARAM key) {
+    keymap[key] = KeyState::UP;
 }
-
-bool Hmck::Window::isKeyUp(unsigned int key) const {
-    return keyMap.contains(key) && keyMap.at(key) == KeyState::up;
-}
-
-bool Hmck::Window::isButtonUp(MouseButton button) const {
-    return buttonMap.contains(button) && buttonMap.at(button) == ButtonState::up;
-}
+#endif

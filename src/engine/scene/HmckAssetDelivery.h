@@ -394,25 +394,25 @@ namespace Hmck {
                     currentParent = currentParent->parent;
                 }
 
-                int32_t visibilityFlags = Geometry::VisibilityFlags::NONE;
+                int32_t visibilityFlags = Geometry::VisibilityFlags::VISIBILITY_NONE;
 
                 if (!node->mesh.primitives.empty()) {
-                    visibilityFlags |= Geometry::VisibilityFlags::VISIBLE;
+                    visibilityFlags |= Geometry::VisibilityFlags::VISIBILITY_VISIBLE;
                     for (gPrimitive &primitive: node->mesh.primitives) {
                         gMaterial defaultMaterial{};
                         gMaterial &material = (primitive.materialIndex > -1)
                                                   ? materials[primitive.materialIndex]
                                                   : defaultMaterial;
                         if (material.alphaMode == "OPAQUE") {
-                            visibilityFlags |= Geometry::VisibilityFlags::OPAQUE;
+                            visibilityFlags |= Geometry::VisibilityFlags::VISIBILITY_OPAQUE;
                         }
 
                         if (material.alphaMode == "BLEND") {
-                            visibilityFlags |= Geometry::VisibilityFlags::BLEND;
+                            visibilityFlags |= Geometry::VisibilityFlags::VISIBILITY_BLEND;
                         }
 
-                        visibilityFlags |= Geometry::VisibilityFlags::CASTS_SHADOW |
-                                Geometry::VisibilityFlags::RECEIVES_SHADOW;
+                        visibilityFlags |= Geometry::VisibilityFlags::VISIBILITY_CASTS_SHADOW |
+                                Geometry::VisibilityFlags::VISIBILITY_RECEIVES_SHADOW;
 
                         const auto indexOffset = static_cast<int32_t>(state.textures.size());
 

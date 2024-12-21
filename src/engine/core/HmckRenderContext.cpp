@@ -36,9 +36,10 @@ void Hmck::RenderContext::freeCommandBuffers() {
 
 void Hmck::RenderContext::recreateSwapChain() {
     auto extent = window.getExtent();
+
     while (extent.width == 0 || extent.height == 0) {
+        window.pollEvents();
         extent = window.getExtent();
-        glfwWaitEvents();
     }
     vkDeviceWaitIdle(device.device());
 
@@ -52,8 +53,6 @@ void Hmck::RenderContext::recreateSwapChain() {
             throw std::runtime_error("Swapchain image (or detph) format has changed");
         }
     }
-
-    //
 }
 
 VkCommandBuffer Hmck::RenderContext::beginFrame() {
