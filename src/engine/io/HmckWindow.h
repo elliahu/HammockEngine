@@ -19,6 +19,8 @@ namespace Hmck {
 
         ~Window();
 
+        void HandleDpiChange(HWND hWnd, WPARAM wParam, LPARAM lParam);
+
         // delete copy constructor and copy destructor
         Window(const Window &) = delete;
         Window &operator=(const Window &) = delete;

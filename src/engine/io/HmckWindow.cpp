@@ -12,6 +12,7 @@ LRESULT CALLBACK WindowProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam) 
             PostQuitMessage(0);
             return 0;
         case WM_DESTROY:
+
             PostQuitMessage(0);
             return 0;
         case WM_PAINT:
@@ -60,6 +61,11 @@ LRESULT CALLBACK WindowProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam) 
             return 0;
         case WM_DROPFILES:
             return 0;
+        case WM_DPICHANGED:
+            if (window) {
+                window->HandleDpiChange(hWnd, wParam, lParam);
+            }
+            return 0;
 
         default:
             return DefWindowProc(hWnd, uMsg, wParam, lParam);
@@ -74,37 +80,50 @@ Hmck::Window::Window(VulkanInstance &instance, const std::string &_windowName, i
     windowName = _windowName;
 
 #if defined(_WIN32)
-    // Step 2: Register the window class
+    SetProcessDPIAware();
+
     WNDCLASSEX wc = {};
     wc.cbSize = sizeof(WNDCLASSEX);
     wc.style = CS_HREDRAW | CS_VREDRAW;
-    wc.lpfnWndProc = WindowProc; // Window procedure function
-    wc.hInstance = GetModuleHandle(nullptr); // Handle to the application instance
-    wc.hCursor = LoadCursor(nullptr, IDC_ARROW); // Default arrow cursor
-    wc.lpszClassName = _windowName.c_str(); // Window class name
+    wc.lpfnWndProc = WindowProc;
+    wc.hInstance = GetModuleHandle(nullptr);
+    wc.hCursor = LoadCursor(nullptr, IDC_ARROW);
+    wc.lpszClassName = _windowName.c_str();
 
     if (!RegisterClassEx(&wc)) {
         Logger::log(LOG_LEVEL_ERROR, "Failed to register window class");
         throw std::runtime_error("Failed to register window class");
     }
 
+    // Calculate window rect to account for borders and title bar
+    RECT windowRect = {0, 0, windowWidth, windowHeight};
+    AdjustWindowRectEx(&windowRect, WS_OVERLAPPEDWINDOW, FALSE, 0);
+    int adjustedWidth = windowRect.right - windowRect.left;
+    int adjustedHeight = windowRect.bottom - windowRect.top;
+
     hWnd = CreateWindowEx(
-        0, // Optional window styles
-        wc.lpszClassName, // Window class name
-        _windowName.c_str(), // Window title
-        WS_OVERLAPPEDWINDOW, // Window style
-        CW_USEDEFAULT, CW_USEDEFAULT, // Position (x, y)
-        windowWidth, windowHeight, // Size (width, height)
-        nullptr, // Parent window
-        nullptr, // Menu
-        wc.hInstance, // Application instance
-        nullptr // Additional application data
+        0,
+        wc.lpszClassName,
+        _windowName.c_str(),
+        WS_OVERLAPPEDWINDOW,
+        CW_USEDEFAULT, CW_USEDEFAULT,
+        adjustedWidth, adjustedHeight, // Use adjusted dimensions
+        nullptr,
+        nullptr,
+        wc.hInstance,
+        this
     );
 
     if (!hWnd) {
         Logger::log(LOG_LEVEL_ERROR, "Failed to create window");
         throw std::runtime_error("Failed to create window");
     }
+
+    // Store the actual client area dimensions
+    RECT clientRect;
+    GetClientRect(hWnd, &clientRect);
+    width = clientRect.right - clientRect.left;
+    height = clientRect.bottom - clientRect.top;
 
     SetWindowLongPtr(hWnd, GWLP_USERDATA, reinterpret_cast<LONG_PTR>(this));
     ShowWindow(hWnd, SW_SHOW);
@@ -131,8 +150,24 @@ Hmck::Window::~Window() {
     if (hWnd) {
         DestroyWindow(hWnd);
     }
-    UnregisterClass("VulkanWindowClass", GetModuleHandle(nullptr));
+    UnregisterClass(windowName.c_str(), GetModuleHandle(nullptr));
 #endif
+}
+
+// You might also want to add this helper method to your Window class
+void Hmck::Window::HandleDpiChange(HWND hWnd, WPARAM wParam, LPARAM lParam) {
+    UINT dpi = HIWORD(wParam);
+    RECT *const pRect = reinterpret_cast<RECT *>(lParam);
+
+    if (pRect) {
+        SetWindowPos(hWnd,
+                     nullptr,
+                     pRect->left,
+                     pRect->top,
+                     pRect->right - pRect->left,
+                     pRect->bottom - pRect->top,
+                     SWP_NOZORDER | SWP_NOACTIVATE);
+    }
 }
 
 
