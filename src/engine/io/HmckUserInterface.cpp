@@ -52,37 +52,6 @@ void Hmck::UserInterface::showDebugStats(const HmckMat4 &inverseView) {
     ImGui::End();
 }
 
-void Hmck::UserInterface::showWindowControls() const {
-    constexpr ImGuiWindowFlags window_flags = ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_AlwaysAutoResize |
-                                              ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_NoFocusOnAppearing |
-                                              ImGuiWindowFlags_NoNav;
-    ImGui::SetNextWindowPos({static_cast<float>(window.getExtent().width - 10), 10.f}, ImGuiCond_Always, {1.f, 0.f});
-    ImGui::SetNextWindowBgAlpha(0.35f);
-    ImGui::Begin("Window controls", (bool *) 0, window_flags);
-    if (ImGui::TreeNode("Window mode")) {
-        if (ImGui::Button("Fullscreen")) {
-            window.setWindowMode(WINDOW_MODE_FULLSCREEN);
-        }
-        if (ImGui::Button("Borderless")) {
-            window.setWindowMode(WINDOW_MODE_BORDERLESS);
-        }
-        if (ImGui::Button("Windowed")) {
-            window.setWindowMode(WINDOW_MODE_WINDOWED);
-        }
-        ImGui::TreePop();
-    }
-    if (ImGui::TreeNode("Resolution")) {
-        static int x = window.getExtent().width, y = window.getExtent().height;
-        ImGui::DragInt("Horizontal", &x, 1.f, 800, 3840);
-        ImGui::DragInt("Vertical", &y, 1.f, 600, 2160);
-        if (ImGui::Button("Apply")) {
-            window.setWindowResolution(x, y);
-        }
-        ImGui::TreePop();
-    }
-    ImGui::End();
-}
-
 
 void Hmck::UserInterface::showColorSettings(float *exposure, float *gamma, float *whitePoint) {
     constexpr ImGuiWindowFlags window_flags = ImGuiWindowFlags_AlwaysAutoResize;

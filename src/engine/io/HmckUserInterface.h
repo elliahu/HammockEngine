@@ -24,7 +24,6 @@ namespace Hmck {
 
         void showDebugStats(const HmckMat4 &inverseView);
 
-        void showWindowControls() const;
         void showColorSettings(float *exposure, float *gamma, float *whitePoint);
         // forwarding events to ImGUI
         static void forward(int button, bool state);

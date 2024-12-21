@@ -64,12 +64,12 @@ void Hmck::VolumeApp::run() {
         currentTime = newTime;
         elapsedTime += frameTime;
 
-        if (window.getInputHandler().isKeyboardKeyDown(KEY_A)) azimuth -= 1.f * frameTime;
-        if (window.getInputHandler().isKeyboardKeyDown(KEY_D)) azimuth += 1.f * frameTime;
-        if (window.getInputHandler().isKeyboardKeyDown(KEY_W)) elevation += 1.f * frameTime;
-        if (window.getInputHandler().isKeyboardKeyDown(KEY_S)) elevation -= 1.f * frameTime;
-        if (window.getInputHandler().isKeyboardKeyDown(KEY_DOWN)) radius += 1.f * frameTime;
-        if (window.getInputHandler().isKeyboardKeyDown(KEY_UP)) radius -= 1.f * frameTime;
+        if(window.isKeyDown('a')) azimuth -= 1.f * frameTime;
+        if(window.isKeyDown('d')) azimuth += 1.f * frameTime;
+        if(window.isKeyDown('w')) elevation += 1.f * frameTime;
+        if(window.isKeyDown('s')) elevation -= 1.f * frameTime;
+        if(window.isKeyDown(Window::Key::arrowUp)) radius += 1.f * frameTime;
+        if(window.isKeyDown(Window::Key::arrowDown)) radius -= 1.f * frameTime;
         cameraPosition.value = Math::orbitalPosition(cameraTarget.value, HmckClamp(0.f, radius, 10.0f), azimuth,
                                                      elevation);
 
@@ -89,7 +89,6 @@ void Hmck::VolumeApp::run() {
             draw(frameIndex, elapsedTime, commandBuffer); {
                 ui.beginUserInterface();
                 this->ui();
-                ui.showWindowControls();
                 ui.showDebugStats(bufferData.inverseView);
                 ui.endUserInterface(commandBuffer);
             }

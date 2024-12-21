@@ -1,87 +1,176 @@
 #include "HmckWindow.h"
-#include <vulkan/vulkan.h>
-#include <stdexcept>
-#include <utility>
 
-#include "core/HmckVulkanInstance.h"
+#include "scene/HmckAssetDelivery.h"
+
+Hmck::Window::Window(VulkanInstance &vulkanInstance, const int windowWidth, const int windowHeight,
+                     const std::string &_windowName) : instance{vulkanInstance}, width{windowWidth},
+                                                       height{windowHeight}, windowName{_windowName} {
+    TinyWindow::windowSetting_t defaultSetting;
+    defaultSetting.name = _windowName.c_str();
+    defaultSetting.resolution = TinyWindow::vec2_t<unsigned int>(windowWidth, windowHeight);
+    defaultSetting.SetProfile(TinyWindow::profile_t::core);
+    defaultSetting.currentState = TinyWindow::state_t::maximized;
+    defaultSetting.enableSRGB = true;
+
+    manager = std::unique_ptr<TinyWindow::windowManager>();
+    window = std::unique_ptr<TinyWindow::tWindow>(manager->AddWindow(defaultSetting));
+
+    auto onResize = [this](TinyWindow::tWindow *window, const TinyWindow::vec2_t<unsigned int> &windowSize) {
+        // do the actuall resize
+        this->framebufferResized = true;
+        this->width = windowSize.x;
+        this->height = windowSize.y;
+
+        // dispatch callbacks
+        for (auto &callback: resizeCallbacks)
+            callback(window, windowSize);
+    };
+    manager->resizeEvent = onResize;
+
+    auto onKeyPress = [this](TinyWindow::tWindow *window, unsigned int key, TinyWindow::keyState_t keyState) {
+        // add key into keymap
+        keyMap[key] = keyState;
+
+        // dispatch callbacks
+        for (auto &callback: keyCallbacks)
+            callback(window, key, keyState);
+    };
+    manager->keyEvent = onKeyPress;
+
+    auto onMouseClick = [this](TinyWindow::tWindow *window, TinyWindow::mouseButton_t button,
+                               TinyWindow::buttonState_t state) {
+        // add button into buttonMap
+        buttonMap[button] = state;
+
+        // dispatch callbacks
+        for (auto &callback: mouseClickCallbacks)
+            callback(window, button, state);
+    };
+    manager->mouseButtonEvent = onMouseClick;
+
+    auto onMouseWheel = [this](TinyWindow::tWindow *window, TinyWindow::mouseScroll_t mouseScrollDirection) {
+        // dispatch callbacks
+        for (auto &callback: scrollCallbacks)
+            callback(window, mouseScrollDirection);
+    };
+    manager->mouseWheelEvent = onMouseWheel;
+
+    auto onMouseMove = [this](TinyWindow::tWindow *window, const TinyWindow::vec2_t<int> &windowMousePosition,
+                              const TinyWindow::vec2_t<int> &screenMousePosition) {
+        // dispatch callbacks
+        for (auto &callback: mouseMoveCallbacks)
+            callback(window, windowMousePosition, screenMousePosition);
+    };
+    manager->mouseMoveEvent = onMouseMove;
+
+    auto onShutdown = [this](TinyWindow::tWindow *window) {
+        // dispatch callbacks
+        for (auto &callback: shutDownCallbacks)
+            callback(window);
+    };
+    manager->destroyedEvent = onShutdown;
 
 
-void Hmck::Window::initWindow(const int width, const int height) {
-    if (!glfwInit()) {
-        throw std::runtime_error("Failed to initialize GLFW");
-    }
-    glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
-    glfwWindowHint(GLFW_RESIZABLE, GLFW_TRUE);
-    monitors = glfwGetMonitors(&monitorsCount);
-    window = glfwCreateWindow(width, height, windowName.c_str(), nullptr, nullptr);
-    glfwSetWindowUserPointer(window, this);
-    glfwSetFramebufferSizeCallback(window, framebufferResizeCallback);
-    setWindowMode(WINDOW_MODE_WINDOWED);
-}
+    auto onMaximized = [this](TinyWindow::tWindow *window) {
+        // dispatch callbacks
+        for (auto &callback: maximizedCallbacks)
+            callback(window);
+    };
+    manager->maximizedEvent = onMaximized;
 
-void Hmck::Window::framebufferResizeCallback(GLFWwindow *window, int width, int height) {
-    auto window_ = reinterpret_cast<Window *>(glfwGetWindowUserPointer(window));
-    window_->framebufferResized = true;
-    window_->width = width;
-    window_->height = height;
-    window_->trigger(RESIZED, nullptr);
-}
+    auto onMinimized = [this](TinyWindow::tWindow *window) {
+        // dispatch callbacks
+        for (auto &callback: minimizedCallbacks)
+            callback(window);
+    };
+    manager->minimizedEvent = onMinimized;
 
+    auto onFocusChanged = [this](TinyWindow::tWindow *window, bool isFocused) {
+        // dispatch callbacks
+        for (auto &callback: focusCallbacks)
+            callback(window, isFocused);
+    };
+    manager->focusEvent = onFocusChanged;
 
+    auto onWindowMoved = [this](TinyWindow::tWindow *window, const TinyWindow::vec2_t<int> &windowPosition) {
+        // dispatch callbacks
+        for (auto &callback: windowMoveCallbacks)
+            callback(window, windowPosition);
+    };
+    manager->movedEvent = onWindowMoved;
 
-Hmck::Window::Window(const int windowWidth, const int windowHeight, std::string _windowName) : width{windowWidth},
-                                                                                               height{windowHeight}, windowName{std::move(_windowName)} {
-    initWindow(width, height);
-    inputHandler.setWindow(window);
+    auto onFileDrop = [this](TinyWindow::tWindow *window, const std::vector<std::string> &files,
+                             const TinyWindow::vec2_t<int> &windowMousePosition) {
+        // dispatch callbacks
+        for (auto &callback: fileDropCallbacks)
+            callback(window, files, windowMousePosition);
+    };
+    manager->fileDropEvent = onFileDrop;
 }
 
 Hmck::Window::~Window() {
-    glfwDestroyWindow(window);
-    glfwTerminate();
-    //vkDestroySurfaceKHR(instance, surface_, nullptr);
+    manager->ShutDown();
+    TinyWindow::tWindow *tempWindow = window.release();
+    delete tempWindow;
+    vkDestroySurfaceKHR(instance.getInstance(), getSurface(), nullptr);
 }
 
-bool Hmck::Window::shouldClose() const {
-    return glfwWindowShouldClose(window);
-}
+void Hmck::Window::printMonitorInfo() {
+    for (auto monitorIter: manager->GetMonitors()) {
+        printf("%s \n", monitorIter->deviceName.c_str());
+        printf("%s \n", monitorIter->monitorName.c_str());
+        printf("%s \n", monitorIter->displayName.c_str());
+        printf("resolution:\t current width: %i | current height: %i \n", monitorIter->currentSetting->resolution.width,
+               monitorIter->currentSetting->resolution.height);
+        printf("extents:\t top: %i | left: %i | bottom: %i | right: %i \n", monitorIter->extents.top,
+               monitorIter->extents.left, monitorIter->extents.bottom, monitorIter->extents.right);
+        for (auto settingIter: monitorIter->settings) {
+            printf("width %i | height %i | frequency %i | pixel depth: %i",
+                   settingIter->resolution.width, settingIter->resolution.height, settingIter->displayFrequency,
+                   settingIter->bitsPerPixel);
+#if defined(TW_WINDOWS)
+            printf(" | flags %i", settingIter->displayFlags);
+            switch (settingIter->fixedOutput) {
+                case DMDFO_DEFAULT: {
+                    printf(" | output: %s", "default");
+                    break;
+                }
 
-void Hmck::Window::createWindowSurface(VulkanInstance &instance){
-    if (glfwCreateWindowSurface(instance.getInstance(), window, nullptr, &surface) != VK_SUCCESS) {
-        throw std::runtime_error("failed to create window surface");
+                case DMDFO_CENTER: {
+                    printf(" | output: %s", "center");
+                    break;
+                }
+
+                case DMDFO_STRETCH: {
+                    printf(" | output: %s", "stretch");
+                    break;
+                }
+            }
+#endif
+            printf("\n");
+        }
+        printf("\n");
     }
 }
 
-void Hmck::Window::setCursorVisibility(const bool visible) const {
-    glfwSetInputMode(window, GLFW_CURSOR, (visible) ? GLFW_CURSOR_NORMAL : GLFW_CURSOR_DISABLED);
+void Hmck::Window::pollEvents() {
+    keyMap.clear();
+    buttonMap.clear();
+    manager->PollForEvents();
 }
 
-void Hmck::Window::getCursorPosition(double &x, double &y) const {
-    glfwGetCursorPos(window, &x, &y);
+bool Hmck::Window::isKeyDown(unsigned int key) const {
+    return keyMap.contains(key) && keyMap.at(key) == KeyState::down;
 }
 
-void Hmck::Window::setWindowMode(const WindowMode mode) const {
-    const GLFWvidmode *vidmode = glfwGetVideoMode(monitors[monitorIndex]);
-    if (mode == WINDOW_MODE_FULLSCREEN) {
-        // fullscreen
-        glfwSetWindowMonitor(window, monitors[monitorIndex], 0, 0, width, height, vidmode->refreshRate);
-    } else if (mode == WINDOW_MODE_BORDERLESS) {
-        // FIXME doesn't work
-        // borderless fullscreen
-        glfwWindowHint(GLFW_RED_BITS, vidmode->redBits);
-        glfwWindowHint(GLFW_GREEN_BITS, vidmode->greenBits);
-        glfwWindowHint(GLFW_BLUE_BITS, vidmode->blueBits);
-        glfwWindowHint(GLFW_REFRESH_RATE, vidmode->refreshRate);
-        glfwWindowHint(GLFW_DECORATED, GLFW_FALSE);
-        glfwSetWindowMonitor(window, nullptr, 0, 0, vidmode->width, vidmode->height, vidmode->refreshRate);
-    } else if (mode == WINDOW_MODE_WINDOWED) {
-        // windowed
-        glfwWindowHint(GLFW_DECORATED, GLFW_TRUE);
-        glfwSetWindowMonitor(window, nullptr, 450, 450, width, height, vidmode->refreshRate);
-    }
+bool Hmck::Window::isButtonDown(MouseButton button) const {
+    return buttonMap.contains(button) && buttonMap.at(button) == ButtonState::down;
 }
 
-void Hmck::Window::setWindowResolution(const uint32_t resX, const uint32_t resY) {
-    width = resX;
-    height = resY;
-    glfwSetWindowSize(window, resX, resY);
+bool Hmck::Window::isKeyUp(unsigned int key) const {
+    return keyMap.contains(key) && keyMap.at(key) == KeyState::up;
+}
+
+bool Hmck::Window::isButtonUp(MouseButton button) const {
+    return buttonMap.contains(button) && buttonMap.at(button) == ButtonState::up;
 }

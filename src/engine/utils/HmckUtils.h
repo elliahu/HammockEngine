@@ -565,7 +565,7 @@ namespace Hmck {
                     }
                 }
             } catch (const std::filesystem::filesystem_error &e) {
-                Logger::log(HMCK_LOG_LEVEL_ERROR, "Error: Error accessing directory %s\n", directoryPath.c_str());
+                Logger::log(LOG_LEVEL_ERROR, "Error: Error accessing directory %s\n", directoryPath.c_str());
                 throw std::runtime_error("Error: Error accessing directory");
             }
 
@@ -609,7 +609,7 @@ namespace Hmck {
                 stbi_set_flip_vertically_on_load(false); // Reset flipping after loading
 
                 if (!data) {
-                    Logger::log(HMCK_LOG_LEVEL_ERROR, "Error: Failed to load image!\n");
+                    Logger::log(LOG_LEVEL_ERROR, "Error: Failed to load image!\n");
                     throw std::runtime_error("Image loading failed.");
                 }
 
@@ -654,7 +654,7 @@ namespace Hmck {
                 stbi_set_flip_vertically_on_load(false); // Reset flipping after loading
 
                 if (!data) {
-                    Logger::log(HMCK_LOG_LEVEL_ERROR, "Error: Failed to load image!\n");
+                    Logger::log(LOG_LEVEL_ERROR, "Error: Failed to load image!\n");
                     throw std::runtime_error("Image loading failed.");
                 }
 
@@ -688,7 +688,7 @@ namespace Hmck {
                 return processedData; // Return processed data
             }
 
-            Logger::log(HMCK_LOG_LEVEL_ERROR, "Error: Reached unreachable code path in readImage\n");
+            Logger::log(LOG_LEVEL_ERROR, "Error: Reached unreachable code path in readImage\n");
             throw std::runtime_error("Failed to load image!");
         }
 
@@ -698,13 +698,13 @@ namespace Hmck {
                                        int &depth, const ImageFormat format = ImageFormat::R32G32B32A32_SFLOAT,
                                        uint32_t flags = 0) {
             if (slices.empty()) {
-                Logger::log(HMCK_LOG_LEVEL_ERROR, "Error: No slice file paths provided\n");
+                Logger::log(LOG_LEVEL_ERROR, "Error: No slice file paths provided\n");
                 throw std::runtime_error("Error: No slice file paths provided.");
             }
             // TODO make this general to support uint buffer as well as float buffers
             if (format == ImageFormat::R8_UNORM || format == ImageFormat::R8G8B8_UNORM || format ==
                 ImageFormat::R8G8B8A8_UNORM) {
-                Logger::log(HMCK_LOG_LEVEL_ERROR, "Error: SDR content not supported\n");
+                Logger::log(LOG_LEVEL_ERROR, "Error: SDR content not supported\n");
                 throw std::runtime_error("Error: SDR content not supported.");
             }
 
@@ -731,7 +731,7 @@ namespace Hmck {
                 if (currentWidth != width || currentHeight != height || currentChannels != channels) {
                     delete[] volumeData;
                     stbi_image_free(const_cast<float *>(sliceData));
-                    Logger::log(HMCK_LOG_LEVEL_ERROR, "Error: Slice dimensions or channels mismatch in slice %d\n", i);
+                    Logger::log(LOG_LEVEL_ERROR, "Error: Slice dimensions or channels mismatch in slice %d\n", i);
                     throw std::runtime_error("Error: Slice dimensions or channels mismatch!");
                 }
 
@@ -770,7 +770,7 @@ namespace Hmck {
                 int success = stbi_write_png(filename.c_str(), width, height, channels, normalizedBuffer,
                                              width * channels);
                 if (!success) {
-                    Logger::log(HMCK_LOG_LEVEL_ERROR, "Error: Failed to save SDR image!");
+                    Logger::log(LOG_LEVEL_ERROR, "Error: Failed to save SDR image!");
                     throw std::runtime_error("Failed to save image: " + filename);
                 }
 
@@ -781,18 +781,18 @@ namespace Hmck {
             } else if (definition == WriteImageDefinition::HDR) {
                 // For HDR, save as HDR file using float buffer directly
                 if (instanceSize != sizeof(float)) {
-                    Logger::log(HMCK_LOG_LEVEL_ERROR, "Error: HDR requires float data!");
+                    Logger::log(LOG_LEVEL_ERROR, "Error: HDR requires float data!");
                     throw std::runtime_error("HDR images require buffer with float data.");
                 }
 
                 const float *floatBuffer = static_cast<const float *>(buffer);
                 int success = stbi_write_hdr(filename.c_str(), width, height, channels, floatBuffer);
                 if (!success) {
-                    Logger::log(HMCK_LOG_LEVEL_ERROR, "Error: Failed to save HDR image!");
+                    Logger::log(LOG_LEVEL_ERROR, "Error: Failed to save HDR image!");
                     throw std::runtime_error("Failed to save HDR image: " + filename);
                 }
             } else {
-                Logger::log(HMCK_LOG_LEVEL_ERROR, "Error: Unknown image definition!");
+                Logger::log(LOG_LEVEL_ERROR, "Error: Unknown image definition!");
                 throw std::invalid_argument("Unknown image definition specified.");
             }
         }

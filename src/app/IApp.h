@@ -9,19 +9,16 @@
 namespace Hmck {
     class IApp {
     public:
-
         static constexpr int WINDOW_WIDTH = 1920;
         static constexpr int WINDOW_HEIGHT = 1080;
 
-        IApp()
-            : device(instance, [&] {
-                  window.createWindowSurface(instance);
-                  return window.getSurface();
-              }()) {
+        IApp() : device(instance, window.getSurface()) {
+#ifndef NDEBUG
+            window.printMonitorInfo();
+#endif
         }
 
         virtual ~IApp() {
-            vkDestroySurfaceKHR(instance.getInstance(), window.getSurface(), nullptr);
         }
 
         // delete copy constructor and copy destructor
@@ -33,8 +30,9 @@ namespace Hmck {
 
     protected:
         virtual void load() = 0;
-        Window window{WINDOW_WIDTH, WINDOW_HEIGHT, "Hammock Engine"};
+
         VulkanInstance instance;
+        Window window{instance, WINDOW_WIDTH, WINDOW_HEIGHT, "Hammock Engine"};
         Device device;
         DeviceStorage deviceStorage{device};
         Geometry state{};
