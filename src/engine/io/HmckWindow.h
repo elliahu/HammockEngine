@@ -10,9 +10,9 @@
 
 namespace Hmck {
     enum WindowMode {
-        HMCK_WINDOW_MODE_FULLSCREEN,
-        HMCK_WINDOW_MODE_BORDERLESS,
-        HMCK_WINDOW_MODE_WINDOWED
+        WINDOW_MODE_FULLSCREEN,
+        WINDOW_MODE_BORDERLESS,
+        WINDOW_MODE_WINDOWED
     };
 
     enum WindowEvent {

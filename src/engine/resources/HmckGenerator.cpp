@@ -343,7 +343,7 @@ Hmck:: ResourceHandle<Hmck::Texture2D> Hmck::Generator::generatePrefilteredMap(D
 
     auto tEnd = std::chrono::high_resolution_clock::now();
     auto tDiff = std::chrono::duration<double, std::milli>(tEnd - tStart).count();
-    Logger::log(LogLevel::HMCK_LOG_LEVEL_DEBUG, "Generating prefiltered sphere took %f ms\n", tDiff);
+    Logger::log(LogLevel::LOG_LEVEL_DEBUG, "Generating prefiltered sphere took %f ms\n", tDiff);
 
     return prefilteredMap;
 }
@@ -553,7 +553,7 @@ Hmck::ResourceHandle<Hmck::Texture2D> Hmck::Generator::generatePrefilteredMapWit
 
     auto tEnd = std::chrono::high_resolution_clock::now();
     auto tDiff = std::chrono::duration<double, std::milli>(tEnd - tStart).count();
-    Logger::log(LogLevel::HMCK_LOG_LEVEL_DEBUG, "Generating prefiltered sphere took %f ms\n", tDiff);
+    Logger::log(LogLevel::LOG_LEVEL_DEBUG, "Generating prefiltered sphere took %f ms\n", tDiff);
 
     return prefilteredMap;
 }
@@ -766,7 +766,7 @@ Hmck::ResourceHandle<Hmck::Texture2D> Hmck::Generator::generateIrradianceMap(Dev
 
     auto tEnd = std::chrono::high_resolution_clock::now();
     auto tDiff = std::chrono::duration<double, std::milli>(tEnd - tStart).count();
-    Logger::log(LogLevel::HMCK_LOG_LEVEL_DEBUG, "Generating irradiance sphere took %f ms\n", tDiff);
+    Logger::log(LogLevel::LOG_LEVEL_DEBUG, "Generating irradiance sphere took %f ms\n", tDiff);
 
     return irradianceMap;
 }
@@ -939,7 +939,7 @@ Hmck::ResourceHandle<Hmck::Texture2D> Hmck::Generator::generateBRDFLookUpTable(D
 
     auto tEnd = std::chrono::high_resolution_clock::now();
     auto tDiff = std::chrono::duration<double, std::milli>(tEnd - tStart).count();
-    Logger::log(LogLevel::HMCK_LOG_LEVEL_DEBUG, "Generating BRDF LUT took %f ms\n", tDiff);
+    Logger::log(LogLevel::LOG_LEVEL_DEBUG, "Generating BRDF LUT took %f ms\n", tDiff);
 
     return brdfLookUpTable;
 }

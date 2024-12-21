@@ -39,13 +39,13 @@ namespace Hmck {
                                   : gltfContext.LoadASCIIFromFile(&gltfModel, &error, &warning, filename.c_str());
 
             if (!fileLoaded) {
-                Logger::log(HMCK_LOG_LEVEL_ERROR, error.c_str());
+                Logger::log(LOG_LEVEL_ERROR, error.c_str());
                 throw std::runtime_error(error.c_str());
             }
 
             auto extensions = gltfModel.extensionsUsed;
             for (auto &extension: extensions) {
-                Logger::log(HMCK_LOG_LEVEL_DEBUG, "glTF Loader: Using extension: %s\n", extension.c_str());
+                Logger::log(LOG_LEVEL_DEBUG, "glTF Loader: Using extension: %s\n", extension.c_str());
                 // TODO use the extensions
             }
 
@@ -490,7 +490,7 @@ namespace Hmck {
             }
             std::copy(indexBuffer.begin(), indexBuffer.end(), std::back_inserter(state.indices));
 
-            Logger::log(HMCK_LOG_LEVEL_DEBUG, "glTF model loaded. Vertices: %d, Indices: %d, Triangles: %d\n",
+            Logger::log(LOG_LEVEL_DEBUG, "glTF model loaded. Vertices: %d, Indices: %d, Triangles: %d\n",
                         vertexBuffer.size(), indexBuffer.size(), vertexBuffer.size() / 3);
 
 

@@ -3,14 +3,20 @@
 
 namespace Hmck {
     enum LogLevel {
-        HMCK_LOG_LEVEL_DEBUG,
-        HMCK_LOG_LEVEL_WARN,
-        HMCK_LOG_LEVEL_ERROR
+        LOG_LEVEL_DEBUG,
+        LOG_LEVEL_WARN,
+        LOG_LEVEL_ERROR
     };
 
     class Logger {
     public:
-        static inline LogLevel hmckMinLogLevel = LogLevel::HMCK_LOG_LEVEL_DEBUG;
+#ifdef NDEBUG
+        static inline LogLevel hmckMinLogLevel = LogLevel::LOG_LEVEL_ERROR;
+#else
+        static inline LogLevel hmckMinLogLevel = LogLevel::LOG_LEVEL_DEBUG;
+#endif
+
+
 
         // Create a method that works as a printf function and writes to a console log message if the level of message is same or higher as the hmckMinLogLevel;
         static inline void log(const LogLevel level, const char *format, ...) {

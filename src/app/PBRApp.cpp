@@ -58,12 +58,12 @@ void Hmck::PBRApp::run() {
 
             // do per frame calculations
 
-            if(window.getInputHandler().isKeyboardKeyDown(HMCK_KEY_A)) azimuth -= 1.f * frameTime;
-            if(window.getInputHandler().isKeyboardKeyDown(HMCK_KEY_D)) azimuth += 1.f * frameTime;
-            if(window.getInputHandler().isKeyboardKeyDown(HMCK_KEY_W)) elevation += 1.f * frameTime;
-            if(window.getInputHandler().isKeyboardKeyDown(HMCK_KEY_S)) elevation -= 1.f * frameTime;
-            if(window.getInputHandler().isKeyboardKeyDown(HMCK_KEY_DOWN)) radius += 1.f * frameTime;
-            if(window.getInputHandler().isKeyboardKeyDown(HMCK_KEY_UP)) radius -= 1.f * frameTime;
+            if(window.getInputHandler().isKeyboardKeyDown(KEY_A)) azimuth -= 1.f * frameTime;
+            if(window.getInputHandler().isKeyboardKeyDown(KEY_D)) azimuth += 1.f * frameTime;
+            if(window.getInputHandler().isKeyboardKeyDown(KEY_W)) elevation += 1.f * frameTime;
+            if(window.getInputHandler().isKeyboardKeyDown(KEY_S)) elevation -= 1.f * frameTime;
+            if(window.getInputHandler().isKeyboardKeyDown(KEY_DOWN)) radius += 1.f * frameTime;
+            if(window.getInputHandler().isKeyboardKeyDown(KEY_UP)) radius -= 1.f * frameTime;
             HmckVec3 pos = Math::orbitalPosition(HmckVec3{.0f,.0f,.0f}, radius, azimuth, elevation);
 
             // write to projection buffer
@@ -251,9 +251,9 @@ void Hmck::PBRApp::load() {
     });
 
     geometry.numTriangles = static_cast<uint32_t>(state.vertices.size()) / 3;
-    Logger::log(HMCK_LOG_LEVEL_DEBUG, "Vertex buffer created. Number of vertices: %d, Number of triangles: %d\n",
+    Logger::log(LOG_LEVEL_DEBUG, "Vertex buffer created. Number of vertices: %d, Number of triangles: %d\n",
                 state.vertices.size(), geometry.numTriangles);
-    Logger::log(HMCK_LOG_LEVEL_DEBUG, "Index buffer created. Number of indices: %d\n", state.indices.size());
+    Logger::log(LOG_LEVEL_DEBUG, "Index buffer created. Number of indices: %d\n", state.indices.size());
 
     // free the host memory
     state.vertices.clear();

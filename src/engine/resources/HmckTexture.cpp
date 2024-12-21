@@ -349,14 +349,14 @@ void Hmck::Texture3D::loadFromBuffer(Device &device, const void *buffer, VkDevic
     vkGetPhysicalDeviceFormatProperties(device.getPhysicalDevice(), format, &formatProperties);
     // Check if format supports transfer
     if (!(formatProperties.optimalTilingFeatures & VK_FORMAT_FEATURE_TRANSFER_DST_BIT)) {
-        Logger::log(HMCK_LOG_LEVEL_ERROR,
+        Logger::log(LOG_LEVEL_ERROR,
                     "Error: Device does not support flag TRANSFER_DST for selected texture format!\n");
         throw std::runtime_error("Error: Device does not support flag TRANSFER_DST for selected!");
     }
     // Check if GPU supports requested 3D texture dimensions
     uint32_t maxImageDimension3D(device.properties.limits.maxImageDimension3D);
     if (width > maxImageDimension3D || height > maxImageDimension3D || depth > maxImageDimension3D) {
-        Logger::log(HMCK_LOG_LEVEL_ERROR,
+        Logger::log(LOG_LEVEL_ERROR,
                     "Error: Requested texture dimensions is greater than supported 3D texture dimension!\n");
         throw std::runtime_error("Error: Requested texture dimensions is greater than supported 3D texture dimension!");
     }

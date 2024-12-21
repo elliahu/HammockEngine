@@ -61,13 +61,13 @@ void Hmck::UserInterface::showWindowControls() const {
     ImGui::Begin("Window controls", (bool *) 0, window_flags);
     if (ImGui::TreeNode("Window mode")) {
         if (ImGui::Button("Fullscreen")) {
-            window.setWindowMode(HMCK_WINDOW_MODE_FULLSCREEN);
+            window.setWindowMode(WINDOW_MODE_FULLSCREEN);
         }
         if (ImGui::Button("Borderless")) {
-            window.setWindowMode(HMCK_WINDOW_MODE_BORDERLESS);
+            window.setWindowMode(WINDOW_MODE_BORDERLESS);
         }
         if (ImGui::Button("Windowed")) {
-            window.setWindowMode(HMCK_WINDOW_MODE_WINDOWED);
+            window.setWindowMode(WINDOW_MODE_WINDOWED);
         }
         ImGui::TreePop();
     }
