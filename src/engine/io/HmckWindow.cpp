@@ -7,18 +7,7 @@
 LRESULT CALLBACK WindowProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam) {
     Hmck::Window *window = reinterpret_cast<Hmck::Window *>(GetWindowLongPtr(hWnd, GWLP_USERDATA));
 
-    if (window == nullptr) {
-        // Handle case where the window is not yet initialized.
-        return DefWindowProc(hWnd, uMsg, wParam, lParam);
-    }
-
     switch (uMsg) {
-        case WM_CREATE: {
-            // Store the `Window` pointer
-            CREATESTRUCT *cs = reinterpret_cast<CREATESTRUCT *>(lParam);
-            SetWindowLongPtr(hWnd, GWLP_USERDATA, reinterpret_cast<LONG_PTR>(cs->lpCreateParams));
-            return 0;
-        }
         case WM_CLOSE:
             PostQuitMessage(0);
             return 0;
@@ -55,7 +44,7 @@ LRESULT CALLBACK WindowProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam) 
         case WM_MOUSEMOVE:
             return 0;
         case WM_SIZE: // size changed
-            if (wParam != SIZE_MINIMIZED) {
+            if (window && wParam != SIZE_MINIMIZED) {
                 if ((window->resizing) || ((wParam == SIZE_MAXIMIZED) || (wParam == SIZE_RESTORED))) {
                     window->width = LOWORD(lParam);
                     window->height = HIWORD(lParam);
@@ -117,7 +106,9 @@ Hmck::Window::Window(VulkanInstance &instance, const std::string &_windowName, i
         throw std::runtime_error("Failed to create window");
     }
 
+    SetWindowLongPtr(hWnd, GWLP_USERDATA, reinterpret_cast<LONG_PTR>(this));
     ShowWindow(hWnd, SW_SHOW);
+    UpdateWindow(hWnd);
 
     VkWin32SurfaceCreateInfoKHR surfaceCreateInfo = {};
     surfaceCreateInfo.sType = VK_STRUCTURE_TYPE_WIN32_SURFACE_CREATE_INFO_KHR;
@@ -168,7 +159,6 @@ void Hmck::Window::pollEvents() {
 
 #if defined(_WIN32)
 void Hmck::Window::onKeyDown(WPARAM key) {
-    Logger::log(LOG_LEVEL_DEBUG, "Key down.");
     keymap[key] = KeyState::DOWN;
 }
 #endif
