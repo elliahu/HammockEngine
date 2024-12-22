@@ -4,6 +4,12 @@ file(GLOB_RECURSE ENGINE_SOURCES
         ${CMAKE_CURRENT_SOURCE_DIR}/*.h
 )
 
+# Conditionally include the resource file for Windows
+if(WIN32)
+    # Add the .rc file to the source list
+    list(APPEND ENGINE_SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/platform/win32/resources.rc)
+endif()
+
 # Add ImGui source files (if not already part of your ENGINE_SOURCES)
 file(GLOB_RECURSE IMGUI_SOURCES
         ${PROJECT_SOURCE_DIR}/external/imgui/*.cpp

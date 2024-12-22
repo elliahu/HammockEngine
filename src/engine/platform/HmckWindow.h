@@ -19,8 +19,6 @@ namespace Hmck {
 
         ~Window();
 
-        void HandleDpiChange(HWND hWnd, WPARAM wParam, LPARAM lParam);
-
         // delete copy constructor and copy destructor
         Window(const Window &) = delete;
         Window &operator=(const Window &) = delete;
@@ -46,14 +44,16 @@ namespace Hmck {
         bool framebufferResized = false;
         bool _shouldClose = false;
         std::string windowName;
+        std::unordered_map<Keycode, KeyState> keymap;
 
 #if defined(_WIN32)
-        void onKeyDown(WPARAM key);
-        void onKeyUp(WPARAM key);
+        void Win32_onKeyDown(WPARAM key);
+        void Win32_onKeyUp(WPARAM key);
+        void Win32_onClose();
+        void Win32_onDpiChange(HWND hWnd, WPARAM wParam, LPARAM lParam);
         HWND hWnd;
         MSG msg{};
         bool resizing = false;
-        std::unordered_map<Keycode, KeyState> keymap;
 #endif
 
     };

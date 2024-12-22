@@ -4,6 +4,7 @@
 #include "scene/HmckAssetDelivery.h"
 #include "scene/HmckCamera.h"
 #include "utils/HmckScopedMemory.h"
+#include "utils/HmckUserInterface.h"
 
 Hmck::VolumeApp::VolumeApp() {
     load();
@@ -96,10 +97,8 @@ void Hmck::VolumeApp::run() {
             renderContext.endRenderPass(commandBuffer);
             renderContext.endFrame();
         }
-
-        vkDeviceWaitIdle(device.device());
     }
-
+    vkDeviceWaitIdle(device.device());
     destroy();
 }
 

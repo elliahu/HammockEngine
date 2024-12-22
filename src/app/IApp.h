@@ -1,5 +1,5 @@
 #pragma once
-#include <io/HmckWindow.h>
+#include <platform/HmckWindow.h>
 #include <core/HmckDevice.h>
 #include <core/HmckDeviceStorage.h>
 

@@ -2,15 +2,30 @@
 
 #include "utils/HmckLogger.h"
 #include "HmckKeycodes.h"
+#include "backends/imgui_impl_vulkan.h"
 
 #if defined(_WIN32)
-LRESULT CALLBACK WindowProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam) {
+#include "win32/resources.h"
+#include "backends/imgui_impl_win32.h"
+#endif
+
+
+#if defined(_WIN32)
+extern IMGUI_IMPL_API LRESULT ImGui_ImplWin32_WndProcHandler(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
+
+LRESULT CALLBACK WndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam) {
     Hmck::Window *window = reinterpret_cast<Hmck::Window *>(GetWindowLongPtr(hWnd, GWLP_USERDATA));
+
+    // Forward events to ImGui
+    if (ImGui_ImplWin32_WndProcHandler(hWnd, uMsg, wParam, lParam)) {
+        return true; // If ImGui handles the event, consume it.
+    }
 
     switch (uMsg) {
         case WM_CLOSE:
-            window->_shouldClose = true;
-            DestroyWindow(hWnd); // This will trigger WM_DESTROY
+            if (window) {
+                window->Win32_onClose();
+            }
             return 0;
         case WM_DESTROY:
             SetWindowLongPtr(hWnd, GWLP_USERDATA, 0); // Clear user data
@@ -21,12 +36,12 @@ LRESULT CALLBACK WindowProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam) 
             return 0;
         case WM_KEYDOWN:
             if (window) {
-                window->onKeyDown(wParam);
+                window->Win32_onKeyDown(wParam);
             }
             return 0;
         case WM_KEYUP:
             if (window) {
-                window->onKeyUp(wParam);
+                window->Win32_onKeyUp(wParam);
             }
             return 0;
         case WM_LBUTTONDOWN: // mouse left down
@@ -64,7 +79,7 @@ LRESULT CALLBACK WindowProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam) 
             return 0;
         case WM_DPICHANGED:
             if (window) {
-                window->HandleDpiChange(hWnd, wParam, lParam);
+                window->Win32_onDpiChange(hWnd, wParam, lParam);
             }
             return 0;
 
@@ -86,10 +101,16 @@ Hmck::Window::Window(VulkanInstance &instance, const std::string &_windowName, i
     WNDCLASSEX wc = {};
     wc.cbSize = sizeof(WNDCLASSEX);
     wc.style = CS_HREDRAW | CS_VREDRAW;
-    wc.lpfnWndProc = WindowProc;
+    wc.lpfnWndProc = WndProc;
     wc.hInstance = GetModuleHandle(nullptr);
     wc.hCursor = LoadCursor(nullptr, IDC_ARROW);
     wc.lpszClassName = _windowName.c_str();
+
+    // Load the icon
+    wc.hIcon = LoadIcon(GetModuleHandle(nullptr), MAKEINTRESOURCE(IDI_HAMMOCK_ICON));
+    if (!wc.hIcon) {
+        wc.hIcon = LoadIcon(NULL, IDI_APPLICATION); // Load default icon if custom icon fails
+    }
 
     if (!RegisterClassEx(&wc)) {
         Logger::log(LOG_LEVEL_ERROR, "Failed to register window class");
@@ -182,7 +203,50 @@ Hmck::Window::~Window() {
 }
 
 // You might also want to add this helper method to your Window class
-void Hmck::Window::HandleDpiChange(HWND hWnd, WPARAM wParam, LPARAM lParam) {
+
+
+
+
+Hmck::KeyState Hmck::Window::getKeyState(Keycode key) {
+    if (keymap.contains(key)) return keymap[key];
+    return KeyState::NONE;
+}
+
+bool Hmck::Window::shouldClose() const {
+    return _shouldClose;
+}
+
+void Hmck::Window::pollEvents() {
+#if defined(_WIN32)
+    while (PeekMessage(&msg, nullptr, 0, 0, PM_REMOVE)) {
+        TranslateMessage(&msg);
+        DispatchMessage(&msg);
+    }
+#endif
+}
+
+#if defined(_WIN32)
+void Hmck::Window::Win32_onKeyDown(WPARAM key) {
+    keymap[key] = KeyState::DOWN;
+}
+
+void Hmck::Window::Win32_onKeyUp(WPARAM key) {
+    keymap[key] = KeyState::UP;
+}
+
+void Hmck::Window::Win32_onClose() {
+    // Set should close first
+    _shouldClose = true;
+
+    // Wait for any pending messages
+    MSG msg;
+    while (PeekMessage(&msg, hWnd, 0, 0, PM_REMOVE)) {
+        TranslateMessage(&msg);
+        DispatchMessage(&msg);
+    }
+}
+
+void Hmck::Window::Win32_onDpiChange(HWND hWnd, WPARAM wParam, LPARAM lParam) {
     UINT dpi = HIWORD(wParam);
     RECT *const pRect = reinterpret_cast<RECT *>(lParam);
 
@@ -197,33 +261,4 @@ void Hmck::Window::HandleDpiChange(HWND hWnd, WPARAM wParam, LPARAM lParam) {
     }
 }
 
-
-Hmck::KeyState Hmck::Window::getKeyState(Keycode key) {
-    if (keymap.contains(key)) return keymap[key];
-    return KeyState::NONE;
-}
-
-bool Hmck::Window::shouldClose() const {
-return _shouldClose;
-}
-
-void Hmck::Window::pollEvents() {
-#if defined(_WIN32)
-    while (PeekMessage(&msg, nullptr, 0, 0, PM_REMOVE)) {
-        TranslateMessage(&msg);
-        DispatchMessage(&msg);
-    }
-#endif
-}
-
-#if defined(_WIN32)
-void Hmck::Window::onKeyDown(WPARAM key) {
-    keymap[key] = KeyState::DOWN;
-}
-#endif
-
-#if defined(_WIN32)
-void Hmck::Window::onKeyUp(WPARAM key) {
-    keymap[key] = KeyState::UP;
-}
 #endif

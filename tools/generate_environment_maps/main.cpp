@@ -2,7 +2,7 @@
 
 #include "core/HmckDevice.h"
 #include "core/HmckResourceManager.h"
-#include "io/HmckWindow.h"
+#include "platform/HmckWindow.h"
 #include "resources/HmckGenerator.h"
 #include "utils/HmckScopedMemory.h"
 #include "utils/HmckUtils.h"

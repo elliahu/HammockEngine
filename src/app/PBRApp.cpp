@@ -6,6 +6,7 @@
 #include "scene/HmckCamera.h"
 #include "utils/HmckLogger.h"
 #include "utils/HmckScopedMemory.h"
+#include "utils/HmckUserInterface.h"
 #include "utils/HmckUtils.h"
 
 Hmck::PBRApp::PBRApp() {
@@ -186,9 +187,8 @@ void Hmck::PBRApp::run() {
             renderContext.endRenderPass(commandBuffer);
             renderContext.endFrame();
         }
-
-        vkDeviceWaitIdle(device.device());
     }
+    vkDeviceWaitIdle(device.device());
 }
 
 void Hmck::PBRApp::load() {

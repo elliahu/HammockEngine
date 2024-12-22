@@ -68,12 +68,6 @@ void Hmck::UserInterface::showColorSettings(float *exposure, float *gamma, float
     endWindow();
 }
 
-void Hmck::UserInterface::forward(const int button, const bool state) {
-    ImGuiIO &io = ImGui::GetIO();
-    io.AddMouseButtonEvent(button, state);
-}
-
-
 void Hmck::UserInterface::init() {
     //1: create descriptor pool for IMGUI
     // the size of the pool is very oversize, but it's copied from imgui demo itself.
