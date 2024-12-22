@@ -11,8 +11,18 @@ Hmck::DeviceStorage::DeviceStorage(Device &device) : device{device}, buffers(), 
                                                      texture3Ds() {
     descriptorPool = DescriptorPool::Builder(device)
             .setMaxSets(20000)
-            .addPoolSize(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 10000)
+            .setPoolFlags(VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT)
+            .addPoolSize(VK_DESCRIPTOR_TYPE_SAMPLER, 10000)
             .addPoolSize(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 10000)
+            .addPoolSize(VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, 10000)
+            .addPoolSize(VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, 10000)
+            .addPoolSize(VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER, 10000)
+            .addPoolSize(VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER, 10000)
+            .addPoolSize(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 10000)
+            .addPoolSize(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, 10000)
+            .addPoolSize(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC, 10000)
+            .addPoolSize(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER_DYNAMIC, 10000)
+            .addPoolSize(VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT, 10000)
             .build();
 }
 
@@ -158,7 +168,7 @@ Hmck::ResourceHandle<Hmck::Texture2D> Hmck::DeviceStorage::createTexture2D(
     }
 
     if (createInfo.samplerInfo.maxLod > 1) {
-        texture->generateMipMaps(device,createInfo.samplerInfo.maxLod);
+        texture->generateMipMaps(device, createInfo.samplerInfo.maxLod);
     }
 
     texture->updateDescriptor();
@@ -273,7 +283,7 @@ void Hmck::DeviceStorage::destroyDescriptorSetLayout(ResourceHandle<DescriptorSe
     descriptorSetLayouts.erase(handle.id());
 }
 
-void Hmck::DeviceStorage::destroyTexture2D(ResourceHandle<Texture2D> handle){
+void Hmck::DeviceStorage::destroyTexture2D(ResourceHandle<Texture2D> handle) {
     texture2Ds.erase(handle.id());
 }
 

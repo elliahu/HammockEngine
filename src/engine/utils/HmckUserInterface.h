@@ -11,7 +11,7 @@
 namespace Hmck {
     class UserInterface {
     public:
-        UserInterface(Device &device, VkRenderPass renderPass, Window &window);
+        UserInterface(Device &device, VkRenderPass renderPass, VkDescriptorPool descriptorPool, Window &window);
 
         ~UserInterface();
 

@@ -46,7 +46,6 @@ namespace Hmck {
         [[nodiscard]] VkSurfaceKHR surface() const { return surface_; }
         [[nodiscard]] VkQueue graphicsQueue() const { return graphicsQueue_; }
         [[nodiscard]] VkQueue presentQueue() const { return presentQueue_; }
-
         [[nodiscard]] SwapChainSupportDetails getSwapChainSupport() const {
             return querySwapChainSupport(physicalDevice);
         }
@@ -95,6 +94,8 @@ namespace Hmck {
 
         void copyImageToHostVisibleImage(VkImage srcImage, VkImage dstImage,
                                          uint32_t width, uint32_t height) const;
+
+        void waitIdle();
 
 
         VkPhysicalDeviceProperties properties;

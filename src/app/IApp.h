@@ -33,6 +33,6 @@ namespace Hmck {
         Window window{instance, "Hammock Engine", WINDOW_WIDTH, WINDOW_HEIGHT};
         Device device;
         DeviceStorage deviceStorage{device};
-        Geometry state{};
+        Geometry geometry{};
     };
 }

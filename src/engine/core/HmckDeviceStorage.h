@@ -213,6 +213,8 @@ namespace Hmck {
 
         void copyBuffer(ResourceHandle<Buffer> from, ResourceHandle<Buffer> to);
 
+        VkDescriptorPool getDescriptorPool() {return descriptorPool->descriptorPool;}
+
     private:
         Device &device;
         std::unique_ptr<DescriptorPool> descriptorPool;

@@ -51,7 +51,7 @@ void Hmck::VolumeApp::run() {
     });
 
 
-    UserInterface ui{device, renderContext.getSwapChainRenderPass(), window};
+    UserInterface ui{device, renderContext.getSwapChainRenderPass(), deviceStorage.getDescriptorPool(), window};
 
     float elapsedTime = 0.f;
     auto currentTime = std::chrono::high_resolution_clock::now();
@@ -103,7 +103,7 @@ void Hmck::VolumeApp::run() {
 }
 
 void Hmck::VolumeApp::load() {
-    Loader(state, device, deviceStorage).loadglTF("../data/models/Sphere/Sphere.glb");
+    Loader(geometry, device, deviceStorage).loadglTF("../data/models/Sphere/Sphere.glb");
 
 
     // Resources
@@ -161,15 +161,15 @@ void Hmck::VolumeApp::load() {
     }
 
     vertexBuffer = deviceStorage.createVertexBuffer({
-        .vertexSize = sizeof(state.vertices[0]),
-        .vertexCount = static_cast<uint32_t>(state.vertices.size()),
-        .data = static_cast<void *>(state.vertices.data())
+        .vertexSize = sizeof(geometry.vertices[0]),
+        .vertexCount = static_cast<uint32_t>(geometry.vertices.size()),
+        .data = static_cast<void *>(geometry.vertices.data())
     });
 
     indexBuffer = deviceStorage.createIndexBuffer({
-        .indexSize = sizeof(state.indices[0]),
-        .indexCount = static_cast<uint32_t>(state.indices.size()),
-        .data = static_cast<void *>(state.indices.data())
+        .indexSize = sizeof(geometry.indices[0]),
+        .indexCount = static_cast<uint32_t>(geometry.indices.size()),
+        .data = static_cast<void *>(geometry.indices.data())
     });
 }
 
