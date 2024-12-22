@@ -4,6 +4,7 @@
 #include "scene/HmckAssetDelivery.h"
 #include "scene/HmckCamera.h"
 #include "utils/HmckScopedMemory.h"
+#include "utils/HmckUserInterface.h"
 
 Hmck::VolumeApp::VolumeApp() {
     load();
@@ -50,7 +51,7 @@ void Hmck::VolumeApp::run() {
     });
 
 
-    UserInterface ui{device, renderContext.getSwapChainRenderPass(), window};
+    UserInterface ui{device, renderContext.getSwapChainRenderPass(), deviceStorage.getDescriptorPool(), window};
 
     float elapsedTime = 0.f;
     auto currentTime = std::chrono::high_resolution_clock::now();
@@ -64,12 +65,12 @@ void Hmck::VolumeApp::run() {
         currentTime = newTime;
         elapsedTime += frameTime;
 
-        if (window.getInputHandler().isKeyboardKeyDown(KEY_A)) azimuth -= 1.f * frameTime;
-        if (window.getInputHandler().isKeyboardKeyDown(KEY_D)) azimuth += 1.f * frameTime;
-        if (window.getInputHandler().isKeyboardKeyDown(KEY_W)) elevation += 1.f * frameTime;
-        if (window.getInputHandler().isKeyboardKeyDown(KEY_S)) elevation -= 1.f * frameTime;
-        if (window.getInputHandler().isKeyboardKeyDown(KEY_DOWN)) radius += 1.f * frameTime;
-        if (window.getInputHandler().isKeyboardKeyDown(KEY_UP)) radius -= 1.f * frameTime;
+        if(window.getKeyState(KEY_A) == KeyState::DOWN) azimuth -= 1.f * frameTime;
+        if(window.getKeyState(KEY_D) == KeyState::DOWN) azimuth += 1.f * frameTime;
+        if(window.getKeyState(KEY_W) == KeyState::DOWN) elevation += 1.f * frameTime;
+        if(window.getKeyState(KEY_S) == KeyState::DOWN) elevation -= 1.f * frameTime;
+        if(window.getKeyState(KEY_UP) == KeyState::DOWN) radius -= 1.f * frameTime;
+        if(window.getKeyState(KEY_DOWN) == KeyState::DOWN) radius += 1.f * frameTime;
         cameraPosition.value = Math::orbitalPosition(cameraTarget.value, HmckClamp(0.f, radius, 10.0f), azimuth,
                                                      elevation);
 
@@ -89,7 +90,6 @@ void Hmck::VolumeApp::run() {
             draw(frameIndex, elapsedTime, commandBuffer); {
                 ui.beginUserInterface();
                 this->ui();
-                ui.showWindowControls();
                 ui.showDebugStats(bufferData.inverseView);
                 ui.endUserInterface(commandBuffer);
             }
@@ -97,15 +97,13 @@ void Hmck::VolumeApp::run() {
             renderContext.endRenderPass(commandBuffer);
             renderContext.endFrame();
         }
-
-        vkDeviceWaitIdle(device.device());
     }
-
+    vkDeviceWaitIdle(device.device());
     destroy();
 }
 
 void Hmck::VolumeApp::load() {
-    Loader(state, device, deviceStorage).loadglTF("../data/models/Sphere/Sphere.glb");
+    Loader(geometry, device, deviceStorage).loadglTF("../data/models/Sphere/Sphere.glb");
 
 
     // Resources
@@ -163,15 +161,15 @@ void Hmck::VolumeApp::load() {
     }
 
     vertexBuffer = deviceStorage.createVertexBuffer({
-        .vertexSize = sizeof(state.vertices[0]),
-        .vertexCount = static_cast<uint32_t>(state.vertices.size()),
-        .data = static_cast<void *>(state.vertices.data())
+        .vertexSize = sizeof(geometry.vertices[0]),
+        .vertexCount = static_cast<uint32_t>(geometry.vertices.size()),
+        .data = static_cast<void *>(geometry.vertices.data())
     });
 
     indexBuffer = deviceStorage.createIndexBuffer({
-        .indexSize = sizeof(state.indices[0]),
-        .indexCount = static_cast<uint32_t>(state.indices.size()),
-        .data = static_cast<void *>(state.indices.data())
+        .indexSize = sizeof(geometry.indices[0]),
+        .indexCount = static_cast<uint32_t>(geometry.indices.size()),
+        .data = static_cast<void *>(geometry.indices.data())
     });
 }
 

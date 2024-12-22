@@ -4,10 +4,10 @@
 #include <vector>
 #include <cassert>
 
-#include "io/HmckWindow.h"
+#include "platform/HmckWindow.h"
 #include "HmckDevice.h"
 #include "HmckSwapChain.h"
-#include "io/HmckUserInterface.h"
+#include "utils/HmckUserInterface.h"
 #include "HmckFramebuffer.h"
 
 // black clear color

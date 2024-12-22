@@ -6,7 +6,6 @@
 #include <string>
 #include <unordered_set>
 #include <vector>
-#include <GLFW/glfw3.h>
 
 namespace Hmck {
     // local callback functions
@@ -160,10 +159,13 @@ void Hmck::VulkanInstance::hasGflwRequiredInstanceExtensions() const {
 }
 
 std::vector<const char *> Hmck::VulkanInstance::getRequiredExtensions() const {
-    uint32_t glfwExtensionCount = 0;
-    const char **glfwExtensions = glfwGetRequiredInstanceExtensions(&glfwExtensionCount);
+    std::vector<const char *> extensions;
 
-    std::vector<const char *> extensions(glfwExtensions, glfwExtensions + glfwExtensionCount);
+#if defined(_WIN32)
+    // Add required Vulkan extensions for Win32
+    extensions.push_back(VK_KHR_SURFACE_EXTENSION_NAME);
+    extensions.push_back(VK_KHR_WIN32_SURFACE_EXTENSION_NAME);  // For Win32 platforms
+#endif
 
     if (enableValidationLayers) {
         extensions.push_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);

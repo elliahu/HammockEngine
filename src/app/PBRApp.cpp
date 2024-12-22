@@ -6,6 +6,7 @@
 #include "scene/HmckCamera.h"
 #include "utils/HmckLogger.h"
 #include "utils/HmckScopedMemory.h"
+#include "utils/HmckUserInterface.h"
 #include "utils/HmckUtils.h"
 
 Hmck::PBRApp::PBRApp() {
@@ -20,11 +21,11 @@ void Hmck::PBRApp::run() {
     RenderContext renderContext{window, device};
     init();
     createPipelines(renderContext);
-    UserInterface ui{device, renderContext.getSwapChainRenderPass(), window};
+    UserInterface ui{device, renderContext.getSwapChainRenderPass(), deviceStorage.getDescriptorPool(), window};
 
 
     int r = 0;
-    for (auto &mesh: state.renderMeshes) {
+    for (auto &mesh: geometry.renderMeshes) {
         globalBuffer.baseColorFactors[r] = HmckVec4{mesh.baseColorFactor, 1.0f};
         globalBuffer.metallicRoughnessAlphaCutOffFactors[r] =  HmckVec4{mesh.metallicRoughnessAlphaCutOffFactor};
         globalBuffer.baseColorTextureIndexes[r].value = mesh.baseColorTextureIndex;
@@ -58,12 +59,12 @@ void Hmck::PBRApp::run() {
 
             // do per frame calculations
 
-            if(window.getInputHandler().isKeyboardKeyDown(KEY_A)) azimuth -= 1.f * frameTime;
-            if(window.getInputHandler().isKeyboardKeyDown(KEY_D)) azimuth += 1.f * frameTime;
-            if(window.getInputHandler().isKeyboardKeyDown(KEY_W)) elevation += 1.f * frameTime;
-            if(window.getInputHandler().isKeyboardKeyDown(KEY_S)) elevation -= 1.f * frameTime;
-            if(window.getInputHandler().isKeyboardKeyDown(KEY_DOWN)) radius += 1.f * frameTime;
-            if(window.getInputHandler().isKeyboardKeyDown(KEY_UP)) radius -= 1.f * frameTime;
+            if(window.getKeyState(KEY_A) == KeyState::DOWN) azimuth -= 1.f * frameTime;
+            if(window.getKeyState(KEY_D) == KeyState::DOWN) azimuth += 1.f * frameTime;
+            if(window.getKeyState(KEY_W) == KeyState::DOWN) elevation += 1.f * frameTime;
+            if(window.getKeyState(KEY_S) == KeyState::DOWN) elevation -= 1.f * frameTime;
+            if(window.getKeyState(KEY_UP) == KeyState::DOWN) radius -= 1.f * frameTime;
+            if(window.getKeyState(KEY_DOWN) == KeyState::DOWN) radius += 1.f * frameTime;
             HmckVec3 pos = Math::orbitalPosition(HmckVec3{.0f,.0f,.0f}, radius, azimuth, elevation);
 
             // write to projection buffer
@@ -76,7 +77,7 @@ void Hmck::PBRApp::run() {
             deviceStorage.getBuffer(projectionDescriptors.buffers[frameIndex])->writeToBuffer(&projectionBuffer);
 
 
-            deviceStorage.bindVertexBuffer(geometry.vertexBuffer, geometry.indexBuffer, commandBuffer);
+            deviceStorage.bindVertexBuffer(geomBuffers.vertexBuffer, geomBuffers.indexBuffer, commandBuffer);
             // Opaque geometry pass
             renderContext.beginRenderPass(opaqueGeometryPass.framebuffer, commandBuffer, {
                                          {.color = {0.0f, 0.0f, 0.0f, 0.0f}},
@@ -115,10 +116,10 @@ void Hmck::PBRApp::run() {
             opaqueGeometryPass.pipeline->bind(commandBuffer);
 
             // Draw opaque, bind push block for each mesh
-            for (int i = 0; i < state.renderMeshes.size(); i++) {
-                Geometry::MeshInstance &mesh = state.renderMeshes[i];
-                if ((mesh.visibilityFlags & Geometry::VisibilityFlags::VISIBLE) ==  Geometry::VisibilityFlags::NONE) { continue;}
-                if (mesh.visibilityFlags & Geometry::VisibilityFlags::OPAQUE) {
+            for (int i = 0; i < geometry.renderMeshes.size(); i++) {
+                Geometry::MeshInstance &mesh = geometry.renderMeshes[i];
+                if ((mesh.visibilityFlags & Geometry::VisibilityFlags::VISIBILITY_VISIBLE) ==  Geometry::VisibilityFlags::VISIBILITY_NONE) { continue;}
+                if (mesh.visibilityFlags & Geometry::VisibilityFlags::VISIBILITY_OPAQUE) {
                     meshPushBlock.modelMat = mesh.transform;
                     meshPushBlock.meshIndex = i;
 
@@ -142,10 +143,10 @@ void Hmck::PBRApp::run() {
             transparentGeometryPass.pipeline->bind(commandBuffer);
 
             // Draw transparent, bind push block for each mesh
-            for (int i = 0; i < state.renderMeshes.size(); i++) {
-                Geometry::MeshInstance &mesh = state.renderMeshes[i];
-                if ((mesh.visibilityFlags & Geometry::VisibilityFlags::VISIBLE) ==  Geometry::VisibilityFlags::NONE) { continue;}
-                if (mesh.visibilityFlags & Geometry::VisibilityFlags::BLEND) {
+            for (int i = 0; i < geometry.renderMeshes.size(); i++) {
+                Geometry::MeshInstance &mesh = geometry.renderMeshes[i];
+                if ((mesh.visibilityFlags & Geometry::VisibilityFlags::VISIBILITY_VISIBLE) ==  Geometry::VisibilityFlags::VISIBILITY_NONE) { continue;}
+                if (mesh.visibilityFlags & Geometry::VisibilityFlags::VISIBILITY_BLEND) {
                     meshPushBlock.modelMat = mesh.transform;
                     meshPushBlock.meshIndex = i;
 
@@ -180,21 +181,19 @@ void Hmck::PBRApp::run() {
             // draw ui
             ui.beginUserInterface();
             ui.showDebugStats(projectionBuffer.inverseViewMat);
-            ui.showWindowControls();
             ui.endUserInterface(commandBuffer);
 
             // end frame
             renderContext.endRenderPass(commandBuffer);
             renderContext.endFrame();
         }
-
-        vkDeviceWaitIdle(device.device());
     }
+    device.waitIdle();
 }
 
 void Hmck::PBRApp::load() {
     // Load the meshes
-    Loader(state, device, deviceStorage)
+    Loader(geometry, device, deviceStorage)
     .loadglTF("../data/models/helmet/helmet.glb");
     //.loadglTF("../data/models/helmet/DamagedHelmet.glb");
     //.loadglTF("../data/models/blender.glb");
@@ -238,34 +237,34 @@ void Hmck::PBRApp::load() {
     });
 
 
-    geometry.vertexBuffer = deviceStorage.createVertexBuffer({
-        .vertexSize = sizeof(state.vertices[0]),
-        .vertexCount = static_cast<uint32_t>(state.vertices.size()),
-        .data = static_cast<void *>(state.vertices.data())
+    geomBuffers.vertexBuffer = deviceStorage.createVertexBuffer({
+        .vertexSize = sizeof(geometry.vertices[0]),
+        .vertexCount = static_cast<uint32_t>(geometry.vertices.size()),
+        .data = static_cast<void *>(geometry.vertices.data())
     });
 
-    geometry.indexBuffer = deviceStorage.createIndexBuffer({
-        .indexSize = sizeof(state.indices[0]),
-        .indexCount = static_cast<uint32_t>(state.indices.size()),
-        .data = static_cast<void *>(state.indices.data())
+    geomBuffers.indexBuffer = deviceStorage.createIndexBuffer({
+        .indexSize = sizeof(geometry.indices[0]),
+        .indexCount = static_cast<uint32_t>(geometry.indices.size()),
+        .data = static_cast<void *>(geometry.indices.data())
     });
 
-    geometry.numTriangles = static_cast<uint32_t>(state.vertices.size()) / 3;
+    geomBuffers.numTriangles = static_cast<uint32_t>(geometry.vertices.size()) / 3;
     Logger::log(LOG_LEVEL_DEBUG, "Vertex buffer created. Number of vertices: %d, Number of triangles: %d\n",
-                state.vertices.size(), geometry.numTriangles);
-    Logger::log(LOG_LEVEL_DEBUG, "Index buffer created. Number of indices: %d\n", state.indices.size());
+                geometry.vertices.size(), geomBuffers.numTriangles);
+    Logger::log(LOG_LEVEL_DEBUG, "Index buffer created. Number of indices: %d\n", geometry.indices.size());
 
     // free the host memory
-    state.vertices.clear();
-    state.indices.clear();
+    geometry.vertices.clear();
+    geometry.indices.clear();
 }
 
 void Hmck::PBRApp::init() {
     // Setup global descriptor set
     // Descriptor image infos for all textures in the bindless texture array
-    std::vector<VkDescriptorImageInfo> imageInfos{state.textures.size()};
-    for (int im = 0; im < state.textures.size(); im++) {
-        imageInfos[im] = deviceStorage.getTexture2D(state.textures[im])->descriptor;
+    std::vector<VkDescriptorImageInfo> imageInfos{geometry.textures.size()};
+    for (int im = 0; im < geometry.textures.size(); im++) {
+        imageInfos[im] = deviceStorage.getTexture2D(geometry.textures[im])->descriptor;
     }
     globalDescriptors.descriptorSetLayout = deviceStorage.createDescriptorSetLayout({
         .bindings = {

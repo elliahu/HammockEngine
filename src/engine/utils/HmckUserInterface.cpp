@@ -1,28 +1,33 @@
 #include "HmckUserInterface.h"
 #include "core/HmckGraphicsPipeline.h"
-#include "backends/imgui_impl_glfw.h"
+#if defined(_WIN32)
+#include "backends/imgui_impl_win32.h"
+#endif
 #include "backends/imgui_impl_vulkan.h"
 #include "utils/HmckUtils.h"
 #include <deque>
 #include <string>
 
 
-Hmck::UserInterface::UserInterface(Device &device, const VkRenderPass renderPass, Window &window) : device{device},
-    window{window}, renderPass{renderPass} {
+Hmck::UserInterface::UserInterface(Device &device, const VkRenderPass renderPass,VkDescriptorPool descriptorPool, Window &window) : device{device},
+    window{window}, renderPass{renderPass}, imguiPool{descriptorPool} {
     init();
     setupStyle();
 }
 
 Hmck::UserInterface::~UserInterface() {
-    vkDestroyDescriptorPool(device.device(), imguiPool, nullptr);
     ImGui_ImplVulkan_Shutdown();
-    ImGui_ImplGlfw_Shutdown();
+#if defined(_WIN32)
+    ImGui_ImplWin32_Shutdown();
+#endif
     ImGui::DestroyContext();
 }
 
 void Hmck::UserInterface::beginUserInterface() {
     ImGui_ImplVulkan_NewFrame();
-    ImGui_ImplGlfw_NewFrame();
+#if defined(_WIN32)
+    ImGui_ImplWin32_NewFrame();
+#endif
     ImGui::NewFrame();
 }
 
@@ -52,37 +57,6 @@ void Hmck::UserInterface::showDebugStats(const HmckMat4 &inverseView) {
     ImGui::End();
 }
 
-void Hmck::UserInterface::showWindowControls() const {
-    constexpr ImGuiWindowFlags window_flags = ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_AlwaysAutoResize |
-                                              ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_NoFocusOnAppearing |
-                                              ImGuiWindowFlags_NoNav;
-    ImGui::SetNextWindowPos({static_cast<float>(window.getExtent().width - 10), 10.f}, ImGuiCond_Always, {1.f, 0.f});
-    ImGui::SetNextWindowBgAlpha(0.35f);
-    ImGui::Begin("Window controls", (bool *) 0, window_flags);
-    if (ImGui::TreeNode("Window mode")) {
-        if (ImGui::Button("Fullscreen")) {
-            window.setWindowMode(WINDOW_MODE_FULLSCREEN);
-        }
-        if (ImGui::Button("Borderless")) {
-            window.setWindowMode(WINDOW_MODE_BORDERLESS);
-        }
-        if (ImGui::Button("Windowed")) {
-            window.setWindowMode(WINDOW_MODE_WINDOWED);
-        }
-        ImGui::TreePop();
-    }
-    if (ImGui::TreeNode("Resolution")) {
-        static int x = window.getExtent().width, y = window.getExtent().height;
-        ImGui::DragInt("Horizontal", &x, 1.f, 800, 3840);
-        ImGui::DragInt("Vertical", &y, 1.f, 600, 2160);
-        if (ImGui::Button("Apply")) {
-            window.setWindowResolution(x, y);
-        }
-        ImGui::TreePop();
-    }
-    ImGui::End();
-}
-
 
 void Hmck::UserInterface::showColorSettings(float *exposure, float *gamma, float *whitePoint) {
     constexpr ImGuiWindowFlags window_flags = ImGuiWindowFlags_AlwaysAutoResize;
@@ -93,49 +67,15 @@ void Hmck::UserInterface::showColorSettings(float *exposure, float *gamma, float
     endWindow();
 }
 
-void Hmck::UserInterface::forward(const int button, const bool state) {
-    ImGuiIO &io = ImGui::GetIO();
-    io.AddMouseButtonEvent(button, state);
-}
-
-
 void Hmck::UserInterface::init() {
-    //1: create descriptor pool for IMGUI
-    // the size of the pool is very oversize, but it's copied from imgui demo itself.
-    const VkDescriptorPoolSize pool_sizes[] =
-    {
-        {VK_DESCRIPTOR_TYPE_SAMPLER, 1000},
-        {VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1000},
-        {VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, 1000},
-        {VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, 1000},
-        {VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER, 1000},
-        {VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER, 1000},
-        {VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1000},
-        {VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, 1000},
-        {VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC, 1000},
-        {VK_DESCRIPTOR_TYPE_STORAGE_BUFFER_DYNAMIC, 1000},
-        {VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT, 1000}
-    };
-
-    VkDescriptorPoolCreateInfo pool_info = {};
-    pool_info.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
-    pool_info.flags = VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT;
-    pool_info.maxSets = 1000;
-    pool_info.poolSizeCount = static_cast<uint32_t>(std::size(pool_sizes));
-    pool_info.pPoolSizes = pool_sizes;
-
-
-    if (vkCreateDescriptorPool(device.device(), &pool_info, nullptr, &imguiPool) != VK_SUCCESS) {
-        throw std::runtime_error("Failed to create descriptor pool for UI");
-    }
-
-    // 2: initialize imgui library
-
     //this initializes the core structures of imgui
     ImGui::CreateContext();
 
     // initialize for glfw
-    ImGui_ImplGlfw_InitForVulkan(window.getGLFWwindow(), true);
+#if defined(_WIN32)
+    ImGui_ImplWin32_Init(window.hWnd);
+#endif
+
 
     //this initializes imgui for Vulkan
     ImGui_ImplVulkan_InitInfo init_info = {};
@@ -147,16 +87,15 @@ void Hmck::UserInterface::init() {
     init_info.MinImageCount = 3;
     init_info.ImageCount = 3;
     init_info.MSAASamples = VK_SAMPLE_COUNT_1_BIT;
+    init_info.RenderPass = renderPass;
 
-    ImGui_ImplVulkan_Init(&init_info, renderPass);
+    ImGui_ImplVulkan_Init(&init_info);
 
     //execute a gpu command to upload imgui font textures
-    VkCommandBuffer command_buffer = beginSingleTimeCommands();
-    ImGui_ImplVulkan_CreateFontsTexture(command_buffer);
-    endSingleTimeCommands(command_buffer);
+    ImGui_ImplVulkan_CreateFontsTexture();
 
     //clear font textures from cpu data
-    ImGui_ImplVulkan_DestroyFontUploadObjects();
+
 
     //add then destroy the imgui created structures
     // done in the destructor

@@ -554,4 +554,8 @@ namespace Hmck {
 
         transitionImageLayout(dstImage, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_GENERAL, 1, 0, 1, 0);
     }
+
+    void Device::waitIdle() {
+        vkDeviceWaitIdle(device());
+    }
 }

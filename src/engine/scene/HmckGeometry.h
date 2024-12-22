@@ -10,12 +10,12 @@ namespace Hmck {
     struct Geometry {
 
         enum VisibilityFlags : int32_t {
-            NONE = 0,
-            VISIBLE = 1 << 0,
-            OPAQUE = 1 << 1,
-            BLEND = 1 << 2,
-            CASTS_SHADOW = 1 << 3,
-            RECEIVES_SHADOW = 1 << 4,
+            VISIBILITY_NONE = 0,
+            VISIBILITY_VISIBLE = 1 << 0,
+            VISIBILITY_OPAQUE = 1 << 1,
+            VISIBILITY_BLEND = 1 << 2,
+            VISIBILITY_CASTS_SHADOW = 1 << 3,
+            VISIBILITY_RECEIVES_SHADOW = 1 << 4,
         };
 
         struct MeshInstance {

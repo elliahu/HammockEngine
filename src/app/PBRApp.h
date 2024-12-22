@@ -48,7 +48,7 @@ namespace Hmck {
             ResourceHandle<Buffer> vertexBuffer;
              ResourceHandle<Buffer> indexBuffer;
             uint32_t numTriangles = 0;
-        } geometry;
+        } geomBuffers;
 
         // Descriptors
         // global descriptor
