@@ -40,6 +40,9 @@ namespace Hmck
         void resetWindowResizedFlag() { framebufferResized = false; }
 
         KeyState getKeyState(Keycode key);
+        ButtonState getButtonState(Keycode button);
+        HmckVec2 getCursorPosition() const {return mousePosition;}
+
 
         bool shouldClose() const;
         void pollEvents();
@@ -52,6 +55,7 @@ namespace Hmck
         bool _shouldClose = false;
         std::string windowName;
         std::unordered_map<Keycode, KeyState> keymap;
+        std::unordered_map<Keycode, ButtonState> buttonMap;
         HmckVec2 mousePosition{0.f,0.f};
 
 

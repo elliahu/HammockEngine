@@ -11,6 +11,14 @@ namespace Hmck{
         NONE, DOWN, UP
     };
 
+    enum class ButtonState {
+        NONE, DOWN, UP
+    };
+
+#define MOUSE_LEFT 0x0
+#define MOUSE_RIGHT 0x1
+#define MOUSE_MIDDLE 0x2
+
 #if defined(_WIN32)
 #define KEY_A 0x41
 #define KEY_B 0x42

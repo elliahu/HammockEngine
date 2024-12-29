@@ -44,24 +44,52 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam){
         // Pass the character to ImGui
         Hmck::UserInterface::forwardInputCharacter((unsigned short)wParam);
         return 0;
-    case WM_LBUTTONDOWN: // mouse left down
+    case WM_LBUTTONDOWN: {
         Hmck::UserInterface::forwardButtonDownEvent(ImGuiMouseButton_Left, true);
+        if(window) {
+            window->buttonMap[MOUSE_LEFT] = Hmck::ButtonState::DOWN;
+        }
         return 0;
-    case WM_RBUTTONDOWN: // mouse right down
+    }
+    case WM_RBUTTONDOWN: {
         Hmck::UserInterface::forwardButtonDownEvent(ImGuiMouseButton_Right, true);
+        if(window) {
+            window->buttonMap[MOUSE_RIGHT] = Hmck::ButtonState::DOWN;
+        }
         return 0;
-    case WM_MBUTTONDOWN: // mouse middle down
+    }
+    case WM_MBUTTONDOWN: {
+        // mouse middle down
         Hmck::UserInterface::forwardButtonDownEvent(ImGuiMouseButton_Middle, true);
+        if(window) {
+            window->buttonMap[MOUSE_MIDDLE] = Hmck::ButtonState::DOWN;
+        }
         return 0;
-    case WM_LBUTTONUP: // mouse left up
+    }
+    case WM_LBUTTONUP: {
+        // mouse left up
         Hmck::UserInterface::forwardButtonDownEvent(ImGuiMouseButton_Left, false);
+        if(window) {
+            window->buttonMap[MOUSE_LEFT] = Hmck::ButtonState::UP;
+        }
         return 0;
-    case WM_RBUTTONUP: // mouse right up
+    }
+    case WM_RBUTTONUP: {
+        // mouse right up
         Hmck::UserInterface::forwardButtonDownEvent(ImGuiMouseButton_Right, false);
+        if(window) {
+            window->buttonMap[MOUSE_RIGHT] = Hmck::ButtonState::UP;
+        }
         return 0;
-    case WM_MBUTTONUP: // mouse middle up
+    }
+    case WM_MBUTTONUP: {
+        // mouse middle up
         Hmck::UserInterface::forwardButtonDownEvent(ImGuiMouseButton_Middle, false);
+        if(window) {
+            window->buttonMap[MOUSE_MIDDLE] = Hmck::ButtonState::UP;
+        }
         return 0;
+    }
     case WM_MOUSEWHEEL:
         return 0;
     case WM_MOUSEMOVE:{
@@ -377,13 +405,17 @@ Hmck::Window::~Window()
 #endif
 }
 
-// You might also want to add this helper method to your Window class
-
 Hmck::KeyState Hmck::Window::getKeyState(Keycode key)
 {
     if (keymap.contains(key))
         return keymap[key];
     return KeyState::NONE;
+}
+
+Hmck::ButtonState Hmck::Window::getButtonState(Keycode button) {
+    if (buttonMap.contains(button))
+        return buttonMap[button];
+    return ButtonState::NONE;
 }
 
 bool Hmck::Window::shouldClose() const
