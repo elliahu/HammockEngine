@@ -98,7 +98,8 @@ void registry_handler(void *data, struct wl_registry *registry, uint32_t id, con
 {
     Hmck::Window *self = static_cast<Hmck::Window *>(data);
 
-    if (interface == nullptr || data == nullptr) {
+    if (interface == nullptr || data == nullptr)
+    {
         Hmck::Logger::log(Hmck::LOG_LEVEL_ERROR, "Failed to get Wayland interface or data");
         return;
     }
@@ -107,11 +108,11 @@ void registry_handler(void *data, struct wl_registry *registry, uint32_t id, con
     {
         self->compositor = static_cast<wl_compositor *>(
             wl_registry_bind(registry, id, &wl_compositor_interface, 1));
-
-        if (!self->compositor) {
-            Hmck::Logger::log(Hmck::LOG_LEVEL_ERROR, "Failed to bind to Wayland compositor");
-            return;
-        }
+    }
+    else if (strcmp(interface, "xdg_wm_base") == 0)
+    {
+        self->xdg_wm_base = static_cast<xdg_wm_base *>(
+            wl_registry_bind(registry, id, &xdg_wm_base_interface, 1));
     }
     else if (strcmp(interface, "wl_seat") == 0)
     {
@@ -123,7 +124,8 @@ void registry_handler(void *data, struct wl_registry *registry, uint32_t id, con
 
 void keyboard_key_handler(void *data, struct wl_keyboard *keyboard, uint32_t serial, uint32_t time, uint32_t key, uint32_t state)
 {
-    if (!data) {
+    if (!data)
+    {
         Hmck::Logger::log(Hmck::LOG_LEVEL_ERROR, "Keyboard handler received null data");
         return;
     }
@@ -140,7 +142,8 @@ void keyboard_key_handler(void *data, struct wl_keyboard *keyboard, uint32_t ser
 
 void seat_capabilities_handler(void *data, struct wl_seat *seat, uint32_t capabilities)
 {
-    if (!data) {
+    if (!data)
+    {
         Hmck::Logger::log(Hmck::LOG_LEVEL_ERROR, "Seat capabilities handler received null data");
         return;
     }
@@ -259,7 +262,7 @@ Hmck::Window::Window(VulkanInstance &instance, const std::string &_windowName, i
     }
 
     struct wl_registry *registry = wl_display_get_registry(display);
-    wl_registry_add_listener(registry, &registry_listener, this);
+    wl_registry_add_listener(registry, &registry_listener, this); // Changed NULL to this
     wl_display_dispatch(display);
     wl_display_roundtrip(display);
 
@@ -273,6 +276,37 @@ Hmck::Window::Window(VulkanInstance &instance, const std::string &_windowName, i
     {
         throw std::runtime_error("Failed to create Wayland surface");
     }
+
+    // Add XDG shell support
+    if (!xdg_wm_base)
+    {
+        throw std::runtime_error("Failed to get XDG shell");
+    }
+
+    xdg_surface = xdg_wm_base_get_xdg_surface(xdg_wm_base, _surface);
+    if (!xdg_surface)
+    {
+        throw std::runtime_error("Failed to create XDG surface");
+    }
+
+    xdg_toplevel = xdg_surface_get_toplevel(xdg_surface);
+    if (!xdg_toplevel)
+    {
+        throw std::runtime_error("Failed to create toplevel surface");
+    }
+
+    // Set window properties
+    xdg_toplevel_set_title(xdg_toplevel, windowName.c_str());
+    xdg_toplevel_set_app_id(xdg_toplevel, windowName.c_str());
+
+    // Configure the surface size
+    struct wl_region *region = wl_compositor_create_region(compositor);
+    wl_region_add(region, 0, 0, width, height);
+    wl_surface_set_opaque_region(_surface, region);
+    wl_region_destroy(region);
+
+    wl_surface_commit(_surface);
+    wl_display_roundtrip(display);
 
     // Create Vulkan Wayland surface
     VkWaylandSurfaceCreateInfoKHR surfaceCreateInfo = {};

@@ -12,4 +12,3 @@ target_include_directories(hammock_app PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 
 # Link engine library
 target_link_libraries(hammock_app PUBLIC hammock_engine)
-

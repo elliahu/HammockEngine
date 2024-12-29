@@ -7,6 +7,8 @@
 #endif
 #if defined(__linux__)
 #include <wayland-client.h>
+#include <wayland-client-protocol.h>
+#include "xdg-shell-client-protocol.h"
 #include <wayland-egl.h>
 #endif
 
@@ -66,6 +68,9 @@ namespace Hmck
         struct wl_surface *_surface;
         struct wl_keyboard *keyboard = nullptr;
         struct wl_seat *seat = nullptr;
+        struct xdg_surface *xdg_surface = nullptr;
+        struct xdg_toplevel *xdg_toplevel = nullptr;
+        struct xdg_wm_base *xdg_wm_base = nullptr;
 #endif
     };
 }
