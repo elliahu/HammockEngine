@@ -1,0 +1,7 @@
+{
+    "files.associations": {
+        "memory": "cpp"
+    },
+    "cmake.buildDirectory": "${workspaceFolder}/cmake-build-debug",
+    "cmake.configureOnOpen": true
+}

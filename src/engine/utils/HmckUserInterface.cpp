@@ -1,8 +1,5 @@
 #include "HmckUserInterface.h"
 #include "core/HmckGraphicsPipeline.h"
-#if defined(_WIN32)
-#include "backends/imgui_impl_win32.h"
-#endif
 #include "backends/imgui_impl_vulkan.h"
 #include "utils/HmckUtils.h"
 #include <deque>

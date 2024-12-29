@@ -1,0 +1,29 @@
+{
+    "configurations": [
+      {
+        "type": "cppdbg",
+        "request": "launch",
+        "name": "Build and Debug Hammock",
+        "program": "${workspaceFolder}/cmake-build-debug/hammock",
+        "preLaunchTask": "build-hammock",
+        "stopAtEntry": true,
+        "cwd": "${workspaceFolder}/cmake-build-debug"
+      },
+      {
+        "type": "cppdbg",
+        "request": "launch",
+        "name": "Build and Debug Generate Environment Maps",
+        "program": "${workspaceFolder}/cmake-build-debug/tools/generate_environment_maps/generate_environment_maps.exe",
+        "preLaunchTask": "build-generate-environment-maps",
+        "stopAtEntry": true,
+        "cwd": "${workspaceFolder}/cmake-build-debug"
+      }
+    ],
+    "inputs": [
+      {
+        "type": "promptString",
+        "id": "executableName",
+        "description": "Name of your executable"
+      }
+    ]
+  }

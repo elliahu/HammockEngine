@@ -5,6 +5,7 @@
 #include "scene/HmckCamera.h"
 #include "utils/HmckScopedMemory.h"
 #include "utils/HmckUserInterface.h"
+#include "platform/HmckWindow.h"
 
 Hmck::VolumeApp::VolumeApp() {
     load();

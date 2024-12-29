@@ -5,16 +5,20 @@
 #if defined(_WIN32)
 #include <windows.h>
 #endif
+#if defined(__linux__)
+#include <wayland-client.h>
+#include <wayland-egl.h>
+#endif
 
 #include "HmckKeycodes.h"
 #include "core/HmckVulkanInstance.h"
 #include "utils/HmckEventEmitter.h"
 
-
-namespace Hmck {
-    class Window : public EventEmitter {
+namespace Hmck
+{
+    class Window : public EventEmitter
+    {
     public:
-
         Window(VulkanInstance &instance, const std::string &_windowName, int windowWidth, int windowHeight);
 
         ~Window();
@@ -25,14 +29,14 @@ namespace Hmck {
 
         VkSurfaceKHR getSurface() const { return surface; }
         std::string getWindowName() const { return windowName; }
-        VkExtent2D getExtent() const {
+        VkExtent2D getExtent() const
+        {
             return {static_cast<uint32_t>(width), static_cast<uint32_t>(height)};
         }
         bool wasWindowResized() const { return framebufferResized; }
         void resetWindowResizedFlag() { framebufferResized = false; }
 
         KeyState getKeyState(Keycode key);
-
 
         bool shouldClose() const;
         void pollEvents();
@@ -56,5 +60,14 @@ namespace Hmck {
         bool resizing = false;
 #endif
 
+#if defined(__linux__)
+        struct wl_display *display;
+        struct wl_compositor *compositor;
+        struct wl_surface *_surface;
+        struct wl_keyboard *keyboard = nullptr;
+        struct wl_seat *seat = nullptr;
+
+        
+#endif
     };
 }

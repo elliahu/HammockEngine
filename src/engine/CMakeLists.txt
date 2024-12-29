@@ -10,10 +10,17 @@ if(WIN32)
     list(APPEND ENGINE_SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/platform/win32/resources.rc)
 endif()
 
-# Add ImGui source files (if not already part of your ENGINE_SOURCES)
+# Add ImGui source files
 file(GLOB_RECURSE IMGUI_SOURCES
         ${PROJECT_SOURCE_DIR}/external/imgui/*.cpp
 )
+
+# Include Win32 backend files if building on Windows
+if(WIN32)
+    list(APPEND IMGUI_SOURCES
+        ${PROJECT_SOURCE_DIR}/external/imgui/backends/imgui_impl_win32.cpp
+    )
+endif()
 
 # Define engine library
 add_library(hammock_engine STATIC ${ENGINE_SOURCES} ${IMGUI_SOURCES})
@@ -30,6 +37,7 @@ if(WIN32)
     target_link_libraries(hammock_engine PRIVATE Dwmapi)
 elseif(UNIX AND NOT APPLE)
     target_compile_definitions(hammock_engine PRIVATE VK_USE_PLATFORM_WAYLAND_KHR)
+    target_link_libraries(hammock_engine PRIVATE wayland-client)
 elseif(APPLE)
     target_compile_definitions(hammock_engine PRIVATE VK_USE_PLATFORM_METAL_EXT)
 endif()

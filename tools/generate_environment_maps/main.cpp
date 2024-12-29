@@ -1,7 +1,7 @@
 #include <iostream>
 
 #include "core/HmckDevice.h"
-#include "core/HmckResourceManager.h"
+#include "core/HmckDeviceStorage.h"
 #include "platform/HmckWindow.h"
 #include "resources/HmckGenerator.h"
 #include "utils/HmckScopedMemory.h"
