@@ -202,7 +202,7 @@ void Hmck::PBRApp::load() {
 
     int32_t w, h, c;
     ScopedMemory environmentData = ScopedMemory(Filesystem::readImage(
-        "../data/env/ibl/precomp/lebombo/lebombo_prefiltered_map.hdr", w, h, c, Filesystem::ImageFormat::R32G32B32A32_SFLOAT));
+        "../data/env/ibl/precomp/sunset/env.hdr", w, h, c, Filesystem::ImageFormat::R32G32B32A32_SFLOAT));
     const uint32_t mipLevels = getNumberOfMipLevels(w, h);
     environment.environmentMap = deviceStorage.createTexture2D({
         .buffer = environmentData.get(),
@@ -220,7 +220,7 @@ void Hmck::PBRApp::load() {
     environment.prefilteredEnvMap = generator.generatePrefilteredMap(device, environment.environmentMap, deviceStorage);
 
     ScopedMemory irradianceData = ScopedMemory(Filesystem::readImage(
-        "../data/env/ibl/precomp/lebombo/lebombo_irradiance_map.hdr", w, h, c, Filesystem::ImageFormat::R32G32B32A32_SFLOAT));
+        "../data/env/ibl/precomp/sunset/irr.hdr", w, h, c, Filesystem::ImageFormat::R32G32B32A32_SFLOAT));
     environment.irradianceMap = deviceStorage.createTexture2D({
         .buffer = irradianceData.get(),
         .instanceSize = sizeof(float),
@@ -228,7 +228,7 @@ void Hmck::PBRApp::load() {
         .format = VK_FORMAT_R32G32B32A32_SFLOAT,
     });
 
-    ScopedMemory brdfLutData = ScopedMemory(Filesystem::readImage("../data/env/ibl/precomp/lebombo/brdf_integration_map_ct_ggx.hdr", w,
+    ScopedMemory brdfLutData = ScopedMemory(Filesystem::readImage("../data/env/ibl/precomp/sunset/brdflut.hdr", w,
                                                                   h, c, Filesystem::ImageFormat::R32G32_SFLOAT));
     environment.brdfLut = deviceStorage.createTexture2D({
         .buffer = brdfLutData.get(),

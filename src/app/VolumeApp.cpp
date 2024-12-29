@@ -104,6 +104,7 @@ void Hmck::VolumeApp::run() {
 }
 
 void Hmck::VolumeApp::load() {
+    
     Loader(geometry, device, deviceStorage).loadglTF("../data/models/Sphere/Sphere.glb");
 
 

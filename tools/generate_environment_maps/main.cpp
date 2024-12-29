@@ -9,19 +9,20 @@
 
 #define DIM 512
 
-int main(int argc, char * argv[]) {
+int main(int argc, char *argv[])
+{
     // create resources
     // unable to run headless as of now, so will be using a flash window
-    Hmck::Window window{1, 1, "Generating Environment Maps"};
     Hmck::VulkanInstance instance{};
-    window.createWindowSurface(instance);
+    Hmck::Window window{instance, "Generating Environment Maps", 1, 1};
     Hmck::Device device{instance, window.getSurface()};
     Hmck::DeviceStorage resources{device};
-    Hmck::Generator environment;
+    Hmck::Generator generator{};
 
     // get the source hdr file
     std::string hdrFilename(argv[1]); // first argument
-    if(!Hmck::Filesystem::fileExists(hdrFilename)) {
+    if (!Hmck::Filesystem::fileExists(hdrFilename))
+    {
         std::cerr << "File does not exist " << hdrFilename << std::endl;
         return EXIT_FAILURE;
     }
@@ -32,15 +33,38 @@ int main(int argc, char * argv[]) {
     // get the brdf lut map destination
     std::string brdflutFilename(argv[3]);
 
+    float deltaPhi = 180.0f;
+    float deltaTheta = 64.0f;
+
+    if (argc > 4)
+    {
+        deltaPhi = std::stof(argv[4]);
+    }
+
+    if (argc > 5)
+    {
+        deltaTheta = std::stof(argv[5]);
+    }
+
     std::cout << "Generating environment maps..." << std::endl;
 
     // load the source env and generate rest
-    int32_t w,h,c;
-    Hmck::ScopedMemory environmentData = Hmck::ScopedMemory(Hmck::Filesystem::readImage(hdrFilename,w,h,c, Hmck::Filesystem::ImageFormat::R32G32B32A32_SFLOAT));
-    environment.readEnvironmentMap(environmentData.get(), sizeof(float), w,h,c, resources, VK_FORMAT_R32G32B32A32_SFLOAT);
-    environment.generatePrefilteredMap(device, resources, VK_FORMAT_R32G32B32A32_SFLOAT);
-    environment.generateIrradianceMap(device, resources, VK_FORMAT_R32G32B32A32_SFLOAT);
-    environment.generateBRDFLookUpTable(device, resources, 512, VK_FORMAT_R32G32_SFLOAT);
+    int32_t w, h, c;
+    Hmck::ScopedMemory environmentData = Hmck::ScopedMemory(Hmck::Filesystem::readImage(hdrFilename, w, h, c, Hmck::Filesystem::ImageFormat::R32G32B32A32_SFLOAT));
+    const uint32_t mipLevels = Hmck::getNumberOfMipLevels(w, h);
+    Hmck::ResourceHandle<Hmck::Texture2D> environmentMap = resources.createTexture2D({.buffer = environmentData.get(),
+                                                                                      .instanceSize = sizeof(float),
+                                                                                      .width = static_cast<uint32_t>(w),
+                                                                                      .height = static_cast<uint32_t>(h),
+                                                                                      .channels = static_cast<uint32_t>(c),
+                                                                                      .format = VK_FORMAT_R32G32B32A32_SFLOAT,
+                                                                                      .samplerInfo = {
+                                                                                          .filter = VK_FILTER_LINEAR,
+                                                                                          .addressMode = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE,
+                                                                                          .maxLod = static_cast<float>(mipLevels)}});
+    Hmck::ResourceHandle<Hmck::Texture2D> prefilteredMap = generator.generatePrefilteredMap(device, environmentMap, resources);
+    Hmck::ResourceHandle<Hmck::Texture2D> irradianceMap = generator.generateIrradianceMap(device, environmentMap, resources, VK_FORMAT_R32G32B32A32_SFLOAT, deltaPhi, deltaTheta);
+    Hmck::ResourceHandle<Hmck::Texture2D> brdfLUT = generator.generateBRDFLookUpTable(device, resources, 512, VK_FORMAT_R32G32_SFLOAT);
 
     // Irradiance map
     {
@@ -63,22 +87,21 @@ int main(int argc, char * argv[]) {
         device.createImageWithInfo(irradianceImageCreateInfo, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, dstIrradianceImage, dstIrradianceImageMemory);
 
         // copy on-device image contents to host-visible image
-        device.copyImageToHostVisibleImage(resources.getTexture2D(environment.irradianceMap)->image,dstIrradianceImage,w,h);
+        device.copyImageToHostVisibleImage(resources.getTexture2D(irradianceMap)->image, dstIrradianceImage, w, h);
 
         // map memory
-        const float * irradianceImageData;
+        const float *irradianceImageData;
         // Get layout of the image (including row pitch)
         VkImageSubresource subResource{};
         subResource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
         VkSubresourceLayout subResourceLayout;
         vkGetImageSubresourceLayout(device.device(), dstIrradianceImage, &subResource, &subResourceLayout);
         // Map image memory so we can start copying from it
-        vkMapMemory(device.device(), dstIrradianceImageMemory, 0, VK_WHOLE_SIZE, 0, (void**)&irradianceImageData);
+        vkMapMemory(device.device(), dstIrradianceImageMemory, 0, VK_WHOLE_SIZE, 0, (void **)&irradianceImageData);
         irradianceImageData += subResourceLayout.offset;
 
-
         // write the image
-        Hmck::Filesystem::writeImage(irradianceFilename, irradianceImageData, sizeof(float), w,h, 4, Hmck::Filesystem::WriteImageDefinition::HDR);
+        Hmck::Filesystem::writeImage(irradianceFilename, irradianceImageData, sizeof(float), w, h, 4, Hmck::Filesystem::WriteImageDefinition::HDR);
 
         // clean
         vkUnmapMemory(device.device(), dstIrradianceImageMemory);
@@ -109,36 +132,38 @@ int main(int argc, char * argv[]) {
         device.createImageWithInfo(brdflutImageCreateInfo, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, dstBrdflutImage, dstBrdflutImageMemory);
 
         // copy on-device image contents to host-visible image
-        device.copyImageToHostVisibleImage(resources.getTexture2D(environment.brdfLookUpTable)->image,dstBrdflutImage,DIM,DIM);
+        device.copyImageToHostVisibleImage(resources.getTexture2D(brdfLUT)->image, dstBrdflutImage, DIM, DIM);
 
         // map memory
-        const float * brdflutImageData;
+        const float *brdflutImageData;
         // Get layout of the image (including row pitch)
         VkImageSubresource subResource{};
         subResource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
         VkSubresourceLayout subResourceLayout;
         vkGetImageSubresourceLayout(device.device(), dstBrdflutImage, &subResource, &subResourceLayout);
         // Map image memory so we can start copying from it
-        vkMapMemory(device.device(), dstBrdflutImageMemory, 0, VK_WHOLE_SIZE, 0, (void**)&brdflutImageData);
+        vkMapMemory(device.device(), dstBrdflutImageMemory, 0, VK_WHOLE_SIZE, 0, (void **)&brdflutImageData);
         brdflutImageData += subResourceLayout.offset;
 
         // RG to RGB
         std::vector<float> hdrData(DIM * DIM * 3); // Allocate buffer for 3 channels
 
-        for (uint32_t y = 0; y < DIM; ++y) {
-            for (uint32_t x = 0; x < DIM; ++x) {
+        for (uint32_t y = 0; y < DIM; ++y)
+        {
+            for (uint32_t x = 0; x < DIM; ++x)
+            {
                 size_t srcIndex = (y * DIM + x) * 2; // 2 channels in source data
                 size_t dstIndex = (y * DIM + x) * 3; // 3 channels in destination data
 
                 // Copy R and G, set B to 0
-                hdrData[dstIndex + 0] = brdflutImageData[srcIndex + 0];  // R
-                hdrData[dstIndex + 1] = brdflutImageData[srcIndex + 1];  // G
-                hdrData[dstIndex + 2] = 0.0f;                               // B
+                hdrData[dstIndex + 0] = brdflutImageData[srcIndex + 0]; // R
+                hdrData[dstIndex + 1] = brdflutImageData[srcIndex + 1]; // G
+                hdrData[dstIndex + 2] = 0.0f;                           // B
             }
         }
 
         // write the image
-        Hmck::Filesystem::writeImage(brdflutFilename, hdrData.data(), sizeof(float), DIM,DIM, 3, Hmck::Filesystem::WriteImageDefinition::HDR);
+        Hmck::Filesystem::writeImage(brdflutFilename, hdrData.data(), sizeof(float), DIM, DIM, 3, Hmck::Filesystem::WriteImageDefinition::HDR);
 
         // clean
         vkUnmapMemory(device.device(), dstBrdflutImageMemory);
@@ -147,11 +172,6 @@ int main(int argc, char * argv[]) {
 
         std::cout << "BRDF Look-up table created at " << brdflutFilename << std::endl;
     }
-
-
-    // cleanup
-    environment.destroy(resources);
-    vkDestroySurfaceKHR(instance.getInstance(), window.getSurface(), nullptr);
 
     // end
     return EXIT_SUCCESS;
