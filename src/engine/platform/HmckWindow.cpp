@@ -97,11 +97,21 @@ extern const struct wl_seat_listener seat_listener;
 void registry_handler(void *data, struct wl_registry *registry, uint32_t id, const char *interface, uint32_t version)
 {
     Hmck::Window *self = static_cast<Hmck::Window *>(data);
-  
+
+    if (interface == nullptr || data == nullptr) {
+        Hmck::Logger::log(Hmck::LOG_LEVEL_ERROR, "Failed to get Wayland interface or data");
+        return;
+    }
+
     if (strcmp(interface, "wl_compositor") == 0)
     {
         self->compositor = static_cast<wl_compositor *>(
             wl_registry_bind(registry, id, &wl_compositor_interface, 1));
+
+        if (!self->compositor) {
+            Hmck::Logger::log(Hmck::LOG_LEVEL_ERROR, "Failed to bind to Wayland compositor");
+            return;
+        }
     }
     else if (strcmp(interface, "wl_seat") == 0)
     {
@@ -113,6 +123,10 @@ void registry_handler(void *data, struct wl_registry *registry, uint32_t id, con
 
 void keyboard_key_handler(void *data, struct wl_keyboard *keyboard, uint32_t serial, uint32_t time, uint32_t key, uint32_t state)
 {
+    if (!data) {
+        Hmck::Logger::log(Hmck::LOG_LEVEL_ERROR, "Keyboard handler received null data");
+        return;
+    }
     Hmck::Window *self = static_cast<Hmck::Window *>(data);
     if (state == WL_KEYBOARD_KEY_STATE_PRESSED)
     {
@@ -126,6 +140,10 @@ void keyboard_key_handler(void *data, struct wl_keyboard *keyboard, uint32_t ser
 
 void seat_capabilities_handler(void *data, struct wl_seat *seat, uint32_t capabilities)
 {
+    if (!data) {
+        Hmck::Logger::log(Hmck::LOG_LEVEL_ERROR, "Seat capabilities handler received null data");
+        return;
+    }
     Hmck::Window *self = static_cast<Hmck::Window *>(data);
     if (capabilities & WL_SEAT_CAPABILITY_KEYBOARD)
     {
@@ -241,7 +259,7 @@ Hmck::Window::Window(VulkanInstance &instance, const std::string &_windowName, i
     }
 
     struct wl_registry *registry = wl_display_get_registry(display);
-    wl_registry_add_listener(registry, &registry_listener, NULL);
+    wl_registry_add_listener(registry, &registry_listener, this);
     wl_display_dispatch(display);
     wl_display_roundtrip(display);
 

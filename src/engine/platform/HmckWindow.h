@@ -66,8 +66,6 @@ namespace Hmck
         struct wl_surface *_surface;
         struct wl_keyboard *keyboard = nullptr;
         struct wl_seat *seat = nullptr;
-
-        
 #endif
     };
 }

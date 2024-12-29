@@ -1,4 +1,5 @@
 #include "HmckVulkanInstance.h"
+#include "utils/HmckLogger.h"
 
 #include <iostream>
 #include <stdexcept>
@@ -141,10 +142,10 @@ void Hmck::VulkanInstance::hasGflwRequiredInstanceExtensions() const {
     std::vector<VkExtensionProperties> extensions(extensionCount);
     vkEnumerateInstanceExtensionProperties(nullptr, &extensionCount, extensions.data());
 
-    //std::cout << "available extensions:" << std::endl;
+ 
     std::unordered_set<std::string> available;
     for (const auto &extension: extensions) {
-        //std::cout << "\t" << extension.extensionName << std::endl;
+        Logger::log(LOG_LEVEL_DEBUG, "Available extension: %s\n", extension.extensionName);
         available.insert(extension.extensionName);
     }
 
@@ -161,10 +162,15 @@ void Hmck::VulkanInstance::hasGflwRequiredInstanceExtensions() const {
 std::vector<const char *> Hmck::VulkanInstance::getRequiredExtensions() const {
     std::vector<const char *> extensions;
 
-#if defined(_WIN32)
-    // Add required Vulkan extensions for Win32
+    // Common extension for all platforms
     extensions.push_back(VK_KHR_SURFACE_EXTENSION_NAME);
-    extensions.push_back(VK_KHR_WIN32_SURFACE_EXTENSION_NAME);  // For Win32 platforms
+
+#if defined(_WIN32)
+    // Add Win32-specific extension
+    extensions.push_back(VK_KHR_WIN32_SURFACE_EXTENSION_NAME);
+#elif defined(__linux__)
+    // Add Wayland-specific extension
+    extensions.push_back(VK_KHR_WAYLAND_SURFACE_EXTENSION_NAME);
 #endif
 
     if (enableValidationLayers) {
