@@ -1,8 +1,5 @@
 #include "HmckUserInterface.h"
 #include "core/HmckGraphicsPipeline.h"
-#if defined(_WIN32)
-#include "backends/imgui_impl_win32.h"
-#endif
 #include "backends/imgui_impl_vulkan.h"
 #include "utils/HmckUtils.h"
 #include <deque>
@@ -17,17 +14,11 @@ Hmck::UserInterface::UserInterface(Device &device, const VkRenderPass renderPass
 
 Hmck::UserInterface::~UserInterface() {
     ImGui_ImplVulkan_Shutdown();
-#if defined(_WIN32)
-    ImGui_ImplWin32_Shutdown();
-#endif
     ImGui::DestroyContext();
 }
 
 void Hmck::UserInterface::beginUserInterface() {
     ImGui_ImplVulkan_NewFrame();
-#if defined(_WIN32)
-    ImGui_ImplWin32_NewFrame();
-#endif
     ImGui::NewFrame();
 }
 
@@ -36,7 +27,7 @@ void Hmck::UserInterface::endUserInterface(VkCommandBuffer commandBuffer) {
     ImGui_ImplVulkan_RenderDrawData(ImGui::GetDrawData(), commandBuffer);
 }
 
-void Hmck::UserInterface::showDebugStats(const HmckMat4 &inverseView) {
+void Hmck::UserInterface::showDebugStats(const HmckMat4 &inverseView, float frameTime) {
     const ImGuiIO &io = ImGui::GetIO();
     constexpr ImGuiWindowFlags window_flags = ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_AlwaysAutoResize |
                                               ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_NoFocusOnAppearing |
@@ -52,8 +43,7 @@ void Hmck::UserInterface::showDebugStats(const HmckMat4 &inverseView) {
     else
         ImGui::Text("Mouse Position: <invalid or hidden>");
     ImGui::Text("Window resolution: (%d x %d)", window.getExtent().width, window.getExtent().height);
-    ImGui::Text("Application average %.3f ms/frame (%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate,
-                ImGui::GetIO().Framerate);
+    ImGui::Text("Application average %.3f ms/frame (%.1f FPS)", frameTime * 1000.f,  1.0f / frameTime );
     ImGui::End();
 }
 
@@ -68,14 +58,7 @@ void Hmck::UserInterface::showColorSettings(float *exposure, float *gamma, float
 }
 
 void Hmck::UserInterface::init() {
-    //this initializes the core structures of imgui
     ImGui::CreateContext();
-
-    // initialize for glfw
-#if defined(_WIN32)
-    ImGui_ImplWin32_Init(window.hWnd);
-#endif
-
 
     //this initializes imgui for Vulkan
     ImGui_ImplVulkan_InitInfo init_info = {};
@@ -91,14 +74,11 @@ void Hmck::UserInterface::init() {
 
     ImGui_ImplVulkan_Init(&init_info);
 
+    const ImVec2 display_size(window.getExtent().width, window.getExtent().height);
+    ImGui::GetIO().DisplaySize = display_size;
+
     //execute a gpu command to upload imgui font textures
     ImGui_ImplVulkan_CreateFontsTexture();
-
-    //clear font textures from cpu data
-
-
-    //add then destroy the imgui created structures
-    // done in the destructor
 }
 
 void Hmck::UserInterface::setupStyle() {

@@ -3,7 +3,7 @@
 #include <tiny_gltf.h>
 
 #include "HmckGeometry.h"
-#include "Utils/HmckLogger.h"
+#include "utils/HmckLogger.h"
 #include "scene/HmckVertex.h"
 #include "tiny_obj_loader.h"
 #include <algorithm>

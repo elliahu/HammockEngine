@@ -22,9 +22,14 @@ namespace Hmck {
 
         static void showDemoWindow() { ImGui::ShowDemoWindow(); }
 
-        void showDebugStats(const HmckMat4 &inverseView);
+        void showDebugStats(const HmckMat4 &inverseView, float frameTime);
 
         void showColorSettings(float *exposure, float *gamma, float *whitePoint);
+
+        static void forwardKeyDownEvent(ImGuiKey key, bool down){ImGui::GetIO().AddKeyEvent(key,down);}
+        static void forwardButtonDownEvent(int button, bool down){ImGui::GetIO().AddMouseButtonEvent(button,down);}
+        static void forwardMousePosition(float x, float y){ImGui::GetIO().AddMousePosEvent(x,y);}
+        static void forwardInputCharacter(char c){ImGui::GetIO().AddInputCharacter(c);}
 
     private:
         void init();

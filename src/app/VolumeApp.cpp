@@ -5,6 +5,7 @@
 #include "scene/HmckCamera.h"
 #include "utils/HmckScopedMemory.h"
 #include "utils/HmckUserInterface.h"
+#include "platform/HmckWindow.h"
 
 Hmck::VolumeApp::VolumeApp() {
     load();
@@ -90,7 +91,7 @@ void Hmck::VolumeApp::run() {
             draw(frameIndex, elapsedTime, commandBuffer); {
                 ui.beginUserInterface();
                 this->ui();
-                ui.showDebugStats(bufferData.inverseView);
+                ui.showDebugStats(bufferData.inverseView, frameTime);
                 ui.endUserInterface(commandBuffer);
             }
 
@@ -103,6 +104,7 @@ void Hmck::VolumeApp::run() {
 }
 
 void Hmck::VolumeApp::load() {
+    
     Loader(geometry, device, deviceStorage).loadglTF("../data/models/Sphere/Sphere.glb");
 
 

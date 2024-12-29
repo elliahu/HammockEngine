@@ -1,5 +1,6 @@
 #pragma once
 #include <cstdarg>
+#include <cstdio>
 
 namespace Hmck {
     enum LogLevel {

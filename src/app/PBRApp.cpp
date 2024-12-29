@@ -8,6 +8,7 @@
 #include "utils/HmckScopedMemory.h"
 #include "utils/HmckUserInterface.h"
 #include "utils/HmckUtils.h"
+#include "platform/HmckKeycodes.h"
 
 Hmck::PBRApp::PBRApp() {
     load();
@@ -180,7 +181,7 @@ void Hmck::PBRApp::run() {
 
             // draw ui
             ui.beginUserInterface();
-            ui.showDebugStats(projectionBuffer.inverseViewMat);
+            ui.showDebugStats(projectionBuffer.inverseViewMat, frameTime);
             ui.endUserInterface(commandBuffer);
 
             // end frame
@@ -196,7 +197,7 @@ void Hmck::PBRApp::load() {
     Loader(geometry, device, deviceStorage)
     .loadglTF("../data/models/helmet/helmet.glb");
     //.loadglTF("../data/models/helmet/DamagedHelmet.glb");
-    //.loadglTF("../data/models/blender.glb");
+    //.loadglTF("../data/thesis/simple_earth.glb");
     //.loadglTF("../data/models/sponza/sponza.glb");
 
     int32_t w, h, c;

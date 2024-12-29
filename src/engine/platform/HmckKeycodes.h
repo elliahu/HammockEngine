@@ -1,4 +1,8 @@
 #pragma once
+#if defined(__linux__)
+#include <X11/Xlib.h>
+#include <X11/keysym.h> 
+#endif
 
 namespace Hmck{
 
@@ -7,6 +11,14 @@ namespace Hmck{
     enum class KeyState {
         NONE, DOWN, UP
     };
+
+    enum class ButtonState {
+        NONE, DOWN, UP
+    };
+
+#define MOUSE_LEFT 0x0
+#define MOUSE_RIGHT 0x1
+#define MOUSE_MIDDLE 0x2
 
 #if defined(_WIN32)
 #define KEY_A 0x41
@@ -97,13 +109,98 @@ namespace Hmck{
 #define KEY_RCONTROL VK_RCONTROL
 #define KEY_LMENU VK_LMENU
 #define KEY_RMENU VK_RMENU
-
-#define KEY_OEM_1 VK_OEM_1
-#define KEY_OEM_2 VK_OEM_2
-#define KEY_OEM_3 VK_OEM_3
-#define KEY_OEM_4 VK_OEM_4
-#define KEY_OEM_5 VK_OEM_5
-#define KEY_OEM_6 VK_OEM_6
-#define KEY_OEM_7 VK_OEM_7
 #endif
+
+#if defined(__linux__)
+#define KEY_A XK_a
+#define KEY_B XK_b
+#define KEY_C XK_c
+#define KEY_D XK_d
+#define KEY_E XK_e
+#define KEY_F XK_f
+#define KEY_G XK_g
+#define KEY_H XK_h
+#define KEY_I XK_i
+#define KEY_J XK_j
+#define KEY_K XK_k
+#define KEY_L XK_l
+#define KEY_M XK_m
+#define KEY_N XK_n
+#define KEY_O XK_o
+#define KEY_P XK_p
+#define KEY_Q XK_q
+#define KEY_R XK_r
+#define KEY_S XK_s
+#define KEY_T XK_t
+#define KEY_U XK_u
+#define KEY_V XK_v
+#define KEY_W XK_w
+#define KEY_X XK_x
+#define KEY_Y XK_y
+#define KEY_Z XK_z
+
+#define KEY_F1 XK_F1
+#define KEY_F2 XK_F2
+#define KEY_F3 XK_F3
+#define KEY_F4 XK_F4
+#define KEY_F5 XK_F5
+#define KEY_F6 XK_F6
+#define KEY_F7 XK_F7
+#define KEY_F8 XK_F8
+#define KEY_F9 XK_F9
+#define KEY_F10 XK_F10
+#define KEY_F11 XK_F11
+#define KEY_F12 XK_F12
+
+#define KEY_ESCAPE XK_Escape
+#define KEY_TAB XK_Tab
+#define KEY_RETURN XK_Return
+#define KEY_SHIFT XK_Shift_L
+#define KEY_CONTROL XK_Control_L
+#define KEY_MENU XK_Menu
+#define KEY_CAPITAL XK_Caps_Lock
+#define KEY_NUMLOCK XK_Num_Lock
+#define KEY_SCROLL XK_Scroll_Lock
+#define KEY_PAUSE XK_Pause
+
+#define KEY_UP XK_Up
+#define KEY_DOWN XK_Down
+#define KEY_LEFT XK_Left
+#define KEY_RIGHT XK_Right
+
+#define KEY_NUMPAD0 XK_KP_0
+#define KEY_NUMPAD1 XK_KP_1
+#define KEY_NUMPAD2 XK_KP_2
+#define KEY_NUMPAD3 XK_KP_3
+#define KEY_NUMPAD4 XK_KP_4
+#define KEY_NUMPAD5 XK_KP_5
+#define KEY_NUMPAD6 XK_KP_6
+#define KEY_NUMPAD7 XK_KP_7
+#define KEY_NUMPAD8 XK_KP_8
+#define KEY_NUMPAD9 XK_KP_9
+#define KEY_MULTIPLY XK_KP_Multiply
+#define KEY_ADD XK_KP_Add
+#define KEY_SEPARATOR XK_KP_Separator
+#define KEY_SUBTRACT XK_KP_Subtract
+#define KEY_DECIMAL XK_KP_Decimal
+#define KEY_DIVIDE XK_KP_Divide
+
+#define KEY_SPACE XK_space
+#define KEY_BACK XK_BackSpace
+#define KEY_DELETE XK_Delete
+#define KEY_INSERT XK_Insert
+#define KEY_HOME XK_Home
+#define KEY_END XK_End
+#define KEY_PAGEUP XK_Prior
+#define KEY_PAGEDOWN XK_Next
+
+#define KEY_LSHIFT XK_Shift_L
+#define KEY_RSHIFT XK_Shift_R
+#define KEY_LCONTROL XK_Control_L
+#define KEY_RCONTROL XK_Control_R
+#define KEY_LMENU XK_Alt_L
+#define KEY_RMENU XK_Alt_R
+#endif
+
+
 }
