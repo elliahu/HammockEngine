@@ -196,7 +196,7 @@ void Hmck::PBRApp::load() {
     Loader(geometry, device, deviceStorage)
     .loadglTF("../data/models/helmet/helmet.glb");
     //.loadglTF("../data/models/helmet/DamagedHelmet.glb");
-    //.loadglTF("../data/models/blender.glb");
+    //.loadglTF("../data/thesis/simple_earth.glb");
     //.loadglTF("../data/models/sponza/sponza.glb");
 
     int32_t w, h, c;

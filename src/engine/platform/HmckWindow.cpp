@@ -3,22 +3,23 @@
 #include "utils/HmckLogger.h"
 #include "HmckKeycodes.h"
 #include "backends/imgui_impl_vulkan.h"
+#include "utils/HmckUserInterface.h"
 
 #if defined(_WIN32)
 #include "win32/resources.h"
+#include "windows.h"
+#include <windowsx.h>
 #endif
 
 #if defined(_WIN32)
 
-LRESULT CALLBACK WndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
-{
+LRESULT CALLBACK WndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam){
     Hmck::Window *window = reinterpret_cast<Hmck::Window *>(GetWindowLongPtr(hWnd, GWLP_USERDATA));
 
     switch (uMsg)
     {
     case WM_CLOSE:
-        if (window)
-        {
+        if (window){
             window->Win32_onClose();
         }
         return 0;
@@ -30,33 +31,46 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
         ValidateRect(hWnd, NULL);
         return 0;
     case WM_KEYDOWN:
-        if (window)
-        {
+        if (window){
             window->Win32_onKeyDown(wParam);
         }
         return 0;
     case WM_KEYUP:
-        if (window)
-        {
+        if (window){
             window->Win32_onKeyUp(wParam);
         }
         return 0;
+    case WM_CHAR:
+        // Pass the character to ImGui
+        Hmck::UserInterface::forwardInputCharacter((unsigned short)wParam);
+        return 0;
     case WM_LBUTTONDOWN: // mouse left down
+        Hmck::UserInterface::forwardButtonDownEvent(ImGuiMouseButton_Left, true);
         return 0;
     case WM_RBUTTONDOWN: // mouse right down
+        Hmck::UserInterface::forwardButtonDownEvent(ImGuiMouseButton_Right, true);
         return 0;
     case WM_MBUTTONDOWN: // mouse middle down
+        Hmck::UserInterface::forwardButtonDownEvent(ImGuiMouseButton_Middle, true);
         return 0;
     case WM_LBUTTONUP: // mouse left up
+        Hmck::UserInterface::forwardButtonDownEvent(ImGuiMouseButton_Left, false);
         return 0;
     case WM_RBUTTONUP: // mouse right up
+        Hmck::UserInterface::forwardButtonDownEvent(ImGuiMouseButton_Right, false);
         return 0;
     case WM_MBUTTONUP: // mouse middle up
+        Hmck::UserInterface::forwardButtonDownEvent(ImGuiMouseButton_Middle, false);
         return 0;
     case WM_MOUSEWHEEL:
         return 0;
-    case WM_MOUSEMOVE:
+    case WM_MOUSEMOVE:{
+        float xPos = static_cast<float>(GET_X_LPARAM(lParam));
+        float yPos = static_cast<float>(GET_Y_LPARAM(lParam));
+        Hmck::UserInterface::forwardMousePosition(xPos, yPos);
+        if(window) window->mousePosition = HmckVec2{xPos, yPos};
         return 0;
+    }
     case WM_SIZE: // size changed
         if (window && wParam != SIZE_MINIMIZED)
         {
@@ -86,6 +100,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
     default:
         return DefWindowProc(hWnd, uMsg, wParam, lParam);
     }
+    return 0;
 }
 #endif
 

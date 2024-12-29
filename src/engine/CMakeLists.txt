@@ -15,13 +15,6 @@ file(GLOB_RECURSE IMGUI_SOURCES
         ${PROJECT_SOURCE_DIR}/external/imgui/*.cpp
 )
 
-# Include Win32 backend files if building on Windows
-if(WIN32)
-    list(APPEND IMGUI_SOURCES
-        ${PROJECT_SOURCE_DIR}/external/imgui/backends/imgui_impl_win32.cpp
-    )
-endif()
-
 # Define engine library
 add_library(hammock_engine STATIC ${ENGINE_SOURCES} ${IMGUI_SOURCES})
 

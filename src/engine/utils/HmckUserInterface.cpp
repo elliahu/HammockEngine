@@ -14,17 +14,11 @@ Hmck::UserInterface::UserInterface(Device &device, const VkRenderPass renderPass
 
 Hmck::UserInterface::~UserInterface() {
     ImGui_ImplVulkan_Shutdown();
-#if defined(_WIN32)
-    ImGui_ImplWin32_Shutdown();
-#endif
     ImGui::DestroyContext();
 }
 
 void Hmck::UserInterface::beginUserInterface() {
     ImGui_ImplVulkan_NewFrame();
-#if defined(_WIN32)
-    ImGui_ImplWin32_NewFrame();
-#endif
     ImGui::NewFrame();
 }
 
@@ -65,14 +59,7 @@ void Hmck::UserInterface::showColorSettings(float *exposure, float *gamma, float
 }
 
 void Hmck::UserInterface::init() {
-    //this initializes the core structures of imgui
     ImGui::CreateContext();
-
-    // initialize for glfw
-#if defined(_WIN32)
-    ImGui_ImplWin32_Init(window.hWnd);
-#endif
-
 
     //this initializes imgui for Vulkan
     ImGui_ImplVulkan_InitInfo init_info = {};
@@ -88,14 +75,11 @@ void Hmck::UserInterface::init() {
 
     ImGui_ImplVulkan_Init(&init_info);
 
+    const ImVec2 display_size(window.getExtent().width, window.getExtent().height);
+    ImGui::GetIO().DisplaySize = display_size;
+
     //execute a gpu command to upload imgui font textures
     ImGui_ImplVulkan_CreateFontsTexture();
-
-    //clear font textures from cpu data
-
-
-    //add then destroy the imgui created structures
-    // done in the destructor
 }
 
 void Hmck::UserInterface::setupStyle() {

@@ -15,6 +15,7 @@
 #include "HmckKeycodes.h"
 #include "core/HmckVulkanInstance.h"
 #include "utils/HmckEventEmitter.h"
+#include "HandmadeMath.h"
 
 namespace Hmck
 {
@@ -51,6 +52,8 @@ namespace Hmck
         bool _shouldClose = false;
         std::string windowName;
         std::unordered_map<Keycode, KeyState> keymap;
+        HmckVec2 mousePosition{0.f,0.f};
+
 
 #if defined(_WIN32)
         void Win32_onKeyDown(WPARAM key);
