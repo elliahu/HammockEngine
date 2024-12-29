@@ -6,10 +6,7 @@
 #include <windows.h>
 #endif
 #if defined(__linux__)
-#include <wayland-client.h>
-#include <wayland-client-protocol.h>
-#include "xdg-shell-client-protocol.h"
-#include <wayland-egl.h>
+#include <X11/Xlib.h>
 #endif
 
 #include "HmckKeycodes.h"
@@ -68,19 +65,14 @@ namespace Hmck
 #endif
 
 #if defined(__linux__)
-        struct wl_display *display;
-        struct wl_compositor *compositor;
-        struct wl_surface *_surface;
-        struct wl_keyboard *keyboard = nullptr;
-        struct wl_seat *seat = nullptr;
-        struct xdg_surface *xdg_surface = nullptr;
-        struct xdg_toplevel *xdg_toplevel = nullptr;
-        struct xdg_wm_base *xdg_wm_base = nullptr;
-        struct xkb_context *xkb_context = nullptr;
-        struct xkb_keymap *xkb_keymap = nullptr;
-        struct xkb_state *xkb_state = nullptr;
-        struct zxdg_decoration_manager_v1 *decoration_manager = nullptr;
-        struct zxdg_toplevel_decoration_v1 *toplevel_decoration = nullptr;
+        void X11_onClose();
+        void X11_processEvent(XEvent event);
+        void X11_onKeyDown(KeySym key);
+        void X11_onKeyUp(KeySym key);
+        Display* display;
+        ::Window window;
+        ::Window root;
+        Atom wmDeleteMessage;
 #endif
     };
 }

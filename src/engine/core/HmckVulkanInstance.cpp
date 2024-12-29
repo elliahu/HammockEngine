@@ -169,8 +169,8 @@ std::vector<const char *> Hmck::VulkanInstance::getRequiredExtensions() const {
     // Add Win32-specific extension
     extensions.push_back(VK_KHR_WIN32_SURFACE_EXTENSION_NAME);
 #elif defined(__linux__)
-    // Add Wayland-specific extension
-    extensions.push_back(VK_KHR_WAYLAND_SURFACE_EXTENSION_NAME);
+    // We use X11 on linux as Wayland is a dumpster fire and pain to develop for
+    extensions.push_back(VK_KHR_XLIB_SURFACE_EXTENSION_NAME);
 #endif
 
     if (enableValidationLayers) {

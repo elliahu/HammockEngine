@@ -1,6 +1,7 @@
 #pragma once
 #if defined(__linux__)
-#include <xkbcommon/xkbcommon.h>
+#include <X11/Xlib.h>
+#include <X11/keysym.h> 
 #endif
 
 namespace Hmck{
@@ -108,113 +109,98 @@ namespace Hmck{
 #define KEY_RCONTROL VK_RCONTROL
 #define KEY_LMENU VK_LMENU
 #define KEY_RMENU VK_RMENU
-
-#define KEY_OEM_1 VK_OEM_1
-#define KEY_OEM_2 VK_OEM_2
-#define KEY_OEM_3 VK_OEM_3
-#define KEY_OEM_4 VK_OEM_4
-#define KEY_OEM_5 VK_OEM_5
-#define KEY_OEM_6 VK_OEM_6
-#define KEY_OEM_7 VK_OEM_7
 #endif
 
 #if defined(__linux__)
-#define KEY_A XKB_KEY_a
-#define KEY_B XKB_KEY_b
-#define KEY_C XKB_KEY_c
-#define KEY_D XKB_KEY_d
-#define KEY_E XKB_KEY_e
-#define KEY_F XKB_KEY_f
-#define KEY_G XKB_KEY_g
-#define KEY_H XKB_KEY_h
-#define KEY_I XKB_KEY_i
-#define KEY_J XKB_KEY_j
-#define KEY_K XKB_KEY_k
-#define KEY_L XKB_KEY_l
-#define KEY_M XKB_KEY_m
-#define KEY_N XKB_KEY_n
-#define KEY_O XKB_KEY_o
-#define KEY_P XKB_KEY_p
-#define KEY_Q XKB_KEY_q
-#define KEY_R XKB_KEY_r
-#define KEY_S XKB_KEY_s
-#define KEY_T XKB_KEY_t
-#define KEY_U XKB_KEY_u
-#define KEY_V XKB_KEY_v
-#define KEY_W XKB_KEY_w
-#define KEY_X XKB_KEY_x
-#define KEY_Y XKB_KEY_y
-#define KEY_Z XKB_KEY_z
+#define KEY_A XK_a
+#define KEY_B XK_b
+#define KEY_C XK_c
+#define KEY_D XK_d
+#define KEY_E XK_e
+#define KEY_F XK_f
+#define KEY_G XK_g
+#define KEY_H XK_h
+#define KEY_I XK_i
+#define KEY_J XK_j
+#define KEY_K XK_k
+#define KEY_L XK_l
+#define KEY_M XK_m
+#define KEY_N XK_n
+#define KEY_O XK_o
+#define KEY_P XK_p
+#define KEY_Q XK_q
+#define KEY_R XK_r
+#define KEY_S XK_s
+#define KEY_T XK_t
+#define KEY_U XK_u
+#define KEY_V XK_v
+#define KEY_W XK_w
+#define KEY_X XK_x
+#define KEY_Y XK_y
+#define KEY_Z XK_z
 
-#define KEY_F1 XKB_KEY_F1
-#define KEY_F2 XKB_KEY_F2
-#define KEY_F3 XKB_KEY_F3
-#define KEY_F4 XKB_KEY_F4
-#define KEY_F5 XKB_KEY_F5
-#define KEY_F6 XKB_KEY_F6
-#define KEY_F7 XKB_KEY_F7
-#define KEY_F8 XKB_KEY_F8
-#define KEY_F9 XKB_KEY_F9
-#define KEY_F10 XKB_KEY_F10
-#define KEY_F11 XKB_KEY_F11
-#define KEY_F12 XKB_KEY_F12
+#define KEY_F1 XK_F1
+#define KEY_F2 XK_F2
+#define KEY_F3 XK_F3
+#define KEY_F4 XK_F4
+#define KEY_F5 XK_F5
+#define KEY_F6 XK_F6
+#define KEY_F7 XK_F7
+#define KEY_F8 XK_F8
+#define KEY_F9 XK_F9
+#define KEY_F10 XK_F10
+#define KEY_F11 XK_F11
+#define KEY_F12 XK_F12
 
-#define KEY_ESCAPE XKB_KEY_Escape
-#define KEY_TAB XKB_KEY_Tab
-#define KEY_RETURN XKB_KEY_Return
-#define KEY_SHIFT XKB_KEY_Shift_L
-#define KEY_CONTROL XKB_KEY_Control_L
-#define KEY_MENU XKB_KEY_Alt_L
-#define KEY_CAPITAL XKB_KEY_Caps_Lock
-#define KEY_NUMLOCK XKB_KEY_Num_Lock
-#define KEY_SCROLL XKB_KEY_Scroll_Lock
-#define KEY_PAUSE XKB_KEY_Pause
+#define KEY_ESCAPE XK_Escape
+#define KEY_TAB XK_Tab
+#define KEY_RETURN XK_Return
+#define KEY_SHIFT XK_Shift_L
+#define KEY_CONTROL XK_Control_L
+#define KEY_MENU XK_Menu
+#define KEY_CAPITAL XK_Caps_Lock
+#define KEY_NUMLOCK XK_Num_Lock
+#define KEY_SCROLL XK_Scroll_Lock
+#define KEY_PAUSE XK_Pause
 
-#define KEY_UP XKB_KEY_Up
-#define KEY_DOWN XKB_KEY_Down
-#define KEY_LEFT XKB_KEY_Left
-#define KEY_RIGHT XKB_KEY_Right
+#define KEY_UP XK_Up
+#define KEY_DOWN XK_Down
+#define KEY_LEFT XK_Left
+#define KEY_RIGHT XK_Right
 
-#define KEY_NUMPAD0 XKB_KEY_KP_0
-#define KEY_NUMPAD1 XKB_KEY_KP_1
-#define KEY_NUMPAD2 XKB_KEY_KP_2
-#define KEY_NUMPAD3 XKB_KEY_KP_3
-#define KEY_NUMPAD4 XKB_KEY_KP_4
-#define KEY_NUMPAD5 XKB_KEY_KP_5
-#define KEY_NUMPAD6 XKB_KEY_KP_6
-#define KEY_NUMPAD7 XKB_KEY_KP_7
-#define KEY_NUMPAD8 XKB_KEY_KP_8
-#define KEY_NUMPAD9 XKB_KEY_KP_9
-#define KEY_MULTIPLY XKB_KEY_KP_Multiply
-#define KEY_ADD XKB_KEY_KP_Add
-#define KEY_SEPARATOR XKB_KEY_KP_Separator
-#define KEY_SUBTRACT XKB_KEY_KP_Subtract
-#define KEY_DECIMAL XKB_KEY_KP_Decimal
-#define KEY_DIVIDE XKB_KEY_KP_Divide
+#define KEY_NUMPAD0 XK_KP_0
+#define KEY_NUMPAD1 XK_KP_1
+#define KEY_NUMPAD2 XK_KP_2
+#define KEY_NUMPAD3 XK_KP_3
+#define KEY_NUMPAD4 XK_KP_4
+#define KEY_NUMPAD5 XK_KP_5
+#define KEY_NUMPAD6 XK_KP_6
+#define KEY_NUMPAD7 XK_KP_7
+#define KEY_NUMPAD8 XK_KP_8
+#define KEY_NUMPAD9 XK_KP_9
+#define KEY_MULTIPLY XK_KP_Multiply
+#define KEY_ADD XK_KP_Add
+#define KEY_SEPARATOR XK_KP_Separator
+#define KEY_SUBTRACT XK_KP_Subtract
+#define KEY_DECIMAL XK_KP_Decimal
+#define KEY_DIVIDE XK_KP_Divide
 
-#define KEY_SPACE XKB_KEY_space
-#define KEY_BACK XKB_KEY_BackSpace
-#define KEY_DELETE XKB_KEY_Delete
-#define KEY_INSERT XKB_KEY_Insert
-#define KEY_HOME XKB_KEY_Home
-#define KEY_END XKB_KEY_End
-#define KEY_PAGEUP XKB_KEY_Page_Up
-#define KEY_PAGEDOWN XKB_KEY_Page_Down
+#define KEY_SPACE XK_space
+#define KEY_BACK XK_BackSpace
+#define KEY_DELETE XK_Delete
+#define KEY_INSERT XK_Insert
+#define KEY_HOME XK_Home
+#define KEY_END XK_End
+#define KEY_PAGEUP XK_Prior
+#define KEY_PAGEDOWN XK_Next
 
-#define KEY_LSHIFT XKB_KEY_Shift_L
-#define KEY_RSHIFT XKB_KEY_Shift_R
-#define KEY_LCONTROL XKB_KEY_Control_L
-#define KEY_RCONTROL XKB_KEY_Control_R
-#define KEY_LMENU XKB_KEY_Alt_L
-#define KEY_RMENU XKB_KEY_Alt_R
-
-#define KEY_OEM_1 XKB_KEY_semicolon
-#define KEY_OEM_2 XKB_KEY_slash
-#define KEY_OEM_3 XKB_KEY_grave
-#define KEY_OEM_4 XKB_KEY_bracketleft
-#define KEY_OEM_5 XKB_KEY_backslash
-#define KEY_OEM_6 XKB_KEY_bracketright
-#define KEY_OEM_7 XKB_KEY_apostrophe
+#define KEY_LSHIFT XK_Shift_L
+#define KEY_RSHIFT XK_Shift_R
+#define KEY_LCONTROL XK_Control_L
+#define KEY_RCONTROL XK_Control_R
+#define KEY_LMENU XK_Alt_L
+#define KEY_RMENU XK_Alt_R
 #endif
+
 
 }

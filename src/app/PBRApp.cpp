@@ -8,6 +8,7 @@
 #include "utils/HmckScopedMemory.h"
 #include "utils/HmckUserInterface.h"
 #include "utils/HmckUtils.h"
+#include "platform/HmckKeycodes.h"
 
 Hmck::PBRApp::PBRApp() {
     load();
