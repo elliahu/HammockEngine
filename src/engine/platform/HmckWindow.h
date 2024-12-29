@@ -69,10 +69,10 @@ namespace Hmck
         void X11_processEvent(XEvent event);
         void X11_onKeyDown(KeySym key);
         void X11_onKeyUp(KeySym key);
-        Display* display;
-        ::Window window;
-        ::Window root;
-        Atom wmDeleteMessage;
+        Display* X11_display;
+        ::Window X11_window;
+        ::Window X11_root;
+        Atom X11_wmDeleteMessage;
 #endif
     };
 }

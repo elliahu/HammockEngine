@@ -239,32 +239,32 @@ Hmck::Window::Window(VulkanInstance &instance, const std::string &_windowName, i
 
 #if defined(__linux__)
 
-    display = XOpenDisplay(nullptr);
-    if (!display)
+    X11_display = XOpenDisplay(nullptr);
+    if (!X11_display)
     {
         Logger::log(LOG_LEVEL_ERROR, "Failed to open X display\n");
         throw std::runtime_error("Failed to open X display");
     }
 
-    root = DefaultRootWindow(display);
+    X11_root = DefaultRootWindow(X11_display);
 
     XSetWindowAttributes windowAttributes;
-    windowAttributes.background_pixel = WhitePixel(display, 0);
+    windowAttributes.background_pixel = WhitePixel(X11_display, 0);
     windowAttributes.event_mask = ExposureMask | KeyPressMask | KeyReleaseMask | ButtonPressMask | ButtonReleaseMask | PointerMotionMask;
 
-    window = XCreateWindow(display, root, 0, 0, width, height, 0, CopyFromParent, InputOutput, CopyFromParent, CWBackPixel | CWEventMask, &windowAttributes);
+    X11_window = XCreateWindow(X11_display, X11_root, 0, 0, width, height, 0, CopyFromParent, InputOutput, CopyFromParent, CWBackPixel | CWEventMask, &windowAttributes);
 
-    XStoreName(display, window, windowName.c_str());
-    XMapWindow(display, window);
-    XFlush(display);
+    XStoreName(X11_display, X11_window, windowName.c_str());
+    XMapWindow(X11_display, X11_window);
+    XFlush(X11_display);
 
-    wmDeleteMessage = XInternAtom(display, "WM_DELETE_WINDOW", False);
-    XSetWMProtocols(display, window, &wmDeleteMessage, 1);
+    X11_wmDeleteMessage = XInternAtom(X11_display, "WM_DELETE_WINDOW", False);
+    XSetWMProtocols(X11_display, X11_window, &X11_wmDeleteMessage, 1);
 
     VkXlibSurfaceCreateInfoKHR surfaceInfo = {};
     surfaceInfo.sType = VK_STRUCTURE_TYPE_XLIB_SURFACE_CREATE_INFO_KHR;
-    surfaceInfo.dpy = display;
-    surfaceInfo.window = window;
+    surfaceInfo.dpy = X11_display;
+    surfaceInfo.window = X11_window;
 
     VkResult result = vkCreateXlibSurfaceKHR(instance.getInstance(), &surfaceInfo, nullptr, &surface);
     if (result != VK_SUCCESS)
@@ -317,16 +317,16 @@ Hmck::Window::~Window()
 #endif
 
 #if defined(__linux__)
-    if (window)
+    if (X11_window)
     {
-        XDestroyWindow(display, window);
-        window = 0;
+        XDestroyWindow(X11_display, X11_window);
+        X11_window = 0;
     }
 
-    if (display)
+    if (X11_display)
     {
-        XCloseDisplay(display);
-        display = nullptr;
+        XCloseDisplay(X11_display);
+        X11_display = nullptr;
     }
 #endif
 }
@@ -362,9 +362,9 @@ void Hmck::Window::pollEvents()
 
 #if defined(__linux__)
     XEvent event;
-    while (XPending(display) > 0)
+    while (XPending(X11_display) > 0)
     {
-        XNextEvent(display, &event);
+        XNextEvent(X11_display, &event);
         X11_processEvent(event);
     }
 #endif
@@ -420,9 +420,9 @@ void Hmck::Window::X11_onClose()
     _shouldClose = true;
 
     XEvent event;
-    while (XPending(display) > 0)
+    while (XPending(X11_display) > 0)
     {
-        XNextEvent(display, &event);
+        XNextEvent(X11_display, &event);
     }
 }
 
@@ -437,13 +437,13 @@ void Hmck::Window::X11_processEvent(XEvent event)
     }
     case KeyPress:
     {
-        KeySym keySym = XkbKeycodeToKeysym(display, event.xkey.keycode, 0, 0);
+        KeySym keySym = XkbKeycodeToKeysym(X11_display, event.xkey.keycode, 0, 0);
         X11_onKeyDown(keySym);
         break;
     }
     case KeyRelease:
     {
-        KeySym keySym = XkbKeycodeToKeysym(display, event.xkey.keycode, 0, 0);
+        KeySym keySym = XkbKeycodeToKeysym(X11_display, event.xkey.keycode, 0, 0);
         X11_onKeyUp(keySym);
         break;
     }
