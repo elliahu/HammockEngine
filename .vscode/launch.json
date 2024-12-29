@@ -6,7 +6,6 @@
         "name": "Build and Debug Hammock",
         "program": "${workspaceFolder}/cmake-build-debug/hammock",
         "preLaunchTask": "build-hammock",
-        "stopAtEntry": true,
         "cwd": "${workspaceFolder}/cmake-build-debug"
       },
       {
@@ -15,7 +14,6 @@
         "name": "Build and Debug Generate Environment Maps",
         "program": "${workspaceFolder}/cmake-build-debug/tools/generate_environment_maps/generate_environment_maps.exe",
         "preLaunchTask": "build-generate-environment-maps",
-        "stopAtEntry": true,
         "cwd": "${workspaceFolder}/cmake-build-debug"
       }
     ],
