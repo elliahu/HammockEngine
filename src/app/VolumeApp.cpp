@@ -91,7 +91,7 @@ void Hmck::VolumeApp::run() {
             draw(frameIndex, elapsedTime, commandBuffer); {
                 ui.beginUserInterface();
                 this->ui();
-                ui.showDebugStats(bufferData.inverseView);
+                ui.showDebugStats(bufferData.inverseView, frameTime);
                 ui.endUserInterface(commandBuffer);
             }
 

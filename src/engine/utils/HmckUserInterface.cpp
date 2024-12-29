@@ -27,7 +27,7 @@ void Hmck::UserInterface::endUserInterface(VkCommandBuffer commandBuffer) {
     ImGui_ImplVulkan_RenderDrawData(ImGui::GetDrawData(), commandBuffer);
 }
 
-void Hmck::UserInterface::showDebugStats(const HmckMat4 &inverseView) {
+void Hmck::UserInterface::showDebugStats(const HmckMat4 &inverseView, float frameTime) {
     const ImGuiIO &io = ImGui::GetIO();
     constexpr ImGuiWindowFlags window_flags = ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_AlwaysAutoResize |
                                               ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_NoFocusOnAppearing |
@@ -43,8 +43,7 @@ void Hmck::UserInterface::showDebugStats(const HmckMat4 &inverseView) {
     else
         ImGui::Text("Mouse Position: <invalid or hidden>");
     ImGui::Text("Window resolution: (%d x %d)", window.getExtent().width, window.getExtent().height);
-    ImGui::Text("Application average %.3f ms/frame (%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate,
-                ImGui::GetIO().Framerate);
+    ImGui::Text("Application average %.3f ms/frame (%.1f FPS)", frameTime * 1000.f,  1.0f / frameTime );
     ImGui::End();
 }
 

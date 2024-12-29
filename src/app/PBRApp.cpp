@@ -181,7 +181,7 @@ void Hmck::PBRApp::run() {
 
             // draw ui
             ui.beginUserInterface();
-            ui.showDebugStats(projectionBuffer.inverseViewMat);
+            ui.showDebugStats(projectionBuffer.inverseViewMat, frameTime);
             ui.endUserInterface(commandBuffer);
 
             // end frame
@@ -220,7 +220,7 @@ void Hmck::PBRApp::load() {
     environment.prefilteredEnvMap = generator.generatePrefilteredMap(device, environment.environmentMap, deviceStorage);
 
     ScopedMemory irradianceData = ScopedMemory(Filesystem::readImage(
-        "../data/env/ibl/precomp/sunset/irr.hdr", w, h, c, Filesystem::ImageFormat::R32G32B32A32_SFLOAT));
+        "../data/env/ibl/precomp/sunset/irradiance.hdr", w, h, c, Filesystem::ImageFormat::R32G32B32A32_SFLOAT));
     environment.irradianceMap = deviceStorage.createTexture2D({
         .buffer = irradianceData.get(),
         .instanceSize = sizeof(float),
@@ -228,7 +228,7 @@ void Hmck::PBRApp::load() {
         .format = VK_FORMAT_R32G32B32A32_SFLOAT,
     });
 
-    ScopedMemory brdfLutData = ScopedMemory(Filesystem::readImage("../data/env/ibl/precomp/sunset/brdflut.hdr", w,
+    ScopedMemory brdfLutData = ScopedMemory(Filesystem::readImage("../data/env/ibl/precomp/sunset/brdf_lut.hdr", w,
                                                                   h, c, Filesystem::ImageFormat::R32G32_SFLOAT));
     environment.brdfLut = deviceStorage.createTexture2D({
         .buffer = brdfLutData.get(),
