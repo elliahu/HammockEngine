@@ -10,16 +10,22 @@
 #include "windows.h"
 #include <windowsx.h>
 #endif
+#if defined(__linux__)
+#include "xdg-decoration-unstable-v1-client-protocol.h"
+#include <sys/mman.h>
+#endif
 
 #if defined(_WIN32)
 
-LRESULT CALLBACK WndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam){
+LRESULT CALLBACK WndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
+{
     Hmck::Window *window = reinterpret_cast<Hmck::Window *>(GetWindowLongPtr(hWnd, GWLP_USERDATA));
 
     switch (uMsg)
     {
     case WM_CLOSE:
-        if (window){
+        if (window)
+        {
             window->Win32_onClose();
         }
         return 0;
@@ -31,12 +37,14 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam){
         ValidateRect(hWnd, NULL);
         return 0;
     case WM_KEYDOWN:
-        if (window){
+        if (window)
+        {
             window->Win32_onKeyDown(wParam);
         }
         return 0;
     case WM_KEYUP:
-        if (window){
+        if (window)
+        {
             window->Win32_onKeyUp(wParam);
         }
         return 0;
@@ -44,59 +52,73 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam){
         // Pass the character to ImGui
         Hmck::UserInterface::forwardInputCharacter((unsigned short)wParam);
         return 0;
-    case WM_LBUTTONDOWN: {
+    case WM_LBUTTONDOWN:
+    {
         Hmck::UserInterface::forwardButtonDownEvent(ImGuiMouseButton_Left, true);
-        if(window) {
+        if (window)
+        {
             window->buttonMap[MOUSE_LEFT] = Hmck::ButtonState::DOWN;
         }
         return 0;
     }
-    case WM_RBUTTONDOWN: {
+    case WM_RBUTTONDOWN:
+    {
         Hmck::UserInterface::forwardButtonDownEvent(ImGuiMouseButton_Right, true);
-        if(window) {
+        if (window)
+        {
             window->buttonMap[MOUSE_RIGHT] = Hmck::ButtonState::DOWN;
         }
         return 0;
     }
-    case WM_MBUTTONDOWN: {
+    case WM_MBUTTONDOWN:
+    {
         // mouse middle down
         Hmck::UserInterface::forwardButtonDownEvent(ImGuiMouseButton_Middle, true);
-        if(window) {
+        if (window)
+        {
             window->buttonMap[MOUSE_MIDDLE] = Hmck::ButtonState::DOWN;
         }
         return 0;
     }
-    case WM_LBUTTONUP: {
+    case WM_LBUTTONUP:
+    {
         // mouse left up
         Hmck::UserInterface::forwardButtonDownEvent(ImGuiMouseButton_Left, false);
-        if(window) {
+        if (window)
+        {
             window->buttonMap[MOUSE_LEFT] = Hmck::ButtonState::UP;
         }
         return 0;
     }
-    case WM_RBUTTONUP: {
+    case WM_RBUTTONUP:
+    {
         // mouse right up
         Hmck::UserInterface::forwardButtonDownEvent(ImGuiMouseButton_Right, false);
-        if(window) {
+        if (window)
+        {
             window->buttonMap[MOUSE_RIGHT] = Hmck::ButtonState::UP;
         }
         return 0;
     }
-    case WM_MBUTTONUP: {
+    case WM_MBUTTONUP:
+    {
         // mouse middle up
         Hmck::UserInterface::forwardButtonDownEvent(ImGuiMouseButton_Middle, false);
-        if(window) {
+        if (window)
+        {
             window->buttonMap[MOUSE_MIDDLE] = Hmck::ButtonState::UP;
         }
         return 0;
     }
     case WM_MOUSEWHEEL:
         return 0;
-    case WM_MOUSEMOVE:{
+    case WM_MOUSEMOVE:
+    {
         float xPos = static_cast<float>(GET_X_LPARAM(lParam));
         float yPos = static_cast<float>(GET_Y_LPARAM(lParam));
         Hmck::UserInterface::forwardMousePosition(xPos, yPos);
-        if(window) window->mousePosition = HmckVec2{xPos, yPos};
+        if (window)
+            window->mousePosition = HmckVec2{xPos, yPos};
         return 0;
     }
     case WM_SIZE: // size changed
@@ -163,6 +185,12 @@ void registry_handler(void *data, struct wl_registry *registry, uint32_t id, con
             wl_registry_bind(registry, id, &wl_seat_interface, 1));
         wl_seat_add_listener(self->seat, &seat_listener, self);
     }
+
+    if (strcmp(interface, "zxdg_decoration_manager_v1") == 0)
+    {
+        self->decoration_manager = (struct zxdg_decoration_manager_v1 *)
+            wl_registry_bind(registry, id, &zxdg_decoration_manager_v1_interface, 1);
+    }
 }
 
 void keyboard_key_handler(void *data, struct wl_keyboard *keyboard, uint32_t serial, uint32_t time, uint32_t key, uint32_t state)
@@ -208,12 +236,95 @@ const struct wl_seat_listener seat_listener = {
     .name = nullptr,
 };
 
+void keyboard_keymap_handler(void *data, struct wl_keyboard *keyboard, uint32_t format, int fd, uint32_t size)
+{
+    // Ensure data is valid
+    if (!data)
+    {
+        Hmck::Logger::log(Hmck::LOG_LEVEL_ERROR, "Keyboard keymap handler received null data");
+        return;
+    }
+    Hmck::Window *self = static_cast<Hmck::Window *>(data);
+
+    // Only handle the keymap if it's in the xkb_v1 format
+    if (format != WL_KEYBOARD_KEYMAP_FORMAT_XKB_V1)
+    {
+        Hmck::Logger::log(Hmck::LOG_LEVEL_ERROR, "Unsupported keymap format");
+        close(fd);
+        return;
+    }
+
+    // Read the keymap data from the file descriptor
+    char *keymap_string = static_cast<char *>(mmap(nullptr, size, PROT_READ, MAP_SHARED, fd, 0));
+    if (keymap_string == MAP_FAILED)
+    {
+        Hmck::Logger::log(Hmck::LOG_LEVEL_ERROR, "Failed to map keymap");
+        close(fd);
+        return;
+    }
+
+    // Create an xkb context
+    struct xkb_context *context = xkb_context_new(XKB_CONTEXT_NO_FLAGS);
+    if (!context)
+    {
+        Hmck::Logger::log(Hmck::LOG_LEVEL_ERROR, "Failed to create xkb context");
+        munmap(keymap_string, size);
+        close(fd);
+        return;
+    }
+
+    // Create the keymap from the string
+    struct xkb_keymap *keymap = xkb_keymap_new_from_string(context, keymap_string, XKB_KEYMAP_FORMAT_TEXT_V1, XKB_KEYMAP_COMPILE_NO_FLAGS);
+    munmap(keymap_string, size);
+    close(fd);
+    if (!keymap)
+    {
+        Hmck::Logger::log(Hmck::LOG_LEVEL_ERROR, "Failed to create xkb keymap");
+        xkb_context_unref(context);
+        return;
+    }
+
+    // Create the xkb state
+    struct xkb_state *state = xkb_state_new(keymap);
+    if (!state)
+    {
+        Hmck::Logger::log(Hmck::LOG_LEVEL_ERROR, "Failed to create xkb state");
+        xkb_keymap_unref(keymap);
+        xkb_context_unref(context);
+        return;
+    }
+
+    // Store the xkb state and keymap in the window structure
+    self->xkb_context = context;
+    self->xkb_keymap = keymap;
+    self->xkb_state = state;
+}
+
 const struct wl_keyboard_listener keyboard_listener = {
+    .keymap = keyboard_keymap_handler,
     .enter = nullptr,
     .leave = nullptr,
     .key = keyboard_key_handler,
     .modifiers = nullptr,
     .repeat_info = nullptr,
+};
+
+static void xdg_surface_configure(void *data, struct xdg_surface *xdg_surface, uint32_t serial)
+{
+    xdg_surface_ack_configure(xdg_surface, serial);
+}
+
+static const struct xdg_surface_listener xdg_surface_listener = {
+    .configure = xdg_surface_configure,
+};
+
+static void xdg_wm_base_ping(void *data, struct xdg_wm_base *xdg_wm_base, uint32_t serial)
+{
+    xdg_wm_base_pong(xdg_wm_base, serial);
+}
+
+static const struct xdg_wm_base_listener xdg_wm_base_listener = {
+    .ping = xdg_wm_base_ping,
 };
 
 #endif
@@ -326,6 +437,9 @@ Hmck::Window::Window(VulkanInstance &instance, const std::string &_windowName, i
         throw std::runtime_error("Failed to get XDG shell");
     }
 
+    // Add the XDG WM base listener
+    xdg_wm_base_add_listener(xdg_wm_base, &xdg_wm_base_listener, nullptr);
+
     xdg_surface = xdg_wm_base_get_xdg_surface(xdg_wm_base, _surface);
     if (!xdg_surface)
     {
@@ -338,17 +452,29 @@ Hmck::Window::Window(VulkanInstance &instance, const std::string &_windowName, i
         throw std::runtime_error("Failed to create toplevel surface");
     }
 
+    if (decoration_manager)
+    {
+        toplevel_decoration = zxdg_decoration_manager_v1_get_toplevel_decoration(
+            static_cast<zxdg_decoration_manager_v1 *>(decoration_manager), xdg_toplevel);
+        if (toplevel_decoration)
+        {
+            zxdg_decoration_manager_v1_get_toplevel_decoration(
+                static_cast<zxdg_decoration_manager_v1 *>(decoration_manager), xdg_toplevel);
+        }
+    }
+
     // Set window properties
     xdg_toplevel_set_title(xdg_toplevel, windowName.c_str());
     xdg_toplevel_set_app_id(xdg_toplevel, windowName.c_str());
 
-    // Configure the surface size
-    struct wl_region *region = wl_compositor_create_region(compositor);
-    wl_region_add(region, 0, 0, width, height);
-    wl_surface_set_opaque_region(_surface, region);
-    wl_region_destroy(region);
+    // Request window decorations
+    struct wl_array decorations;
+    wl_array_init(&decorations);
 
+    // Initial commit to apply the configuration
     wl_surface_commit(_surface);
+
+    // Wait for the initial configure event
     wl_display_roundtrip(display);
 
     // Create Vulkan Wayland surface
@@ -412,7 +538,8 @@ Hmck::KeyState Hmck::Window::getKeyState(Keycode key)
     return KeyState::NONE;
 }
 
-Hmck::ButtonState Hmck::Window::getButtonState(Keycode button) {
+Hmck::ButtonState Hmck::Window::getButtonState(Keycode button)
+{
     if (buttonMap.contains(button))
         return buttonMap[button];
     return ButtonState::NONE;

@@ -41,8 +41,7 @@ namespace Hmck
 
         KeyState getKeyState(Keycode key);
         ButtonState getButtonState(Keycode button);
-        HmckVec2 getCursorPosition() const {return mousePosition;}
-
+        HmckVec2 getCursorPosition() const { return mousePosition; }
 
         bool shouldClose() const;
         void pollEvents();
@@ -56,8 +55,7 @@ namespace Hmck
         std::string windowName;
         std::unordered_map<Keycode, KeyState> keymap;
         std::unordered_map<Keycode, ButtonState> buttonMap;
-        HmckVec2 mousePosition{0.f,0.f};
-
+        HmckVec2 mousePosition{0.f, 0.f};
 
 #if defined(_WIN32)
         void Win32_onKeyDown(WPARAM key);
@@ -78,6 +76,11 @@ namespace Hmck
         struct xdg_surface *xdg_surface = nullptr;
         struct xdg_toplevel *xdg_toplevel = nullptr;
         struct xdg_wm_base *xdg_wm_base = nullptr;
+        struct xkb_context *xkb_context = nullptr;
+        struct xkb_keymap *xkb_keymap = nullptr;
+        struct xkb_state *xkb_state = nullptr;
+        struct zxdg_decoration_manager_v1 *decoration_manager = nullptr;
+        struct zxdg_toplevel_decoration_v1 *toplevel_decoration = nullptr;
 #endif
     };
 }
