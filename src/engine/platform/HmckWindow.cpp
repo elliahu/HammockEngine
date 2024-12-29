@@ -125,7 +125,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
     case WM_SIZE: // size changed
         if (window && wParam != SIZE_MINIMIZED)
         {
-            if ((window->resizing) || ((wParam == SIZE_MAXIMIZED) || (wParam == SIZE_RESTORED)))
+            if ((window->Win32_resizing) || ((wParam == SIZE_MAXIMIZED) || (wParam == SIZE_RESTORED)))
             {
                 window->width = LOWORD(lParam);
                 window->height = HIWORD(lParam);
@@ -134,10 +134,10 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
         }
         return 0;
     case WM_ENTERSIZEMOVE: // resizing started
-        window->resizing = true;
+        window->Win32_resizing = true;
         return 0;
     case WM_EXITSIZEMOVE: // resizing stopped
-        window->resizing = false;
+        window->Win32_resizing = false;
         return 0;
     case WM_DROPFILES:
         return 0;
@@ -196,7 +196,7 @@ Hmck::Window::Window(VulkanInstance &instance, const std::string &_windowName, i
     int adjustedWidth = windowRect.right - windowRect.left;
     int adjustedHeight = windowRect.bottom - windowRect.top;
 
-    hWnd = CreateWindowEx(
+    Win32_hWnd = CreateWindowEx(
         0,
         wc.lpszClassName,
         _windowName.c_str(),
@@ -208,7 +208,7 @@ Hmck::Window::Window(VulkanInstance &instance, const std::string &_windowName, i
         wc.hInstance,
         this);
 
-    if (!hWnd)
+    if (!Win32_hWnd)
     {
         Logger::log(LOG_LEVEL_ERROR, "Failed to create window");
         throw std::runtime_error("Failed to create window");
@@ -216,17 +216,17 @@ Hmck::Window::Window(VulkanInstance &instance, const std::string &_windowName, i
 
     // Store the actual client area dimensions
     RECT clientRect;
-    GetClientRect(hWnd, &clientRect);
+    GetClientRect(Win32_hWnd, &clientRect);
     width = clientRect.right - clientRect.left;
     height = clientRect.bottom - clientRect.top;
 
-    SetWindowLongPtr(hWnd, GWLP_USERDATA, reinterpret_cast<LONG_PTR>(this));
-    ShowWindow(hWnd, SW_SHOW);
-    UpdateWindow(hWnd);
+    SetWindowLongPtr(Win32_hWnd, GWLP_USERDATA, reinterpret_cast<LONG_PTR>(this));
+    ShowWindow(Win32_hWnd, SW_SHOW);
+    UpdateWindow(Win32_hWnd);
 
     VkWin32SurfaceCreateInfoKHR surfaceCreateInfo = {};
     surfaceCreateInfo.sType = VK_STRUCTURE_TYPE_WIN32_SURFACE_CREATE_INFO_KHR;
-    surfaceCreateInfo.hwnd = hWnd;
+    surfaceCreateInfo.hwnd = Win32_hWnd;
     surfaceCreateInfo.hinstance = wc.hInstance;
 
     if (vkCreateWin32SurfaceKHR(instance.getInstance(), &surfaceCreateInfo, nullptr, &surface) != VK_SUCCESS)
@@ -290,21 +290,21 @@ Hmck::Window::~Window()
 #if defined(_WIN32)
     // Clear message queue for this window
     MSG msg;
-    while (PeekMessage(&msg, hWnd, 0, 0, PM_REMOVE))
+    while (PeekMessage(&msg, Win32_hWnd, 0, 0, PM_REMOVE))
     {
         TranslateMessage(&msg);
         DispatchMessage(&msg);
     }
 
-    if (hWnd)
+    if (Win32_hWnd)
     {
         // Don't destroy if already being destroyed
-        if (IsWindow(hWnd))
+        if (IsWindow(Win32_hWnd))
         {
             // This triggers WM_DESTROY
-            DestroyWindow(hWnd);
+            DestroyWindow(Win32_hWnd);
         }
-        hWnd = nullptr;
+        Win32_hWnd = nullptr;
     }
 
     // Only unregister if we're the last window using this class
@@ -353,10 +353,10 @@ bool Hmck::Window::shouldClose() const
 void Hmck::Window::pollEvents()
 {
 #if defined(_WIN32)
-    while (PeekMessage(&msg, nullptr, 0, 0, PM_REMOVE))
+    while (PeekMessage(&Win32_msg, nullptr, 0, 0, PM_REMOVE))
     {
-        TranslateMessage(&msg);
-        DispatchMessage(&msg);
+        TranslateMessage(&Win32_msg);
+        DispatchMessage(&Win32_msg);
     }
 #endif
 
@@ -388,7 +388,7 @@ void Hmck::Window::Win32_onClose()
 
     // Wait for any pending messages
     MSG msg;
-    while (PeekMessage(&msg, hWnd, 0, 0, PM_REMOVE))
+    while (PeekMessage(&msg, Win32_hWnd, 0, 0, PM_REMOVE))
     {
         TranslateMessage(&msg);
         DispatchMessage(&msg);

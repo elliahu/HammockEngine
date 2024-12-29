@@ -59,9 +59,9 @@ namespace Hmck
         void Win32_onKeyUp(WPARAM key);
         void Win32_onClose();
         void Win32_onDpiChange(HWND hWnd, WPARAM wParam, LPARAM lParam);
-        HWND hWnd;
-        MSG msg{};
-        bool resizing = false;
+        HWND Win32_hWnd;
+        MSG Win32_msg{};
+        bool Win32_resizing = false;
 #endif
 
 #if defined(__linux__)
