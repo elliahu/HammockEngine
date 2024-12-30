@@ -520,6 +520,10 @@ namespace Hmck {
         setImageLayout(cmdbuffer, image, oldImageLayout, newImageLayout, subresourceRange, srcStageMask, dstStageMask);
     }
 
+    inline size_t alignSize(size_t size, size_t alignment) {
+        return (size + alignment - 1) & ~(alignment - 1);
+    }
+
 
     namespace Filesystem {
         inline bool fileExists(const std::string &filename) {

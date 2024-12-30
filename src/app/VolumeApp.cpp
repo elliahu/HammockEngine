@@ -125,13 +125,17 @@ void Hmck::VolumeApp::load() {
         }
     });
 
-    for (int i = 0; i < SwapChain::MAX_FRAMES_IN_FLIGHT; i++)
+    for (int i = 0; i < SwapChain::MAX_FRAMES_IN_FLIGHT; i++){
         buffers[i] = deviceStorage.createBuffer({
-            .instanceSize = sizeof(BufferData),
-            .instanceCount = 1,
-            .usageFlags = VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
-            .memoryPropertyFlags = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT
-        }); {
+                    .instanceSize = sizeof(BufferData),
+                    .instanceCount = 1,
+                    .usageFlags = VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
+                    .memoryPropertyFlags = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT
+                });
+    }
+         
+
+    {
         // Load the volume texture
         int w, h, c, d;
         const auto volumeImages = Filesystem::ls("../data/textures/volumes/female_ankle");
