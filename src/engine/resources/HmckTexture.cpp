@@ -361,6 +361,15 @@ void Hmck::Texture3D::loadFromBuffer(Device &device, const void *buffer, VkDevic
         throw std::runtime_error("Error: Requested texture dimensions is greater than supported 3D texture dimension!");
     }
 
+    // Calculate aligned dimensions based on device properties
+    VkDeviceSize alignedRowPitch = (width * instanceSize + 
+        device.properties.limits.optimalBufferCopyRowPitchAlignment - 1) & 
+        ~(device.properties.limits.optimalBufferCopyRowPitchAlignment - 1);
+    
+    VkDeviceSize alignedSlicePitch = alignedRowPitch * height;
+    VkDeviceSize totalSize = alignedSlicePitch * depth;
+
+
     VkImageCreateInfo imageCreateInfo = Init::imageCreateInfo();
     imageCreateInfo.imageType = VK_IMAGE_TYPE_3D;
     imageCreateInfo.format = format;
@@ -386,7 +395,82 @@ void Hmck::Texture3D::loadFromBuffer(Device &device, const void *buffer, VkDevic
     checkResult(vkAllocateMemory(device.device(), &memAllocInfo, nullptr, &this->memory));
     checkResult(vkBindImageMemory(device.device(), this->image, this->memory, 0));
 
-    // Create image view
+    // Create a host-visible staging buffer that contains the raw image data
+    Buffer stagingBuffer{
+        device,
+        instanceSize, // Size of each element (4 bytes for float)
+        totalSize,  // Total size including padding
+        VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
+        VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
+    };
+
+    stagingBuffer.map();
+
+    // Copy data slice by slice with proper alignment
+    const float* srcData = static_cast<const float*>(buffer);
+    float* dstData = static_cast<float*>(stagingBuffer.getMappedMemory());
+
+    // Calculate pitches in bytes
+    VkDeviceSize unalignedRowPitch = width * sizeof(float);
+    VkDeviceSize unalignedSlicePitch = unalignedRowPitch * height;
+
+    // Debug prints
+    Logger::log(LOG_LEVEL_DEBUG, "Width: %d, Height: %d, Depth: %d\n", width, height, depth);
+    Logger::log(LOG_LEVEL_DEBUG, "Unaligned row pitch: %zu bytes\n", unalignedRowPitch);
+    Logger::log(LOG_LEVEL_DEBUG, "Aligned row pitch: %zu bytes\n", alignedRowPitch);
+    Logger::log(LOG_LEVEL_DEBUG, "Aligned slice pitch: %zu bytes\n", alignedSlicePitch);
+    Logger::log(LOG_LEVEL_DEBUG, "Unligned slice pitch: %zu bytes\n", alignedSlicePitch);
+    
+    for (uint32_t z = 0; z < depth; z++) {
+        for (uint32_t y = 0; y < height; y++) {
+            const float* srcRow = srcData + (z * height * width) + (y * width);
+            float* dstRow = dstData + (z * alignedSlicePitch / sizeof(float)) + 
+                                    (y * alignedRowPitch / sizeof(float));
+            
+            // Copy one row of floats
+            memcpy(dstRow, srcRow, unalignedRowPitch);
+        }
+    }
+    stagingBuffer.unmap();
+
+    // Setup buffer copy regions with proper alignment
+    VkBufferImageCopy copyRegion{};
+    copyRegion.bufferOffset = 0;
+    copyRegion.bufferRowLength = alignedRowPitch / instanceSize;  // In texels
+    copyRegion.bufferImageHeight = height;
+    copyRegion.imageSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+    copyRegion.imageSubresource.mipLevel = 0;
+    copyRegion.imageSubresource.baseArrayLayer = 0;
+    copyRegion.imageSubresource.layerCount = 1;
+    copyRegion.imageExtent = {width, height, depth};
+
+    // Transition the texture image layout to transfer destination
+    device.transitionImageLayout(
+        this->image,
+        VK_IMAGE_LAYOUT_UNDEFINED,
+        VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL
+    );
+
+    // Copy the data from the staging buffer to the texture image
+    VkCommandBuffer cmdBuffer = device.beginSingleTimeCommands();
+    vkCmdCopyBufferToImage(
+        cmdBuffer,
+        stagingBuffer.getBuffer(),
+        image,
+        VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+        1,
+        &copyRegion
+    );
+    device.endSingleTimeCommands(cmdBuffer);
+
+    // Transition the texture image layout to shader read after copying the data
+    device.transitionImageLayout(
+        this->image,
+        VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+        imageLayout
+    );
+
+    // create image view
     VkImageViewCreateInfo view = Init::imageViewCreateInfo();
     view.image = this->image;
     view.viewType = VK_IMAGE_VIEW_TYPE_3D;
@@ -397,39 +481,6 @@ void Hmck::Texture3D::loadFromBuffer(Device &device, const void *buffer, VkDevic
     view.subresourceRange.layerCount = 1;
     view.subresourceRange.levelCount = 1;
     checkResult(vkCreateImageView(device.device(), &view, nullptr, &this->view));
-
-    const uint32_t bufferSize = width * height * channels * depth;
-
-    // Create a host-visible staging buffer that contains the raw image data
-    Buffer stagingBuffer{
-        device,
-        instanceSize,
-        bufferSize,
-        VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
-        VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
-    };
-
-    stagingBuffer.map();
-    stagingBuffer.writeToBuffer(buffer);
-
-    device.transitionImageLayout(
-        this->image,
-        VK_IMAGE_LAYOUT_UNDEFINED,
-        VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL
-    );
-
-    device.copyBufferToImage(
-        stagingBuffer.getBuffer(),
-        image, static_cast<uint32_t>(width),
-        static_cast<uint32_t>(height),
-        1, 0, depth
-    );
-
-    device.transitionImageLayout(
-        this->image,
-        VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
-        imageLayout
-    );
 }
 
 void Hmck::Texture3D::createSampler(Device &device, VkFilter filter, VkSamplerAddressMode addressMode) {
