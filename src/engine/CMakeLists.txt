@@ -44,6 +44,6 @@ elseif(APPLE)
 endif()
 
 # Link dependencies
-find_package(Vulkan REQUIRED)
+find_package(Vulkan REQUIRED )
 target_link_libraries(hammock_engine PUBLIC Vulkan::Vulkan)
 

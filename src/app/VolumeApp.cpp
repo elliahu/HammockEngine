@@ -22,7 +22,7 @@ void Hmck::VolumeApp::run() {
         },
         .FS
         {
-            .byteCode = Hmck::Filesystem::readFile("../src/engine/shaders/compiled/3d.frag.spv"),
+            .byteCode = Hmck::Filesystem::readFile("../src/engine/shaders/compiled/raymarch_3d_texture.frag.spv"),
             .entryFunc = "main"
         },
         .descriptorSetLayouts =
@@ -204,12 +204,6 @@ void Hmck::VolumeApp::draw(int frameIndex, float elapsedTime, VkCommandBuffer co
 
     pushData.elapsedTime = elapsedTime;
 
-    if (animate){
-        pushData.depth += elapsedTime * 0.00001f;
-        if(pushData.depth > 1.0f) pushData.depth = 0.0f;
-    }
-    
-
     vkCmdPushConstants(commandBuffer, pipeline->graphicsPipelineLayout, VK_SHADER_STAGE_FRAGMENT_BIT, 0,
                        sizeof(PushData), &pushData);
 
@@ -247,8 +241,7 @@ void Hmck::VolumeApp::ui() {
     ImGui::ColorEdit4("Fat color", &bufferData.fatColor.Elements[0]);
     ImGui::ColorEdit4("Bone color", &bufferData.boneColor.Elements[0]);
 
-    ImGui::Checkbox("Animate", &animate);
-    ImGui::DragFloat("Depth", &pushData.depth, 1.f / 150.f, 0.0f, 1.0f);
+    ImGui::Checkbox("Blinn-phong", (bool*)&pushData.nDotL);
     
 
     ImGui::DragFloat3("Camera position", &cameraPosition.value.Elements[0], 0.1f);

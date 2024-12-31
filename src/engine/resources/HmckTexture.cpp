@@ -399,7 +399,7 @@ void Hmck::Texture3D::loadFromBuffer(Device &device, const void *buffer, VkDevic
     Buffer stagingBuffer{
         device,
         instanceSize, // Size of each element (4 bytes for float)
-        totalSize,  // Total size including padding
+        static_cast<uint32_t>(totalSize),  // Total size including padding
         VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
         VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
     };

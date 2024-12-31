@@ -54,7 +54,6 @@ namespace Hmck {
             HmckVec4 cameraPosition{0.f, 0.f, 0.f, 0.f};
         } bufferData;
 
-        bool animate = true;
 
         struct PushData {
             float resX = IApp::WINDOW_WIDTH;
@@ -65,7 +64,7 @@ namespace Hmck {
             float airTrheshold = 0.1f;
             float tissueThreshold = 0.3f;
             float fatThreshold = 0.6f;
-            float  depth = 0.0;
+            int  nDotL = false;
         } pushData;
 
         ResourceHandle<Texture3D> texture{};
