@@ -60,8 +60,8 @@ void Hmck::PBRApp::run() {
 
             // do per frame calculations
 
-            if(window.getKeyState(KEY_A) == KeyState::DOWN) azimuth -= 1.f * frameTime;
-            if(window.getKeyState(KEY_D) == KeyState::DOWN) azimuth += 1.f * frameTime;
+            if(window.getKeyState(KEY_A) == KeyState::DOWN) azimuth += 1.f * frameTime;
+            if(window.getKeyState(KEY_D) == KeyState::DOWN) azimuth -= 1.f * frameTime;
             if(window.getKeyState(KEY_W) == KeyState::DOWN) elevation += 1.f * frameTime;
             if(window.getKeyState(KEY_S) == KeyState::DOWN) elevation -= 1.f * frameTime;
             if(window.getKeyState(KEY_UP) == KeyState::DOWN) radius -= 1.f * frameTime;
@@ -71,10 +71,10 @@ void Hmck::PBRApp::run() {
             // write to projection buffer
             projectionBuffer.projectionMat = Projection().perspective(45.0f, renderContext.getAspectRatio(), 0.1f, 64.0f);
             projectionBuffer.viewMat = Projection().view(pos, HmckVec3{0.0f, 0.0f, 0.0f},
-                                                         Projection().upNegY());
+                                                         Projection().upPosY());
             projectionBuffer.inverseViewMat = Projection().inverseView(HmckVec3{0.0f, 0.0f, -2.0f},
                                                                        HmckVec3{0.0f, 0.0f, 0.0f},
-                                                                       Projection().upNegY());
+                                                                       Projection().upPosY());
             deviceStorage.getBuffer(projectionDescriptors.buffers[frameIndex])->writeToBuffer(&projectionBuffer);
 
 
@@ -528,8 +528,6 @@ void Hmck::PBRApp::createPipelines(const RenderContext &renderer) {
         .graphicsState{
             .depthTest = VK_TRUE,
             .depthTestCompareOp = VK_COMPARE_OP_LESS_OR_EQUAL,
-            .cullMode = VK_CULL_MODE_BACK_BIT,
-            .frontFace = VK_FRONT_FACE_CLOCKWISE,
             .blendAtaAttachmentStates{
                 Hmck::Init::pipelineColorBlendAttachmentState(0xf, VK_FALSE),
                 Hmck::Init::pipelineColorBlendAttachmentState(0xf, VK_FALSE),
@@ -570,8 +568,6 @@ void Hmck::PBRApp::createPipelines(const RenderContext &renderer) {
         .graphicsState{
             .depthTest = VK_TRUE,
             .depthTestCompareOp = VK_COMPARE_OP_LESS_OR_EQUAL,
-            .cullMode = VK_CULL_MODE_BACK_BIT,
-            .frontFace = VK_FRONT_FACE_CLOCKWISE,
             .blendAtaAttachmentStates{
                 Hmck::Init::pipelineColorBlendAttachmentState(0xf, VK_FALSE),
                 Hmck::Init::pipelineColorBlendAttachmentState(0xf, VK_FALSE),

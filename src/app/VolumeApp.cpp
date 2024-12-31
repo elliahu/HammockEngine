@@ -241,9 +241,8 @@ void Hmck::VolumeApp::ui() {
     ImGui::ColorEdit4("Fat color", &bufferData.fatColor.Elements[0]);
     ImGui::ColorEdit4("Bone color", &bufferData.boneColor.Elements[0]);
 
-    bool nDotL = pushData.nDotL == 1;
-    ImGui::Checkbox("Blinn-phong", &nDotL);
-    pushData.nDotL = (nDotL) ? 1 : 0;
+    ImGui::Checkbox("Blinn-phong", (bool*)&pushData.nDotL);
+    
 
     ImGui::DragFloat3("Camera position", &cameraPosition.value.Elements[0], 0.1f);
     ImGui::DragFloat3("Camera target", &cameraTarget.value.Elements[0], 0.1f);

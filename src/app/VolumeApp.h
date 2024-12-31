@@ -54,6 +54,7 @@ namespace Hmck {
             HmckVec4 cameraPosition{0.f, 0.f, 0.f, 0.f};
         } bufferData;
 
+
         struct PushData {
             float resX = IApp::WINDOW_WIDTH;
             float resY = IApp::WINDOW_HEIGHT;
