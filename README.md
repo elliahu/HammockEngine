@@ -43,4 +43,6 @@ During the development I've also created some tools that are using Hammock under
 ![img](https://raw.githubusercontent.com/elliahu/HammockEngine/master/docs/img/helmet.png)
 ![img](https://raw.githubusercontent.com/elliahu/HammockEngine/master/docs/img/cloud.png)
 
+About licencing: [https://choosealicense.com/no-permission/](https://choosealicense.com/no-permission/)
+
 
