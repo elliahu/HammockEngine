@@ -5,18 +5,45 @@ project(hammock)
 set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-# Set build type if not specified
-if(NOT CMAKE_BUILD_TYPE)
-    set(CMAKE_BUILD_TYPE Debug)
+# Add ImGui source files
+file(GLOB_RECURSE IMGUI_SOURCES
+        ${PROJECT_SOURCE_DIR}/external/imgui/*.cpp
+)
+
+add_subdirectory(src)
+add_subdirectory(examples)
+add_subdirectory(tools)
+
+# Define engine library
+add_library(hammock STATIC ${ENGINE_SOURCES} ${IMGUI_SOURCES})
+
+# Include directories for engine
+target_include_directories(hammock PUBLIC ${PROJECT_SOURCE_DIR}/include/)
+target_include_directories(hammock PUBLIC ${CMAKE_CURRENT_BINARY_DIR})
+target_include_directories(hammock PUBLIC $ENV{VULKAN_SDK}/Include)
+target_include_directories(hammock PUBLIC ${PROJECT_SOURCE_DIR}/external)
+target_include_directories(hammock PUBLIC ${PROJECT_SOURCE_DIR}/external/imgui)
+
+target_sources(hammock PRIVATE ${ENGINE_SOURCES})
+
+if(WIN32)
+    target_compile_definitions(hammock PRIVATE VK_USE_PLATFORM_WIN32_KHR)
+    target_link_libraries(hammock PRIVATE Dwmapi)
+
+elseif(UNIX AND NOT APPLE)
+    target_compile_definitions(hammock PRIVATE VK_USE_PLATFORM_XLIB_KHR)
+
+    # Find and link X11 libraries
+    find_package(X11 REQUIRED)
+    target_include_directories(hammock PRIVATE ${X11_INCLUDE_DIR})
+    target_link_libraries(hammock PRIVATE ${X11_LIBRARIES})
+    target_link_libraries(hammock PRIVATE ${X11_LIBRARIES} X11::Xkb)
+    
+elseif(APPLE)
+    target_compile_definitions(hammock PRIVATE VK_USE_PLATFORM_METAL_EXT)
 endif()
 
-# Add subdirectories
-add_subdirectory(src/engine)
-add_subdirectory(src/app)
-add_subdirectory(tools/generate_environment_maps)
+# Link dependencies
+find_package(Vulkan REQUIRED )
+target_link_libraries(hammock PUBLIC Vulkan::Vulkan)
 
-# Define the executable
-add_executable(hammock src/main.cpp)
-
-# Link engine and app libraries
-target_link_libraries(hammock PRIVATE hammock_engine hammock_app)
