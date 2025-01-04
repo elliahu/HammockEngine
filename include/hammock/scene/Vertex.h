@@ -30,5 +30,8 @@ namespace Hammock {
         }
     };
 
+    struct Triangle {
+        Vertex v0,v1,v2;
+    };
 
 }
