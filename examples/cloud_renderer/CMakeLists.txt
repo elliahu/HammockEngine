@@ -1,12 +1,8 @@
-# Collect all source and header files
-file(GLOB_RECURSE SOURCE_FILES
-        ${CMAKE_CURRENT_SOURCE_DIR}/*.cpp
-        ${CMAKE_CURRENT_SOURCE_DIR}/*.h
-)
-
 # Add the executable
 add_executable(cloud_renderer
-        ${SOURCE_FILES}
+        main.cpp
+        CloudRenderer.cpp
+        CloudRenderer.h
 )
 
 # Link the engine library
