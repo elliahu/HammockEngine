@@ -2,7 +2,7 @@
 
 #include "hammock/core/Device.h"
 
-namespace Hmck {
+namespace Hammock {
     class Buffer {
     public:
         Buffer(

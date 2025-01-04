@@ -1,26 +1,26 @@
 #include "hammock/core/GraphicsPipeline.h"
 
-Hmck::GraphicsPipeline Hmck::GraphicsPipeline::createGraphicsPipeline(GraphicsPipelineCreateInfo createInfo) {
-    return Hmck::GraphicsPipeline(createInfo);
+Hammock::GraphicsPipeline Hammock::GraphicsPipeline::createGraphicsPipeline(GraphicsPipelineCreateInfo createInfo) {
+    return Hammock::GraphicsPipeline(createInfo);
 }
 
-std::unique_ptr<Hmck::GraphicsPipeline> Hmck::GraphicsPipeline::createGraphicsPipelinePtr(
+std::unique_ptr<Hammock::GraphicsPipeline> Hammock::GraphicsPipeline::createGraphicsPipelinePtr(
     GraphicsPipelineCreateInfo createInfo) {
     return std::make_unique<GraphicsPipeline>(createInfo);
 }
 
-void Hmck::GraphicsPipeline::bind(VkCommandBuffer commandBuffer) {
+void Hammock::GraphicsPipeline::bind(VkCommandBuffer commandBuffer) {
     vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, graphicsPipeline);
 }
 
-Hmck::GraphicsPipeline::~GraphicsPipeline() {
+Hammock::GraphicsPipeline::~GraphicsPipeline() {
     vkDestroyShaderModule(device.device(), vertShaderModule, nullptr);
     vkDestroyShaderModule(device.device(), fragShaderModule, nullptr);
     vkDestroyPipelineLayout(device.device(), graphicsPipelineLayout, nullptr);
     vkDestroyPipeline(device.device(), graphicsPipeline, nullptr);
 }
 
-Hmck::GraphicsPipeline::GraphicsPipeline(Hmck::GraphicsPipeline::GraphicsPipelineCreateInfo &createInfo) : device{
+Hammock::GraphicsPipeline::GraphicsPipeline(Hammock::GraphicsPipeline::GraphicsPipelineCreateInfo &createInfo) : device{
     createInfo.device
 } {
     VkPipelineLayoutCreateInfo pipelineLayoutInfo{};
@@ -116,7 +116,7 @@ Hmck::GraphicsPipeline::GraphicsPipeline(Hmck::GraphicsPipeline::GraphicsPipelin
 }
 
 
-void Hmck::GraphicsPipeline::defaultRenderPipelineConfig(GraphicsPipelineConfig &configInfo) {
+void Hammock::GraphicsPipeline::defaultRenderPipelineConfig(GraphicsPipelineConfig &configInfo) {
     configInfo.inputAssemblyInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO;
     configInfo.inputAssemblyInfo.topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
     configInfo.inputAssemblyInfo.primitiveRestartEnable = VK_FALSE;
@@ -184,7 +184,7 @@ void Hmck::GraphicsPipeline::defaultRenderPipelineConfig(GraphicsPipelineConfig 
     configInfo.dynamicStateInfo.flags = 0;
 }
 
-void Hmck::GraphicsPipeline::createShaderModule(const std::vector<char> &code, VkShaderModule *shaderModule) const {
+void Hammock::GraphicsPipeline::createShaderModule(const std::vector<char> &code, VkShaderModule *shaderModule) const {
     VkShaderModuleCreateInfo createInfo{};
     createInfo.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
     createInfo.codeSize = code.size();

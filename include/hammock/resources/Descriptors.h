@@ -7,7 +7,7 @@
 #include <unordered_map>
 #include <vector>
 
-namespace Hmck {
+namespace Hammock {
     typedef const uint32_t Binding;
 
     class DescriptorSetLayout {

@@ -5,7 +5,7 @@
 
 #include "IApp.h"
 
-namespace Hmck {
+namespace Hammock {
     class VolumeApp final: public IApp {
     public:
         VolumeApp();

@@ -4,7 +4,7 @@
 #include <X11/keysym.h> 
 #endif
 
-namespace Hmck{
+namespace Hammock{
 
     typedef unsigned long long Keycode;
 

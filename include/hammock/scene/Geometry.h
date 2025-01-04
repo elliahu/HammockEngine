@@ -6,7 +6,7 @@
 #include "hammock/core/DeviceStorage.h"
 #include "hammock/scene/Vertex.h"
 
-namespace Hmck {
+namespace Hammock {
     struct Geometry {
 
         enum VisibilityFlags : int32_t {

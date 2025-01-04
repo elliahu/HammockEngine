@@ -2,7 +2,7 @@
 
 #include <hammock/hammock.h>
 
-namespace Hmck {
+namespace Hammock {
     class IApp {
     public:
         static constexpr int WINDOW_WIDTH = 1920;

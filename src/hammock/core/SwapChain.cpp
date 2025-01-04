@@ -10,7 +10,7 @@
 
 #include "hammock/utils/Helpers.h"
 
-namespace Hmck {
+namespace Hammock {
     SwapChain::SwapChain(Device &deviceRef, const VkExtent2D extent)
         : device{deviceRef}, windowExtent{extent} {
         init();

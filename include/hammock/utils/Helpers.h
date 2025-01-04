@@ -13,7 +13,7 @@
 #include "hammock/utils/Initializers.h"
 
 
-namespace Hmck {
+namespace Hammock {
     class Logger;
 
     // dark magic from: https://stackoverflow.com/a/57595105

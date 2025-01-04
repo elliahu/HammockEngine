@@ -6,7 +6,7 @@
 
 #include "IApp.h"
 
-namespace Hmck {
+namespace Hammock {
     class PBRApp final : public IApp, public BenchmarkRunner {
     public:
         PBRApp();

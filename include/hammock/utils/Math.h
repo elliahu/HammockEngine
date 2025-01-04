@@ -18,7 +18,7 @@
 #include "hammock/resources/Buffer.h"
 #include "HandmadeMath.h"
 
-namespace Hmck {
+namespace Hammock {
     namespace Math {
         inline float lerp(float a, float b, float f) {
             return a + f * (b - a);

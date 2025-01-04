@@ -13,7 +13,7 @@
 
 #define FB_COLOR_FORMAT VK_FORMAT_R8G8B8A8_UNORM
 
-namespace Hmck {
+namespace Hammock {
     class SwapChain {
     public:
         static constexpr int MAX_FRAMES_IN_FLIGHT = 2;

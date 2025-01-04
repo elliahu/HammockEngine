@@ -7,7 +7,7 @@
 #include "hammock/core/DeviceStorage.h"
 
 
-namespace Hmck {
+namespace Hammock {
     class Generator {
     public:
          ResourceHandle<Texture2D> generatePrefilteredMap(Device &device, ResourceHandle<Texture2D> environmentMap, DeviceStorage &resources,

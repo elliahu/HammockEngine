@@ -17,7 +17,7 @@
 #include "hammock/resources/Buffer.h"
 #include "HandmadeMath.h"
 
-namespace Hmck{
+namespace Hammock{
     namespace Init {
         inline VkImageCreateInfo imageCreateInfo() {
             VkImageCreateInfo imageCreateInfo{};

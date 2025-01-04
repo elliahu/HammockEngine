@@ -4,7 +4,7 @@
 #include <cassert>
 #include <stdexcept>
 
-namespace Hmck {
+namespace Hammock {
     // *************** Descriptor Set Layout Builder *********************
 
     DescriptorSetLayout::Builder &DescriptorSetLayout::Builder::addBinding(

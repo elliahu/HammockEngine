@@ -5,7 +5,7 @@
 #include "hammock/core/Device.h"
 #include "hammock/utils/Helpers.h"
 
-namespace Hmck {
+namespace Hammock {
 
     class ITexture {
     public:

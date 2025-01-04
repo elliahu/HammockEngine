@@ -14,7 +14,7 @@
 #include "hammock/core/VulkanInstance.h"
 #include "HandmadeMath.h"
 
-namespace Hmck
+namespace Hammock
 {
     class Window
     {

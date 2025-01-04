@@ -1,16 +1,16 @@
 #include "hammock/core/RenderContext.h"
 
-Hmck::RenderContext::RenderContext(Window &window, Device &device) : window{window}, device{device} {
+Hammock::RenderContext::RenderContext(Window &window, Device &device) : window{window}, device{device} {
     recreateSwapChain();
     createCommandBuffer();
 }
 
-Hmck::RenderContext::~RenderContext() {
+Hammock::RenderContext::~RenderContext() {
     freeCommandBuffers();
 }
 
 
-void Hmck::RenderContext::createCommandBuffer() {
+void Hammock::RenderContext::createCommandBuffer() {
     commandBuffers.resize(SwapChain::MAX_FRAMES_IN_FLIGHT);
 
     VkCommandBufferAllocateInfo allocInfo{};
@@ -25,7 +25,7 @@ void Hmck::RenderContext::createCommandBuffer() {
 }
 
 
-void Hmck::RenderContext::freeCommandBuffers() {
+void Hammock::RenderContext::freeCommandBuffers() {
     vkFreeCommandBuffers(
         device.device(),
         device.getCommandPool(),
@@ -34,7 +34,7 @@ void Hmck::RenderContext::freeCommandBuffers() {
     commandBuffers.clear();
 }
 
-void Hmck::RenderContext::recreateSwapChain() {
+void Hammock::RenderContext::recreateSwapChain() {
     auto extent = window.getExtent();
 
     while (extent.width == 0 || extent.height == 0) {
@@ -55,7 +55,7 @@ void Hmck::RenderContext::recreateSwapChain() {
     }
 }
 
-VkCommandBuffer Hmck::RenderContext::beginFrame() {
+VkCommandBuffer Hammock::RenderContext::beginFrame() {
     assert(!isFrameStarted && "Cannot call beginFrame while already in progress");
 
     auto result = hmckSwapChain->acquireNextImage(&currentImageIndex);
@@ -81,7 +81,7 @@ VkCommandBuffer Hmck::RenderContext::beginFrame() {
     return commandBuffer;
 }
 
-void Hmck::RenderContext::endFrame() {
+void Hammock::RenderContext::endFrame() {
     assert(isFrameStarted && "Cannot call endFrame while frame is not in progress");
     const auto commandBuffer = getCurrentCommandBuffer();
 
@@ -104,7 +104,7 @@ void Hmck::RenderContext::endFrame() {
 }
 
 
-void Hmck::RenderContext::beginRenderPass(
+void Hammock::RenderContext::beginRenderPass(
     const std::unique_ptr<Framebuffer> &framebuffer,
     const VkCommandBuffer commandBuffer,
     const std::vector<VkClearValue> &clearValues) const {
@@ -125,7 +125,7 @@ void Hmck::RenderContext::beginRenderPass(
 
     vkCmdBeginRenderPass(commandBuffer, &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
 
-    VkViewport viewport = Hmck::Init::viewport(
+    VkViewport viewport = Hammock::Init::viewport(
         static_cast<float>(framebuffer->width),
         static_cast<float>(framebuffer->height),
         0.0f, 1.0f);
@@ -135,7 +135,7 @@ void Hmck::RenderContext::beginRenderPass(
 }
 
 
-void Hmck::RenderContext::beginSwapChainRenderPass(const VkCommandBuffer commandBuffer) const {
+void Hammock::RenderContext::beginSwapChainRenderPass(const VkCommandBuffer commandBuffer) const {
     assert(isFrameInProgress() && "Cannot call beginSwapChainRenderPass if frame is not in progress");
     assert(
         commandBuffer == getCurrentCommandBuffer() &&
@@ -158,7 +158,7 @@ void Hmck::RenderContext::beginSwapChainRenderPass(const VkCommandBuffer command
 
     vkCmdBeginRenderPass(commandBuffer, &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
 
-    VkViewport viewport = Hmck::Init::viewport(
+    VkViewport viewport = Hammock::Init::viewport(
         static_cast<float>(hmckSwapChain->getSwapChainExtent().width),
         static_cast<float>(hmckSwapChain->getSwapChainExtent().height),
         0.0f, 1.0f);
@@ -167,7 +167,7 @@ void Hmck::RenderContext::beginSwapChainRenderPass(const VkCommandBuffer command
     vkCmdSetScissor(commandBuffer, 0, 1, &scissor);
 }
 
-void Hmck::RenderContext::endRenderPass(const VkCommandBuffer commandBuffer) const {
+void Hammock::RenderContext::endRenderPass(const VkCommandBuffer commandBuffer) const {
     assert(isFrameInProgress() && "Cannot call endActiveRenderPass if frame is not in progress");
     assert(
         commandBuffer == getCurrentCommandBuffer() &&

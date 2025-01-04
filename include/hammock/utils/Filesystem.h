@@ -12,7 +12,7 @@
 
 #include "hammock/utils/Logger.h"
 
-namespace Hmck{
+namespace Hammock{
     namespace Filesystem {
         inline bool fileExists(const std::string &filename) {
             std::ifstream f(filename.c_str());

@@ -19,7 +19,7 @@
 
 #define SSAO_RES_MULTIPLIER 1.0
 
-namespace Hmck {
+namespace Hammock {
     class RenderContext {
     public:
         RenderContext(Window &window, Device &device);

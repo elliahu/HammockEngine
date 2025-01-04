@@ -8,7 +8,7 @@
 
 // base on implementation by Sascha Willems
 
-namespace Hmck {
+namespace Hammock {
 
     class Thread {
     private:

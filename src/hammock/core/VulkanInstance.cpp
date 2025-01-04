@@ -8,7 +8,7 @@
 #include <unordered_set>
 #include <vector>
 
-namespace Hmck {
+namespace Hammock {
     // local callback functions
     static VKAPI_ATTR VkBool32 VKAPI_CALL debugCallback(
         VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity,
@@ -48,19 +48,19 @@ namespace Hmck {
     }
 }
 
-Hmck::VulkanInstance::VulkanInstance() {
+Hammock::VulkanInstance::VulkanInstance() {
     createInstance();
     setupDebugMessenger();
 }
 
-Hmck::VulkanInstance::~VulkanInstance() {
+Hammock::VulkanInstance::~VulkanInstance() {
     if (enableValidationLayers) {
         DestroyDebugUtilsMessengerEXT(instance, debugMessenger, nullptr);
     }
     vkDestroyInstance(instance, nullptr);
 }
 
-void Hmck::VulkanInstance::setupDebugMessenger() {
+void Hammock::VulkanInstance::setupDebugMessenger() {
     if (!enableValidationLayers) return;
     VkDebugUtilsMessengerCreateInfoEXT createInfo;
     populateDebugMessengerCreateInfo(createInfo);
@@ -69,7 +69,7 @@ void Hmck::VulkanInstance::setupDebugMessenger() {
     }
 }
 
-void Hmck::VulkanInstance::createInstance() {
+void Hammock::VulkanInstance::createInstance() {
     if (enableValidationLayers && !checkValidationLayerSupport()) {
         throw std::runtime_error("validation layers requested, but not available!");
     }
@@ -111,7 +111,7 @@ void Hmck::VulkanInstance::createInstance() {
     hasGflwRequiredInstanceExtensions();
 }
 
-bool Hmck::VulkanInstance::checkValidationLayerSupport() const {
+bool Hammock::VulkanInstance::checkValidationLayerSupport() const {
     uint32_t layerCount;
     vkEnumerateInstanceLayerProperties(&layerCount, nullptr);
 
@@ -136,7 +136,7 @@ bool Hmck::VulkanInstance::checkValidationLayerSupport() const {
     return true;
 }
 
-void Hmck::VulkanInstance::hasGflwRequiredInstanceExtensions() const {
+void Hammock::VulkanInstance::hasGflwRequiredInstanceExtensions() const {
     uint32_t extensionCount = 0;
     vkEnumerateInstanceExtensionProperties(nullptr, &extensionCount, nullptr);
     std::vector<VkExtensionProperties> extensions(extensionCount);
@@ -159,7 +159,7 @@ void Hmck::VulkanInstance::hasGflwRequiredInstanceExtensions() const {
     }
 }
 
-std::vector<const char *> Hmck::VulkanInstance::getRequiredExtensions() const {
+std::vector<const char *> Hammock::VulkanInstance::getRequiredExtensions() const {
     std::vector<const char *> extensions;
 
     // Common extension for all platforms
@@ -180,7 +180,7 @@ std::vector<const char *> Hmck::VulkanInstance::getRequiredExtensions() const {
     return extensions;
 }
 
-void Hmck::VulkanInstance::populateDebugMessengerCreateInfo(VkDebugUtilsMessengerCreateInfoEXT &createInfo) {
+void Hammock::VulkanInstance::populateDebugMessengerCreateInfo(VkDebugUtilsMessengerCreateInfoEXT &createInfo) {
     createInfo = {};
     createInfo.sType = VK_STRUCTURE_TYPE_DEBUG_UTILS_MESSENGER_CREATE_INFO_EXT;
     createInfo.messageSeverity = VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT |
