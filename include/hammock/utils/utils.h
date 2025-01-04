@@ -6,3 +6,6 @@
 #include "Logger.h"
 #include "ScopedMemory.h"
 #include "UserInterface.h"
+#include "Math.h"
+#include "Filesystem.h"
+#include "Initializers.h"

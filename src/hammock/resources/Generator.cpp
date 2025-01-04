@@ -1,11 +1,11 @@
 #include "hammock/resources/Generator.h"
-#include <stb_image.h>
 #include <chrono>
 
 #include "hammock/core/GraphicsPipeline.h"
 #include "hammock/core/Framebuffer.h"
 #include "hammock/utils/Logger.h"
 #include "hammock/core/Shader.h"
+#include "hammock/utils/Filesystem.h"
 
 Hmck:: ResourceHandle<Hmck::Texture2D> Hmck::Generator::generatePrefilteredMap(Device &device,  ResourceHandle<Texture2D> environmentMap, DeviceStorage &resources, VkFormat format) {
     auto tStart = std::chrono::high_resolution_clock::now();
