@@ -10,8 +10,8 @@ elif platform.system() == 'Linux':
 else:
     raise EnvironmentError("Unsupported OS")
 
-raw_shaders = r'../src/engine/shaders/raw'
-compiled_shaders = r'../src/engine/shaders/compiled'
+raw_shaders = r'../src/hammock/shaders/raw'
+compiled_shaders = r'../src/hammock/shaders/compiled'
 
 # Ensure the compiled shaders directory exists
 os.makedirs(compiled_shaders, exist_ok=True)

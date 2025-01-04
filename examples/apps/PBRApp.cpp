@@ -185,14 +185,12 @@ void Hmck::PBRApp::run() {
 void Hmck::PBRApp::load() {
     // Load the meshes
     Loader(geometry, device, deviceStorage)
-    .loadglTF("../data/models/helmet/helmet.glb");
-    //.loadglTF("../data/models/helmet/DamagedHelmet.glb");
-    //.loadglTF("../data/thesis/simple_earth.glb");
-    //.loadglTF("../data/models/sponza/sponza.glb");
+    .loadglTF(assetPath("models/helmet/helmet.glb"));
+    //.loadglTF(dataRepository("models/helmet/DamagedHelmet.glb");
 
     int32_t w, h, c;
     ScopedMemory environmentData = ScopedMemory(Filesystem::readImage(
-        "../data/env/ibl/precomp/sunset/env.hdr", w, h, c, Filesystem::ImageFormat::R32G32B32A32_SFLOAT));
+        assetPath("env/ibl/precomp/sunset/env.hdr"), w, h, c, Filesystem::ImageFormat::R32G32B32A32_SFLOAT));
     const uint32_t mipLevels = getNumberOfMipLevels(w, h);
     environment.environmentMap = deviceStorage.createTexture2D({
         .buffer = environmentData.get(),
@@ -210,7 +208,7 @@ void Hmck::PBRApp::load() {
     environment.prefilteredEnvMap = generator.generatePrefilteredMap(device, environment.environmentMap, deviceStorage);
 
     ScopedMemory irradianceData = ScopedMemory(Filesystem::readImage(
-        "../data/env/ibl/precomp/sunset/irradiance.hdr", w, h, c, Filesystem::ImageFormat::R32G32B32A32_SFLOAT));
+        assetPath("env/ibl/precomp/sunset/irradiance.hdr"), w, h, c, Filesystem::ImageFormat::R32G32B32A32_SFLOAT));
     environment.irradianceMap = deviceStorage.createTexture2D({
         .buffer = irradianceData.get(),
         .instanceSize = sizeof(float),
@@ -218,7 +216,7 @@ void Hmck::PBRApp::load() {
         .format = VK_FORMAT_R32G32B32A32_SFLOAT,
     });
 
-    ScopedMemory brdfLutData = ScopedMemory(Filesystem::readImage("../data/env/ibl/precomp/sunset/brdf_lut.hdr", w,
+    ScopedMemory brdfLutData = ScopedMemory(Filesystem::readImage(assetPath("env/ibl/precomp/sunset/brdf_lut.hdr"), w,
                                                                   h, c, Filesystem::ImageFormat::R32G32_SFLOAT));
     environment.brdfLut = deviceStorage.createTexture2D({
         .buffer = brdfLutData.get(),
@@ -457,11 +455,11 @@ void Hmck::PBRApp::createPipelines(const RenderContext &renderer) {
         .debugName = "skybox_pass",
         .device = device,
         .VS{
-            .byteCode = Hmck::Filesystem::readFile("../src/engine/shaders/compiled/fullscreen.vert.spv"),
+            .byteCode = Hmck::Filesystem::readFile(compiledShaderPath("fullscreen.vert")),
             .entryFunc = "main"
         },
         .FS{
-            .byteCode = Hmck::Filesystem::readFile("../src/engine/shaders/compiled/environment.frag.spv"),
+            .byteCode = Hmck::Filesystem::readFile(compiledShaderPath("environment.frag")),
             .entryFunc = "main"
         },
         .descriptorSetLayouts = {
@@ -497,11 +495,11 @@ void Hmck::PBRApp::createPipelines(const RenderContext &renderer) {
         .debugName = "gbuffer_pass",
         .device = device,
         .VS{
-            .byteCode = Hmck::Filesystem::readFile("../src/engine/shaders/compiled/gbuffer.vert.spv"),
+            .byteCode = Hmck::Filesystem::readFile(compiledShaderPath("gbuffer.vert")),
             .entryFunc = "main"
         },
         .FS{
-            .byteCode = Hmck::Filesystem::readFile("../src/engine/shaders/compiled/gbuffer.frag.spv"),
+            .byteCode = Hmck::Filesystem::readFile(compiledShaderPath("gbuffer.frag")),
             .entryFunc = "main"
         },
         .descriptorSetLayouts = {
@@ -537,11 +535,11 @@ void Hmck::PBRApp::createPipelines(const RenderContext &renderer) {
         .debugName = "transparency_pass",
         .device = device,
         .VS{
-            .byteCode = Hmck::Filesystem::readFile("../src/engine/shaders/compiled/gbuffer.vert.spv"),
+            .byteCode = Hmck::Filesystem::readFile(compiledShaderPath("gbuffer.vert")),
             .entryFunc = "main"
         },
         .FS{
-            .byteCode = Hmck::Filesystem::readFile("../src/engine/shaders/compiled/wboitbuffer.frag.spv"),
+            .byteCode = Hmck::Filesystem::readFile(compiledShaderPath("wboitbuffer.frag")),
             .entryFunc = "main"
         },
         .descriptorSetLayouts = {
@@ -616,11 +614,11 @@ void Hmck::PBRApp::createPipelines(const RenderContext &renderer) {
         .debugName = "deferred_pass",
         .device = device,
         .VS{
-            .byteCode = Hmck::Filesystem::readFile("../src/engine/shaders/compiled/fullscreen.vert.spv"),
+            .byteCode = Hmck::Filesystem::readFile(compiledShaderPath("fullscreen.vert")),
             .entryFunc = "main"
         },
         .FS{
-            .byteCode = Hmck::Filesystem::readFile("../src/engine/shaders/compiled/pbr_ibl_deferred.frag.spv"),
+            .byteCode = Hmck::Filesystem::readFile(compiledShaderPath("pbr_ibl_deferred.frag")),
             .entryFunc = "main"
         },
         .descriptorSetLayouts = {

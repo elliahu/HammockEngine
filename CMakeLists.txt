@@ -6,16 +6,14 @@ set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 # Add ImGui source files
-file(GLOB_RECURSE IMGUI_SOURCES
+file(GLOB_RECURSE IMGUI_SRC
         ${PROJECT_SOURCE_DIR}/external/imgui/*.cpp
 )
 
 add_subdirectory(src)
-add_subdirectory(examples)
-add_subdirectory(tools)
 
 # Define engine library
-add_library(hammock STATIC ${ENGINE_SOURCES} ${IMGUI_SOURCES})
+add_library(hammock STATIC ${HAMMOCK_SRC} ${IMGUI_SRC})
 
 # Include directories for engine
 target_include_directories(hammock PUBLIC ${PROJECT_SOURCE_DIR}/include/)
@@ -23,8 +21,6 @@ target_include_directories(hammock PUBLIC ${CMAKE_CURRENT_BINARY_DIR})
 target_include_directories(hammock PUBLIC $ENV{VULKAN_SDK}/Include)
 target_include_directories(hammock PUBLIC ${PROJECT_SOURCE_DIR}/external)
 target_include_directories(hammock PUBLIC ${PROJECT_SOURCE_DIR}/external/imgui)
-
-target_sources(hammock PRIVATE ${ENGINE_SOURCES})
 
 if(WIN32)
     target_compile_definitions(hammock PRIVATE VK_USE_PLATFORM_WIN32_KHR)
@@ -46,4 +42,11 @@ endif()
 # Link dependencies
 find_package(Vulkan REQUIRED )
 target_link_libraries(hammock PUBLIC Vulkan::Vulkan)
+
+# Also build examples
+add_subdirectory(examples)
+
+# And also build tools
+add_subdirectory(tools)
+
 

@@ -7,7 +7,7 @@ namespace Hmck {
     class Shader {
     public:
         static std::filesystem::path getShaderDirectory() {
-            return std::filesystem::path(__FILE__).parent_path();
+            return std::filesystem::path(__FILE__).parent_path().parent_path().parent_path().parent_path() / "src" / "hammock" / "shaders";
         }
 
         static std::filesystem::path getCompiledShaderPath(const std::string &filename) {

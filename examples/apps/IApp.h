@@ -25,6 +25,14 @@ namespace Hmck {
     protected:
         virtual void load() = 0;
 
+        static std::string assetPath(const std::string& asset) {
+            return "../../../data/" + asset;
+        }
+
+        static std::string compiledShaderPath(const std::string& shader) {
+            return "../../../src/hammock/shaders/compiled/" + shader + ".spv";
+        }
+
         VulkanInstance instance;
         Window window{instance, "Hammock Engine", WINDOW_WIDTH, WINDOW_HEIGHT};
         Device device;

@@ -11,12 +11,12 @@ void Hmck::VolumeApp::run() {
         .device = device,
         .VS
         {
-            .byteCode = Hmck::Filesystem::readFile("../src/engine/shaders/compiled/fullscreen.vert.spv"),
+            .byteCode = Hmck::Filesystem::readFile(compiledShaderPath("fullscreen.vert")),
             .entryFunc = "main"
         },
         .FS
         {
-            .byteCode = Hmck::Filesystem::readFile("../src/engine/shaders/compiled/raymarch_3d_texture.frag.spv"),
+            .byteCode = Hmck::Filesystem::readFile(compiledShaderPath("raymarch_3d_texture.frag")),
             .entryFunc = "main"
         },
         .descriptorSetLayouts =
@@ -99,7 +99,7 @@ void Hmck::VolumeApp::run() {
 
 void Hmck::VolumeApp::load() {
     
-    Loader(geometry, device, deviceStorage).loadglTF("../data/models/Sphere/Sphere.glb");
+    Loader(geometry, device, deviceStorage).loadglTF(assetPath("models/Sphere/Sphere.glb"));
 
 
     // Resources
@@ -132,7 +132,7 @@ void Hmck::VolumeApp::load() {
     {
         // Load the volume texture
         int w, h, c, d;
-        const auto volumeImages = Filesystem::ls("../data/textures/volumes/female_ankle");
+        const auto volumeImages = Filesystem::ls(assetPath("textures/volumes/female_ankle"));
         ScopedMemory volumeData{
             Filesystem::readVolume(volumeImages, w, h, c, d, Filesystem::ImageFormat::R32_SFLOAT,
                                    Filesystem::ReadImageLoadingFlags::FLIP_Y)
