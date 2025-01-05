@@ -4,5 +4,5 @@
 
 int main() {
     Renderer renderer{};
-
+    renderer.draw();
 }

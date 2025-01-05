@@ -6,14 +6,16 @@
 class Renderer {
 public:
     struct PushData {
-        float x;
-    };
+        float elapsedTime;
+    } pushData;
     struct BufferData {
-        HmckMat4 projection;
-        HmckMat4 view;
-    };
+        alignas(16) HmckMat4 mvp{};
+        alignas(16) HmckVec4 lightPos {100.f,100.f, 100.f};
+    } bufferData;
 
     Renderer();
+
+    void draw();
 
 
 private:
@@ -27,6 +29,7 @@ private:
     }
 
     void init();
+    void drawUi();
 
     Hammock::VulkanInstance instance;
     Hammock::Window window;
@@ -45,6 +48,10 @@ private:
 
     std::unique_ptr<Hammock::GraphicsPipeline> pipeline{};
 
-    Hammock::Vec3Padded cameraPosition{0.0f, 2.0f, 2.0f};
-    Hammock::Vec3Padded cameraTarget{0.0f, 0.0f, 0.0f};
+    HmckVec3 cameraPosition{-24.0f , 40.f, 40.f};
+    HmckVec3 cameraTarget{0.0f, 0.0f, 0.0f};
+    float azimuth{2.4f}, radius{40.0f}, elevation{0.56f};
+    bool orbit{true};
+    float isovalue = 7.0f; // Threshold value for surface extraction
+    float cubeSize = .01f; // Size of the cubes in the marching cubes algorithm
 };
