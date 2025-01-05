@@ -15,7 +15,7 @@ namespace Hammock {
     class ResourceHandle {
     public:
 
-        explicit ResourceHandle(id_t id = 0) : id_(id) {
+        explicit ResourceHandle(id_t id = -1) : id_(id) {
         }
 
 
@@ -23,6 +23,8 @@ namespace Hammock {
 
 
         bool isValid() const { return id_ != -1; }
+
+        void invalidate() { id_ = -1; }
 
 
         bool operator==(const ResourceHandle &other) const { return id_ == other.id_; }

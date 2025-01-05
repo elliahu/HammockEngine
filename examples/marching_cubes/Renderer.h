@@ -28,6 +28,7 @@ private:
         return "../../../src/hammock/shaders/compiled/" + shader + ".spv";
     }
 
+    void loadSph();
     void init();
     void drawUi();
 

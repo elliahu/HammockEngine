@@ -4,6 +4,7 @@
 Renderer::Renderer(): window{instance, "Marching cubes", 1920, 1080},
                       device(instance, window.getSurface()) {
     init();
+    loadSph();
 }
 
 void Renderer::draw() {
@@ -17,6 +18,8 @@ void Renderer::draw() {
         float frameTime = std::chrono::duration<float, std::chrono::seconds::period>(newTime - currentTime).count();
         currentTime = newTime;
         elapsedTime += frameTime;
+
+
 
         if (window.getKeyState(KEY_A) == Hammock::KeyState::DOWN) azimuth += 1.f * frameTime;
         if (window.getKeyState(KEY_D) == Hammock::KeyState::DOWN) azimuth -= 1.f * frameTime;
@@ -92,36 +95,7 @@ void Renderer::draw() {
     device.waitIdle();
 }
 
-void Renderer::init() {
-    // Resources
-    descriptorSets.resize(Hammock::SwapChain::MAX_FRAMES_IN_FLIGHT);
-    buffers.resize(Hammock::SwapChain::MAX_FRAMES_IN_FLIGHT);
-
-    descriptorSetLayout = deviceStorage.createDescriptorSetLayout({
-        .bindings = {
-            {
-                .binding = 0, .descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
-                .stageFlags = VK_SHADER_STAGE_ALL_GRAPHICS
-            },
-        }
-    });
-
-    for (int i = 0; i < Hammock::SwapChain::MAX_FRAMES_IN_FLIGHT; i++) {
-        buffers[i] = deviceStorage.createBuffer({
-            .instanceSize = sizeof(BufferData),
-            .instanceCount = 1,
-            .usageFlags = VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
-            .memoryPropertyFlags = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT
-        });
-    }
-
-    for (int i = 0; i < Hammock::SwapChain::MAX_FRAMES_IN_FLIGHT; i++) {
-        auto fbufferInfo = deviceStorage.getBuffer(buffers[i])->descriptorInfo();
-        descriptorSets[i] = deviceStorage.createDescriptorSet({
-            .descriptorSetLayout = descriptorSetLayout,
-            .bufferWrites = {{0, fbufferInfo}}
-        });
-    }
+void Renderer::loadSph() {
 
     // Load particles
     std::vector<Particle> particles;
@@ -162,17 +136,57 @@ void Renderer::init() {
         geometry.vertices.push_back(triangle.v1);
         geometry.vertices.push_back(triangle.v2);
     }
-    vertexBuffer = deviceStorage.createVertexBuffer({
+
+
+    if (vertexBuffer.isValid()) {
+
+    }
+    else {
+        vertexBuffer = deviceStorage.createVertexBuffer({
         .vertexSize = sizeof(geometry.vertices[0]),
         .vertexCount = static_cast<uint32_t>(geometry.vertices.size()),
         .data = static_cast<void *>(geometry.vertices.data())
     });
+    }
+
 
 
     Hammock::Logger::log(Hammock::LOG_LEVEL_DEBUG, "Vertex buffer created with %d vertices \n",
                          geometry.vertices.size());
 
 
+}
+
+void Renderer::init() {
+    // Resources
+    descriptorSets.resize(Hammock::SwapChain::MAX_FRAMES_IN_FLIGHT);
+    buffers.resize(Hammock::SwapChain::MAX_FRAMES_IN_FLIGHT);
+
+    descriptorSetLayout = deviceStorage.createDescriptorSetLayout({
+        .bindings = {
+            {
+                .binding = 0, .descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
+                .stageFlags = VK_SHADER_STAGE_ALL_GRAPHICS
+            },
+        }
+    });
+
+    for (int i = 0; i < Hammock::SwapChain::MAX_FRAMES_IN_FLIGHT; i++) {
+        buffers[i] = deviceStorage.createBuffer({
+            .instanceSize = sizeof(BufferData),
+            .instanceCount = 1,
+            .usageFlags = VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
+            .memoryPropertyFlags = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT
+        });
+    }
+
+    for (int i = 0; i < Hammock::SwapChain::MAX_FRAMES_IN_FLIGHT; i++) {
+        auto fbufferInfo = deviceStorage.getBuffer(buffers[i])->descriptorInfo();
+        descriptorSets[i] = deviceStorage.createDescriptorSet({
+            .descriptorSetLayout = descriptorSetLayout,
+            .bufferWrites = {{0, fbufferInfo}}
+        });
+    }
     // pipeline
     pipeline = Hammock::GraphicsPipeline::createGraphicsPipelinePtr({
         .debugName = "marching_cubes",
