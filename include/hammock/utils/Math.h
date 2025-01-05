@@ -16,7 +16,7 @@
 #include "hammock/utils/Logger.h"
 #include "hammock/resources/Descriptors.h"
 #include "hammock/resources/Buffer.h"
-#include "HandmadeMath.h"
+#include "hammock/core/HandmadeMath.h"
 
 namespace Hammock {
     namespace Math {

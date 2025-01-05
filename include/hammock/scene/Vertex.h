@@ -1,7 +1,7 @@
 #pragma once
 #include <vector>
 #include <vulkan/vulkan.h>
-#include "HandmadeMath.h"
+#include "hammock/core/HandmadeMath.h"
 
 namespace Hammock {
     struct Vertex {

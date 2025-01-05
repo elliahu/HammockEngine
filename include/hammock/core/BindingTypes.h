@@ -1,6 +1,6 @@
 #pragma once
 #include <cstdint>
-#include <HandmadeMath.h>
+#include <hammock/core/HandmadeMath.h>
 
 namespace Hammock {
 

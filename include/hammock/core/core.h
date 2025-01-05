@@ -11,3 +11,4 @@
 #include "SwapChain.h"
 #include "ThreadPool.h"
 #include "VulkanInstance.h"
+#include "HandmadeMath.h"

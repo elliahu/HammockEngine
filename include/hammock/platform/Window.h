@@ -12,7 +12,7 @@
 
 #include "hammock/platform/Keycodes.h"
 #include "hammock/core/VulkanInstance.h"
-#include "HandmadeMath.h"
+#include "hammock/core/HandmadeMath.h"
 
 namespace Hammock
 {
