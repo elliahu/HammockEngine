@@ -36,12 +36,12 @@ private:
     Hammock::Window window;
     Hammock::Device device;
     Hammock::DeviceStorage deviceStorage{device};
-    Hammock::Geometry geometry{};
     Hammock::RenderContext renderContext{window, device};
     Hammock::UserInterface ui{device, renderContext.getSwapChainRenderPass(), deviceStorage.getDescriptorPool(), window};
 
 
-    Hammock::ResourceHandle<Hammock::Buffer> vertexBuffer;
+    std::vector<Hammock::ResourceHandle<Hammock::Buffer>> vertexBuffers;
+    std::vector<std::vector<Hammock::Vertex>> vertices;
 
     std::vector<Hammock::ResourceHandle<VkDescriptorSet>> descriptorSets{};
     Hammock::ResourceHandle<Hammock::DescriptorSetLayout> descriptorSetLayout;
@@ -55,4 +55,7 @@ private:
     bool orbit{true};
     float isovalue = 7.0f; // Threshold value for surface extraction
     float cubeSize = .01f; // Size of the cubes in the marching cubes algorithm
+    int vertexBufferId = 0;
+    bool loop{true};
+    int framing = 30;
 };

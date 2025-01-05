@@ -11,6 +11,8 @@ void Renderer::draw() {
     float elapsedTime = 0.f;
     auto currentTime = std::chrono::high_resolution_clock::now();
 
+    int frameCount = 0;
+
     while (!window.shouldClose()) {
         window.pollEvents();
 
@@ -18,7 +20,6 @@ void Renderer::draw() {
         float frameTime = std::chrono::duration<float, std::chrono::seconds::period>(newTime - currentTime).count();
         currentTime = newTime;
         elapsedTime += frameTime;
-
 
 
         if (window.getKeyState(KEY_A) == Hammock::KeyState::DOWN) azimuth += 1.f * frameTime;
@@ -39,7 +40,14 @@ void Renderer::draw() {
 
             renderContext.beginSwapChainRenderPass(commandBuffer);
 
-            deviceStorage.bindVertexBuffer(vertexBuffer, commandBuffer);
+            if (loop) {
+                if (vertexBufferId >= vertexBuffers.size()) {
+                    vertexBufferId = 0;
+                }
+            }
+
+            deviceStorage.bindVertexBuffer(vertexBuffers[vertexBufferId], commandBuffer);
+
             pipeline->bind(commandBuffer);
 
             HmckMat4 m0 = HmckMat4{
@@ -49,7 +57,7 @@ void Renderer::draw() {
                 0.0f, 0.0f, 0.0f, 1.0f
             };
             HmckMat4 view = Hammock::Projection().view(cameraPosition, cameraTarget,
-                                                    Hammock::Projection().upPosY());
+                                                       Hammock::Projection().upPosY());
             HmckMat4 perspective = Hammock::Projection().
                     perspective(45.f, renderContext.getAspectRatio(), 0.1f, 100.f);
 
@@ -60,7 +68,7 @@ void Renderer::draw() {
                 0.0f, 0.0f, 0.0f, 1.0f
             };
             HmckMat4 translation = HmckTranslate({-20.f, -20.f, 20.f});
-            HmckMat4 scale = HmckScale({1/cubeSize, 1/cubeSize, 1/cubeSize});
+            HmckMat4 scale = HmckScale({1 / cubeSize, 1 / cubeSize, 1 / cubeSize});
             HmckMat4 model = HmckMul(translation, HmckMul(rotation, HmckMul(scale, m0)));
 
             bufferData.mvp = HmckMul(perspective, HmckMul(view, model));
@@ -82,7 +90,17 @@ void Renderer::draw() {
                                sizeof(PushData), &pushData);
 
 
-            vkCmdDraw(commandBuffer, geometry.vertices.size(), 1, 0, 0);
+            vkCmdDraw(commandBuffer, vertices[vertexBufferId].size(), 1, 0, 0);
+
+
+            if (loop) {
+                frameCount++;
+                if (frameCount >= framing) {
+                    vertexBufferId++;
+                    frameCount=0;
+                }
+            }
+
 
             ui.beginUserInterface();
             drawUi();
@@ -96,65 +114,70 @@ void Renderer::draw() {
 }
 
 void Renderer::loadSph() {
+    auto files = Hammock::Filesystem::ls(assetPath("sph/"));
 
-    // Load particles
-    std::vector<Particle> particles;
-    Hammock::Logger::log(Hammock::LOG_LEVEL_DEBUG, "Loading particles...\n");
-    if (loadParticles(assetPath("sph/sph_001000.bin"), particles)) {
-        Hammock::Logger::log(Hammock::LOG_LEVEL_DEBUG, "Loaded %d particles\n", particles.size());
-    } else {
-        Hammock::Logger::log(Hammock::LOG_LEVEL_ERROR, "Failed to load particles\n");
-        throw std::runtime_error("Failed to load particles");
+    int f = 0;
+    for (const auto &file: files) {
+        if (!file.contains(".bin")) { continue; }
+
+        // Load particles
+        std::vector<Particle> particles;
+        Hammock::Logger::log(Hammock::LOG_LEVEL_DEBUG, "Loading particles...\n");
+        if (loadParticles(file, particles)) {
+            Hammock::Logger::log(Hammock::LOG_LEVEL_DEBUG, "Loaded %d particles\n", particles.size());
+        } else {
+            Hammock::Logger::log(Hammock::LOG_LEVEL_ERROR, "Failed to load particles\n");
+            throw std::runtime_error("Failed to load particles");
+        }
+
+
+        // Create a scalar field
+        float fieldSize = 1.0f; // Total domain size from -0.5 to 0.5
+        float gridSize = fieldSize / 40.0f; // To get 40x40x40 grid
+        Hammock::Logger::log(Hammock::LOG_LEVEL_DEBUG, "Creating scalar field...\n");
+        auto scalarField = createScalarField(particles, gridSize, fieldSize);
+        Hammock::Logger::log(Hammock::LOG_LEVEL_DEBUG, "Created scalar field of %d x %d x %d\n", scalarField.size(),
+                             scalarField[0].size(), scalarField[0][0].size());
+
+        // marching cubes
+        Hammock::Logger::log(Hammock::LOG_LEVEL_DEBUG, "Marching cubes...\n");
+        std::vector<Hammock::Triangle> triangles = marchingCubes(scalarField, isovalue, cubeSize);
+        Hammock::Logger::log(Hammock::LOG_LEVEL_DEBUG, "Marched surface of %d triangles\n", triangles.size());
+
+        // create buffers
+        std::vector<Hammock::Vertex> v;
+        for (auto &triangle: triangles) {
+            HmckVec3 v1 = HmckSub(triangle.v1.position, triangle.v0.position);
+            HmckVec3 v2 = HmckSub(triangle.v2.position, triangle.v0.position);
+
+            HmckVec3 normal = HmckNorm(HmckMul(HmckCross(v1, v2), {1.0f, -1.0f, 1.f}));
+            triangle.v0.normal = normal;
+            triangle.v1.normal = normal;
+            triangle.v2.normal = normal;
+
+            v.push_back(triangle.v0);
+            v.push_back(triangle.v1);
+            v.push_back(triangle.v2);
+        }
+
+        vertices.push_back(v);
+
+
+        vertexBuffers.push_back( deviceStorage.createVertexBuffer({
+            .vertexSize = sizeof(vertices[f]),
+            .vertexCount = static_cast<uint32_t>(vertices[f].size()),
+            .data = static_cast<void *>(vertices[f].data())
+        }));
+
+
+        Hammock::Logger::log(Hammock::LOG_LEVEL_DEBUG, "Vertex buffer created with %d vertices \n",
+                             vertices[f].size());
+
+        f++;
     }
 
-
-    // Create a scalar field
-    float fieldSize = 1.0f; // Total domain size from -0.5 to 0.5
-    float gridSize = fieldSize / 40.0f; // To get 40x40x40 grid
-    Hammock::Logger::log(Hammock::LOG_LEVEL_DEBUG, "Creating scalar field...\n");
-    auto scalarField = createScalarField(particles, gridSize, fieldSize);
-    Hammock::Logger::log(Hammock::LOG_LEVEL_DEBUG, "Created scalar field of %d x %d x %d\n", scalarField.size(),
-                         scalarField[0].size(), scalarField[0][0].size());
-
-    // marching cubes
-    Hammock::Logger::log(Hammock::LOG_LEVEL_DEBUG, "Marching cubes...\n");
-    std::vector<Hammock::Triangle> triangles = marchingCubes(scalarField, isovalue, cubeSize);
-    Hammock::Logger::log(Hammock::LOG_LEVEL_DEBUG, "Marched surface of %d triangles\n", triangles.size());
-
-    // create buffers
-    for (auto &triangle: triangles) {
-
-        HmckVec3 v1 = HmckSub(triangle.v1.position, triangle.v0.position);
-        HmckVec3 v2 = HmckSub(triangle.v2.position, triangle.v0.position);
-
-        HmckVec3 normal = HmckNorm(HmckMul(HmckCross(v1,v2), {1.0f, -1.0f, 1.f}));
-        triangle.v0.normal = normal;
-        triangle.v1.normal = normal;
-        triangle.v2.normal = normal;
-
-        geometry.vertices.push_back(triangle.v0);
-        geometry.vertices.push_back(triangle.v1);
-        geometry.vertices.push_back(triangle.v2);
-    }
-
-
-    if (vertexBuffer.isValid()) {
-
-    }
-    else {
-        vertexBuffer = deviceStorage.createVertexBuffer({
-        .vertexSize = sizeof(geometry.vertices[0]),
-        .vertexCount = static_cast<uint32_t>(geometry.vertices.size()),
-        .data = static_cast<void *>(geometry.vertices.data())
-    });
-    }
-
-
-
-    Hammock::Logger::log(Hammock::LOG_LEVEL_DEBUG, "Vertex buffer created with %d vertices \n",
-                         geometry.vertices.size());
-
-
+    Hammock::Logger::log(Hammock::LOG_LEVEL_DEBUG, "Created %d vertex buffers \n",
+                             vertexBuffers.size());
 }
 
 void Renderer::init() {
@@ -236,8 +259,10 @@ void Renderer::drawUi() {
     ImGui::DragFloat3("Camera target", &cameraTarget.Elements[0], 0.1f);
     ImGui::DragFloat3("Light position", &bufferData.lightPos.Elements[0], 0.1f);
     ImGui::Checkbox("Orbital camera", &orbit);
+    ImGui::Checkbox("Loop", &loop);
     ImGui::DragFloat("Azimuth", &azimuth, 0.01f);
     ImGui::DragFloat("Elevation", &elevation, 0.01f);
     ImGui::DragFloat("Radius", &radius);
+    ImGui::DragInt("Animation speed", &framing);
     ImGui::End();
 }
