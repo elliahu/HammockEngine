@@ -59,7 +59,7 @@ void Renderer::draw() {
             HmckMat4 view = Hammock::Projection().view(cameraPosition, cameraTarget,
                                                        Hammock::Projection().upPosY());
             HmckMat4 perspective = Hammock::Projection().
-                    perspective(45.f, renderContext.getAspectRatio(), 0.1f, 100.f);
+                    perspective(45.f, renderContext.getAspectRatio(), 0.1f, 1000.f);
 
             HmckMat4 rotation = HmckMat4{
                 1.0f, 0.0f, 0.0f, 0.0f,
@@ -164,7 +164,7 @@ void Renderer::loadSph() {
 
 
         vertexBuffers.push_back( deviceStorage.createVertexBuffer({
-            .vertexSize = sizeof(vertices[f]),
+            .vertexSize = sizeof(vertices[f][0]),
             .vertexCount = static_cast<uint32_t>(vertices[f].size()),
             .data = static_cast<void *>(vertices[f].data())
         }));
