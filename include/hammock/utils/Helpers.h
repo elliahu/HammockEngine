@@ -8,7 +8,7 @@
 #include <random>
 #include <cmath>
 #include <memory>
-#include "HandmadeMath.h"
+#include "hammock/core/HandmadeMath.h"
 
 #include "hammock/utils/Initializers.h"
 

@@ -1,6 +1,6 @@
 #pragma once
 
-#include "HandmadeMath.h"
+#include "hammock/core/HandmadeMath.h"
 
 namespace Hammock {
     class Projection {

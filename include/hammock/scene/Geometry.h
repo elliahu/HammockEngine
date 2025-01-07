@@ -1,7 +1,7 @@
 #pragma once
 #include <cstdint>
 #include <vector>
-#include <HandmadeMath.h>
+#include <hammock/core/HandmadeMath.h>
 
 #include "hammock/core/DeviceStorage.h"
 #include "hammock/scene/Vertex.h"
