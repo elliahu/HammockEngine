@@ -19,6 +19,8 @@ private:
     Hammock::Device device;
     Hammock::DeviceStorage deviceStorage{device};
     Hammock::Geometry geometry{};
+    Hammock::RenderContext renderContext{window, device};
+    Hammock::UserInterface ui{device, renderContext.getSwapChainRenderPass(), deviceStorage.getDescriptorPool(), window};
 };
 
 
