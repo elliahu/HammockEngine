@@ -3,9 +3,6 @@
 #include "CloudRenderer.h"
 
 
-constexpr int32_t WINDOW_WIDTH = 1920;
-constexpr int32_t WINDOW_HEIGHT = 1080;
-
 
 int main(int argc, char * argv[]) {
     Hammock::ArgParser parser;

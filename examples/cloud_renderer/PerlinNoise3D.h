@@ -1,4 +1,5 @@
-#pragma once
+#ifndef PERLIN_NOISE3D_H
+#define PERLIN_NOISE3D_H
 #include <algorithm>
 #include <vector>
 #include <random>
@@ -40,3 +41,5 @@ private:
         return ((h & 1) == 0 ? u : -u) + ((h & 2) == 0 ? v : -v);
     }
 };
+
+#endif

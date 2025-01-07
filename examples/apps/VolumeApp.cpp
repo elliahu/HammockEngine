@@ -82,7 +82,8 @@ void Hammock::VolumeApp::run() {
 
             renderContext.beginSwapChainRenderPass(commandBuffer);
 
-            draw(frameIndex, elapsedTime, commandBuffer); {
+            draw(frameIndex, elapsedTime, commandBuffer);
+            {
                 ui.beginUserInterface();
                 this->ui();
                 ui.showDebugStats(bufferData.inverseView, frameTime);

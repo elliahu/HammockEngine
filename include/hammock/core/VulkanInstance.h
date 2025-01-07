@@ -4,6 +4,7 @@
 #include <vulkan/vulkan.h>
 
 namespace Hammock {
+    // TODO rename to just Instance
     class VulkanInstance {
 #ifdef NDEBUG
         const bool enableValidationLayers = false;
