@@ -12,5 +12,9 @@ void CloudRenderer::run() {
         window.pollEvents();
     }
 
+    PerlinNoise3D noise;
+    float * noiseData = noise.generateNoiseVolume(100,100,1);
+
+
     device.waitIdle();
 }

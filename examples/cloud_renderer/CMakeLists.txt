@@ -3,6 +3,8 @@ add_executable(cloud_renderer
         main.cpp
         CloudRenderer.cpp
         CloudRenderer.h
+        PerlinNoise3D.h
+        PerlinNoise3D.cpp
 )
 
 # Link the engine library

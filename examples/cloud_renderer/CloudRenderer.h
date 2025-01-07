@@ -3,6 +3,7 @@
 #include <cstdint>
 
 #include <hammock/hammock.h>
+#include "PerlinNoise3D.h"
 
 class CloudRenderer {
 public:
