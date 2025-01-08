@@ -10,17 +10,22 @@ using namespace Hammock;
 class CloudRenderer {
 public:
     CloudRenderer(const int32_t width, const int32_t height);
+
     ~CloudRenderer();
 
     void run();
 
 protected:
-
     void load();
+
     void prepareDescriptors();
+
     void preparePipelines();
-    void update();
+
+    void update(float frameTime);
+
     void draw();
+
     void drawUi();
 
 private:
@@ -52,9 +57,15 @@ private:
     struct BufferData {
         HmckMat4 projection;
         HmckMat4 view;
-        HmckVec4 cameraPosition{0.f, 0.f, 2.f, 0.0f};
-        HmckVec4 lightDirection{1.f, 1.f, -1.f};
-        HmckVec4 lightColor{1.f, .9f, .7f};
+        HmckMat4 model{
+            1.0f, 0.0f, 0.0f, 0.0f,
+            0.0f, 1.0f, 0.0f, 0.0f,
+            0.0f, 0.0f, 1.0f, 0.0f,
+            0.0f, 0.0f, 0.0f, 1.0f
+        };
+        HmckVec4 cameraPosition{0.f, 0.f, 6.f, 0.0f};
+        HmckVec4 lightDirection{100.f, 100.f, 0.f};
+        HmckVec4 lightColor{1.f, 1.0f, 1.0f};
     } bufferData;
 
     struct PushData {
@@ -64,16 +75,17 @@ private:
         float time;
     } pushData;
 
-    static std::string assetPath(const std::string& asset) {
+    static std::string assetPath(const std::string &asset) {
         return "../../../data/" + asset;
     }
 
-    static std::string compiledShaderPath(const std::string& shader) {
+    static std::string compiledShaderPath(const std::string &shader) {
         return "../../../src/hammock/shaders/compiled/" + shader + ".spv";
     }
 
+    // Camera
+    float radius{2.0f}, azimuth, elevation;
 };
-
 
 
 #endif //CLOUDRENDERER_H

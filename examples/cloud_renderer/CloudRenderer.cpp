@@ -13,9 +13,14 @@ CloudRenderer::~CloudRenderer() {
 }
 
 void CloudRenderer::run() {
+    auto currentTime = std::chrono::high_resolution_clock::now();
     while (!window.shouldClose()) {
         window.pollEvents();
-        update();
+
+        auto newTime = std::chrono::high_resolution_clock::now();
+        float frameTime = std::chrono::duration<float, std::chrono::seconds::period>(newTime - currentTime).count();
+
+        update(frameTime);
         draw();
     }
 
@@ -24,15 +29,15 @@ void CloudRenderer::run() {
 
 void CloudRenderer::load() {
     Logger::log(LOG_LEVEL_DEBUG, "Generating noise texture ... ");
-    ScopedMemory noiseData(PerlinNoise3D(69420).generateNoiseVolume(512, 512, 512));
+    ScopedMemory noiseData(PerlinNoise3D(69420).generateNoiseVolume(128, 128, 128));
 
     noiseVolumeHandle = deviceStorage.createTexture3D({
         .buffer = noiseData.get(),
         .instanceSize = sizeof(float),
-        .width = 512,
-        .height = 512,
+        .width = 128,
+        .height = 128,
         .channels = 1,
-        .depth = 512,
+        .depth = 128,
         .format = VK_FORMAT_R32_SFLOAT,
         .imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
     });
@@ -93,9 +98,9 @@ void CloudRenderer::preparePipelines() {
         .debugName = "Composition pass",
         .device = device,
         .VS
-        {.byteCode = Filesystem::readFile(compiledShaderPath("fullscreen.vert")),},
+        {.byteCode = Filesystem::readFile(compiledShaderPath("volume.vert")),},
         .FS
-        {.byteCode = Filesystem::readFile(compiledShaderPath("3d.frag")),},
+        {.byteCode = Filesystem::readFile(compiledShaderPath("volume.frag")),},
         .descriptorSetLayouts = {
             deviceStorage.getDescriptorSetLayout(descriptorSetLayout).getDescriptorSetLayout()
         },
@@ -107,6 +112,7 @@ void CloudRenderer::preparePipelines() {
             }
         },
         .graphicsState{
+            .cullMode = VK_CULL_MODE_NONE,
             .vertexBufferBindings{
                 .vertexBindingDescriptions = Vertex::vertexInputBindingDescriptions(),
                 .vertexAttributeDescriptions = Vertex::vertexInputAttributeDescriptions()
@@ -116,7 +122,17 @@ void CloudRenderer::preparePipelines() {
     });
 }
 
-void CloudRenderer::update() {
+void CloudRenderer::update(float frameTime) {
+
+    // float speed = 0.001f;
+    // if(window.getKeyState(KEY_A) == KeyState::DOWN) azimuth += speed * frameTime;
+    // if(window.getKeyState(KEY_D) == KeyState::DOWN) azimuth -= speed * frameTime;
+    // if(window.getKeyState(KEY_W) == KeyState::DOWN) elevation += speed * frameTime;
+    // if(window.getKeyState(KEY_S) == KeyState::DOWN) elevation -= speed * frameTime;
+    // if(window.getKeyState(KEY_UP) == KeyState::DOWN) radius -= speed * frameTime;
+    // if(window.getKeyState(KEY_DOWN) == KeyState::DOWN) radius += speed * frameTime;
+    // bufferData.cameraPosition.XYZ = Math::orbitalPosition(HmckVec3{.0f,.0f,.0f}, radius, azimuth, elevation);
+
     bufferData.projection = Projection().perspective(45.0f, renderContext.getAspectRatio(), 0.1f, 64.0f);
     bufferData.view = Projection().view(bufferData.cameraPosition.XYZ, {0.f, 0.f, 0.f}, Projection().upPosY());
 }
@@ -145,7 +161,7 @@ void CloudRenderer::draw() {
                        sizeof(PushData), &pushData);
 
         // draw single triangle to trigger fullscreen vertex shader
-        vkCmdDraw(commandBuffer, 3, 1, 0, 0);
+        vkCmdDrawIndexed(commandBuffer, geometry.indices.size(), 1, 0, 0,0);
 
         ui.beginUserInterface();
         drawUi();
@@ -158,4 +174,12 @@ void CloudRenderer::draw() {
 }
 
 void CloudRenderer::drawUi() {
+    ImGui::Begin("Property editor", (bool *) false, ImGuiWindowFlags_AlwaysAutoResize);
+    ImGui::DragFloat3("Camera position", &bufferData.cameraPosition.Elements[0], 0.1f);
+    ImGui::DragFloat3("Light direction", &bufferData.lightDirection.Elements[0], 0.1f);
+    ImGui::ColorEdit4("Light color", &bufferData.lightColor.Elements[0]);
+    ImGui::DragFloat("Step size", &pushData.stepSize, 0.001f, 0.f);
+    ImGui::DragInt("Max steps", &pushData.maxSteps, 1, 0);
+    ImGui::DragFloat("Minimal density threshold", &pushData.minDensityThreshold, 0.001f, 0.f);
+    ImGui::End();
 }
