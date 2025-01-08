@@ -302,121 +302,113 @@ static inline const int triTable[256][16] =
     {0, 3, 8, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1},
     {-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1}
 };
-inline Hammock::Vertex interpolate(Hammock::Vertex p1, Hammock::Vertex p2, float val1, float val2, float isovalue, const std::vector<std::vector<std::vector<float>>>& scalarField) {
-    float t = (isovalue - val1) / (val2 - val1);
-    HmckVec3 position = {
-        p1.position.X + t * (p2.position.X - p1.position.X),
-        p1.position.Y + t * (p2.position.Y - p1.position.Y),
-        p1.position.Z + t * (p2.position.Z - p1.position.Z)
-    };
 
-    return {
-        position,     // Position
-        HmckVec3{0.f, 0.f,0.f},      // Normal
-        HmckVec2{0, 0}, // UVs
-        HmckVec4{0, 0, 0, 0} // Tangents
+inline Hammock::Vertex interpolate(const Hammock::Vertex& p1, const Hammock::Vertex& p2,
+                                    float val1, float val2, float isovalue) {
+    if (std::abs(val2 - val1) < 1e-6f) {
+        return p1;
+    }
+
+    float t = std::clamp((isovalue - val1) / (val2 - val1), 0.0f, 1.0f);
+
+    return Hammock::Vertex{
+        HmckVec3{
+            p1.position.X + t * (p2.position.X - p1.position.X),
+            p1.position.Y + t * (p2.position.Y - p1.position.Y),
+            p1.position.Z + t * (p2.position.Z - p1.position.Z)
+        },
+        HmckVec3{0, 0, 0},  // Normal will be calculated later
+        HmckVec2{0, 0},     // UVs
+        HmckVec4{0, 0, 0, 0} // Tangent
     };
 }
 
-
-
-// Marching Cubes main function
 inline std::vector<Hammock::Triangle> marchingCubes(
-    const std::vector<std::vector<std::vector<float> > > &scalarField,
+    const std::vector<std::vector<std::vector<float>>>& scalarField,
     float isovalue,
     float cubeSize) {
-    int nx = scalarField.size();
-    int ny = scalarField[0].size();
-    int nz = scalarField[0][0].size();
+
+    if (scalarField.empty() || scalarField[0].empty() || scalarField[0][0].empty()) {
+        return {};
+    }
 
     std::vector<Hammock::Triangle> triangles;
+    const int nx = static_cast<int>(scalarField.size() - 1);
+    const int ny = static_cast<int>(scalarField[0].size() - 1);
+    const int nz = static_cast<int>(scalarField[0][0].size() - 1);
 
-    // Loop through each cube in the grid
-    for (int x = 0; x < nx - 1; ++x) {
-        for (int y = 0; y < ny - 1; ++y) {
-            for (int z = 0; z < nz - 1; ++z) {
-                // 8 corners of the cube
-                std::array<Hammock::Vertex, 8> cubeCorners = {
-                    Hammock::Vertex{{x * cubeSize, y * cubeSize, z * cubeSize}},
-                    Hammock::Vertex{{(x + 1) * cubeSize, y * cubeSize, z * cubeSize}},
-                    Hammock::Vertex{{(x + 1) * cubeSize, (y + 1) * cubeSize, z * cubeSize}},
-                    Hammock::Vertex{{x * cubeSize, (y + 1) * cubeSize, z * cubeSize}},
-                    Hammock::Vertex{{x * cubeSize, y * cubeSize, (z + 1) * cubeSize}},
-                    Hammock::Vertex{{(x + 1) * cubeSize, y * cubeSize, (z + 1) * cubeSize}},
-                    Hammock::Vertex{{(x + 1) * cubeSize, (y + 1) * cubeSize, (z + 1) * cubeSize}},
-                    Hammock::Vertex{{x * cubeSize, (y + 1) * cubeSize, (z + 1) * cubeSize}}
-                };
+    for (int x = 0; x < nx; ++x) {
+        for (int y = 0; y < ny; ++y) {
+            for (int z = 0; z < nz; ++z) {
+                // Cube vertices in scalar field
+                float v0 = scalarField[x][y][z];
+                float v1 = scalarField[x + 1][y][z];
+                float v2 = scalarField[x + 1][y + 1][z];
+                float v3 = scalarField[x][y + 1][z];
+                float v4 = scalarField[x][y][z + 1];
+                float v5 = scalarField[x + 1][y][z + 1];
+                float v6 = scalarField[x + 1][y + 1][z + 1];
+                float v7 = scalarField[x][y + 1][z + 1];
 
-                // Scalar values at the corners
-                std::array<float, 8> cubeValues = {
-                    scalarField[x][y][z],
-                    scalarField[x + 1][y][z],
-                    scalarField[x + 1][y + 1][z],
-                    scalarField[x][y + 1][z],
-                    scalarField[x][y][z + 1],
-                    scalarField[x + 1][y][z + 1],
-                    scalarField[x + 1][y + 1][z + 1],
-                    scalarField[x][y + 1][z + 1]
-                };
-
-                // Determine the cube index
+                // Determine cube index
                 int cubeIndex = 0;
-                for (int i = 0; i < 8; ++i) {
-                    if (cubeValues[i] < isovalue) {
-                        cubeIndex |= (1 << i);
-                    }
-                }
+                if (v0 < isovalue) cubeIndex |= 1;
+                if (v1 < isovalue) cubeIndex |= 2;
+                if (v2 < isovalue) cubeIndex |= 4;
+                if (v3 < isovalue) cubeIndex |= 8;
+                if (v4 < isovalue) cubeIndex |= 16;
+                if (v5 < isovalue) cubeIndex |= 32;
+                if (v6 < isovalue) cubeIndex |= 64;
+                if (v7 < isovalue) cubeIndex |= 128;
 
-                // If the cube is fully inside or outside the surface, skip
-                if (edgeTable[cubeIndex] == 0) {
-                    continue;
-                }
+                // Skip cube if fully inside or outside
+                if (edgeTable[cubeIndex] == 0) continue;
 
-                // Find the vertices where the surface intersects the cube
-                std::array<Hammock::Vertex, 12> edgeVertices;
+                // Define cube vertices in 3D space
+                std::array<Hammock::Vertex, 8> cubeVerts = {{
+                    {{x * cubeSize, y * cubeSize, z * cubeSize}},
+                    {{(x + 1) * cubeSize, y * cubeSize, z * cubeSize}},
+                    {{(x + 1) * cubeSize, (y + 1) * cubeSize, z * cubeSize}},
+                    {{x * cubeSize, (y + 1) * cubeSize, z * cubeSize}},
+                    {{x * cubeSize, y * cubeSize, (z + 1) * cubeSize}},
+                    {{(x + 1) * cubeSize, y * cubeSize, (z + 1) * cubeSize}},
+                    {{(x + 1) * cubeSize, (y + 1) * cubeSize, (z + 1) * cubeSize}},
+                    {{x * cubeSize, (y + 1) * cubeSize, (z + 1) * cubeSize}}
+                }};
+
+                // Intersect vertices
+                std::array<Hammock::Vertex, 12> intersectVerts;
                 if (edgeTable[cubeIndex] & 1)
-                    edgeVertices[0] = interpolate(cubeCorners[0], cubeCorners[1], cubeValues[0], cubeValues[1],
-                                                  isovalue, scalarField);
+                    intersectVerts[0] = interpolate(cubeVerts[0], cubeVerts[1], v0, v1, isovalue);
                 if (edgeTable[cubeIndex] & 2)
-                    edgeVertices[1] = interpolate(cubeCorners[1], cubeCorners[2], cubeValues[1], cubeValues[2],
-                                                  isovalue, scalarField);
+                    intersectVerts[1] = interpolate(cubeVerts[1], cubeVerts[2], v1, v2, isovalue);
                 if (edgeTable[cubeIndex] & 4)
-                    edgeVertices[2] = interpolate(cubeCorners[2], cubeCorners[3], cubeValues[2], cubeValues[3],
-                                                  isovalue, scalarField);
+                    intersectVerts[2] = interpolate(cubeVerts[2], cubeVerts[3], v2, v3, isovalue);
                 if (edgeTable[cubeIndex] & 8)
-                    edgeVertices[3] = interpolate(cubeCorners[3], cubeCorners[0], cubeValues[3], cubeValues[0],
-                                                  isovalue, scalarField);
+                    intersectVerts[3] = interpolate(cubeVerts[3], cubeVerts[0], v3, v0, isovalue);
                 if (edgeTable[cubeIndex] & 16)
-                    edgeVertices[4] = interpolate(cubeCorners[4], cubeCorners[5], cubeValues[4], cubeValues[5],
-                                                  isovalue, scalarField);
+                    intersectVerts[4] = interpolate(cubeVerts[4], cubeVerts[5], v4, v5, isovalue);
                 if (edgeTable[cubeIndex] & 32)
-                    edgeVertices[5] = interpolate(cubeCorners[5], cubeCorners[6], cubeValues[5], cubeValues[6],
-                                                  isovalue, scalarField);
+                    intersectVerts[5] = interpolate(cubeVerts[5], cubeVerts[6], v5, v6, isovalue);
                 if (edgeTable[cubeIndex] & 64)
-                    edgeVertices[6] = interpolate(cubeCorners[6], cubeCorners[7], cubeValues[6], cubeValues[7],
-                                                  isovalue, scalarField);
+                    intersectVerts[6] = interpolate(cubeVerts[6], cubeVerts[7], v6, v7, isovalue);
                 if (edgeTable[cubeIndex] & 128)
-                    edgeVertices[7] = interpolate(cubeCorners[7], cubeCorners[4], cubeValues[7], cubeValues[4],
-                                                  isovalue, scalarField);
+                    intersectVerts[7] = interpolate(cubeVerts[7], cubeVerts[4], v7, v4, isovalue);
                 if (edgeTable[cubeIndex] & 256)
-                    edgeVertices[8] = interpolate(cubeCorners[0], cubeCorners[4], cubeValues[0], cubeValues[4],
-                                                  isovalue, scalarField);
+                    intersectVerts[8] = interpolate(cubeVerts[0], cubeVerts[4], v0, v4, isovalue);
                 if (edgeTable[cubeIndex] & 512)
-                    edgeVertices[9] = interpolate(cubeCorners[1], cubeCorners[5], cubeValues[1], cubeValues[5],
-                                                  isovalue, scalarField);
+                    intersectVerts[9] = interpolate(cubeVerts[1], cubeVerts[5], v1, v5, isovalue);
                 if (edgeTable[cubeIndex] & 1024)
-                    edgeVertices[10] = interpolate(cubeCorners[2], cubeCorners[6], cubeValues[2], cubeValues[6],
-                                                   isovalue, scalarField);
+                    intersectVerts[10] = interpolate(cubeVerts[2], cubeVerts[6], v2, v6, isovalue);
                 if (edgeTable[cubeIndex] & 2048)
-                    edgeVertices[11] = interpolate(cubeCorners[3], cubeCorners[7], cubeValues[3], cubeValues[7],
-                                                   isovalue, scalarField);
+                    intersectVerts[11] = interpolate(cubeVerts[3], cubeVerts[7], v3, v7, isovalue);
 
-                // Create triangles based on the triangle table
+                // Form triangles
                 for (int i = 0; triTable[cubeIndex][i] != -1; i += 3) {
                     triangles.push_back({
-                        edgeVertices[triTable[cubeIndex][i]],
-                        edgeVertices[triTable[cubeIndex][i + 1]],
-                        edgeVertices[triTable[cubeIndex][i + 2]]
+                        intersectVerts[triTable[cubeIndex][i]],
+                        intersectVerts[triTable[cubeIndex][i + 1]],
+                        intersectVerts[triTable[cubeIndex][i + 2]]
                     });
                 }
             }

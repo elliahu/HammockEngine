@@ -122,9 +122,9 @@ void Renderer::loadSph() {
 
         // Load particles
         std::vector<Particle> particles;
-        Hammock::Logger::log(Hammock::LOG_LEVEL_DEBUG, "Loading particles...\n");
+        //Hammock::Logger::log(Hammock::LOG_LEVEL_DEBUG, "Loading particles...\n");
         if (loadParticles(file, particles)) {
-            Hammock::Logger::log(Hammock::LOG_LEVEL_DEBUG, "Loaded %d particles\n", particles.size());
+            //Hammock::Logger::log(Hammock::LOG_LEVEL_DEBUG, "Loaded %d particles\n", particles.size());
         } else {
             Hammock::Logger::log(Hammock::LOG_LEVEL_ERROR, "Failed to load particles\n");
             throw std::runtime_error("Failed to load particles");
@@ -134,15 +134,15 @@ void Renderer::loadSph() {
         // Create a scalar field
         float fieldSize = 1.0f; // Total domain size from -0.5 to 0.5
         float gridSize = fieldSize / 40.0f; // To get 40x40x40 grid
-        Hammock::Logger::log(Hammock::LOG_LEVEL_DEBUG, "Creating scalar field...\n");
+        //Hammock::Logger::log(Hammock::LOG_LEVEL_DEBUG, "Creating scalar field...\n");
         auto scalarField = createScalarField(particles, gridSize, fieldSize);
-        Hammock::Logger::log(Hammock::LOG_LEVEL_DEBUG, "Created scalar field of %d x %d x %d\n", scalarField.size(),
-                             scalarField[0].size(), scalarField[0][0].size());
+        //Hammock::Logger::log(Hammock::LOG_LEVEL_DEBUG, "Created scalar field of %d x %d x %d\n", scalarField.size(),
+         //                    scalarField[0].size(), scalarField[0][0].size());
 
         // marching cubes
-        Hammock::Logger::log(Hammock::LOG_LEVEL_DEBUG, "Marching cubes...\n");
+        //Hammock::Logger::log(Hammock::LOG_LEVEL_DEBUG, "Marching cubes...\n");
         std::vector<Hammock::Triangle> triangles = marchingCubes(scalarField, isovalue, cubeSize);
-        Hammock::Logger::log(Hammock::LOG_LEVEL_DEBUG, "Marched surface of %d triangles\n", triangles.size());
+        //Hammock::Logger::log(Hammock::LOG_LEVEL_DEBUG, "Marched surface of %d triangles\n", triangles.size());
 
         // create buffers
         std::vector<Hammock::Vertex> v;
@@ -170,8 +170,8 @@ void Renderer::loadSph() {
         }));
 
 
-        Hammock::Logger::log(Hammock::LOG_LEVEL_DEBUG, "Vertex buffer created with %d vertices \n",
-                             vertices[f].size());
+        //Hammock::Logger::log(Hammock::LOG_LEVEL_DEBUG, "Vertex buffer created with %d vertices \n",
+         //                    vertices[f].size());
 
         f++;
     }

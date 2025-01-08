@@ -53,8 +53,8 @@ private:
     HmckVec3 cameraTarget{0.0f, 0.0f, 0.0f};
     float azimuth{2.4f}, radius{40.0f}, elevation{0.56f};
     bool orbit{true};
-    float isovalue = 7.0f; // Threshold value for surface extraction
-    float cubeSize = .01f; // Size of the cubes in the marching cubes algorithm
+    float isovalue = .001f; // Threshold value for surface extraction
+    float cubeSize = .00001f; // Size of the cubes in the marching cubes algorithm
     int vertexBufferId = 0;
     bool loop{true};
     int framing = 30;

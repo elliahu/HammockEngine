@@ -40,35 +40,10 @@ inline bool loadParticles(const std::string& filename, std::vector<Particle>& pa
     std::streampos fileSize = file.tellg();
     file.seekg(0, std::ios::beg);
 
-    // Print file size and expected number of particles
-    std::cout << "File size: " << fileSize << " bytes\n";
-    std::cout << "Particle size: " << sizeof(Particle) << " bytes\n";
-    std::cout << "Expected number of particles: " << fileSize / sizeof(Particle) << "\n";
-
     std::size_t numParticles = fileSize / sizeof(Particle);
     particles.resize(numParticles);
 
     file.read(reinterpret_cast<char*>(particles.data()), fileSize);
-
-    // Debug output for first few particles
-    std::cout << "\nFirst 3 particles:\n";
-    for (size_t i = 0; i < std::min(size_t(3), particles.size()); ++i) {
-        std::cout << "\nParticle " << i << ":\n";
-        std::cout << "Position: ("
-                  << static_cast<float>(particles[i].position_x) << ", "
-                  << static_cast<float>(particles[i].position_y) << ", "
-                  << static_cast<float>(particles[i].position_z) << ")\n";
-        std::cout << "Velocity: ("
-                  << static_cast<float>(particles[i].velocity_x) << ", "
-                  << static_cast<float>(particles[i].velocity_y) << ", "
-                  << static_cast<float>(particles[i].velocity_z) << ")\n";
-        std::cout << "Density: " << static_cast<float>(particles[i].rho) << "\n";
-        std::cout << "Pressure: " << static_cast<float>(particles[i].pressure) << "\n";
-        std::cout << "Radius: " << static_cast<float>(particles[i].radius) << "\n";
-
-        // Print raw bytes for debugging
-        printParticleBytes(particles[i]);
-    }
 
     file.close();
     return true;
@@ -128,14 +103,6 @@ inline std::vector<std::vector<std::vector<float>>> createScalarField(
             particlesSkipped++;
         }
     }
-
-    // Print debug information
-    std::cout << "Scalar field creation stats:\n";
-    std::cout << "Grid dimensions: " << gridDim << "x" << gridDim << "x" << gridDim << "\n";
-    std::cout << "Particles added: " << particlesAdded << "\n";
-    std::cout << "Particles skipped: " << particlesSkipped << "\n";
-    std::cout << "Min density in grid: " << minDensity << "\n";
-    std::cout << "Max density in grid: " << maxDensity << "\n";
 
     return scalarField;
 }
