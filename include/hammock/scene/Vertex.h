@@ -3,7 +3,7 @@
 #include <vulkan/vulkan.h>
 #include "hammock/core/HandmadeMath.h"
 
-namespace Hammock {
+namespace hammock {
     struct Vertex {
         HmckVec3 position{};
         HmckVec3 normal{};

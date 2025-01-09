@@ -1,14 +1,14 @@
 #include "hammock/core/Raytracing.h"
 #include "hammock/utils/Helpers.h"
 
-uint64_t Hammock::IRayTracingSupport::getBufferDeviceAddress(const Device &device, const VkBuffer buffer) const {
+uint64_t hammock::IRayTracingSupport::getBufferDeviceAddress(const Device &device, const VkBuffer buffer) const {
     VkBufferDeviceAddressInfoKHR bufferDeviceAI{};
     bufferDeviceAI.sType = VK_STRUCTURE_TYPE_BUFFER_DEVICE_ADDRESS_INFO;
     bufferDeviceAI.buffer = buffer;
     return vkGetBufferDeviceAddressKHR(device.device(), &bufferDeviceAI);
 }
 
-void Hammock::IRayTracingSupport::createAccelerationStructure(const Device &device, AccelerationStructure &accelerationStructure,
+void hammock::IRayTracingSupport::createAccelerationStructure(const Device &device, AccelerationStructure &accelerationStructure,
                                                            const VkAccelerationStructureTypeKHR type,
                                                            const VkAccelerationStructureBuildSizesInfoKHR &buildSizeInfo) const {
     // Buffer and memory
@@ -47,7 +47,7 @@ void Hammock::IRayTracingSupport::createAccelerationStructure(const Device &devi
         device.device(), &accelerationDeviceAddressInfo);
 }
 
-Hammock::ScratchBuffer Hammock::IRayTracingSupport::createScratchBuffer(const Device &device, const VkDeviceSize size) const {
+hammock::ScratchBuffer hammock::IRayTracingSupport::createScratchBuffer(const Device &device, const VkDeviceSize size) const {
     ScratchBuffer scratchBuffer{};
     // Buffer and memory
     VkBufferCreateInfo bufferCreateInfo{};
@@ -76,7 +76,7 @@ Hammock::ScratchBuffer Hammock::IRayTracingSupport::createScratchBuffer(const De
     return scratchBuffer;
 }
 
-void Hammock::IRayTracingSupport::deleteScratchBuffer(const Device &device, const ScratchBuffer &scratchBuffer) {
+void hammock::IRayTracingSupport::deleteScratchBuffer(const Device &device, const ScratchBuffer &scratchBuffer) {
     if (scratchBuffer.memory != VK_NULL_HANDLE) {
         vkFreeMemory(device.device(), scratchBuffer.memory, nullptr);
     }
@@ -85,14 +85,14 @@ void Hammock::IRayTracingSupport::deleteScratchBuffer(const Device &device, cons
     }
 }
 
-void Hammock::IRayTracingSupport::deleteAccelerationStructure(const Device &device,
+void hammock::IRayTracingSupport::deleteAccelerationStructure(const Device &device,
                                                            const AccelerationStructure &accelerationStructure) const {
     vkFreeMemory(device.device(), accelerationStructure.memory, nullptr);
     vkDestroyBuffer(device.device(), accelerationStructure.buffer, nullptr);
     vkDestroyAccelerationStructureKHR(device.device(), accelerationStructure.handle, nullptr);
 }
 
-void Hammock::IRayTracingSupport::loadFunctionPointers(const Device &device) {
+void hammock::IRayTracingSupport::loadFunctionPointers(const Device &device) {
     // Get the function pointers required for ray tracing
     vkGetBufferDeviceAddressKHR = reinterpret_cast<PFN_vkGetBufferDeviceAddressKHR>(vkGetDeviceProcAddr(
         device.device(), "vkGetBufferDeviceAddressKHR"));

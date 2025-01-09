@@ -9,7 +9,7 @@
 #include <algorithm>
 
 
-namespace Hammock {
+namespace hammock {
     namespace gltf = tinygltf;
 
     struct Loader {

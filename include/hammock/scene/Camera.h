@@ -2,7 +2,7 @@
 
 #include "hammock/core/HandmadeMath.h"
 
-namespace Hammock {
+namespace hammock {
     class Projection {
     public:
         HmckVec3 upNegY() { return HmckVec3{0.f, -1.f, 0.f}; }

@@ -32,22 +32,22 @@ private:
     void init();
     void drawUi();
 
-    Hammock::VulkanInstance instance;
-    Hammock::Window window;
-    Hammock::Device device;
-    Hammock::DeviceStorage deviceStorage{device};
-    Hammock::RenderContext renderContext{window, device};
-    Hammock::UserInterface ui{device, renderContext.getSwapChainRenderPass(), deviceStorage.getDescriptorPool(), window};
+    hammock::VulkanInstance instance;
+    hammock::Window window;
+    hammock::Device device;
+    hammock::DeviceStorage deviceStorage{device};
+    hammock::RenderContext renderContext{window, device};
+    hammock::UserInterface ui{device, renderContext.getSwapChainRenderPass(), deviceStorage.getDescriptorPool(), window};
 
 
-    std::vector<Hammock::ResourceHandle<Hammock::Buffer>> vertexBuffers;
-    std::vector<std::vector<Hammock::Vertex>> vertices;
+    std::vector<hammock::ResourceHandle<hammock::Buffer>> vertexBuffers;
+    std::vector<std::vector<hammock::Vertex>> vertices;
 
-    std::vector<Hammock::ResourceHandle<VkDescriptorSet>> descriptorSets{};
-    Hammock::ResourceHandle<Hammock::DescriptorSetLayout> descriptorSetLayout;
-    std::vector<Hammock::ResourceHandle<Hammock::Buffer>> buffers{};
+    std::vector<hammock::ResourceHandle<VkDescriptorSet>> descriptorSets{};
+    hammock::ResourceHandle<hammock::DescriptorSetLayout> descriptorSetLayout;
+    std::vector<hammock::ResourceHandle<hammock::Buffer>> buffers{};
 
-    std::unique_ptr<Hammock::GraphicsPipeline> pipeline{};
+    std::unique_ptr<hammock::GraphicsPipeline> pipeline{};
 
     HmckVec3 cameraPosition{-24.0f , 40.f, 40.f};
     HmckVec3 cameraTarget{0.0f, 0.0f, 0.0f};

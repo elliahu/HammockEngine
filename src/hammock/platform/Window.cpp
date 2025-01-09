@@ -159,7 +159,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 
 #endif
 
-Hammock::Window::Window(VulkanInstance &instance, const std::string &_windowName, int windowWidth,
+hammock::Window::Window(VulkanInstance &instance, const std::string &_windowName, int windowWidth,
                      int windowHeight) : instance{instance}
 {
     width = windowWidth;
@@ -276,7 +276,7 @@ Hammock::Window::Window(VulkanInstance &instance, const std::string &_windowName
 #endif
 }
 
-Hammock::Window::~Window()
+hammock::Window::~Window()
 {
     // Clear any resources that depend on the window
     keymap.clear();
@@ -331,26 +331,26 @@ Hammock::Window::~Window()
 #endif
 }
 
-Hammock::KeyState Hammock::Window::getKeyState(Keycode key)
+hammock::KeyState hammock::Window::getKeyState(Keycode key)
 {
     if (keymap.contains(key))
         return keymap[key];
     return KeyState::NONE;
 }
 
-Hammock::ButtonState Hammock::Window::getButtonState(Keycode button)
+hammock::ButtonState hammock::Window::getButtonState(Keycode button)
 {
     if (buttonMap.contains(button))
         return buttonMap[button];
     return ButtonState::NONE;
 }
 
-bool Hammock::Window::shouldClose() const
+bool hammock::Window::shouldClose() const
 {
     return _shouldClose;
 }
 
-void Hammock::Window::pollEvents()
+void hammock::Window::pollEvents()
 {
 #if defined(_WIN32)
     while (PeekMessage(&Win32_msg, nullptr, 0, 0, PM_REMOVE))
@@ -415,7 +415,7 @@ void Hmck::Window::Win32_onDpiChange(HWND hWnd, WPARAM wParam, LPARAM lParam)
 #endif
 
 #if defined(__linux__)
-void Hammock::Window::X11_onClose()
+void hammock::Window::X11_onClose()
 {
     _shouldClose = true;
 
@@ -426,7 +426,7 @@ void Hammock::Window::X11_onClose()
     }
 }
 
-void Hammock::Window::X11_processEvent(XEvent event)
+void hammock::Window::X11_processEvent(XEvent event)
 {
     switch (event.type)
     {
@@ -506,11 +506,11 @@ void Hammock::Window::X11_processEvent(XEvent event)
     break;
     }
 }
-void Hammock::Window::X11_onKeyDown(KeySym key)
+void hammock::Window::X11_onKeyDown(KeySym key)
 {
     keymap[key] = KeyState::DOWN;
 }
-void Hammock::Window::X11_onKeyUp(KeySym key)
+void hammock::Window::X11_onKeyUp(KeySym key)
 {
     keymap[key] = KeyState::UP;
 }

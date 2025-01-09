@@ -9,15 +9,15 @@ int main(int argc, char *argv[])
 {
     // create resources
     // unable to run headless as of now, so will be using a flash window
-    Hammock::VulkanInstance instance{};
-    Hammock::Window window{instance, "Generating Environment Maps", 1, 1};
-    Hammock::Device device{instance, window.getSurface()};
-    Hammock::DeviceStorage resources{device};
-    Hammock::Generator generator{};
+    hammock::VulkanInstance instance{};
+    hammock::Window window{instance, "Generating Environment Maps", 1, 1};
+    hammock::Device device{instance, window.getSurface()};
+    hammock::DeviceStorage resources{device};
+    hammock::Generator generator{};
 
     // get the source hdr file
     std::string hdrFilename(argv[1]); // first argument
-    if (!Hammock::Filesystem::fileExists(hdrFilename))
+    if (!hammock::Filesystem::fileExists(hdrFilename))
     {
         std::cerr << "File does not exist " << hdrFilename << std::endl;
         return EXIT_FAILURE;
@@ -46,9 +46,9 @@ int main(int argc, char *argv[])
 
     // load the source env and generate rest
     int32_t w, h, c;
-    Hammock::ScopedMemory environmentData = Hammock::ScopedMemory(Hammock::Filesystem::readImage(hdrFilename, w, h, c, Hammock::Filesystem::ImageFormat::R32G32B32A32_SFLOAT));
-    const uint32_t mipLevels = Hammock::getNumberOfMipLevels(w, h);
-    Hammock::ResourceHandle<Hammock::Texture2D> environmentMap = resources.createTexture2D({.buffer = environmentData.get(),
+    hammock::ScopedMemory environmentData = hammock::ScopedMemory(hammock::Filesystem::readImage(hdrFilename, w, h, c, hammock::Filesystem::ImageFormat::R32G32B32A32_SFLOAT));
+    const uint32_t mipLevels = hammock::getNumberOfMipLevels(w, h);
+    hammock::ResourceHandle<hammock::Texture2D> environmentMap = resources.createTexture2D({.buffer = environmentData.get(),
                                                                                       .instanceSize = sizeof(float),
                                                                                       .width = static_cast<uint32_t>(w),
                                                                                       .height = static_cast<uint32_t>(h),
@@ -58,14 +58,14 @@ int main(int argc, char *argv[])
                                                                                           .filter = VK_FILTER_LINEAR,
                                                                                           .addressMode = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE,
                                                                                           .maxLod = static_cast<float>(mipLevels)}});
-    Hammock::ResourceHandle<Hammock::Texture2D> prefilteredMap = generator.generatePrefilteredMap(device, environmentMap, resources);
-    Hammock::ResourceHandle<Hammock::Texture2D> irradianceMap = generator.generateIrradianceMap(device, environmentMap, resources, VK_FORMAT_R32G32B32A32_SFLOAT, deltaPhi, deltaTheta);
-    Hammock::ResourceHandle<Hammock::Texture2D> brdfLUT = generator.generateBRDFLookUpTable(device, resources, 512, VK_FORMAT_R32G32_SFLOAT);
+    hammock::ResourceHandle<hammock::Texture2D> prefilteredMap = generator.generatePrefilteredMap(device, environmentMap, resources);
+    hammock::ResourceHandle<hammock::Texture2D> irradianceMap = generator.generateIrradianceMap(device, environmentMap, resources, VK_FORMAT_R32G32B32A32_SFLOAT, deltaPhi, deltaTheta);
+    hammock::ResourceHandle<hammock::Texture2D> brdfLUT = generator.generateBRDFLookUpTable(device, resources, 512, VK_FORMAT_R32G32_SFLOAT);
 
     // Irradiance map
     {
         // create host visible image
-        VkImageCreateInfo irradianceImageCreateInfo(Hammock::Init::imageCreateInfo());
+        VkImageCreateInfo irradianceImageCreateInfo(hammock::Init::imageCreateInfo());
         irradianceImageCreateInfo.imageType = VK_IMAGE_TYPE_2D;
         irradianceImageCreateInfo.format = VK_FORMAT_R32G32B32A32_SFLOAT;
         irradianceImageCreateInfo.extent.width = w;
@@ -97,7 +97,7 @@ int main(int argc, char *argv[])
         irradianceImageData += subResourceLayout.offset;
 
         // write the image
-        Hammock::Filesystem::writeImage(irradianceFilename, irradianceImageData, sizeof(float), w, h, 4, Hammock::Filesystem::WriteImageDefinition::HDR);
+        hammock::Filesystem::writeImage(irradianceFilename, irradianceImageData, sizeof(float), w, h, 4, hammock::Filesystem::WriteImageDefinition::HDR);
 
         // clean
         vkUnmapMemory(device.device(), dstIrradianceImageMemory);
@@ -110,7 +110,7 @@ int main(int argc, char *argv[])
     // BRDF lut
     {
         // create host visible image
-        VkImageCreateInfo brdflutImageCreateInfo(Hammock::Init::imageCreateInfo());
+        VkImageCreateInfo brdflutImageCreateInfo(hammock::Init::imageCreateInfo());
         brdflutImageCreateInfo.imageType = VK_IMAGE_TYPE_2D;
         brdflutImageCreateInfo.format = VK_FORMAT_R32G32_SFLOAT;
         brdflutImageCreateInfo.extent.width = DIM;
@@ -159,7 +159,7 @@ int main(int argc, char *argv[])
         }
 
         // write the image
-        Hammock::Filesystem::writeImage(brdflutFilename, hdrData.data(), sizeof(float), DIM, DIM, 3, Hammock::Filesystem::WriteImageDefinition::HDR);
+        hammock::Filesystem::writeImage(brdflutFilename, hdrData.data(), sizeof(float), DIM, DIM, 3, hammock::Filesystem::WriteImageDefinition::HDR);
 
         // clean
         vkUnmapMemory(device.device(), dstBrdflutImageMemory);

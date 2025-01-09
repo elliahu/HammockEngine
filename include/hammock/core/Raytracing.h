@@ -4,7 +4,7 @@
 #include "hammock/core/Device.h"
 
 
-namespace Hammock {
+namespace hammock {
     // Holds information for a ray tracing acceleration structure
     struct AccelerationStructure {
         VkAccelerationStructureKHR handle;

@@ -4,7 +4,7 @@
 #include <utility>
 #include <stdexcept>
 
-namespace Hammock {
+namespace hammock {
     class ScopedMemory {
     public:
         // Constructor to take ownership of the pointer

@@ -10,7 +10,7 @@
 
 #define VK_FLAGS_NONE 0
 
-namespace Hammock {
+namespace hammock {
     // Loosely based of framebuffer abstraction
     // https://github.com/SaschaWillems/Vulkan/blob/master/base/VulkanFrameBuffer.hpp by Sascha Willems
 
@@ -174,7 +174,7 @@ namespace Hammock {
         * @return created Framebuffer smart pointer
         * TODO allow for custom order
         */
-        static std::unique_ptr<Framebuffer> createFrameBufferPtrWithSharedAttachments(FramebufferCreateInfo createInfo, const std::vector<std::reference_wrapper<Hammock::FramebufferAttachment>>& sharedAttachments) {
+        static std::unique_ptr<Framebuffer> createFrameBufferPtrWithSharedAttachments(FramebufferCreateInfo createInfo, const std::vector<std::reference_wrapper<hammock::FramebufferAttachment>>& sharedAttachments) {
             auto fb = std::make_unique<Framebuffer>(createInfo.device);
             fb->width = createInfo.width;
             fb->height = createInfo.height;
@@ -229,7 +229,7 @@ namespace Hammock {
 
             assert(aspectMask > 0);
 
-            VkImageCreateInfo image = Hammock::Init::imageCreateInfo();
+            VkImageCreateInfo image = hammock::Init::imageCreateInfo();
             image.imageType = VK_IMAGE_TYPE_2D;
             image.format = createinfo.format;
             image.extent.width = createinfo.width;
@@ -241,7 +241,7 @@ namespace Hammock {
             image.tiling = VK_IMAGE_TILING_OPTIMAL;
             image.usage = createinfo.usage;
 
-            VkMemoryAllocateInfo memAlloc = Hammock::Init::memoryAllocateInfo();
+            VkMemoryAllocateInfo memAlloc = hammock::Init::memoryAllocateInfo();
             VkMemoryRequirements memReqs;
 
             // Create image for this attachment
@@ -264,7 +264,7 @@ namespace Hammock {
             attachment.subresourceRange.levelCount = 1;
             attachment.subresourceRange.layerCount = createinfo.layerCount;
 
-            VkImageViewCreateInfo imageView = Hammock::Init::imageViewCreateInfo();
+            VkImageViewCreateInfo imageView = hammock::Init::imageViewCreateInfo();
             imageView.viewType = (createinfo.layerCount == 1) ? VK_IMAGE_VIEW_TYPE_2D : VK_IMAGE_VIEW_TYPE_2D_ARRAY;
             imageView.format = createinfo.format;
             imageView.subresourceRange = attachment.subresourceRange;
@@ -310,7 +310,7 @@ namespace Hammock {
         * @return VkResult for the sampler creation
         */
         VkResult createSampler(VkFilter magFilter, VkFilter minFilter, VkSamplerAddressMode adressMode) {
-            VkSamplerCreateInfo samplerInfo = Hammock::Init::samplerCreateInfo();
+            VkSamplerCreateInfo samplerInfo = hammock::Init::samplerCreateInfo();
             samplerInfo.magFilter = magFilter;
             samplerInfo.minFilter = minFilter;
             samplerInfo.mipmapMode = VK_SAMPLER_MIPMAP_MODE_LINEAR;

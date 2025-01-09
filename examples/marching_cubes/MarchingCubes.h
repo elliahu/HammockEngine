@@ -303,7 +303,7 @@ static inline const int triTable[256][16] =
     {-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1}
 };
 
-inline Hammock::Vertex interpolate(const Hammock::Vertex& p1, const Hammock::Vertex& p2,
+inline hammock::Vertex interpolate(const hammock::Vertex& p1, const hammock::Vertex& p2,
                                     float val1, float val2, float isovalue) {
     if (std::abs(val2 - val1) < 1e-6f) {
         return p1;
@@ -311,7 +311,7 @@ inline Hammock::Vertex interpolate(const Hammock::Vertex& p1, const Hammock::Ver
 
     float t = std::clamp((isovalue - val1) / (val2 - val1), 0.0f, 1.0f);
 
-    return Hammock::Vertex{
+    return hammock::Vertex{
         HmckVec3{
             p1.position.X + t * (p2.position.X - p1.position.X),
             p1.position.Y + t * (p2.position.Y - p1.position.Y),
@@ -323,7 +323,7 @@ inline Hammock::Vertex interpolate(const Hammock::Vertex& p1, const Hammock::Ver
     };
 }
 
-inline std::vector<Hammock::Triangle> marchingCubes(
+inline std::vector<hammock::Triangle> marchingCubes(
     const std::vector<std::vector<std::vector<float>>>& scalarField,
     float isovalue,
     float cubeSize) {
@@ -332,7 +332,7 @@ inline std::vector<Hammock::Triangle> marchingCubes(
         return {};
     }
 
-    std::vector<Hammock::Triangle> triangles;
+    std::vector<hammock::Triangle> triangles;
     const int nx = static_cast<int>(scalarField.size() - 1);
     const int ny = static_cast<int>(scalarField[0].size() - 1);
     const int nz = static_cast<int>(scalarField[0][0].size() - 1);
@@ -365,7 +365,7 @@ inline std::vector<Hammock::Triangle> marchingCubes(
                 if (edgeTable[cubeIndex] == 0) continue;
 
                 // Define cube vertices in 3D space
-                std::array<Hammock::Vertex, 8> cubeVerts = {{
+                std::array<hammock::Vertex, 8> cubeVerts = {{
                     {{x * cubeSize, y * cubeSize, z * cubeSize}},
                     {{(x + 1) * cubeSize, y * cubeSize, z * cubeSize}},
                     {{(x + 1) * cubeSize, (y + 1) * cubeSize, z * cubeSize}},
@@ -377,7 +377,7 @@ inline std::vector<Hammock::Triangle> marchingCubes(
                 }};
 
                 // Intersect vertices
-                std::array<Hammock::Vertex, 12> intersectVerts;
+                std::array<hammock::Vertex, 12> intersectVerts;
                 if (edgeTable[cubeIndex] & 1)
                     intersectVerts[0] = interpolate(cubeVerts[0], cubeVerts[1], v0, v1, isovalue);
                 if (edgeTable[cubeIndex] & 2)

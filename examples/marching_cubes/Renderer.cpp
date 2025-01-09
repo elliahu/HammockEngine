@@ -22,14 +22,14 @@ void Renderer::draw() {
         elapsedTime += frameTime;
 
 
-        if (window.getKeyState(KEY_A) == Hammock::KeyState::DOWN) azimuth += 1.f * frameTime;
-        if (window.getKeyState(KEY_D) == Hammock::KeyState::DOWN) azimuth -= 1.f * frameTime;
-        if (window.getKeyState(KEY_W) == Hammock::KeyState::DOWN) elevation += 1.f * frameTime;
-        if (window.getKeyState(KEY_S) == Hammock::KeyState::DOWN) elevation -= 1.f * frameTime;
-        if (window.getKeyState(KEY_UP) == Hammock::KeyState::DOWN) radius -= 1.f * frameTime;
-        if (window.getKeyState(KEY_DOWN) == Hammock::KeyState::DOWN) radius += 1.f * frameTime;
+        if (window.getKeyState(KEY_A) == hammock::KeyState::DOWN) azimuth += 1.f * frameTime;
+        if (window.getKeyState(KEY_D) == hammock::KeyState::DOWN) azimuth -= 1.f * frameTime;
+        if (window.getKeyState(KEY_W) == hammock::KeyState::DOWN) elevation += 1.f * frameTime;
+        if (window.getKeyState(KEY_S) == hammock::KeyState::DOWN) elevation -= 1.f * frameTime;
+        if (window.getKeyState(KEY_UP) == hammock::KeyState::DOWN) radius -= 1.f * frameTime;
+        if (window.getKeyState(KEY_DOWN) == hammock::KeyState::DOWN) radius += 1.f * frameTime;
         if (orbit) {
-            cameraPosition = Hammock::Math::orbitalPosition(cameraTarget, HmckClamp(0.f, radius, 1000.0f), azimuth,
+            cameraPosition = hammock::Math::orbitalPosition(cameraTarget, HmckClamp(0.f, radius, 1000.0f), azimuth,
                                                             elevation);
         }
 
@@ -56,9 +56,9 @@ void Renderer::draw() {
                 0.0f, 0.0f, 1.0f, 0.0f,
                 0.0f, 0.0f, 0.0f, 1.0f
             };
-            HmckMat4 view = Hammock::Projection().view(cameraPosition, cameraTarget,
-                                                       Hammock::Projection().upPosY());
-            HmckMat4 perspective = Hammock::Projection().
+            HmckMat4 view = hammock::Projection().view(cameraPosition, cameraTarget,
+                                                       hammock::Projection().upPosY());
+            HmckMat4 perspective = hammock::Projection().
                     perspective(45.f, renderContext.getAspectRatio(), 0.1f, 1000.f);
 
             HmckMat4 rotation = HmckMat4{
@@ -114,7 +114,7 @@ void Renderer::draw() {
 }
 
 void Renderer::loadSph() {
-    auto files = Hammock::Filesystem::ls(assetPath("sph/"));
+    auto files = hammock::Filesystem::ls(assetPath("sph/"));
 
     int f = 0;
     for (const auto &file: files) {
@@ -126,7 +126,7 @@ void Renderer::loadSph() {
         if (loadParticles(file, particles)) {
             //Hammock::Logger::log(Hammock::LOG_LEVEL_DEBUG, "Loaded %d particles\n", particles.size());
         } else {
-            Hammock::Logger::log(Hammock::LOG_LEVEL_ERROR, "Failed to load particles\n");
+            hammock::Logger::log(hammock::LOG_LEVEL_ERROR, "Failed to load particles\n");
             throw std::runtime_error("Failed to load particles");
         }
 
@@ -141,11 +141,11 @@ void Renderer::loadSph() {
 
         // marching cubes
         //Hammock::Logger::log(Hammock::LOG_LEVEL_DEBUG, "Marching cubes...\n");
-        std::vector<Hammock::Triangle> triangles = marchingCubes(scalarField, isovalue, cubeSize);
+        std::vector<hammock::Triangle> triangles = marchingCubes(scalarField, isovalue, cubeSize);
         //Hammock::Logger::log(Hammock::LOG_LEVEL_DEBUG, "Marched surface of %d triangles\n", triangles.size());
 
         // create buffers
-        std::vector<Hammock::Vertex> v;
+        std::vector<hammock::Vertex> v;
         for (auto &triangle: triangles) {
             HmckVec3 v1 = HmckSub(triangle.v1.position, triangle.v0.position);
             HmckVec3 v2 = HmckSub(triangle.v2.position, triangle.v0.position);
@@ -176,14 +176,14 @@ void Renderer::loadSph() {
         f++;
     }
 
-    Hammock::Logger::log(Hammock::LOG_LEVEL_DEBUG, "Created %d vertex buffers \n",
+    hammock::Logger::log(hammock::LOG_LEVEL_DEBUG, "Created %d vertex buffers \n",
                              vertexBuffers.size());
 }
 
 void Renderer::init() {
     // Resources
-    descriptorSets.resize(Hammock::SwapChain::MAX_FRAMES_IN_FLIGHT);
-    buffers.resize(Hammock::SwapChain::MAX_FRAMES_IN_FLIGHT);
+    descriptorSets.resize(hammock::SwapChain::MAX_FRAMES_IN_FLIGHT);
+    buffers.resize(hammock::SwapChain::MAX_FRAMES_IN_FLIGHT);
 
     descriptorSetLayout = deviceStorage.createDescriptorSetLayout({
         .bindings = {
@@ -194,7 +194,7 @@ void Renderer::init() {
         }
     });
 
-    for (int i = 0; i < Hammock::SwapChain::MAX_FRAMES_IN_FLIGHT; i++) {
+    for (int i = 0; i < hammock::SwapChain::MAX_FRAMES_IN_FLIGHT; i++) {
         buffers[i] = deviceStorage.createBuffer({
             .instanceSize = sizeof(BufferData),
             .instanceCount = 1,
@@ -203,7 +203,7 @@ void Renderer::init() {
         });
     }
 
-    for (int i = 0; i < Hammock::SwapChain::MAX_FRAMES_IN_FLIGHT; i++) {
+    for (int i = 0; i < hammock::SwapChain::MAX_FRAMES_IN_FLIGHT; i++) {
         auto fbufferInfo = deviceStorage.getBuffer(buffers[i])->descriptorInfo();
         descriptorSets[i] = deviceStorage.createDescriptorSet({
             .descriptorSetLayout = descriptorSetLayout,
@@ -211,17 +211,17 @@ void Renderer::init() {
         });
     }
     // pipeline
-    pipeline = Hammock::GraphicsPipeline::createGraphicsPipelinePtr({
+    pipeline = hammock::GraphicsPipeline::createGraphicsPipelinePtr({
         .debugName = "marching_cubes",
         .device = device,
         .VS
         {
-            .byteCode = Hammock::Filesystem::readFile(compiledShaderPath("marching_cubes.vert")),
+            .byteCode = hammock::Filesystem::readFile(compiledShaderPath("marching_cubes.vert")),
             .entryFunc = "main"
         },
         .FS
         {
-            .byteCode = Hammock::Filesystem::readFile(compiledShaderPath("marching_cubes.frag")),
+            .byteCode = hammock::Filesystem::readFile(compiledShaderPath("marching_cubes.frag")),
             .entryFunc = "main"
         },
         .descriptorSetLayouts =
@@ -242,8 +242,8 @@ void Renderer::init() {
             .blendAtaAttachmentStates{},
             .vertexBufferBindings
             {
-                .vertexBindingDescriptions = Hammock::Vertex::vertexInputBindingDescriptions(),
-                .vertexAttributeDescriptions = Hammock::Vertex::vertexInputAttributeDescriptions()
+                .vertexBindingDescriptions = hammock::Vertex::vertexInputBindingDescriptions(),
+                .vertexAttributeDescriptions = hammock::Vertex::vertexInputAttributeDescriptions()
             }
         },
         .renderPass = renderContext.getSwapChainRenderPass()

@@ -2,7 +2,7 @@
 #include <cstdarg>
 #include <cstdio>
 
-namespace Hammock {
+namespace hammock {
     enum LogLevel {
         LOG_LEVEL_DEBUG,
         LOG_LEVEL_WARN,

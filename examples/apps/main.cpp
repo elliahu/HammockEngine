@@ -17,10 +17,10 @@ int main() {
             if (demo == 0) {
                 break;
             } else if (demo == 1) {
-                Hammock::PBRApp app{};
+                hammock::PBRApp app{};
                 app.run();
             } else if (demo == 2) {
-                Hammock::VolumeApp app{};
+                hammock::VolumeApp app{};
                 app.run();
             }
 

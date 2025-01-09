@@ -14,13 +14,13 @@ protected:
 
 
 private:
-    Hammock::VulkanInstance instance;
-    Hammock::Window window;
-    Hammock::Device device;
-    Hammock::DeviceStorage deviceStorage{device};
-    Hammock::Geometry geometry{};
-    Hammock::RenderContext renderContext{window, device};
-    Hammock::UserInterface ui{device, renderContext.getSwapChainRenderPass(), deviceStorage.getDescriptorPool(), window};
+    hammock::VulkanInstance instance;
+    hammock::Window window;
+    hammock::Device device;
+    hammock::DeviceStorage deviceStorage{device};
+    hammock::Geometry geometry{};
+    hammock::RenderContext renderContext{window, device};
+    hammock::UserInterface ui{device, renderContext.getSwapChainRenderPass(), deviceStorage.getDescriptorPool(), window};
 };
 
 

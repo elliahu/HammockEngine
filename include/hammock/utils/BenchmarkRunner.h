@@ -4,7 +4,7 @@
 #include <sstream>
 
 
-namespace Hammock {
+namespace hammock {
     class BenchmarkRunner {
     public:
         struct BenchmarkTimePoint {

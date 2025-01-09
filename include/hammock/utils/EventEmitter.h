@@ -2,7 +2,7 @@
 #include <vector>
 #include <functional>
 
-namespace Hammock{
+namespace hammock{
     class EventEmitter {
     public:
         using Subscriber = std::function<void(void *)>;

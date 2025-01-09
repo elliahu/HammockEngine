@@ -3,7 +3,7 @@
 #include <vector>
 #include <vulkan/vulkan.h>
 
-namespace Hammock {
+namespace hammock {
     class VulkanInstance {
 #ifdef NDEBUG
         const bool enableValidationLayers = false;
@@ -24,8 +24,6 @@ namespace Hammock {
         void createInstance();
 
         [[nodiscard]] bool checkValidationLayerSupport() const;
-
-        void hasGflwRequiredInstanceExtensions() const;
 
         [[nodiscard]] std::vector<const char *> getRequiredExtensions() const;
 

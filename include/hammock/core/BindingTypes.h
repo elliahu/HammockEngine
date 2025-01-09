@@ -2,7 +2,7 @@
 #include <cstdint>
 #include <hammock/core/HandmadeMath.h>
 
-namespace Hammock {
+namespace hammock {
 
     struct alignas(16) IntPadded {
         int32_t value;

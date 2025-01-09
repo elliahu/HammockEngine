@@ -7,7 +7,7 @@
 #include <stdexcept>
 #include <typeinfo>
 
-namespace Hammock {
+namespace hammock {
     class ArgParser {
     public:
         template<typename T>

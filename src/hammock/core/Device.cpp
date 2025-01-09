@@ -6,7 +6,7 @@
 #include <unordered_set>
 
 
-namespace Hammock {
+namespace hammock {
     // class member functions
     Device::Device(VulkanInstance &instance, VkSurfaceKHR surface) : instance{instance}, surface_{surface} {
         pickPhysicalDevice();

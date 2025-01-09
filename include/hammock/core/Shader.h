@@ -3,7 +3,7 @@
 #include <string>
 #include <filesystem>
 
-namespace Hammock {
+namespace hammock {
     class Shader {
     public:
         static std::filesystem::path getShaderDirectory() {

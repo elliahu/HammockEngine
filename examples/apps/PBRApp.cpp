@@ -1,14 +1,14 @@
 #include "PBRApp.h"
 
-Hammock::PBRApp::PBRApp() {
+hammock::PBRApp::PBRApp() {
     load();
 }
 
-Hammock::PBRApp::~PBRApp() {
+hammock::PBRApp::~PBRApp() {
     // No need for cleanup as all allocated resources are cleaned automatically
 }
 
-void Hammock::PBRApp::run() {
+void hammock::PBRApp::run() {
     RenderContext renderContext{window, device};
     init();
     createPipelines(renderContext);
@@ -182,7 +182,7 @@ void Hammock::PBRApp::run() {
     device.waitIdle();
 }
 
-void Hammock::PBRApp::load() {
+void hammock::PBRApp::load() {
     // Load the meshes
     Loader(geometry, device, deviceStorage)
     .loadglTF(assetPath("models/helmet/helmet.glb"));
@@ -248,7 +248,7 @@ void Hammock::PBRApp::load() {
     geometry.indices.clear();
 }
 
-void Hammock::PBRApp::init() {
+void hammock::PBRApp::init() {
     // Setup global descriptor set
     // Descriptor image infos for all textures in the bindless texture array
     std::vector<VkDescriptorImageInfo> imageInfos{geometry.textures.size()};
@@ -380,7 +380,7 @@ void Hammock::PBRApp::init() {
 }
 
 
-void Hammock::PBRApp::createPipelines(const RenderContext &renderer) {
+void hammock::PBRApp::createPipelines(const RenderContext &renderer) {
     // create piplines and framebuffers
     auto depthFormat = device.findSupportedFormat(
         {VK_FORMAT_D32_SFLOAT, VK_FORMAT_D32_SFLOAT_S8_UINT, VK_FORMAT_D24_UNORM_S8_UINT},
@@ -455,11 +455,11 @@ void Hammock::PBRApp::createPipelines(const RenderContext &renderer) {
         .debugName = "skybox_pass",
         .device = device,
         .VS{
-            .byteCode = Hammock::Filesystem::readFile(compiledShaderPath("fullscreen.vert")),
+            .byteCode = hammock::Filesystem::readFile(compiledShaderPath("fullscreen.vert")),
             .entryFunc = "main"
         },
         .FS{
-            .byteCode = Hammock::Filesystem::readFile(compiledShaderPath("environment.frag")),
+            .byteCode = hammock::Filesystem::readFile(compiledShaderPath("environment.frag")),
             .entryFunc = "main"
         },
         .descriptorSetLayouts = {
@@ -477,10 +477,10 @@ void Hammock::PBRApp::createPipelines(const RenderContext &renderer) {
             .depthTest = VK_FALSE,
             .cullMode = VK_CULL_MODE_NONE,
             .blendAtaAttachmentStates{
-                Hammock::Init::pipelineColorBlendAttachmentState(0xf, VK_FALSE),
-                Hammock::Init::pipelineColorBlendAttachmentState(0xf, VK_FALSE),
-                Hammock::Init::pipelineColorBlendAttachmentState(0xf, VK_FALSE),
-                Hammock::Init::pipelineColorBlendAttachmentState(0xf, VK_FALSE),
+                hammock::Init::pipelineColorBlendAttachmentState(0xf, VK_FALSE),
+                hammock::Init::pipelineColorBlendAttachmentState(0xf, VK_FALSE),
+                hammock::Init::pipelineColorBlendAttachmentState(0xf, VK_FALSE),
+                hammock::Init::pipelineColorBlendAttachmentState(0xf, VK_FALSE),
             },
             .vertexBufferBindings
             {
@@ -495,11 +495,11 @@ void Hammock::PBRApp::createPipelines(const RenderContext &renderer) {
         .debugName = "gbuffer_pass",
         .device = device,
         .VS{
-            .byteCode = Hammock::Filesystem::readFile(compiledShaderPath("gbuffer.vert")),
+            .byteCode = hammock::Filesystem::readFile(compiledShaderPath("gbuffer.vert")),
             .entryFunc = "main"
         },
         .FS{
-            .byteCode = Hammock::Filesystem::readFile(compiledShaderPath("gbuffer.frag")),
+            .byteCode = hammock::Filesystem::readFile(compiledShaderPath("gbuffer.frag")),
             .entryFunc = "main"
         },
         .descriptorSetLayouts = {
@@ -517,10 +517,10 @@ void Hammock::PBRApp::createPipelines(const RenderContext &renderer) {
             .depthTest = VK_TRUE,
             .depthTestCompareOp = VK_COMPARE_OP_LESS_OR_EQUAL,
             .blendAtaAttachmentStates{
-                Hammock::Init::pipelineColorBlendAttachmentState(0xf, VK_FALSE),
-                Hammock::Init::pipelineColorBlendAttachmentState(0xf, VK_FALSE),
-                Hammock::Init::pipelineColorBlendAttachmentState(0xf, VK_FALSE),
-                Hammock::Init::pipelineColorBlendAttachmentState(0xf, VK_FALSE),
+                hammock::Init::pipelineColorBlendAttachmentState(0xf, VK_FALSE),
+                hammock::Init::pipelineColorBlendAttachmentState(0xf, VK_FALSE),
+                hammock::Init::pipelineColorBlendAttachmentState(0xf, VK_FALSE),
+                hammock::Init::pipelineColorBlendAttachmentState(0xf, VK_FALSE),
             },
             .vertexBufferBindings
             {
@@ -535,11 +535,11 @@ void Hammock::PBRApp::createPipelines(const RenderContext &renderer) {
         .debugName = "transparency_pass",
         .device = device,
         .VS{
-            .byteCode = Hammock::Filesystem::readFile(compiledShaderPath("gbuffer.vert")),
+            .byteCode = hammock::Filesystem::readFile(compiledShaderPath("gbuffer.vert")),
             .entryFunc = "main"
         },
         .FS{
-            .byteCode = Hammock::Filesystem::readFile(compiledShaderPath("wboitbuffer.frag")),
+            .byteCode = hammock::Filesystem::readFile(compiledShaderPath("wboitbuffer.frag")),
             .entryFunc = "main"
         },
         .descriptorSetLayouts = {
@@ -557,8 +557,8 @@ void Hammock::PBRApp::createPipelines(const RenderContext &renderer) {
             .depthTest = VK_TRUE,
             .depthTestCompareOp = VK_COMPARE_OP_LESS_OR_EQUAL,
             .blendAtaAttachmentStates{
-                Hammock::Init::pipelineColorBlendAttachmentState(0xf, VK_FALSE),
-                Hammock::Init::pipelineColorBlendAttachmentState(0xf, VK_FALSE),
+                hammock::Init::pipelineColorBlendAttachmentState(0xf, VK_FALSE),
+                hammock::Init::pipelineColorBlendAttachmentState(0xf, VK_FALSE),
             },
             .vertexBufferBindings
             {
@@ -614,11 +614,11 @@ void Hammock::PBRApp::createPipelines(const RenderContext &renderer) {
         .debugName = "deferred_pass",
         .device = device,
         .VS{
-            .byteCode = Hammock::Filesystem::readFile(compiledShaderPath("fullscreen.vert")),
+            .byteCode = hammock::Filesystem::readFile(compiledShaderPath("fullscreen.vert")),
             .entryFunc = "main"
         },
         .FS{
-            .byteCode = Hammock::Filesystem::readFile(compiledShaderPath("pbr_ibl_deferred.frag")),
+            .byteCode = hammock::Filesystem::readFile(compiledShaderPath("pbr_ibl_deferred.frag")),
             .entryFunc = "main"
         },
         .descriptorSetLayouts = {

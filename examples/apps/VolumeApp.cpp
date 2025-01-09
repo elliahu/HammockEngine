@@ -1,22 +1,22 @@
 #include "VolumeApp.h"
 
 
-Hammock::VolumeApp::VolumeApp() {
+hammock::VolumeApp::VolumeApp() {
     load();
 }
 
-void Hammock::VolumeApp::run() {
+void hammock::VolumeApp::run() {
     pipeline = GraphicsPipeline::createGraphicsPipelinePtr({
         .debugName = "standard_forward_pass",
         .device = device,
         .VS
         {
-            .byteCode = Hammock::Filesystem::readFile(compiledShaderPath("fullscreen.vert")),
+            .byteCode = hammock::Filesystem::readFile(compiledShaderPath("fullscreen.vert")),
             .entryFunc = "main"
         },
         .FS
         {
-            .byteCode = Hammock::Filesystem::readFile(compiledShaderPath("raymarch_3d_texture.frag")),
+            .byteCode = hammock::Filesystem::readFile(compiledShaderPath("raymarch_3d_texture.frag")),
             .entryFunc = "main"
         },
         .descriptorSetLayouts =
@@ -97,7 +97,7 @@ void Hammock::VolumeApp::run() {
     destroy();
 }
 
-void Hammock::VolumeApp::load() {
+void hammock::VolumeApp::load() {
     
     Loader(geometry, device, deviceStorage).loadglTF(assetPath("models/Sphere/Sphere.glb"));
 
@@ -173,7 +173,7 @@ void Hammock::VolumeApp::load() {
     });
 }
 
-void Hammock::VolumeApp::draw(int frameIndex, float elapsedTime, VkCommandBuffer commandBuffer) {
+void hammock::VolumeApp::draw(int frameIndex, float elapsedTime, VkCommandBuffer commandBuffer) {
     deviceStorage.bindVertexBuffer(vertexBuffer, indexBuffer, commandBuffer);
     pipeline->bind(commandBuffer);
 
@@ -204,7 +204,7 @@ void Hammock::VolumeApp::draw(int frameIndex, float elapsedTime, VkCommandBuffer
     vkCmdDraw(commandBuffer, 3, 1, 0, 0);
 }
 
-void Hammock::VolumeApp::destroy() {
+void hammock::VolumeApp::destroy() {
     deviceStorage.destroyTexture3D(texture);
 
     for (auto &uniformBuffer: buffers)
@@ -216,7 +216,7 @@ void Hammock::VolumeApp::destroy() {
     deviceStorage.destroyBuffer(indexBuffer);
 }
 
-void Hammock::VolumeApp::ui() {
+void hammock::VolumeApp::ui() {
     const ImGuiWindowFlags window_flags = ImGuiWindowFlags_AlwaysAutoResize;
     ImGui::Begin("Volume editor", (bool *) false, ImGuiWindowFlags_AlwaysAutoResize);
     ImGui::Text("Edit rendering properties", window_flags);

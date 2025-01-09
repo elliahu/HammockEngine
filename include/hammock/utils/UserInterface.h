@@ -8,7 +8,7 @@
 
 
 
-namespace Hammock {
+namespace hammock {
     class UserInterface {
     public:
         UserInterface(Device &device, VkRenderPass renderPass, VkDescriptorPool descriptorPool, Window &window);

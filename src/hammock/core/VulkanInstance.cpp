@@ -8,7 +8,7 @@
 #include <unordered_set>
 #include <vector>
 
-namespace Hammock {
+namespace hammock {
     // local callback functions
     static VKAPI_ATTR VkBool32 VKAPI_CALL debugCallback(
         VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity,
@@ -48,19 +48,19 @@ namespace Hammock {
     }
 }
 
-Hammock::VulkanInstance::VulkanInstance() {
+hammock::VulkanInstance::VulkanInstance() {
     createInstance();
     setupDebugMessenger();
 }
 
-Hammock::VulkanInstance::~VulkanInstance() {
+hammock::VulkanInstance::~VulkanInstance() {
     if (enableValidationLayers) {
         DestroyDebugUtilsMessengerEXT(instance, debugMessenger, nullptr);
     }
     vkDestroyInstance(instance, nullptr);
 }
 
-void Hammock::VulkanInstance::setupDebugMessenger() {
+void hammock::VulkanInstance::setupDebugMessenger() {
     if (!enableValidationLayers) return;
     VkDebugUtilsMessengerCreateInfoEXT createInfo;
     populateDebugMessengerCreateInfo(createInfo);
@@ -69,7 +69,7 @@ void Hammock::VulkanInstance::setupDebugMessenger() {
     }
 }
 
-void Hammock::VulkanInstance::createInstance() {
+void hammock::VulkanInstance::createInstance() {
     if (enableValidationLayers && !checkValidationLayerSupport()) {
         throw std::runtime_error("validation layers requested, but not available!");
     }
@@ -108,10 +108,9 @@ void Hammock::VulkanInstance::createInstance() {
         throw std::runtime_error("failed to create instance!");
     }
 
-    hasGflwRequiredInstanceExtensions();
 }
 
-bool Hammock::VulkanInstance::checkValidationLayerSupport() const {
+bool hammock::VulkanInstance::checkValidationLayerSupport() const {
     uint32_t layerCount;
     vkEnumerateInstanceLayerProperties(&layerCount, nullptr);
 
@@ -136,30 +135,7 @@ bool Hammock::VulkanInstance::checkValidationLayerSupport() const {
     return true;
 }
 
-void Hammock::VulkanInstance::hasGflwRequiredInstanceExtensions() const {
-    uint32_t extensionCount = 0;
-    vkEnumerateInstanceExtensionProperties(nullptr, &extensionCount, nullptr);
-    std::vector<VkExtensionProperties> extensions(extensionCount);
-    vkEnumerateInstanceExtensionProperties(nullptr, &extensionCount, extensions.data());
-
- 
-    std::unordered_set<std::string> available;
-    for (const auto &extension: extensions) {
-        Logger::log(LOG_LEVEL_DEBUG, "Available extension: %s\n", extension.extensionName);
-        available.insert(extension.extensionName);
-    }
-
-    //std::cout << "required extensions:" << std::endl;
-    auto requiredExtensions = getRequiredExtensions();
-    for (const auto &required: requiredExtensions) {
-        //std::cout << "\t" << required << std::endl;
-        if (available.find(required) == available.end()) {
-            throw std::runtime_error("Missing required glfw extension");
-        }
-    }
-}
-
-std::vector<const char *> Hammock::VulkanInstance::getRequiredExtensions() const {
+std::vector<const char *> hammock::VulkanInstance::getRequiredExtensions() const {
     std::vector<const char *> extensions;
 
     // Common extension for all platforms
@@ -180,7 +156,7 @@ std::vector<const char *> Hammock::VulkanInstance::getRequiredExtensions() const
     return extensions;
 }
 
-void Hammock::VulkanInstance::populateDebugMessengerCreateInfo(VkDebugUtilsMessengerCreateInfoEXT &createInfo) {
+void hammock::VulkanInstance::populateDebugMessengerCreateInfo(VkDebugUtilsMessengerCreateInfoEXT &createInfo) {
     createInfo = {};
     createInfo.sType = VK_STRUCTURE_TYPE_DEBUG_UTILS_MESSENGER_CREATE_INFO_EXT;
     createInfo.messageSeverity = VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT |
