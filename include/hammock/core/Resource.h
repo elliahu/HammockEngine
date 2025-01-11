@@ -124,7 +124,7 @@ namespace hammock {
             std::unordered_map<uint64_t, CacheEntry> resourceCache;
 
         public:
-            explicit ResourceManager(Device &device, VkDeviceSize memoryBudget = 6 * 1024 * 1024 * 1024) // 6GB default
+            explicit ResourceManager(Device &device, VkDeviceSize memoryBudget = 6ULL * 1024 * 1024 * 1024) // 6GB default
                 : device(device), totalMemoryUsed(0), memoryBudget(memoryBudget), nextId(1) {
             }
 
