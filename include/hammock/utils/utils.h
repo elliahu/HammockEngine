@@ -10,3 +10,4 @@
 #include "Filesystem.h"
 #include "Initializers.h"
 #include "ArgParser.h"
+#include "NonCopyable.h"

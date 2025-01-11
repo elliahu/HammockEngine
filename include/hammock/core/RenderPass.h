@@ -9,9 +9,38 @@
 #include <vulkan/vulkan.h>
 
 #include "hammock/core/Resource.h"
+#include "hammock/core/Image.h"
+#include "hammock/core/Buffer.h"
 
 namespace hammock {
     namespace rendergraph {
+
+        // This class acts as a wrapper for a resource handle
+        template<typename T>
+        class RenderGraphResourceNode {
+        public:
+
+            explicit RenderGraphResourceNode(const ResourceType type,
+                                             const std::string &debug_name, ResourceHandle<T> handle): handle(handle), type(type) {
+                static uint64_t next_nid = 0;
+                nid = next_nid++;
+                this->debug_name = debug_name;
+            };
+
+            const ResourceType type;
+            std::string debug_name;
+
+            ResourceHandle<T> handle;
+
+            [[nodiscard]] uint64_t getNid() const { return nid; }
+
+
+            std::vector<uint64_t> isWrittenTo{};
+            std::vector<uint64_t> isReadFrom{};
+
+        private:
+            uint64_t nid;
+        };
 
         enum class RenderPassType {
             Graphics, Compute, Transfer
@@ -22,29 +51,66 @@ namespace hammock {
             RenderPassType type;
 
             std::string debugName;
-            std::unordered_map<Resource::uid_t, ResourceAccess> readsFrom;
-            std::unordered_map<Resource::uid_t, ResourceAccess> writesTo;
 
-            RenderPass(const std::string& name, RenderPassType passType): debugName(name), type(passType) {}
+            std::unordered_map<uint64_t,std::pair<RenderGraphResourceNode<FramebufferAttachment>, ResourceAccess>> colorAttachmentsAccesses;
+            std::unordered_map<uint64_t,std::pair<RenderGraphResourceNode<SampledImage>, ResourceAccess>> texturesAccesses;
+            std::unordered_map<uint64_t,std::pair<RenderGraphResourceNode<Buffer>, ResourceAccess>> bufferAccesses;
 
-            RenderPass& addColorTarget(ImageResource attachment, ResourceAccess access) {
-                writesTo.emplace(attachment.uid, access);
+            std::vector<uint64_t> readsFrom;
+            std::vector<uint64_t> writesTo;
+
+            RenderPass(const std::string& name, RenderPassType passType): debugName(name), type(passType) {
+                static uint64_t next_uid = 0;
+                uid = next_uid++;
+            }
+
+            // Builder methods
+
+            RenderPass& writeColorAttachment(RenderGraphResourceNode<FramebufferAttachment> &attachment, ResourceAccess access) {
+                writesTo.push_back(attachment.getNid());
+                attachment.isWrittenTo.push_back(getUid());
                 return *this;
             }
 
-            RenderPass& addDepthStencilTarget(ImageResource depthStencil, ResourceAccess access) {
-                writesTo.emplace(depthStencil.uid, access);
+            RenderPass& writeDepthStencilAttachment(RenderGraphResourceNode<FramebufferAttachment> &depthStencil, ResourceAccess access) {
+                writesTo.push_back(depthStencil.getNid());
+                depthStencil.isWrittenTo.push_back(getUid());
                 return *this;
             }
 
-            RenderPass& sampleImage(ImageResource image, ResourceAccess access) {
-                readsFrom.emplace(image.uid, access);
+            RenderPass& readColorAttachment(RenderGraphResourceNode<FramebufferAttachment> &attachment, ResourceAccess access) {
+                readsFrom.push_back(attachment.getNid());
+                attachment.isReadFrom.push_back(getUid());
                 return *this;
             }
 
-            RenderPass& useBuffer(BufferResource buffer, ResourceAccess access) {
-                // we currently only read from buffer
-                readsFrom.emplace(buffer.uid, access);
+            RenderPass& readDepthStencilAttachment(RenderGraphResourceNode<FramebufferAttachment> &depthStencil, ResourceAccess access) {
+                readsFrom.push_back(depthStencil.getNid());
+                depthStencil.isReadFrom.push_back(getUid());
+                return *this;
+            }
+
+            RenderPass& writeTexture(RenderGraphResourceNode<SampledImage> &texture, ResourceAccess access) {
+                writesTo.push_back(texture.getNid());
+                texture.isWrittenTo.push_back(getUid());
+                return *this;
+            }
+
+            RenderPass& readTexture(RenderGraphResourceNode<SampledImage> &texture, ResourceAccess access) {
+                readsFrom.push_back(texture.getNid());
+                texture.isReadFrom.push_back(getUid());
+                return *this;
+            }
+
+            RenderPass& writeBuffer(RenderGraphResourceNode<Buffer> &buffer, ResourceAccess access) {
+                writesTo.push_back(buffer.getNid());
+                buffer.isWrittenTo.push_back(getUid());
+                return *this;
+            }
+
+            RenderPass& readBuffer(RenderGraphResourceNode<Buffer> &buffer, ResourceAccess access) {
+                readsFrom.push_back(buffer.getNid());
+                buffer.isReadFrom.push_back(getUid());
                 return *this;
             }
 
@@ -52,6 +118,11 @@ namespace hammock {
                 return std::make_unique<RenderPass>(*this);
             }
 
+            // helper methods
+            [[nodiscard]] uid_t getUid() const {return uid;}
+
+        private:
+            uint64_t uid;
         };
         ;
     } // namespace rendergraph

@@ -13,6 +13,8 @@
 namespace hammock {
     namespace rendergraph {
 
+
+
         class RenderGraph {
           public:
             std::vector<std::unique_ptr<RenderPass>> renderPasses;
@@ -31,13 +33,13 @@ namespace hammock {
 
                     for (auto& read : renderPass.readsFrom) {
 
-                        Logger::log(LOG_LEVEL_DEBUG, " - reads from resource %d", read.first);
+                        Logger::log(LOG_LEVEL_DEBUG, " - reads from resource %d", read);
 
                     }
 
                     for (auto& write : renderPass.writesTo) {
 
-                        Logger::log(LOG_LEVEL_DEBUG, " - writes to resource %d", write.first);
+                        Logger::log(LOG_LEVEL_DEBUG, " - writes to resource %d", write);
 
                     }
                 }

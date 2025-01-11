@@ -47,6 +47,6 @@ target_link_libraries(hammock PUBLIC Vulkan::Vulkan)
 add_subdirectory(examples)
 
 # And also build tools
-add_subdirectory(tools)
+#add_subdirectory(tools)
 
 

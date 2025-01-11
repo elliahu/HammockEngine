@@ -12,3 +12,8 @@
 #include "ThreadPool.h"
 #include "VulkanInstance.h"
 #include "HandmadeMath.h"
+#include "RenderGraph.h"
+#include "RenderPass.h"
+#include "Resource.h"
+#include "Image.h"
+#include "Buffer.h"
