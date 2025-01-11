@@ -183,7 +183,7 @@ namespace hammock {
                 return 0; // Placeholder
             }
 
-            void evictResources(size_t requiredSize) {
+            void evictResources(VkDeviceSize requiredSize) {
                 // Sort resources by last used time and use count
                 std::vector<std::pair<uint64_t, CacheEntry> > sortedCache;
                 for (const auto &entry: resourceCache) {
@@ -198,7 +198,7 @@ namespace hammock {
                           });
 
                 // Unload resources until we have enough space
-                size_t freedMemory = 0;
+                VkDeviceSize freedMemory = 0;
                 for (const auto &entry: sortedCache) {
                     auto *resource = resources[entry.first].get();
                     if (resource->isLoaded()) {
