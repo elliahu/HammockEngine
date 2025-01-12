@@ -28,10 +28,22 @@ namespace hammock {
             VmaAllocation allocation = VK_NULL_HANDLE;
             VkDeviceSize bufferSize;
             VkDeviceSize alignmentSize;
-
+            bool scoped = false; // if scoped, it gets destroyed automatically when it goes out of scope
             BufferDescription desc;
 
         public:
+
+            Buffer(Device &device, const BufferDescription &desc ): Resource(device, 0, "stagin_buffer"), desc(desc) {
+                scoped = true;
+                Buffer::load();
+            }
+
+            ~Buffer() {
+                if (scoped) {
+                    Buffer::unload();
+                }
+            }
+
             void load() override;
             void unload() override;
 

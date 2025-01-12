@@ -81,7 +81,7 @@ void hammock::rendergraph::Buffer::writeToBuffer(const void *data, VkDeviceSize 
      * @return VkResult of the flush call
      */
 VkResult hammock::rendergraph::Buffer::flush(VkDeviceSize size, VkDeviceSize offset) const {
-    vmaFlushAllocation(device.allocator(), allocation, offset, size);
+    return vmaFlushAllocation(device.allocator(), allocation, offset, size);
 }
 
 /**
@@ -112,7 +112,7 @@ VkDescriptorBufferInfo hammock::rendergraph::Buffer::descriptorInfo(VkDeviceSize
      * @return VkResult of the invalidate call
      */
 VkResult hammock::rendergraph::Buffer::invalidate(VkDeviceSize size, VkDeviceSize offset) const {
-    vmaInvalidateAllocation(device.allocator(), allocation, offset, size);
+    return vmaInvalidateAllocation(device.allocator(), allocation, offset, size);
 }
 
 /**

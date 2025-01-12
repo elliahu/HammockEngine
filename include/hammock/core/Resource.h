@@ -69,7 +69,6 @@ namespace hammock {
 
         // Base resource class
         class Resource : public NonCopyable {
-            friend class ResourceManager;
             friend struct ResourceFactory;
 
         protected:
@@ -101,10 +100,10 @@ namespace hammock {
         };
 
 
-        // TODO make this usable only in resource manager
-        struct ResourceFactory {
+        class ResourceFactory final {
+            friend class ResourceManager;
             template<typename T, typename... Args>
-            static std::unique_ptr<T> create(Device &device, uint64_t id, const std::string &name, Args &&... args) {
+            static std::unique_ptr<T> create( Device &device, uint64_t id, const std::string &name, Args &&... args) {
                 return std::unique_ptr<T>(new T(device, id, name, std::forward<Args>(args)...));
             }
         };
