@@ -103,8 +103,8 @@ namespace hammock {
         class ResourceFactory final {
             friend class ResourceManager;
             template<typename T, typename... Args>
-            static std::unique_ptr<T> create( Device &device, uint64_t id, const std::string &name, Args &&... args) {
-                return std::unique_ptr<T>(new T(device, id, name, std::forward<Args>(args)...));
+            static std::unique_ptr<T> create( Device &device, uint64_t id, Args &&... args) {
+                return std::unique_ptr<T>(new T(device, id, std::forward<Args>(args)...));
             }
         };
 
@@ -135,8 +135,8 @@ namespace hammock {
             ~ResourceManager();
 
             template<typename T, typename... Args>
-            ResourceHandle<T> createResource(const std::string &name, Args &&... args) {
-                auto resource = ResourceFactory::create<T>(device, nextId, name, std::forward<Args>(args)...);
+            ResourceHandle<T> createResource(Args &&... args) {
+                auto resource = ResourceFactory::create<T>(device, nextId, std::forward<Args>(args)...);
                 uint64_t id = nextId++;
 
                 if (totalMemoryUsed + resource->getSize() > memoryBudget) {

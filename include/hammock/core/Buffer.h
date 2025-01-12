@@ -7,6 +7,7 @@
 namespace hammock {
     namespace rendergraph {
         struct BufferDescription {
+            const std::string &name;
             VkDeviceSize instanceSize;
             uint32_t instanceCount;
             VkBufferUsageFlags usageFlags;
@@ -16,8 +17,8 @@ namespace hammock {
 
         class Buffer : public Resource {
         protected:
-            explicit Buffer(Device &device, uint64_t uid, const std::string &name,
-                            const BufferDescription &desc): Resource(device, uid, name), desc(desc) {
+            explicit Buffer(Device &device, uint64_t uid,
+                            const BufferDescription &desc): Resource(device, uid, desc.name), desc(desc) {
             }
             VkDeviceSize getAlignment(const VkDeviceSize instanceSize, const VkDeviceSize minOffsetAlignment);
 

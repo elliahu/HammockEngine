@@ -129,7 +129,9 @@ namespace hammock {
                 return *this;
             }
 
-            std::unique_ptr<RenderPass> get() {
+            std::unique_ptr<RenderPass> build() {
+
+
                 return std::make_unique<RenderPass>(*this);
             }
 

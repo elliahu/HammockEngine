@@ -12,10 +12,11 @@ int main() {
     UserInterface ui{device, context.getSwapChainRenderPass(), storage.getDescriptorPool(), window};
 
     ResourceManager manager{device};
-    auto colorAttachment = manager.createResource<rendergraph::Attachment>("color1", AttachmentDescription{
+    auto colorAttachment = manager.createResource<rendergraph::Attachment>(AttachmentDescription{
+        .name = "color",
         .width = 1920, .height = 1080, .channels = 4,
-        .layout = VK_IMAGE_LAYOUT_UNDEFINED,
         .format = VK_FORMAT_R8G8B8A8_SRGB,
+        .usage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT
     });
     auto colorAttachmentNode = RenderGraphResourceNode<rendergraph::Attachment>(ResourceType::FramebufferAttachment, "color1_node", colorAttachment);
 
@@ -24,7 +25,7 @@ int main() {
         .addRenderPass(
             RenderPass("first", RenderPassType::Graphics)
             .writeColorAttachment(colorAttachmentNode, { .type = ResourceAccessType::Write, .requiredState = ImageState::ColorAttachment})
-            .get());
+            .build());
 
     graph.execute();
 }

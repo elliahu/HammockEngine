@@ -13,12 +13,6 @@
 // black clear color
 #define HMCK_CLEAR_COLOR {0.f,0.f,0.f} //{ 0.f,171.f / 255.f,231.f / 255.f,1.f }
 
-#define SHADOW_RES_WIDTH 2048
-#define SHADOW_RES_HEIGHT 2048
-#define SHADOW_TEX_FILTER VK_FILTER_LINEAR
-
-#define SSAO_RES_MULTIPLIER 1.0
-
 namespace hammock {
     class RenderContext {
     public:

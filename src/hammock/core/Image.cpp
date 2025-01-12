@@ -199,7 +199,7 @@ void hammock::rendergraph::Image::load() {
     bool generateMipmaps = desc.mips > 1;
 
     if (generateMipmaps) {
-        generateMipmaps();
+        generateMips();
     }
 }
 
@@ -282,6 +282,12 @@ void hammock::rendergraph::Attachment::load() {
     } else {
         description.finalLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
     }
+
+    resident = true;
+}
+
+void hammock::rendergraph::Attachment::unload() {
+    Image::unload();
 }
 
 /**
