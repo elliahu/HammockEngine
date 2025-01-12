@@ -2,6 +2,7 @@
 #include <string>
 #include <vulkan/vulkan.h>
 
+#include "Buffer.h"
 #include "hammock/core/Resource.h"
 
 namespace hammock {
@@ -21,7 +22,6 @@ namespace hammock {
         struct ImageDescription {
             uint32_t width = 0, height = 0, channels = 0, depth = 1, layers = 1, mips = 1;
             ImageType imageType = ImageType::Image2D;
-            VkImageLayout layout = VK_IMAGE_LAYOUT_UNDEFINED;
             VkFormat format = VK_FORMAT_UNDEFINED;
             VkImageUsageFlags usage = VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT| VK_IMAGE_USAGE_SAMPLED_BIT;
         };
@@ -33,17 +33,19 @@ namespace hammock {
                     device, uid, name), desc(info) {
             }
 
+            void generateMips();
+
             VkImage image = VK_NULL_HANDLE;
             VkImageView view = VK_NULL_HANDLE;
             VmaAllocation allocation = VK_NULL_HANDLE;
+            VkImageLayout layout = VK_IMAGE_LAYOUT_UNDEFINED;
             ImageDescription desc;
 
         public:
-
+            void loadFromBuffer(Buffer &buffer, VkImageLayout finalLayout);
+            void transitionLayout(VkImageLayout finalLayout);
             void load() override;
             void unload() override;
-
-
         };
 
 
@@ -69,7 +71,6 @@ namespace hammock {
                         .depth = info.depth,
                         .layers = info.layers,
                         .mips = info.mips,
-                        .layout = info.layout,
                         .format = info.format,
                         .usage = info.usage,
                     }), desc(info) {
@@ -107,7 +108,6 @@ namespace hammock {
                                                                           .layers = info.layers,
                                                                           .mips = info.mips,
                                                                           .imageType = info.imageType,
-                                                                          .layout = info.layout,
                                                                           .format = info.format,
                                                                           .usage = info.usage,
                                                                       }), desc(info) {
