@@ -6,12 +6,24 @@
 
 namespace hammock {
     namespace rendergraph {
+
+        enum class ImageType {
+            Image1D, Image2D, Image3D, ImageCube
+        };
+
+        VkImageType mapImageTypeToVulkanImageType(ImageType imageType);
+        VkImageViewType mapImageTypeToVulkanImageViewType(ImageType imageType);
+
+        enum class ImageFormat {
+            Undefined,
+        };
+
         struct ImageDescription {
             uint32_t width = 0, height = 0, channels = 0, depth = 1, layers = 1, mips = 1;
-            VkImageType imageType = VK_IMAGE_TYPE_2D;
+            ImageType imageType = ImageType::Image2D;
             VkImageLayout layout = VK_IMAGE_LAYOUT_UNDEFINED;
             VkFormat format = VK_FORMAT_UNDEFINED;
-            VkImageUsageFlags usage = VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT;
+            VkImageUsageFlags usage = VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT| VK_IMAGE_USAGE_SAMPLED_BIT;
         };
 
         class Image : public Resource {
@@ -27,7 +39,7 @@ namespace hammock {
             ImageDescription desc;
 
         public:
-            void load() override;;
+            void load() override;
 
             void unload() override;
         };
@@ -64,6 +76,9 @@ namespace hammock {
 
         struct SampledImageDescription : ImageDescription {
             VkFilter filter = VK_FILTER_LINEAR;
+            VkSamplerAddressMode addressMode = VK_SAMPLER_ADDRESS_MODE_REPEAT;
+            VkBorderColor borderColor = VK_BORDER_COLOR_INT_OPAQUE_BLACK;
+            VkSamplerMipmapMode mipmapMode = VK_SAMPLER_MIPMAP_MODE_LINEAR;
             VkSampleCountFlagBits imageSampleCount = VK_SAMPLE_COUNT_1_BIT;
         };
 
