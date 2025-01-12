@@ -16,6 +16,7 @@ namespace hammock {
     }
 
     Device::~Device() {
+        vmaDestroyAllocator(allocator_);
         vkDestroyCommandPool(device_, commandPool, nullptr);
         vkDestroyDevice(device_, nullptr);
     }

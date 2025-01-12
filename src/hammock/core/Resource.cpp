@@ -1,9 +1,18 @@
 #include "hammock/core/Resource.h"
 
+hammock::rendergraph::ResourceManager::~ResourceManager() {
+    for (auto& resource : resources) {
+        if (resource.second->isResident()) {
+            resource.second->unload();
+        }
+    }
+    resources.clear();
+}
+
 void hammock::rendergraph::ResourceManager::releaseResource(uint64_t id) {
     auto it = resources.find(id);
     if (it != resources.end()) {
-        if (it->second->isLoaded()) {
+        if (it->second->isResident()) {
             totalMemoryUsed -= it->second->getSize();
             it->second->unload();
         }
@@ -39,7 +48,7 @@ void hammock::rendergraph::ResourceManager::evictResources(VkDeviceSize required
     VkDeviceSize freedMemory = 0;
     for (const auto &entry: sortedCache) {
         auto *resource = resources[entry.first].get();
-        if (resource->isLoaded()) {
+        if (resource->isResident()) {
             resource->unload();
             freedMemory += resource->getSize();
             totalMemoryUsed -= resource->getSize();

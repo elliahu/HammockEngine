@@ -39,13 +39,18 @@ namespace hammock {
             ImageDescription desc;
 
         public:
-            void load() override;
 
+            void load() override;
             void unload() override;
         };
 
 
-        struct FramebufferAttachmentDescription : ImageDescription {
+        struct FramebufferAttachmentDescription{
+            uint32_t width = 0, height = 0, channels = 0, depth = 1, layers = 1, mips = 1;
+            ImageType imageType = ImageType::Image2D;
+            VkImageLayout layout = VK_IMAGE_LAYOUT_UNDEFINED;
+            VkFormat format = VK_FORMAT_UNDEFINED;
+            VkImageUsageFlags usage = VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT| VK_IMAGE_USAGE_SAMPLED_BIT;
             VkAttachmentLoadOp loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
             VkAttachmentStoreOp storeOp = VK_ATTACHMENT_STORE_OP_STORE;
         };
@@ -75,6 +80,11 @@ namespace hammock {
 
 
         struct SampledImageDescription : ImageDescription {
+            uint32_t width = 0, height = 0, channels = 0, depth = 1, layers = 1, mips = 1;
+            ImageType imageType = ImageType::Image2D;
+            VkImageLayout layout = VK_IMAGE_LAYOUT_UNDEFINED;
+            VkFormat format = VK_FORMAT_UNDEFINED;
+            VkImageUsageFlags usage = VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT| VK_IMAGE_USAGE_SAMPLED_BIT;
             VkFilter filter = VK_FILTER_LINEAR;
             VkSamplerAddressMode addressMode = VK_SAMPLER_ADDRESS_MODE_REPEAT;
             VkBorderColor borderColor = VK_BORDER_COLOR_INT_OPAQUE_BLACK;

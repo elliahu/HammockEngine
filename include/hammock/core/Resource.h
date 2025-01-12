@@ -78,10 +78,13 @@ namespace hammock {
             std::string debug_name;
             VkDeviceSize size = 0;
             bool resident; // Whether the resource is currently in GPU memory
+            bool lazy; // Just in time loaded (if lazy, resource is loaded to memory when getResource is called,
+            // if !lazy, resource is loaded into memory at creation time)
 
             Resource(Device &device, uint64_t uid, const std::string &name)
-                : uid(uid), debug_name(name), resident(false), device(device) {
+                : uid(uid), debug_name(name), resident(false), lazy(false), device(device) {
             }
+
 
         public:
             virtual ~Resource() = default;
@@ -92,10 +95,13 @@ namespace hammock {
 
             uint64_t getUid() const { return uid; }
             const std::string &getName() const { return debug_name; }
-            bool isLoaded() const { return resident; }
+            bool isResident() const { return resident; }
+            bool isLazy() const {return lazy;}
             VkDeviceSize getSize() const { return size; } // for now
         };
 
+
+        // TODO make this usable only in resource manager
         struct ResourceFactory {
             template<typename T, typename... Args>
             static std::unique_ptr<T> create(Device &device, uint64_t id, const std::string &name, Args &&... args) {
@@ -127,14 +133,19 @@ namespace hammock {
                 : device(device), totalMemoryUsed(0), memoryBudget(memoryBudget), nextId(1) {
             }
 
+            ~ResourceManager();
+
             template<typename T, typename... Args>
             ResourceHandle<T> createResource(const std::string &name, Args &&... args) {
                 auto resource = ResourceFactory::create<T>(device, nextId, name, std::forward<Args>(args)...);
                 uint64_t id = nextId++;
 
                 if (totalMemoryUsed + resource->getSize() > memoryBudget) {
-                    //throw std::runtime_error("ResourceManager::createResource: Memory budget exceeded");
                     evictResources(resource->getSize());
+                }
+
+                if (!resource->isLazy()) {
+                    resource->load();
                 }
 
                 resources[id] = std::move(resource);

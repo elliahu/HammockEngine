@@ -15,6 +15,8 @@ VkImageType hammock::rendergraph::mapImageTypeToVulkanImageType(ImageType imageT
             return VK_IMAGE_TYPE_2D;
         }
     }
+
+    return VK_IMAGE_TYPE_2D;
 }
 
 VkImageViewType hammock::rendergraph::mapImageTypeToVulkanImageViewType(ImageType imageType) {
@@ -32,8 +34,9 @@ VkImageViewType hammock::rendergraph::mapImageTypeToVulkanImageViewType(ImageTyp
             return VK_IMAGE_VIEW_TYPE_CUBE;
         }
     }
-}
 
+    return VK_IMAGE_VIEW_TYPE_2D;
+}
 void hammock::rendergraph::Image::load() {
     // Create the VkImage
     VkImageCreateInfo imageInfo{};
