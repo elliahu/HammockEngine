@@ -6,7 +6,7 @@
 
 namespace hammock {
     namespace rendergraph {
-        struct ImageInfo {
+        struct ImageDescription {
             uint32_t width = 0, height = 0, channels = 0, depth = 1, layers = 1, mips = 1;
             VkImageType imageType = VK_IMAGE_TYPE_2D;
             VkImageLayout layout = VK_IMAGE_LAYOUT_UNDEFINED;
@@ -17,14 +17,14 @@ namespace hammock {
         class Image : public Resource {
             friend struct ResourceFactory;
         protected:
-            Image(Device &device, uint64_t uid, const std::string &name, const ImageInfo &info): Resource(
-                    device, uid, name), info(info) {
+            Image(Device &device, uint64_t uid, const std::string &name, const ImageDescription &info): Resource(
+                    device, uid, name), desc(info) {
             }
 
             VkImage image = VK_NULL_HANDLE;
-            VkDeviceMemory memory = VK_NULL_HANDLE;
             VkImageView view = VK_NULL_HANDLE;
-            ImageInfo info;
+            VmaAllocation allocation = VK_NULL_HANDLE;
+            ImageDescription desc;
 
         public:
             void load() override;;
@@ -33,7 +33,7 @@ namespace hammock {
         };
 
 
-        struct FramebufferAttachmentInfo : ImageInfo {
+        struct FramebufferAttachmentDescription : ImageDescription {
             VkAttachmentLoadOp loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
             VkAttachmentStoreOp storeOp = VK_ATTACHMENT_STORE_OP_STORE;
         };
@@ -42,7 +42,7 @@ namespace hammock {
             friend struct ResourceFactory;
         protected:
             explicit FramebufferAttachment(Device &device, uint64_t uid, const std::string &name,
-                                           const FramebufferAttachmentInfo &info) : Image(
+                                           const FramebufferAttachmentDescription &info) : Image(
                     device, uid, name, {
                         .width = info.width,
                         .height = info.height,
@@ -53,16 +53,16 @@ namespace hammock {
                         .layout = info.layout,
                         .format = info.format,
                         .usage = info.usage,
-                    }), info(info) {
+                    }), desc(info) {
             }
 
-            FramebufferAttachmentInfo info;
+            FramebufferAttachmentDescription desc;
 
         public:
         };
 
 
-        struct SampledImageInfo : ImageInfo {
+        struct SampledImageDescription : ImageDescription {
             VkFilter filter = VK_FILTER_LINEAR;
             VkSampleCountFlagBits imageSampleCount = VK_SAMPLE_COUNT_1_BIT;
         };
@@ -71,7 +71,7 @@ namespace hammock {
             friend struct ResourceFactory;
         protected:
             explicit SampledImage(Device &device, uint64_t uid, const std::string &name,
-                                  const SampledImageInfo &info) : Image(
+                                  const SampledImageDescription &info) : Image(
                                                                       device, uid, name, {
                                                                           .width = info.width,
                                                                           .height = info.height,
@@ -83,11 +83,11 @@ namespace hammock {
                                                                           .layout = info.layout,
                                                                           .format = info.format,
                                                                           .usage = info.usage,
-                                                                      }), info(info) {
+                                                                      }), desc(info) {
             }
 
             VkSampler sampler = VK_NULL_HANDLE;
-            SampledImageInfo info;
+            SampledImageDescription desc;
 
         public:
             void load() override;;

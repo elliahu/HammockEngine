@@ -44,11 +44,9 @@ namespace hammock {
         };
 
         enum class ResourceType {
-            ImageView,
-            Image,
-            FramebufferAttachment,
-            Sampler,
-            SampledImage,
+            Image, // general usage image (any type)
+            FramebufferAttachment, // spcialized image used as framebuffer attachment
+            SampledImage,   // image along with a sampler
             Buffer
         };
 
@@ -124,7 +122,8 @@ namespace hammock {
             std::unordered_map<uint64_t, CacheEntry> resourceCache;
 
         public:
-            explicit ResourceManager(Device &device, VkDeviceSize memoryBudget = 6ULL * 1024 * 1024 * 1024) // 6GB default
+            explicit ResourceManager(Device &device, VkDeviceSize memoryBudget = 6ULL * 1024 * 1024 * 1024)
+            // 6GB default
                 : device(device), totalMemoryUsed(0), memoryBudget(memoryBudget), nextId(1) {
             }
 
@@ -134,7 +133,7 @@ namespace hammock {
                 uint64_t id = nextId++;
 
                 if (totalMemoryUsed + resource->getSize() > memoryBudget) {
-                    throw std::runtime_error("ResourceManager::createResource: Memory budget exceeded");
+                    //throw std::runtime_error("ResourceManager::createResource: Memory budget exceeded");
                     evictResources(resource->getSize());
                 }
 
@@ -165,53 +164,12 @@ namespace hammock {
                 return nullptr;
             }
 
-            void releaseResource(uint64_t id) {
-                auto it = resources.find(id);
-                if (it != resources.end()) {
-                    if (it->second->isLoaded()) {
-                        totalMemoryUsed -= it->second->getSize();
-                        it->second->unload();
-                    }
-                    resources.erase(it);
-                    resourceCache.erase(id);
-                }
-            }
+            void releaseResource(uint64_t id);
 
         private:
-            uint64_t getCurrentTimestamp() {
-                // Implementation to get current time
-                return 0; // Placeholder
-            }
+            uint64_t getCurrentTimestamp();
 
-            void evictResources(VkDeviceSize requiredSize) {
-                // Sort resources by last used time and use count
-                std::vector<std::pair<uint64_t, CacheEntry> > sortedCache;
-                for (const auto &entry: resourceCache) {
-                    sortedCache.push_back(entry);
-                }
-
-                std::sort(sortedCache.begin(), sortedCache.end(),
-                          [](const auto &a, const auto &b) {
-                              // Consider both last used time and use frequency
-                              return (a.second.lastUsed * a.second.useCount) <
-                                     (b.second.lastUsed * b.second.useCount);
-                          });
-
-                // Unload resources until we have enough space
-                VkDeviceSize freedMemory = 0;
-                for (const auto &entry: sortedCache) {
-                    auto *resource = resources[entry.first].get();
-                    if (resource->isLoaded()) {
-                        resource->unload();
-                        freedMemory += resource->getSize();
-                        totalMemoryUsed -= resource->getSize();
-
-                        if (freedMemory >= requiredSize) {
-                            break;
-                        }
-                    }
-                }
-            }
+            void evictResources(VkDeviceSize requiredSize);
         };
     }
 }

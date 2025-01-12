@@ -12,7 +12,7 @@ int main() {
     UserInterface ui{device, context.getSwapChainRenderPass(), storage.getDescriptorPool(), window};
 
     ResourceManager manager{device};
-    auto colorAttachment = manager.createResource<rendergraph::FramebufferAttachment>("color1", FramebufferAttachmentInfo{});
+    auto colorAttachment = manager.createResource<rendergraph::FramebufferAttachment>("color1", FramebufferAttachmentDescription{});
     auto colorAttachmentNode = RenderGraphResourceNode<rendergraph::FramebufferAttachment>(ResourceType::FramebufferAttachment, "color1_node", colorAttachment);
 
     RenderGraph graph;

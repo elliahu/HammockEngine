@@ -4,11 +4,15 @@
 #include "hammock/core/VulkanInstance.h"
 
 #include <vulkan/vulkan.h>
+
+#define VMA_STATIC_VULKAN_FUNCTIONS 0
+#define VMA_DYNAMIC_VULKAN_FUNCTIONS 1
+#include "vk_mem_alloc.h"
+
 #include <vector>
 
 // std lib headers
 #include <string>
-
 
 
 namespace hammock {
@@ -43,11 +47,13 @@ namespace hammock {
 
         [[nodiscard]] VkCommandPool getCommandPool() const { return commandPool; }
         [[nodiscard]] VkDevice device() const { return device_; }
+        [[nodiscard]] VmaAllocator allocator() const { return allocator_; }
         [[nodiscard]] VkInstance getInstance() const { return instance.getInstance(); }
         [[nodiscard]] VkPhysicalDevice getPhysicalDevice() const { return physicalDevice; }
         [[nodiscard]] VkSurfaceKHR surface() const { return surface_; }
         [[nodiscard]] VkQueue graphicsQueue() const { return graphicsQueue_; }
         [[nodiscard]] VkQueue presentQueue() const { return presentQueue_; }
+
         [[nodiscard]] SwapChainSupportDetails getSwapChainSupport() const {
             return querySwapChainSupport(physicalDevice);
         }
@@ -99,16 +105,16 @@ namespace hammock {
 
         void waitIdle();
 
-
         VkPhysicalDeviceProperties properties;
 
     private:
-
         void pickPhysicalDevice();
 
         void createLogicalDevice();
 
         void createCommandPool();
+
+        void createMemoryAllocator();
 
         // helper functions
         bool isDeviceSuitable(VkPhysicalDevice device);
@@ -128,6 +134,8 @@ namespace hammock {
         VkSurfaceKHR surface_;
         VkQueue graphicsQueue_;
         VkQueue presentQueue_;
+
+        VmaAllocator allocator_;
 
         const std::vector<const char *> deviceExtensions =
         {

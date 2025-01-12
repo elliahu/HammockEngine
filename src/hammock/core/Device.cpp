@@ -12,6 +12,7 @@ namespace hammock {
         pickPhysicalDevice();
         createLogicalDevice();
         createCommandPool();
+        createMemoryAllocator();
     }
 
     Device::~Device() {
@@ -149,6 +150,22 @@ namespace hammock {
         if (vkCreateCommandPool(device_, &poolInfo, nullptr, &commandPool) != VK_SUCCESS) {
             throw std::runtime_error("failed to create command pool!");
         }
+    }
+
+    void Device::createMemoryAllocator() {
+        VmaVulkanFunctions vulkanFunctions = {};
+        vulkanFunctions.vkGetInstanceProcAddr = &vkGetInstanceProcAddr;
+        vulkanFunctions.vkGetDeviceProcAddr = &vkGetDeviceProcAddr;
+
+        VmaAllocatorCreateInfo allocatorCreateInfo = {};
+        allocatorCreateInfo.flags = VMA_ALLOCATOR_CREATE_EXT_MEMORY_BUDGET_BIT;
+        allocatorCreateInfo.vulkanApiVersion = VK_API_VERSION_1_2;
+        allocatorCreateInfo.physicalDevice = physicalDevice;
+        allocatorCreateInfo.device = device_;
+        allocatorCreateInfo.instance = instance.getInstance();
+        allocatorCreateInfo.pVulkanFunctions = &vulkanFunctions;
+
+        vmaCreateAllocator(&allocatorCreateInfo, &allocator_);
     }
 
     bool Device::isDeviceSuitable(VkPhysicalDevice device) {
