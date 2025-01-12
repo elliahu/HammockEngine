@@ -24,7 +24,7 @@ namespace hammock {
     };
 
     inline void checkResult(VkResult result) {
-        assert(result == VK_SUCCESS && "Vulkan API assertion fail");
+        assert(result == VK_SUCCESS && "Vulkan API assertion failed! This may indicates a bug in the application.");
     }
 
     // Check if enity of type P is derived from T
