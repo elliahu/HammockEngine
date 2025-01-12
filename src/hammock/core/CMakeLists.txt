@@ -10,6 +10,7 @@ set(CORE_SOURCES
         ${CMAKE_CURRENT_SOURCE_DIR}/Buffer.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/VmaUsage.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/Resource.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/RenderPass.cpp
         PARENT_SCOPE
 )
 

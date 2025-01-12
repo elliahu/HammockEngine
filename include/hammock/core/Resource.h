@@ -155,16 +155,16 @@ namespace hammock {
 
             template<typename T>
             T *getResource(ResourceHandle<T> handle) {
-                auto it = resources.find(handle.getId());
+                auto it = resources.find(handle.getUid());
                 if (it != resources.end()) {
                     auto *resource = dynamic_cast<T *>(it->second.get());
                     if (resource) {
                         // Update cache information
-                        resourceCache[handle.getId()].lastUsed = getCurrentTimestamp();
-                        resourceCache[handle.getId()].useCount++;
+                        resourceCache[handle.getUid()].lastUsed = getCurrentTimestamp();
+                        resourceCache[handle.getUid()].useCount++;
 
                         // Load if not resident
-                        if (!resource->isLoaded()) {
+                        if (!resource->isResident()) {
                             resource->load();
                             totalMemoryUsed += resource->getSize();
                         }

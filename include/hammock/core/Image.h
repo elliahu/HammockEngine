@@ -52,6 +52,9 @@ namespace hammock {
             void load() override;
 
             void unload() override;
+
+            [[nodiscard]] VkImage getImage() const {return image;};
+            [[nodiscard]] VkImageView getImageView() const {return view;};
         };
 
 
@@ -86,10 +89,12 @@ namespace hammock {
             }
 
             AttachmentDescription desc;
+
+
+        public:
             VkImageSubresourceRange subresourceRange;
             VkAttachmentDescription description;
 
-        public:
             void load() override;
 
             void unload() override;

@@ -258,11 +258,14 @@ void hammock::rendergraph::Attachment::load() {
     viewInfo.image = image;
     viewInfo.viewType = mapImageTypeToVulkanImageViewType(desc.imageType);
     viewInfo.format = desc.format;
-    viewInfo.subresourceRange.aspectMask = aspectMask;
-    viewInfo.subresourceRange.baseMipLevel = 0;
-    viewInfo.subresourceRange.levelCount = desc.mips;
-    viewInfo.subresourceRange.baseArrayLayer = 0;
-    viewInfo.subresourceRange.layerCount = desc.layers;
+
+    subresourceRange.aspectMask = aspectMask;
+    subresourceRange.baseMipLevel = 0;
+    subresourceRange.levelCount = desc.mips;
+    subresourceRange.baseArrayLayer = 0;
+    subresourceRange.layerCount = desc.layers;
+
+    viewInfo.subresourceRange = subresourceRange;
 
     checkResult(vkCreateImageView(device.device(), &viewInfo, nullptr, &view));
 
