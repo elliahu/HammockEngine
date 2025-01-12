@@ -33,7 +33,7 @@ namespace hammock {
 
                     for (auto& read : renderPass.readsFrom) {
 
-                        Logger::log(LOG_LEVEL_DEBUG, " - reads from resource %d\n", read);
+                        Logger::log(LOG_LEVEL_DEBUG, " - reads from resource %d\n", read );
 
                     }
 

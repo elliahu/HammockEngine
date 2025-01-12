@@ -49,21 +49,20 @@ namespace hammock {
         };
 
 
-        struct FramebufferAttachmentDescription{
+        struct AttachmentDescription{
             uint32_t width = 0, height = 0, channels = 0, depth = 1, layers = 1, mips = 1;
             ImageType imageType = ImageType::Image2D;
-            VkImageLayout layout = VK_IMAGE_LAYOUT_UNDEFINED;
             VkFormat format = VK_FORMAT_UNDEFINED;
             VkImageUsageFlags usage = VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT| VK_IMAGE_USAGE_SAMPLED_BIT;
             VkAttachmentLoadOp loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
             VkAttachmentStoreOp storeOp = VK_ATTACHMENT_STORE_OP_STORE;
         };
 
-        class FramebufferAttachment : public Image {
+        class Attachment : public Image {
             friend struct ResourceFactory;
         protected:
-            explicit FramebufferAttachment(Device &device, uint64_t uid, const std::string &name,
-                                           const FramebufferAttachmentDescription &info) : Image(
+            explicit Attachment(Device &device, uint64_t uid, const std::string &name,
+                                           const AttachmentDescription &info) : Image(
                     device, uid, name, {
                         .width = info.width,
                         .height = info.height,
@@ -76,16 +75,29 @@ namespace hammock {
                     }), desc(info) {
             }
 
-            FramebufferAttachmentDescription desc;
+            AttachmentDescription desc;
+            VkImageSubresourceRange subresourceRange;
+            VkAttachmentDescription description;
 
         public:
+            void load() override;
+            void unload() override;
+
+            [[nodiscard]] bool hasDepth() const;
+
+            [[nodiscard]] bool hasStencil() const;
+
+            [[nodiscard]] bool isDepthStencil() const {
+                return (hasDepth() || hasStencil());
+            }
+
+            VkDescriptorImageInfo getDescriptorImageInfo(const VkSampler sampler, const VkImageLayout layout) const;
         };
 
 
-        struct SampledImageDescription : ImageDescription {
+        struct SampledImageDescription{
             uint32_t width = 0, height = 0, channels = 0, depth = 1, layers = 1, mips = 1;
             ImageType imageType = ImageType::Image2D;
-            VkImageLayout layout = VK_IMAGE_LAYOUT_UNDEFINED;
             VkFormat format = VK_FORMAT_UNDEFINED;
             VkImageUsageFlags usage = VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT| VK_IMAGE_USAGE_SAMPLED_BIT;
             VkFilter filter = VK_FILTER_LINEAR;
