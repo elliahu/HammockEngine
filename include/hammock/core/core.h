@@ -13,5 +13,4 @@
 #include "VulkanInstance.h"
 #include "HandmadeMath.h"
 #include "RenderGraph.h"
-#include "RenderPass.h"
 #include "Resource.h"

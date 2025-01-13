@@ -1,14 +1,13 @@
 #pragma once
 
-#include <hammock/core/RenderPass.h>
 #include <hammock/core/Resource.h>
 #include <hammock/core/Device.h>
 #include <hammock/resources/Buffer.h>
 #include <hammock/utils/Logger.h>
 #include <hammock/core/SwapChain.h>
 #include <cassert>
+#include <variant>
 
-#include "RenderPass.h"
 
 namespace hammock {
     namespace rendergraph {
@@ -66,8 +65,6 @@ namespace hammock {
         struct ResourceRef {
             // Variant to hold either buffer or image resource
             std::variant<BufferResourceRef, ImageResourceRef> resource;
-            // True if resource is externally owned (e.g. swapchain images)
-            bool isExternal;
         };
 
 
@@ -75,13 +72,18 @@ namespace hammock {
             enum class Type {
                 Buffer,
                 Image,
+                SwapChain
             } type;
 
             // Name is used for lookup
             std::string name;
 
             // Whether resource lives only within a frame
-            bool isTransient;
+            bool isTransient = true;
+            // Whether resource has one instance per frame in flight or just one overall
+            bool isBuffered = true;
+            // True if resource is externally owned (e.g. swapchain images)
+            bool isExternal = false;
 
             // One handle per frame in flight
             std::vector<ResourceRef> handles;
@@ -126,13 +128,15 @@ namespace hammock {
                                                                      maxFramesInFlight(maxFramesInFlight) {
             }
 
+            // TODO ad destructor to release resources that are managed by the rendergraph
+
             // Add a resource to the graph
-            void addResource(const std::string& name, const ResourceNode& resource) {
-                resources[name] = resource;
+            void addResource(const ResourceNode& resource) {
+                resources[resource.name] = resource;
             }
 
             // Add a render pass to the graph
-            void addPass(const std::string& name, const RenderPassNode& pass) {
+            void addPass(const RenderPassNode& pass) {
                 passes.push_back(pass);
             }
 

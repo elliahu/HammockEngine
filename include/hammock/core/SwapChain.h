@@ -30,6 +30,7 @@ namespace hammock {
 
         [[nodiscard]] VkFramebuffer getFrameBuffer(const int index) const { return swapChainFramebuffers[index]; }
         [[nodiscard]] VkRenderPass getRenderPass() const { return renderPass; }
+        [[nodiscard]] VkImage getImage(const int index) const { return swapChainImages[index]; }
         [[nodiscard]] VkImageView getImageView(const int index) const { return swapChainImageViews[index]; }
         [[nodiscard]] size_t imageCount() const { return swapChainImages.size(); }
         [[nodiscard]] VkFormat getSwapChainImageFormat() const { return swapChainImageFormat; }
