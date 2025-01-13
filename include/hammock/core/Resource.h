@@ -6,42 +6,9 @@
 
 namespace hammock {
     namespace rendergraph {
-        enum class ImageState {
-            Undefined,
-            General,
-            ColorAttachment,
-            DepthStencilAttachment,
-            ShaderReadOnly,
-            TransferSrc,
-            TransferDst,
-            Present,
-        };
 
-        enum class BufferState {
-            Undefined,
-            TransferSrc,
-            TransferDst,
-            UniformBuffer,
-            StorageBuffer,
-            IndexBuffer,
-            VertexBuffer,
-            IndirectBuffer,
-            ShaderBindingTable,
-            AccelerationStructureBuild
-        };
 
-        enum class ResourceAccessType {
-            Read, Write, ReadWrite
-        };
 
-        struct ResourceAccess {
-            ResourceAccessType type;
-
-            union {
-                ImageState imageState;
-                BufferState bufferState;
-            } requiredState;
-        };
 
         enum class ResourceType {
             Image, // general usage image (any type)

@@ -44,7 +44,7 @@ void main()
     uv = mod(uv, 1.0);
 
     // Sample the environment map in the calculated direction
-    vec3 color = textureLod(irradinaceSampler, uv, 0.0).rgb;
+    vec3 color = textureLod(environmentSampler, uv, 0.0).rgb;
     // Tone mapping
 	color = Uncharted2Tonemap(color * exposure);
 	color = color * (1.0f / Uncharted2Tonemap(vec3(whitePoint)));
