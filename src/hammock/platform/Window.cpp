@@ -51,11 +51,9 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
         return 0;
     case WM_CHAR:
         // Pass the character to ImGui
-        Hmck::UserInterface::forwardInputCharacter((unsigned short)wParam);
         return 0;
     case WM_LBUTTONDOWN:
     {
-        Hmck::UserInterface::forwardButtonDownEvent(ImGuiMouseButton_Left, true);
         if (window)
         {
             window->buttonMap[MOUSE_LEFT] = Hmck::ButtonState::DOWN;
@@ -64,7 +62,6 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
     }
     case WM_RBUTTONDOWN:
     {
-        Hmck::UserInterface::forwardButtonDownEvent(ImGuiMouseButton_Right, true);
         if (window)
         {
             window->buttonMap[MOUSE_RIGHT] = Hmck::ButtonState::DOWN;
@@ -74,7 +71,6 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
     case WM_MBUTTONDOWN:
     {
         // mouse middle down
-        Hmck::UserInterface::forwardButtonDownEvent(ImGuiMouseButton_Middle, true);
         if (window)
         {
             window->buttonMap[MOUSE_MIDDLE] = Hmck::ButtonState::DOWN;
@@ -84,7 +80,6 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
     case WM_LBUTTONUP:
     {
         // mouse left up
-        Hmck::UserInterface::forwardButtonDownEvent(ImGuiMouseButton_Left, false);
         if (window)
         {
             window->buttonMap[MOUSE_LEFT] = Hmck::ButtonState::UP;
@@ -94,7 +89,6 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
     case WM_RBUTTONUP:
     {
         // mouse right up
-        Hmck::UserInterface::forwardButtonDownEvent(ImGuiMouseButton_Right, false);
         if (window)
         {
             window->buttonMap[MOUSE_RIGHT] = Hmck::ButtonState::UP;
@@ -104,7 +98,6 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
     case WM_MBUTTONUP:
     {
         // mouse middle up
-        Hmck::UserInterface::forwardButtonDownEvent(ImGuiMouseButton_Middle, false);
         if (window)
         {
             window->buttonMap[MOUSE_MIDDLE] = Hmck::ButtonState::UP;
@@ -117,7 +110,6 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
     {
         float xPos = static_cast<float>(GET_X_LPARAM(lParam));
         float yPos = static_cast<float>(GET_Y_LPARAM(lParam));
-        Hmck::UserInterface::forwardMousePosition(xPos, yPos);
         if (window)
             window->mousePosition = HmckVec2{xPos, yPos};
         return 0;
@@ -453,15 +445,12 @@ void hammock::Window::X11_processEvent(XEvent event)
         {
         case Button1:
             buttonMap[MOUSE_LEFT] = ButtonState::DOWN;
-            UserInterface::forwardButtonDownEvent(ImGuiMouseButton_Left, true);
             break;
         case Button2:
             buttonMap[MOUSE_MIDDLE] = ButtonState::DOWN;
-            UserInterface::forwardButtonDownEvent(ImGuiMouseButton_Right, true);
             break;
         case Button3:
             buttonMap[MOUSE_RIGHT] = ButtonState::DOWN;
-            UserInterface::forwardButtonDownEvent(ImGuiMouseButton_Middle, true);
             break;
         }
         break;
@@ -472,15 +461,12 @@ void hammock::Window::X11_processEvent(XEvent event)
         {
         case Button1:
             buttonMap[MOUSE_LEFT] = ButtonState::UP;
-            UserInterface::forwardButtonDownEvent(ImGuiMouseButton_Left, false);
             break;
         case Button2:
             buttonMap[MOUSE_MIDDLE] = ButtonState::UP;
-            UserInterface::forwardButtonDownEvent(ImGuiMouseButton_Right, false);
             break;
         case Button3:
             buttonMap[MOUSE_RIGHT] = ButtonState::UP;
-            UserInterface::forwardButtonDownEvent(ImGuiMouseButton_Middle, false);
             break;
         }
         break;
@@ -489,7 +475,6 @@ void hammock::Window::X11_processEvent(XEvent event)
     {
         float xPos = static_cast<float>(event.xmotion.x);
         float yPos = static_cast<float>(event.xmotion.y);
-        UserInterface::forwardMousePosition(xPos, yPos);
         mousePosition = HmckVec2{xPos, yPos};
         break;
     }
