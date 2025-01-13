@@ -9,6 +9,7 @@
 #include <memory>
 
 #include "hammock/core/Device.h"
+#include "hammock/core/RenderGraph.h"
 
 
 #define FB_COLOR_FORMAT VK_FORMAT_R8G8B8A8_UNORM
@@ -40,6 +41,25 @@ namespace hammock {
 
         [[nodiscard]] float extentAspectRatio() const {
             return static_cast<float>(swapChainExtent.width) / static_cast<float>(swapChainExtent.height);
+        }
+
+        [[nodiscard]] std::vector<rendergraph::ResourceRef> getSwapChainImageRefs() const {
+            std::vector<rendergraph::ResourceRef> refs{};
+
+            for (int i = 0; i < swapChainImages.size(); i++) {
+                rendergraph::ImageResourceRef ref{};
+                ref.image = swapChainImages[i];
+                ref.view = swapChainImageViews[i];
+
+                rendergraph::ImageDesc desc{};
+                desc.size = {1.0f, 1.0f};
+                desc.relativeSize = rendergraph::RelativeSize::SwapChainRelative;
+                desc.format = swapChainImageFormat;
+
+                ref.desc = desc;
+                refs.push_back({ref});
+            }
+            return refs;
         }
 
         VkFormat findDepthFormat() const;

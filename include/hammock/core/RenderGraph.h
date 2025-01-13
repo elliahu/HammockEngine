@@ -36,10 +36,10 @@ namespace hammock {
         struct ImageDesc {
             HmckVec2 size;
             RelativeSize relativeSize;
-            uint32_t channels = 0, depth = 1, layers = 1, mips = 1;
+            uint32_t channels = 4, depth = 1, layers = 1, mips = 1;
+            VkFormat format;
             VkImageLayout currentLayout;
             VkImageUsageFlags usage;
-            VkFormat format;
             VkImageType imageType;
             VkImageViewType imageViewType;
             VkImageUsageFlags imageUsageFlags;
@@ -86,7 +86,7 @@ namespace hammock {
             bool isExternal = false;
 
             // One handle per frame in flight
-            std::vector<ResourceRef> handles;
+            std::vector<ResourceRef> refs;
         };
 
         struct ResourceAccess {

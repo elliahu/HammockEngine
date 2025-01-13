@@ -25,8 +25,9 @@ namespace hammock {
 
         RenderContext &operator=(const RenderContext &) = delete;
 
-        [[nodiscard]] VkRenderPass getSwapChainRenderPass() const { return hmckSwapChain->getRenderPass(); }
-        [[nodiscard]] float getAspectRatio() const { return hmckSwapChain->extentAspectRatio(); }
+        [[nodiscard]] SwapChain* getSwapChain() const {return swapChain.get();};
+        [[nodiscard]] VkRenderPass getSwapChainRenderPass() const { return swapChain->getRenderPass(); }
+        [[nodiscard]] float getAspectRatio() const { return swapChain->extentAspectRatio(); }
         [[nodiscard]] bool isFrameInProgress() const { return isFrameStarted; }
 
 
@@ -63,7 +64,7 @@ namespace hammock {
 
         Window &window;
         Device &device;
-        std::unique_ptr<SwapChain> hmckSwapChain;
+        std::unique_ptr<SwapChain> swapChain;
         std::vector<VkCommandBuffer> commandBuffers;
 
         uint32_t currentImageIndex;

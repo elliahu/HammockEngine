@@ -43,13 +43,13 @@ void hammock::RenderContext::recreateSwapChain() {
     }
     vkDeviceWaitIdle(device.device());
 
-    if (hmckSwapChain == nullptr) {
-        hmckSwapChain = std::make_unique<SwapChain>(device, extent);
+    if (swapChain == nullptr) {
+        swapChain = std::make_unique<SwapChain>(device, extent);
     } else {
-        std::shared_ptr<SwapChain> oldSwapChain = std::move(hmckSwapChain);
-        hmckSwapChain = std::make_unique<SwapChain>(device, extent, oldSwapChain);
+        std::shared_ptr<SwapChain> oldSwapChain = std::move(swapChain);
+        swapChain = std::make_unique<SwapChain>(device, extent, oldSwapChain);
 
-        if (!oldSwapChain->compareSwapFormats(*hmckSwapChain.get())) {
+        if (!oldSwapChain->compareSwapFormats(*swapChain.get())) {
             throw std::runtime_error("Swapchain image (or detph) format has changed");
         }
     }
@@ -58,7 +58,7 @@ void hammock::RenderContext::recreateSwapChain() {
 VkCommandBuffer hammock::RenderContext::beginFrame() {
     assert(!isFrameStarted && "Cannot call beginFrame while already in progress");
 
-    auto result = hmckSwapChain->acquireNextImage(&currentImageIndex);
+    auto result = swapChain->acquireNextImage(&currentImageIndex);
 
     if (result == VK_ERROR_OUT_OF_DATE_KHR) {
         recreateSwapChain();
@@ -89,7 +89,7 @@ void hammock::RenderContext::endFrame() {
         throw std::runtime_error("failed to record command buffer");
     }
 
-    auto result = hmckSwapChain->submitCommandBuffers(&commandBuffer, &currentImageIndex);
+    auto result = swapChain->submitCommandBuffers(&commandBuffer, &currentImageIndex);
     if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR || window.wasWindowResized()) {
         // Window was resized (resolution was changed)
         window.resetWindowResizedFlag();
@@ -143,11 +143,11 @@ void hammock::RenderContext::beginSwapChainRenderPass(const VkCommandBuffer comm
 
     VkRenderPassBeginInfo renderPassInfo{};
     renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
-    renderPassInfo.renderPass = hmckSwapChain->getRenderPass();
-    renderPassInfo.framebuffer = hmckSwapChain->getFrameBuffer(currentImageIndex);
+    renderPassInfo.renderPass = swapChain->getRenderPass();
+    renderPassInfo.framebuffer = swapChain->getFrameBuffer(currentImageIndex);
 
     renderPassInfo.renderArea.offset = {0, 0};
-    renderPassInfo.renderArea.extent = hmckSwapChain->getSwapChainExtent();
+    renderPassInfo.renderArea.extent = swapChain->getSwapChainExtent();
 
     std::array<VkClearValue, 2> clearValues{};
     clearValues[0].color = HMCK_CLEAR_COLOR; // clear color
@@ -159,10 +159,10 @@ void hammock::RenderContext::beginSwapChainRenderPass(const VkCommandBuffer comm
     vkCmdBeginRenderPass(commandBuffer, &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
 
     VkViewport viewport = hammock::Init::viewport(
-        static_cast<float>(hmckSwapChain->getSwapChainExtent().width),
-        static_cast<float>(hmckSwapChain->getSwapChainExtent().height),
+        static_cast<float>(swapChain->getSwapChainExtent().width),
+        static_cast<float>(swapChain->getSwapChainExtent().height),
         0.0f, 1.0f);
-    VkRect2D scissor{{0, 0}, hmckSwapChain->getSwapChainExtent()};
+    VkRect2D scissor{{0, 0}, swapChain->getSwapChainExtent()};
     vkCmdSetViewport(commandBuffer, 0, 1, &viewport);
     vkCmdSetScissor(commandBuffer, 0, 1, &scissor);
 }

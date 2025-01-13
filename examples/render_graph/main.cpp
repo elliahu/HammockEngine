@@ -17,7 +17,7 @@ int main() {
     swap.name = "swap-image";
     swap.type = ResourceNode::Type::SwapChain;
     swap.isExternal = true; // this image is managed by swapchain
-    //swap.handles = context->getSwapChainImageRefs();  // TODO
+    swap.refs = context.getSwapChain()->getSwapChainImageRefs();
     graph->addResource(swap);
 
     ResourceNode depth;
@@ -28,7 +28,7 @@ int main() {
     RenderPassNode shadowPass;
     shadowPass.name = "shadow-pass";
     shadowPass.outputs.push_back({"depth-image"});
-    shadowPass.executeFunc = [this](VkCommandBuffer commandBuffer, uint32_t frameINdex) {
+    shadowPass.executeFunc = [&](VkCommandBuffer commandBuffer, uint32_t frameINdex) {
     };
     graph->addPass(shadowPass);
 
@@ -36,7 +36,7 @@ int main() {
     compositionPass.name = "composition-pass";
     compositionPass.inputs.push_back({"depth-image"});
     compositionPass.outputs.push_back({"swap-image"});
-    compositionPass.executeFunc = [this](VkCommandBuffer commandBuffer, uint32_t frameINdex) {
+    compositionPass.executeFunc = [&](VkCommandBuffer commandBuffer, uint32_t frameINdex) {
     };
     graph->addPass(compositionPass);
     graph->compile();
