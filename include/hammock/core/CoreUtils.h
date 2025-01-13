@@ -1,20 +1,201 @@
 #pragma once
-
-#include <cassert>
-#include <functional>
-#include <filesystem>
-#include <fstream>
+#include <cstdint>
+#include <cstdarg>
+#include <cstdio>
+#include <iostream>
+#include <stdexcept>
 #include <string>
-#include <random>
-#include <cmath>
-#include <memory>
-#include "hammock/core/HandmadeMath.h"
-
-#include "hammock/utils/Initializers.h"
-
+#include <cstdlib> // for abort
+#include <hammock/core/HandmadeMath.h>
+#include <hammock/utils/Initializers.h>
+#include "stb_image.h"
+#include <cassert>
 
 namespace hammock {
-    class Logger;
+    enum LogLevel {
+        LOG_LEVEL_DEBUG,
+        LOG_LEVEL_WARN,
+        LOG_LEVEL_ERROR
+    };
+
+    class Logger {
+    public:
+#ifdef NDEBUG
+        static inline LogLevel hmckMinLogLevel = LOG_LEVEL_ERROR;
+#else
+        static inline LogLevel hmckMinLogLevel = LOG_LEVEL_DEBUG;
+#endif
+
+        static void log(const LogLevel level, const char *format, ...) {
+            if (level >= hmckMinLogLevel) {
+                va_list args;
+                va_start(args, format);
+                vprintf(format, args);
+                va_end(args);
+            }
+        }
+    };
+
+    namespace AssertUtils {
+        // Behavior options for failed assertions
+        enum class AssertAction {
+            Abort,
+            Throw,
+            Log,
+        };
+
+        // Current action; can be set dynamically
+        inline AssertAction CurrentAction = AssertAction::Abort;
+
+        // Assert handler
+        inline void HandleAssert(const char *expr, const char *file, int line, const char *func,
+                                 const std::string &message) {
+            // Construct the debug message
+            std::string debugMessage = "[ASSERT FAILED]\n";
+            debugMessage += "Expression: " + std::string(expr) + "\n";
+            debugMessage += "File: " + std::string(file) + "\n";
+            debugMessage += "Line: " + std::to_string(line) + "\n";
+            debugMessage += "Function: " + std::string(func) + "\n";
+            if (!message.empty()) {
+                debugMessage += "Message: " + message + "\n";
+            }
+
+            switch (CurrentAction) {
+                case AssertAction::Abort:
+                    std::cerr << debugMessage << std::endl;
+                    std::abort();
+                case AssertAction::Throw:
+                    throw std::runtime_error(debugMessage);
+                case AssertAction::Log:
+                    // Replace with your logging system if needed
+                    std::cerr << debugMessage << std::endl;
+                    break;
+            }
+        }
+    } // namespace AssertUtils
+
+    // Custom assert macro
+#ifndef ASSERT
+#define ASSERT(expr, message)                                            \
+    do {                                                                 \
+        if (!(expr)) {                                                   \
+            AssertUtils::HandleAssert(#expr, __FILE__, __LINE__,         \
+            __PRETTY_FUNCTION__, message);     \
+        }                                                                \
+    } while (false)
+#endif
+
+    struct alignas(16) IntPadded {
+        int32_t value;
+        int32_t padding[3]; // Explicit padding to 16 bytes
+    };
+
+    struct alignas(16) FloatPadded {
+        float value;
+        float padding[3];
+    };
+
+    struct alignas(16) Vec3Padded {
+        HmckVec3 value;
+        float padding;
+    };
+
+    // Follows std140 alignment
+    struct alignas(16) GlobalDataBuffer {
+        static constexpr size_t MAX_MESHES = 256;
+
+        alignas(16) HmckVec4 baseColorFactors[MAX_MESHES]; // w is padding
+        alignas(16) HmckVec4 metallicRoughnessAlphaCutOffFactors[MAX_MESHES]; // w is padding
+
+        IntPadded baseColorTextureIndexes[MAX_MESHES];
+        IntPadded normalTextureIndexes[MAX_MESHES];
+        IntPadded metallicRoughnessTextureIndexes[MAX_MESHES];
+        IntPadded occlusionTextureIndexes[MAX_MESHES];
+        IntPadded visibilityFlags[MAX_MESHES];
+    };
+
+    // Projection buffer bound every frame
+    struct FrameDataBuffer {
+        HmckMat4 projectionMat{};
+        HmckMat4 viewMat{};
+        HmckMat4 inverseViewMat{};
+        HmckVec4 exposureGammaWhitePoint{4.5f, 1.0f, 11.0f};
+    };
+
+    // Push block pushed for each mesh
+    struct PushBlockDataBuffer {
+        HmckMat4 modelMat{};
+        uint32_t meshIndex = -1;
+    };
+
+    class NonCopyable {
+    protected:
+        // Protected default constructor and destructor
+        // Allows instantiation by derived classes, but not directly
+        NonCopyable() = default;
+
+        ~NonCopyable() = default;
+
+        // Deleted copy constructor and copy assignment operator
+        NonCopyable(const NonCopyable &) = delete;
+
+        NonCopyable &operator=(const NonCopyable &) = delete;
+    };
+
+    class ScopedMemory {
+    public:
+        // Constructor to take ownership of the pointer
+        explicit ScopedMemory(const void *ptr = nullptr)
+            : memory_(ptr) {
+        }
+
+        // Destructor automatically frees the memory
+        ~ScopedMemory() {
+            clear();
+        }
+
+        // Move constructor to allow transferring ownership
+        ScopedMemory(ScopedMemory &&other) noexcept
+            : memory_(other.memory_) {
+            other.memory_ = nullptr; // Release ownership from the source
+        }
+
+        // Move assignment operator for ownership transfer
+        ScopedMemory &operator=(ScopedMemory &&other) noexcept {
+            if (this != &other) {
+                clear(); // Free any existing memory
+                memory_ = other.memory_;
+                other.memory_ = nullptr; // Release ownership from the source
+            }
+            return *this;
+        }
+
+        // Deleted copy constructor and copy assignment to prevent copying
+        ScopedMemory(const ScopedMemory &) = delete;
+
+        ScopedMemory &operator=(const ScopedMemory &) = delete;
+
+        // Free the memory manually (if needed)
+        void clear() {
+            if (memory_) {
+                stbi_image_free(const_cast<void *>(memory_));
+                memory_ = nullptr;
+            }
+        }
+
+        // Retrieve the pointer
+        const void *get() const {
+            return memory_;
+        }
+
+        // Access the pointer with [] syntax (useful for arrays)
+        const void *operator[](size_t index) const {
+            return static_cast<const char *>(memory_) + index;
+        }
+
+    private:
+        const void *memory_; // Pointer to the managed memory
+    };
 
     // dark magic from: https://stackoverflow.com/a/57595105
     template<typename T, typename... Rest>
@@ -196,10 +377,31 @@ namespace hammock {
         return (size + alignment - 1) & ~(alignment - 1);
     }
 
+    inline bool isDepthFormat(VkFormat format){
+        std::vector<VkFormat> formats =
+        {
+            VK_FORMAT_D16_UNORM,
+            VK_FORMAT_X8_D24_UNORM_PACK32,
+            VK_FORMAT_D32_SFLOAT,
+            VK_FORMAT_D16_UNORM_S8_UINT,
+            VK_FORMAT_D24_UNORM_S8_UINT,
+            VK_FORMAT_D32_SFLOAT_S8_UINT,
+        };
+        return std::ranges::find(formats, format) != std::end(formats);
+    }
 
+    inline bool isStencilFormat(VkFormat format) {
+        std::vector<VkFormat> formats =
+        {
+            VK_FORMAT_S8_UINT,
+            VK_FORMAT_D16_UNORM_S8_UINT,
+            VK_FORMAT_D24_UNORM_S8_UINT,
+            VK_FORMAT_D32_SFLOAT_S8_UINT,
+        };
+        return std::ranges::find(formats, format) != std::end(formats);
+    }
 
-
-
-
-
-} // namespace Hmck
+    bool isDepthStencil(VkFormat format){
+        return (isDepthFormat(format) || isStencilFormat(format));
+    }
+}

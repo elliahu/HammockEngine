@@ -27,6 +27,7 @@ int main() {
 
     RenderPassNode shadowPass;
     shadowPass.name = "shadow-pass";
+    shadowPass.type = RenderPassNode::Type::Graphics;
     shadowPass.outputs.push_back({"depth-image"});
     shadowPass.executeFunc = [&](VkCommandBuffer commandBuffer, uint32_t frameINdex) {
     };
@@ -34,6 +35,7 @@ int main() {
 
     RenderPassNode compositionPass;
     compositionPass.name = "composition-pass";
+    shadowPass.type = RenderPassNode::Type::Graphics;
     compositionPass.inputs.push_back({"depth-image"});
     compositionPass.outputs.push_back({"swap-image"});
     compositionPass.executeFunc = [&](VkCommandBuffer commandBuffer, uint32_t frameINdex) {

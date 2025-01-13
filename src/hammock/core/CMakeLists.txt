@@ -8,6 +8,7 @@ set(CORE_SOURCES
         ${CMAKE_CURRENT_SOURCE_DIR}/VulkanInstance.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/VmaUsage.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/Resource.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/RenderGraph.cpp
         PARENT_SCOPE
 )
 
