@@ -15,5 +15,3 @@
 #include "RenderGraph.h"
 #include "RenderPass.h"
 #include "Resource.h"
-#include "Image.h"
-#include "Buffer.h"

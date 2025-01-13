@@ -7,17 +7,6 @@
 namespace hammock {
     namespace rendergraph {
 
-
-
-
-        enum class ResourceType {
-            Image, // general usage image (any type)
-            FramebufferAttachment, // spcialized image used as framebuffer attachment
-            SampledImage,   // image along with a sampler
-            Buffer
-        };
-
-
         template<typename T>
         class ResourceHandle {
             uint64_t uid;
@@ -53,7 +42,7 @@ namespace hammock {
 
 
         public:
-            virtual ~Resource() = default;
+            virtual ~Resource() = 0;
 
             virtual void load() = 0;
 
