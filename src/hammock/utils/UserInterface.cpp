@@ -1,7 +1,7 @@
 #include "hammock/utils/UserInterface.h"
 #include "hammock/core/GraphicsPipeline.h"
 #include "backends/imgui_impl_vulkan.h"
-#include "hammock/utils/Helpers.h"
+#include "hammock/core/CoreUtils.h"
 #include <deque>
 #include <string>
 

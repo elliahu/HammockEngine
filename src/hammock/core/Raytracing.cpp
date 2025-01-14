@@ -1,5 +1,5 @@
 #include "hammock/core/Raytracing.h"
-#include "hammock/utils/Helpers.h"
+#include "hammock/core/CoreUtils.h"
 
 uint64_t hammock::IRayTracingSupport::getBufferDeviceAddress(const Device &device, const VkBuffer buffer) const {
     VkBufferDeviceAddressInfoKHR bufferDeviceAI{};

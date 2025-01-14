@@ -401,7 +401,7 @@ namespace hammock {
         return std::ranges::find(formats, format) != std::end(formats);
     }
 
-    bool isDepthStencil(VkFormat format){
+    inline bool isDepthStencil(VkFormat format){
         return (isDepthFormat(format) || isStencilFormat(format));
     }
 }

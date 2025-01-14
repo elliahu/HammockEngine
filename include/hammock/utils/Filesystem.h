@@ -10,7 +10,7 @@
 #include <stb_image.h>
 #include <stb_image_write.h>
 
-#include "hammock/utils/Logger.h"
+#include "hammock/core/CoreUtils.h"
 
 namespace hammock{
     namespace Filesystem {

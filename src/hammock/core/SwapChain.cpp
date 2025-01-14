@@ -8,7 +8,6 @@
 #include <limits>
 #include <stdexcept>
 
-#include "hammock/utils/Helpers.h"
 
 namespace hammock {
     SwapChain::SwapChain(Device &deviceRef, const VkExtent2D extent)

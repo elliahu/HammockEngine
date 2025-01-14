@@ -3,7 +3,7 @@
 
 #include "hammock/core/GraphicsPipeline.h"
 #include "hammock/core/Framebuffer.h"
-#include "hammock/utils/Logger.h"
+#include "hammock/core/CoreUtils.h"
 #include "hammock/core/Shader.h"
 #include "hammock/utils/Filesystem.h"
 

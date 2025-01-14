@@ -1,15 +1,11 @@
 #pragma once
 
-// vulkan headers
 #include <vulkan/vulkan.h>
-
-// std lib headers
-#include <string>
 #include <vector>
 #include <memory>
 
 #include "hammock/core/Device.h"
-#include "hammock/core/RenderGraph.h"
+#include "hammock/core/Types.h"
 
 
 #define FB_COLOR_FORMAT VK_FORMAT_R8G8B8A8_UNORM
@@ -44,25 +40,29 @@ namespace hammock {
             return static_cast<float>(swapChainExtent.width) / static_cast<float>(swapChainExtent.height);
         }
 
-        [[nodiscard]] std::vector<rendergraph::ResourceRef> getSwapChainImageRefs() const {
-            std::vector<rendergraph::ResourceRef> refs{};
+        [[nodiscard]] std::vector<ResourceRef> getSwapChainImageRefs() const {
+            std::vector<ResourceRef> refs{};
 
             for (int i = 0; i < swapChainImages.size(); i++) {
-                rendergraph::ImageResourceRef ref{};
+                ImageResourceRef ref{};
                 ref.image = swapChainImages[i];
                 ref.view = swapChainImageViews[i];
-
-                refs.push_back({ref});
+                ref.currentLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+                refs.push_back(ResourceRef{ref});
             }
             return refs;
         }
 
-        [[nodiscard]] rendergraph::ImageDesc getSwapChainImageDesc() const {
-            rendergraph::ImageDesc desc{};
+        [[nodiscard]] ImageDesc getSwapChainImageDesc() const {
+            ImageDesc desc{};
             desc.size = {1.0f, 1.0f};
-            desc.relativeSize = rendergraph::RelativeSize::SwapChainRelative;
+            desc.relativeSize = RelativeSize::SwapChainRelative;
             desc.format = swapChainImageFormat;
+            return desc;
         }
+
+        // TODO getSwapChainDepthImageRefs
+        // TODO getSwapChainDepthImageDesc
 
         VkFormat findDepthFormat() const;
 

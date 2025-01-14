@@ -1,11 +1,10 @@
 #pragma once
 #include <functional>
-#include <hammock/utils/NonCopyable.h>
-
-#include "DeviceStorage.h"
+#include <hammock/core/CoreUtils.h>
+#include "hammock/core/Device.h"
 
 namespace hammock {
-    namespace rendergraph {
+    namespace experimental {
 
         template<typename T>
         class ResourceHandle {

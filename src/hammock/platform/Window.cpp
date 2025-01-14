@@ -1,6 +1,6 @@
 #include "hammock/platform/Window.h"
 
-#include "hammock/utils/Logger.h"
+#include "hammock/core/CoreUtils.h"
 #include "hammock/platform/Keycodes.h"
 #include "backends/imgui_impl_vulkan.h"
 #include "hammock/utils/UserInterface.h"

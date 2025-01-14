@@ -3,7 +3,7 @@
 #include <vulkan/vulkan.h>
 #include <memory>
 #include "hammock/core/Device.h"
-#include "hammock/utils/Helpers.h"
+#include "hammock/core/CoreUtils.h"
 
 namespace hammock {
 

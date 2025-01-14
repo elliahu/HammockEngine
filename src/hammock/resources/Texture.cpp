@@ -5,7 +5,7 @@
 #include <string.h>
 
 #include "hammock/resources/Buffer.h"
-#include "hammock/utils/Logger.h"
+#include "hammock/core/CoreUtils.h"
 
 
 hammock::ITexture::~ITexture() {

@@ -2,20 +2,10 @@
 
 
 #include <cassert>
-#include <functional>
-#include <filesystem>
 #include <fstream>
-#include <iostream>
 #include <string>
 #include <random>
 #include <cmath>
-#include <memory>
-#include <stb_image.h>
-#include <stb_image_write.h>
-
-#include "hammock/utils/Logger.h"
-#include "hammock/resources/Descriptors.h"
-#include "hammock/resources/Buffer.h"
 #include "hammock/core/HandmadeMath.h"
 
 namespace hammock {

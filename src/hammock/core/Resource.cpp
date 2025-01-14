@@ -1,6 +1,8 @@
 #include "hammock/core/Resource.h"
 
-hammock::rendergraph::ResourceManager::~ResourceManager() {
+#include <chrono>
+
+hammock::experimental::ResourceManager::~ResourceManager() {
     for (auto& resource : resources) {
         if (resource.second->isResident()) {
             resource.second->unload();
@@ -9,7 +11,7 @@ hammock::rendergraph::ResourceManager::~ResourceManager() {
     resources.clear();
 }
 
-void hammock::rendergraph::ResourceManager::releaseResource(uint64_t id) {
+void hammock::experimental::ResourceManager::releaseResource(uint64_t id) {
     auto it = resources.find(id);
     if (it != resources.end()) {
         if (it->second->isResident()) {
@@ -21,7 +23,7 @@ void hammock::rendergraph::ResourceManager::releaseResource(uint64_t id) {
     }
 }
 
-uint64_t hammock::rendergraph::ResourceManager::getCurrentTimestamp() {
+uint64_t hammock::experimental::ResourceManager::getCurrentTimestamp() {
     // Get the current time point
     auto now = std::chrono::system_clock::now();
     // Convert to duration since epoch in milliseconds
@@ -30,7 +32,7 @@ uint64_t hammock::rendergraph::ResourceManager::getCurrentTimestamp() {
     return static_cast<uint64_t>(duration.count());
 }
 
-void hammock::rendergraph::ResourceManager::evictResources(VkDeviceSize requiredSize) {
+void hammock::experimental::ResourceManager::evictResources(VkDeviceSize requiredSize) {
     // Sort resources by last used time and use count
     std::vector<std::pair<uint64_t, CacheEntry> > sortedCache;
     for (const auto &entry: resourceCache) {

@@ -1,11 +1,11 @@
 #include "hammock/core/RenderGraph.h"
 
-void hammock::rendergraph::RenderGraph::createResource(ResourceNode &resourceNode, ResourceAccess& access) {
+void hammock::RenderGraph::createResource(ResourceNode &resourceNode, ResourceAccess& access) {
     ASSERT(resourceNode.type != ResourceNode::Type::SwapChain,
-           "RenderGraph::createResource sanity check: Cannot create resource for SwapChain. This should not happen.")
+           "Cannot create resource for SwapChain. This should not happen.")
     ;
     ASSERT(resourceNode.refs.empty(),
-           "RenderGraph::createResource sanity check: Resource node contains resource refs. Cannot create resource for node that already contains refs.")
+           "Resource node contains resource refs. Cannot create resource for node that already contains refs.")
     ;
 
 
@@ -17,8 +17,8 @@ void hammock::rendergraph::RenderGraph::createResource(ResourceNode &resourceNod
 
     // Check for resource type
     if (resourceNode.type == ResourceNode::Type::Buffer) {
-        ASSERT(std::holds_alternative<ImageDesc>(resourceNode.desc),
-               "RenderGraph::createResource sanity check: descVariant missmatch.");
+        ASSERT(std::holds_alternative<BufferDesc>(resourceNode.desc),
+               "Buffer node without buffer desc");
         auto desc = std::get<BufferDesc>(resourceNode.desc);
 
         // create actual resources and corresponding refs
@@ -26,8 +26,8 @@ void hammock::rendergraph::RenderGraph::createResource(ResourceNode &resourceNod
             createBuffer(resourceNode.refs[i], desc);
         }
     } else if (resourceNode.type == ResourceNode::Type::Image) {
-        ASSERT(std::holds_alternative<BufferDesc>(resourceNode.desc),
-               "RenderGraph::createResource sanity check: descVariant missmatch.");
+        ASSERT(std::holds_alternative<ImageDesc>(resourceNode.desc),
+               "Image node without image desc");
 
         auto desc = std::get<ImageDesc>(resourceNode.desc);
         // create actual resources and corresponding refs
@@ -37,7 +37,7 @@ void hammock::rendergraph::RenderGraph::createResource(ResourceNode &resourceNod
     }
 }
 
-void hammock::rendergraph::RenderGraph::createBuffer(ResourceRef &resourceRef, BufferDesc &bufferDesc) const {
+void hammock::RenderGraph::createBuffer(ResourceRef &resourceRef, BufferDesc &bufferDesc) const {
     VkBufferCreateInfo bufferInfo{};
     bufferInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
     bufferInfo.size = alignSize(bufferDesc.instanceSize, bufferDesc.minOffsetAlignment) * bufferDesc.
@@ -55,7 +55,7 @@ void hammock::rendergraph::RenderGraph::createBuffer(ResourceRef &resourceRef, B
     resourceRef.resource = ref;
 }
 
-void hammock::rendergraph::RenderGraph::createImage(ResourceRef &resourceRef, ImageDesc &desc, ResourceAccess& access) const {
+void hammock::RenderGraph::createImage(ResourceRef &resourceRef, ImageDesc &desc, ResourceAccess& access) const {
     ImageResourceRef ref{};
 
     // Create the VkImage
@@ -156,9 +156,10 @@ void hammock::rendergraph::RenderGraph::createImage(ResourceRef &resourceRef, Im
         ref.attachmentDesc.finalLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
     }
 
+    resourceRef.resource = ref;
 }
 
-void hammock::rendergraph::RenderGraph::destroyTransientResources() {
+void hammock::RenderGraph::destroyTransientResources() {
     for (auto& resource : resources) {
         auto& resourceNode = resource.second;
         if (resourceNode.isTransient) {
@@ -167,28 +168,28 @@ void hammock::rendergraph::RenderGraph::destroyTransientResources() {
     }
 }
 
-void hammock::rendergraph::RenderGraph::destroyResource(ResourceNode &resourceNode) const {
+void hammock::RenderGraph::destroyResource(ResourceNode &resourceNode) const {
     // We need to destroy each ResourceRef of the node
     for (auto &resourceRef: resourceNode.refs) {
         // Check for resource type
         if (resourceNode.type == ResourceNode::Type::Buffer) {
             ASSERT(std::holds_alternative<BufferResourceRef>(resourceRef.resource),
-                   "~RenderGraph sanity check: Node of type Buffer does not hold BufferResourceRef.");
+                   "Node of type Buffer does not hold BufferResourceRef.");
             auto bufferRef = std::get<BufferResourceRef>(resourceRef.resource);
 
             ASSERT(bufferRef.buffer != VK_NULL_HANDLE,
-                   "~RenderGraph sanity check: buffer handle is null. This should not happen.");
+                   "buffer handle is null. This should not happen.");
             ASSERT(bufferRef.allocation != VK_NULL_HANDLE,
-                   "~RenderGraph sanity check: buffer allocation is null. This should not happen.");
+                   "buffer allocation is null. This should not happen.");
 
             vmaDestroyBuffer(device.allocator(), bufferRef.buffer, bufferRef.allocation);
         } else if (resourceNode.type == ResourceNode::Type::Image) {
             ASSERT(std::holds_alternative<ImageResourceRef>(resourceRef.resource),
-                   "~RenderGraph sanity check: Node of type Image does not hold ImageResourceRef.");
+                   "Node of type Image does not hold ImageResourceRef.");
             auto imageRef = std::get<ImageResourceRef>(resourceRef.resource);
 
             ASSERT(imageRef.view != VK_NULL_HANDLE,
-                   "~RenderGraph sanity check: Image view is null. This should not happen.");
+                   "Image view is null. This should not happen.");
             vkDestroyImageView(device.device(), imageRef.view, nullptr);
 
             // Sampler is optional
@@ -197,9 +198,9 @@ void hammock::rendergraph::RenderGraph::destroyResource(ResourceNode &resourceNo
             }
 
             ASSERT(imageRef.image != VK_NULL_HANDLE,
-                   "~RenderGraph sanity check: Image is null. This should not happen.");
+                   "Image is null. This should not happen.");
             ASSERT(imageRef.allocation != VK_NULL_HANDLE,
-                   "~RenderGraph sanity check: Image allocation is null. This should not happen.");
+                   "Image allocation is null. This should not happen.");
             vmaDestroyImage(device.allocator(), imageRef.image, imageRef.allocation);
         }
     }

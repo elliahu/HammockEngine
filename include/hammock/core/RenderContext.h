@@ -7,7 +7,6 @@
 #include "hammock/platform/Window.h"
 #include "hammock/core/Device.h"
 #include "hammock/core/SwapChain.h"
-#include "hammock/utils/UserInterface.h"
 #include "hammock/core/Framebuffer.h"
 
 // black clear color

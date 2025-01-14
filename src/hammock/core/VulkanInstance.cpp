@@ -1,6 +1,5 @@
 #include "hammock/core/VulkanInstance.h"
-#include "hammock/utils/Logger.h"
-
+#include "hammock/core/CoreUtils.h"
 #include <iostream>
 #include <stdexcept>
 #include <string.h>

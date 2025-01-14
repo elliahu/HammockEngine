@@ -3,10 +3,11 @@
 #include <tiny_gltf.h>
 
 #include "hammock/scene/Geometry.h"
-#include "hammock/utils/Logger.h"
+#include "hammock/core/CoreUtils.h"
 #include "hammock/scene/Vertex.h"
 #include "tiny_obj_loader.h"
 #include <algorithm>
+#include <functional>
 
 
 namespace hammock {
