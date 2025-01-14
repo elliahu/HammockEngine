@@ -1,12 +1,13 @@
 #pragma once
 #include <algorithm>
+#include <array>
 #include <iterator>
 #include <vector>
 #include <cassert>
 #include <vulkan/vulkan.h>
 
 #include "Device.h"
-#include "hammock/utils/Helpers.h"
+#include "hammock/core/CoreUtils.h"
 
 #define VK_FLAGS_NONE 0
 
@@ -377,7 +378,6 @@ namespace hammock {
 
             // Use subpass dependencies for attachment layout transitions
             std::array<VkSubpassDependency, 2> dependencies{};
-
             dependencies[0].srcSubpass = VK_SUBPASS_EXTERNAL;
             dependencies[0].dstSubpass = 0;
             dependencies[0].srcStageMask = VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT;

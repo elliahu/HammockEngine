@@ -35,6 +35,7 @@ namespace hammock {
         [[nodiscard]] VkImageView getImageView(const int index) const { return swapChainImageViews[index]; }
         [[nodiscard]] size_t imageCount() const { return swapChainImages.size(); }
         [[nodiscard]] VkFormat getSwapChainImageFormat() const { return swapChainImageFormat; }
+        [[nodiscard]] VkFormat getSwapChainDepthFormat() const { return swapChainDepthFormat; }
         [[nodiscard]] VkExtent2D getSwapChainExtent() const { return swapChainExtent; }
         [[nodiscard]] uint32_t width() const { return swapChainExtent.width; }
         [[nodiscard]] uint32_t height() const { return swapChainExtent.height; }
@@ -51,15 +52,16 @@ namespace hammock {
                 ref.image = swapChainImages[i];
                 ref.view = swapChainImageViews[i];
 
-                rendergraph::ImageDesc desc{};
-                desc.size = {1.0f, 1.0f};
-                desc.relativeSize = rendergraph::RelativeSize::SwapChainRelative;
-                desc.format = swapChainImageFormat;
-
-                ref.desc = desc;
                 refs.push_back({ref});
             }
             return refs;
+        }
+
+        [[nodiscard]] rendergraph::ImageDesc getSwapChainImageDesc() const {
+            rendergraph::ImageDesc desc{};
+            desc.size = {1.0f, 1.0f};
+            desc.relativeSize = rendergraph::RelativeSize::SwapChainRelative;
+            desc.format = swapChainImageFormat;
         }
 
         VkFormat findDepthFormat() const;

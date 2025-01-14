@@ -1,7 +1,6 @@
 #include "hammock/core/RenderGraph.h"
 
-void hammock::rendergraph::RenderGraph::createResource(ResourceNode &resourceNode,
-    std::variant<BufferDesc, ImageDesc> descVariant) {
+void hammock::rendergraph::RenderGraph::createResource(ResourceNode &resourceNode, ResourceAccess& access) {
     ASSERT(resourceNode.type != ResourceNode::Type::SwapChain,
            "RenderGraph::createResource sanity check: Cannot create resource for SwapChain. This should not happen.")
     ;
@@ -18,22 +17,22 @@ void hammock::rendergraph::RenderGraph::createResource(ResourceNode &resourceNod
 
     // Check for resource type
     if (resourceNode.type == ResourceNode::Type::Buffer) {
-        ASSERT(std::holds_alternative<ImageDesc>(descVariant),
+        ASSERT(std::holds_alternative<ImageDesc>(resourceNode.desc),
                "RenderGraph::createResource sanity check: descVariant missmatch.");
-        auto desc = std::get<BufferDesc>(descVariant);
+        auto desc = std::get<BufferDesc>(resourceNode.desc);
 
         // create actual resources and corresponding refs
         for (int i = 0; i < resourceNode.refs.size(); ++i) {
             createBuffer(resourceNode.refs[i], desc);
         }
     } else if (resourceNode.type == ResourceNode::Type::Image) {
-        ASSERT(std::holds_alternative<BufferDesc>(descVariant),
+        ASSERT(std::holds_alternative<BufferDesc>(resourceNode.desc),
                "RenderGraph::createResource sanity check: descVariant missmatch.");
 
-        auto desc = std::get<ImageDesc>(descVariant);
+        auto desc = std::get<ImageDesc>(resourceNode.desc);
         // create actual resources and corresponding refs
         for (int i = 0; i < resourceNode.refs.size(); ++i) {
-            createImage(resourceNode.refs[i], desc);
+            createImage(resourceNode.refs[i], desc, access);
         }
     }
 }
@@ -56,15 +55,15 @@ void hammock::rendergraph::RenderGraph::createBuffer(ResourceRef &resourceRef, B
     resourceRef.resource = ref;
 }
 
-void hammock::rendergraph::RenderGraph::createImage(ResourceRef &resourceRef, ImageDesc &desc) const {
+void hammock::rendergraph::RenderGraph::createImage(ResourceRef &resourceRef, ImageDesc &desc, ResourceAccess& access) const {
     ImageResourceRef ref{};
 
     // Create the VkImage
     VkImageCreateInfo imageInfo{};
     imageInfo.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
     imageInfo.imageType = desc.imageType;
-    imageInfo.extent.width = desc.width;
-    imageInfo.extent.height = desc.height;
+    imageInfo.extent.width = static_cast<uint32_t>(static_cast<float>(extent.width) * desc.size.X);
+    imageInfo.extent.height = static_cast<uint32_t>(static_cast<float>(extent.height) * desc.size.Y);
     imageInfo.extent.depth = desc.depth;
     imageInfo.mipLevels = desc.mips;
     imageInfo.arrayLayers = desc.layers;
@@ -143,8 +142,8 @@ void hammock::rendergraph::RenderGraph::createImage(ResourceRef &resourceRef, Im
     // Fill attachment description
     ref.attachmentDesc = {};
     ref.attachmentDesc.samples = VK_SAMPLE_COUNT_1_BIT;
-    ref.attachmentDesc.loadOp = desc.loadOp;
-    ref.attachmentDesc.storeOp = desc.storeOp;
+    ref.attachmentDesc.loadOp = access.loadOp;
+    ref.attachmentDesc.storeOp = access.storeOp;
     ref.attachmentDesc.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
     ref.attachmentDesc.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
     ref.attachmentDesc.format = desc.format;

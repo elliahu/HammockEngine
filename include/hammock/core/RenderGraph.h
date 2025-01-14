@@ -27,21 +27,27 @@ namespace hammock {
         struct BufferResourceRef {
             VkBuffer buffer;
             VmaAllocation allocation;
-            BufferDesc desc;
+        };
+
+        /**
+         * Describes the base for the relative size
+         */
+        enum class RelativeSize {
+            SwapChainRelative,
+            FrameBufferRelative,
         };
 
         /**
         * Describes general image.
         */
         struct ImageDesc {
-            uint32_t width, height, channels = 4, depth = 1, layers = 1, mips = 1;
+            HmckVec2 size{};
+            RelativeSize relativeSize = RelativeSize::SwapChainRelative;
+            uint32_t channels = 4, depth = 1, layers = 1, mips = 1;
             VkFormat format;
             VkImageUsageFlags usage;
-            VkImageType imageType;
-            VkImageViewType imageViewType;
-            VkImageUsageFlags imageUsageFlags;
-            VkAttachmentLoadOp loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
-            VkAttachmentStoreOp storeOp = VK_ATTACHMENT_STORE_OP_STORE;
+            VkImageType imageType = VK_IMAGE_TYPE_2D;
+            VkImageViewType imageViewType = VK_IMAGE_VIEW_TYPE_2D;
             bool createSampler = true;
             VkFilter filter = VK_FILTER_LINEAR;
             VkSamplerAddressMode addressMode = VK_SAMPLER_ADDRESS_MODE_REPEAT;
@@ -59,7 +65,6 @@ namespace hammock {
             VkSampler sampler;
             VmaAllocation allocation;
             VkImageLayout currentLayout;
-            ImageDesc desc;
             VkAttachmentDescription attachmentDesc;
         };
 
@@ -72,7 +77,6 @@ namespace hammock {
             std::variant<BufferResourceRef, ImageResourceRef> resource;
         };
 
-
         /**
          * RenderGraph node representing a resource
          */
@@ -83,6 +87,8 @@ namespace hammock {
                 SwapChain
                 // Special type of image. If resource is SwapChain, it is the final output resource that gets presented.
             } type;
+
+            std::variant<BufferDesc, ImageDesc> desc;
 
             // Name is used for lookup
             std::string name;
@@ -104,20 +110,28 @@ namespace hammock {
         struct ResourceAccess {
             std::string resourceName;
             VkImageLayout requiredLayout;
-            VkAccessFlags accessFlags;
-            VkPipelineStageFlags stageFlags;
+            VkAttachmentLoadOp loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
+            VkAttachmentStoreOp storeOp = VK_ATTACHMENT_STORE_OP_STORE;
+            VkPipelineStageFlags stageFlags = VK_PIPELINE_STAGE_ALL_COMMANDS_BIT;
         };
 
+        struct RenderPassContext {
+            VkRenderPass renderPass;
+            VkCommandBuffer commandBuffer;
+            uint32_t frameIndex;
+        };
 
         /**
          * RenderGraph node representing a render pass
          */
         struct RenderPassNode {
             enum class Type {
-                Graphics, // Represents a pass that draws into some image
-                Compute, // Represents a compute pass
-                Transfer
+                // Represents a pass that draws into some image
+                Graphics,
+                // Represents a compute pass
+                Compute,
                 // Represents a transfer pass - data is moved from one location to another (eg. host -> device or device -> host)
+                Transfer
             } type; // Type of the pass
 
             std::string name; // Name of the pass for debug purposes and lookup
@@ -173,6 +187,10 @@ namespace hammock {
                     // Get the image reference for the current frame
                     ImageResourceRef &ref = std::get<ImageResourceRef>(node.refs[frameIndex].resource);
 
+                    ASSERT(std::holds_alternative<ImageDesc>(node.desc),
+                           "Barrier::apply sanity check: Node is image node yet does not hold image desc.");
+                    ImageDesc &desc = std::get<ImageDesc>(node.desc);
+
                     // Skip if no transition is needed, this should already be checked but anyway...
                     if (ref.currentLayout == access.requiredLayout) {
                         return;
@@ -189,13 +207,13 @@ namespace hammock {
 
                     // Define image subresource range
                     imageBarrier.subresourceRange.aspectMask =
-                    isDepthStencil(ref.desc.format)
-                        ? VK_IMAGE_ASPECT_DEPTH_BIT
-                        : VK_IMAGE_ASPECT_COLOR_BIT;
+                            isDepthStencil(desc.format)
+                                ? VK_IMAGE_ASPECT_DEPTH_BIT
+                                : VK_IMAGE_ASPECT_COLOR_BIT;
                     imageBarrier.subresourceRange.baseMipLevel = 0;
-                    imageBarrier.subresourceRange.levelCount = ref.desc.mips;
+                    imageBarrier.subresourceRange.levelCount = desc.mips;
                     imageBarrier.subresourceRange.baseArrayLayer = 0;
-                    imageBarrier.subresourceRange.layerCount = ref.desc.layers;
+                    imageBarrier.subresourceRange.layerCount = desc.layers;
 
                     // Set access masks based on layout transitions
                     switch (ref.currentLayout) {
@@ -237,7 +255,7 @@ namespace hammock {
 
                     // Issue the pipeline barrier command
                     vkCmdPipelineBarrier(
-                        commandBuffer,  // commandBuffer
+                        commandBuffer, // commandBuffer
                         access.stageFlags, // srcStageMask
                         access.stageFlags, // dstStageMask
                         0, // dependencyFlags
@@ -262,18 +280,24 @@ namespace hammock {
          */
         class RenderGraph {
             Device &device;
-            uint32_t maxFramesInFlight; // Maximal numer of frames that GPU works on concurrently
-            std::unordered_map<std::string, ResourceNode> resources; // Holds all the resources
-            std::vector<RenderPassNode> passes; // Holds all the render passes
-            std::vector<uint32_t> optimizedOrderOfPasses;
+            // Maximal numer of frames that GPU works on concurrently
+            uint32_t maxFramesInFlight;
+            // Holds all the resources
+            std::unordered_map<std::string, ResourceNode> resources;
+            // Holds all the render passes
+            std::vector<RenderPassNode> passes;
             // Array of indexes into list of passes. Order is optimized by the optimizer.
-            uint32_t rootPass = 0; // Pass from which the rendering starts (top of the graph)
+            std::vector<uint32_t> optimizedOrderOfPasses;
+            // Pass from which the rendering starts (top of the graph)
+            uint32_t rootPass = 0;
+            // SwapChain extent
+            VkExtent2D extent;
 
             /**
              * Creates a resource for specific node
              * @param resourceNode Node for which to create a resource
              */
-            void createResource(ResourceNode &resourceNode, std::variant<BufferDesc, ImageDesc> descVariant);
+            void createResource(ResourceNode &resourceNode, ResourceAccess &access);
 
             /**
              *  Creates a buffer with a ref
@@ -287,7 +311,7 @@ namespace hammock {
              * @param resourceRef ResourceRef for resource to be created
              * @param imageDesc Desc struct that describes the image to be created
              */
-            void createImage(ResourceRef &resourceRef, ImageDesc &desc) const;
+            void createImage(ResourceRef &resourceRef, ImageDesc &desc, ResourceAccess &access) const;
 
             /**
              * Loops through resources and destroys those that are transient. This should be called at the end of a frame
@@ -301,8 +325,8 @@ namespace hammock {
             void destroyResource(ResourceNode &resourceNode) const;
 
         public:
-            RenderGraph(Device &device, uint32_t maxFramesInFlight): device(device),
-                                                                     maxFramesInFlight(maxFramesInFlight) {
+            RenderGraph(Device &device, VkExtent2D extent, uint32_t maxFramesInFlight): device(device), extent(extent),
+                maxFramesInFlight(maxFramesInFlight) {
             }
 
             ~RenderGraph() {
@@ -354,12 +378,23 @@ namespace hammock {
                 ASSERT(optimizedOrderOfPasses.size() == passes.size(),
                        "RenderGraph::execute sanity check: RenderPass queue size don't match. This should not happen.");
 
+                // Loop over passes in the optimized order
                 for (const auto &passIndex: optimizedOrderOfPasses) {
+                    ASSERT(
+                        std::find(optimizedOrderOfPasses.begin(),optimizedOrderOfPasses.end(), passIndex) !=
+                        optimizedOrderOfPasses.end(),
+                        "RenderGraph::execute sanity check: Could not find the pass based of index. This should not happen")
+                    ;
                     RenderPassNode &pass = passes[passIndex];
 
                     // Check for necessary transitions of input resources
                     for (auto &access: pass.inputs) {
+                        ASSERT(resources.find(access.resourceName) != resources.end(),
+                               "RenderGraph::execute sanity check: Could not find the input");
+
                         ResourceNode &resourceNode = resources[access.resourceName];
+
+                        // We do not allow on-the-fly creation of input resources
 
                         // Apply barrier if it is needed
                         if (Barrier barrier(resourceNode, access, cmd, frameIndex); barrier.isNeeded()) {
@@ -368,9 +403,19 @@ namespace hammock {
                     }
 
                     // Check for necessary transitions of output resources
+                    // If the resource was just created we need to transform it into correct layout
                     // TODO this might need some adjustments
                     for (auto &access: pass.outputs) {
+                        ASSERT(resources.find(access.resourceName) != resources.end(),
+                               "RenderGraph::execute sanity check: Could not find the output");
                         ResourceNode &resourceNode = resources[access.resourceName];
+
+                        // Check if the node contains refs to resources
+                        if (resourceNode.refs.empty()) {
+                            // Resource node does not contain resource refs
+                            // That means this is first time using this resource and needs to be created
+                            createResource(resourceNode, access);
+                        }
 
                         // Apply barrier if it is needed
                         if (Barrier barrier(resourceNode, access, cmd, frameIndex); barrier.isNeeded()) {
