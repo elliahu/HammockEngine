@@ -7,6 +7,8 @@
 #include <cassert>
 #include <variant>
 
+#include "hammock/core/RenderContext.h"
+
 
 namespace hammock {
     namespace rendergraph {
@@ -279,7 +281,10 @@ namespace hammock {
          *  TODO support for Read Modify Write - render pass writes and reads from the same resource
          */
         class RenderGraph {
+            // Vulkan device
             Device &device;
+            // Rendering context
+            RenderContext &renderContext;
             // Maximal numer of frames that GPU works on concurrently
             uint32_t maxFramesInFlight;
             // Holds all the resources
@@ -325,8 +330,9 @@ namespace hammock {
             void destroyResource(ResourceNode &resourceNode) const;
 
         public:
-            RenderGraph(Device &device, VkExtent2D extent, uint32_t maxFramesInFlight): device(device), extent(extent),
-                maxFramesInFlight(maxFramesInFlight) {
+            RenderGraph(Device &device, RenderContext &context): device(device), renderContext(context),
+                                                                 extent(context.getSwapChain()->getSwapChainExtent()),
+                                                                 maxFramesInFlight(SwapChain::MAX_FRAMES_IN_FLIGHT) {
             }
 
             ~RenderGraph() {
@@ -374,52 +380,58 @@ namespace hammock {
              * @param cmd CommandBuffer to which the render calls will be recorded
              * @param frameIndex Index of the current frame.This is used to identify which resource ref should be used of the resource node is buffered.
              */
-            void execute(VkCommandBuffer cmd, uint32_t frameIndex) {
+            void execute() {
                 ASSERT(optimizedOrderOfPasses.size() == passes.size(),
                        "RenderGraph::execute sanity check: RenderPass queue size don't match. This should not happen.");
 
-                // Loop over passes in the optimized order
-                for (const auto &passIndex: optimizedOrderOfPasses) {
-                    ASSERT(
-                        std::find(optimizedOrderOfPasses.begin(),optimizedOrderOfPasses.end(), passIndex) !=
-                        optimizedOrderOfPasses.end(),
-                        "RenderGraph::execute sanity check: Could not find the pass based of index. This should not happen")
-                    ;
-                    RenderPassNode &pass = passes[passIndex];
+                // Begin frame by creating master command buffer
+                if (VkCommandBuffer cmd = renderContext.beginFrame()) {
 
-                    // Check for necessary transitions of input resources
-                    for (auto &access: pass.inputs) {
-                        ASSERT(resources.find(access.resourceName) != resources.end(),
-                               "RenderGraph::execute sanity check: Could not find the input");
+                    // Get the frame index. This is used to select buffered refs
+                    uint32_t frameIndex = renderContext.getFrameIndex();
 
-                        ResourceNode &resourceNode = resources[access.resourceName];
+                    // Loop over passes in the optimized order
+                    for (const auto &passIndex: optimizedOrderOfPasses) {
+                        ASSERT(
+                            std::find(optimizedOrderOfPasses.begin(),optimizedOrderOfPasses.end(), passIndex) !=
+                            optimizedOrderOfPasses.end(),
+                            "RenderGraph::execute sanity check: Could not find the pass based of index. This should not happen")
+                        ;
+                        RenderPassNode &pass = passes[passIndex];
 
-                        // We do not allow on-the-fly creation of input resources
+                        // Check for necessary transitions of input resources
+                        for (auto &access: pass.inputs) {
+                            ASSERT(resources.find(access.resourceName) != resources.end(),
+                                   "RenderGraph::execute sanity check: Could not find the input");
 
-                        // Apply barrier if it is needed
-                        if (Barrier barrier(resourceNode, access, cmd, frameIndex); barrier.isNeeded()) {
-                            barrier.apply();
-                        }
-                    }
+                            ResourceNode &resourceNode = resources[access.resourceName];
 
-                    // Check for necessary transitions of output resources
-                    // If the resource was just created we need to transform it into correct layout
-                    // TODO this might need some adjustments
-                    for (auto &access: pass.outputs) {
-                        ASSERT(resources.find(access.resourceName) != resources.end(),
-                               "RenderGraph::execute sanity check: Could not find the output");
-                        ResourceNode &resourceNode = resources[access.resourceName];
+                            // We do not allow on-the-fly creation of input resources
 
-                        // Check if the node contains refs to resources
-                        if (resourceNode.refs.empty()) {
-                            // Resource node does not contain resource refs
-                            // That means this is first time using this resource and needs to be created
-                            createResource(resourceNode, access);
+                            // Apply barrier if it is needed
+                            if (Barrier barrier(resourceNode, access, cmd, frameIndex); barrier.isNeeded()) {
+                                barrier.apply();
+                            }
                         }
 
-                        // Apply barrier if it is needed
-                        if (Barrier barrier(resourceNode, access, cmd, frameIndex); barrier.isNeeded()) {
-                            barrier.apply();
+                        // Check for necessary transitions of output resources
+                        // If the resource was just created we need to transform it into correct layout
+                        for (auto &access: pass.outputs) {
+                            ASSERT(resources.find(access.resourceName) != resources.end(),
+                                   "RenderGraph::execute sanity check: Could not find the output");
+                            ResourceNode &resourceNode = resources[access.resourceName];
+
+                            // Check if the node contains refs to resources
+                            if (resourceNode.refs.empty()) {
+                                // Resource node does not contain resource refs
+                                // That means this is first time using this resource and needs to be created
+                                createResource(resourceNode, access);
+                            }
+
+                            // Apply barrier if it is needed
+                            if (Barrier barrier(resourceNode, access, cmd, frameIndex); barrier.isNeeded()) {
+                                barrier.apply();
+                            }
                         }
                     }
                 }

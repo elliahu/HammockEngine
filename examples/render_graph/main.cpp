@@ -9,9 +9,10 @@ int main() {
     hammock::Window window{instance, "Render Graph", 1920, 1080};
     Device device{instance, window.getSurface()};
     DeviceStorage storage{device};
+    // TODO decouple context and window, this is totaly wrong
     RenderContext context{window, device};
 
-    std::unique_ptr<RenderGraph> graph = std::make_unique<RenderGraph>(device, context.getSwapChain()->getSwapChainExtent(), SwapChain::MAX_FRAMES_IN_FLIGHT);
+    std::unique_ptr<RenderGraph> graph = std::make_unique<RenderGraph>(device, context);
 
     ResourceNode swap;
     swap.name = "swap-image";
@@ -60,13 +61,7 @@ int main() {
     while (!window.shouldClose()) {
         window.pollEvents();
 
-        if (VkCommandBuffer cmd = context.beginFrame()) {
-            uint32_t frameIndex = context.getFrameIndex();
-
-            graph->execute(cmd, frameIndex);
-
-            context.endFrame();
-        }
+        graph->execute();
     }
     device.waitIdle();
 }
