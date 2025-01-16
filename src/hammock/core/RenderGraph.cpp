@@ -19,7 +19,7 @@ void hammock::RenderGraph::createResource(ResourceNode &resourceNode, ResourceAc
     if (resourceNode.type == ResourceNode::Type::Buffer) {
         ASSERT(std::holds_alternative<BufferDesc>(resourceNode.desc),
                "Buffer node without buffer desc");
-        auto desc = std::get<BufferDesc>(resourceNode.desc);
+        BufferDesc& desc = std::get<BufferDesc>(resourceNode.desc);
 
         // create actual resources and corresponding refs
         for (int i = 0; i < resourceNode.refs.size(); ++i) {
@@ -29,10 +29,28 @@ void hammock::RenderGraph::createResource(ResourceNode &resourceNode, ResourceAc
         ASSERT(std::holds_alternative<ImageDesc>(resourceNode.desc),
                "Image node without image desc");
 
-        auto desc = std::get<ImageDesc>(resourceNode.desc);
+        ImageDesc& desc = std::get<ImageDesc>(resourceNode.desc);
         // create actual resources and corresponding refs
         for (int i = 0; i < resourceNode.refs.size(); ++i) {
             createImage(resourceNode.refs[i], desc, access);
+
+            // Fill attachment description
+            desc.attachmentDesc = {};
+            desc.attachmentDesc.samples = VK_SAMPLE_COUNT_1_BIT;
+            desc.attachmentDesc.loadOp = access.loadOp;
+            desc.attachmentDesc.storeOp = access.storeOp;
+            desc.attachmentDesc.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+            desc.attachmentDesc.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+            desc.attachmentDesc.format = desc.format;
+            desc.attachmentDesc.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+            // Final layout
+            // If not, final layout depends on attachment type
+            if (isDepthStencil(desc.format)) {
+                desc.attachmentDesc.finalLayout = access.requiredLayout;
+            } else {
+                desc.attachmentDesc.finalLayout = access.requiredLayout;
+
+            }
         }
     }
 }
@@ -62,6 +80,8 @@ void hammock::RenderGraph::createImage(ResourceRef &resourceRef, ImageDesc &desc
     VkImageCreateInfo imageInfo{};
     imageInfo.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
     imageInfo.imageType = desc.imageType;
+    // TODO make framebuffer relative possible
+    VkExtent2D extent = renderContext.getSwapChain()->getSwapChainExtent();
     imageInfo.extent.width = static_cast<uint32_t>(static_cast<float>(extent.width) * desc.size.X);
     imageInfo.extent.height = static_cast<uint32_t>(static_cast<float>(extent.height) * desc.size.Y);
     imageInfo.extent.depth = desc.depth;
@@ -138,24 +158,6 @@ void hammock::RenderGraph::createImage(ResourceRef &resourceRef, ImageDesc &desc
     samplerInfo.maxLod = desc.mips;
 
     checkResult(vkCreateSampler(device.device(), &samplerInfo, nullptr, &ref.sampler));
-
-    // Fill attachment description
-    ref.attachmentDesc = {};
-    ref.attachmentDesc.samples = VK_SAMPLE_COUNT_1_BIT;
-    ref.attachmentDesc.loadOp = access.loadOp;
-    ref.attachmentDesc.storeOp = access.storeOp;
-    ref.attachmentDesc.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
-    ref.attachmentDesc.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
-    ref.attachmentDesc.format = desc.format;
-    ref.attachmentDesc.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-    // Final layout
-    // If not, final layout depends on attachment type
-    if (isDepthStencil(desc.format)) {
-        ref.attachmentDesc.finalLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL;
-    } else {
-        ref.attachmentDesc.finalLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-    }
-
     resourceRef.resource = ref;
 }
 
@@ -175,7 +177,7 @@ void hammock::RenderGraph::destroyResource(ResourceNode &resourceNode) const {
         if (resourceNode.type == ResourceNode::Type::Buffer) {
             ASSERT(std::holds_alternative<BufferResourceRef>(resourceRef.resource),
                    "Node of type Buffer does not hold BufferResourceRef.");
-            auto bufferRef = std::get<BufferResourceRef>(resourceRef.resource);
+            BufferResourceRef& bufferRef = std::get<BufferResourceRef>(resourceRef.resource);
 
             ASSERT(bufferRef.buffer != VK_NULL_HANDLE,
                    "buffer handle is null. This should not happen.");
@@ -186,7 +188,7 @@ void hammock::RenderGraph::destroyResource(ResourceNode &resourceNode) const {
         } else if (resourceNode.type == ResourceNode::Type::Image) {
             ASSERT(std::holds_alternative<ImageResourceRef>(resourceRef.resource),
                    "Node of type Image does not hold ImageResourceRef.");
-            auto imageRef = std::get<ImageResourceRef>(resourceRef.resource);
+            ImageResourceRef& imageRef = std::get<ImageResourceRef>(resourceRef.resource);
 
             ASSERT(imageRef.view != VK_NULL_HANDLE,
                    "Image view is null. This should not happen.");

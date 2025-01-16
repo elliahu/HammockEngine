@@ -49,9 +49,11 @@ namespace hammock {
         VkPipelineStageFlags stageFlags = VK_PIPELINE_STAGE_ALL_COMMANDS_BIT;
     };
 
+    /**
+     * Describes a render pass context. This data is passed into rendering callback, and it is only infor available for rendering
+     * TODO add relevant resources so they can be bound
+     */
     struct RenderPassContext {
-        VkRenderPass renderPass;
-        VkFramebuffer framebuffer;
         VkCommandBuffer commandBuffer;
         uint32_t frameIndex;
     };
@@ -73,6 +75,9 @@ namespace hammock {
         VkExtent2D extent;
         std::vector<ResourceAccess> inputs; // Read accesses
         std::vector<ResourceAccess> outputs; // Write accesses
+
+        std::vector<VkFramebuffer> framebuffers;
+        VkRenderPass renderPass = VK_NULL_HANDLE;
 
         // callback for rendering
         std::function<void(RenderPassContext)> executeFunc;
@@ -104,7 +109,7 @@ namespace hammock {
                 ASSERT(std::holds_alternative<ImageResourceRef>(node.refs[frameIndex].resource),
                        "Node is image but does not hold image ref")
                 ;
-                ImageResourceRef ref = std::get<ImageResourceRef>(node.refs[frameIndex].resource);
+                const ImageResourceRef& ref = std::get<ImageResourceRef>(node.refs[frameIndex].resource);
                 return ref.currentLayout != access.requiredLayout;
             }
             // TODO support for buffer transition
@@ -125,7 +130,7 @@ namespace hammock {
 
                 ASSERT(std::holds_alternative<ImageDesc>(node.desc),
                        "Node is image node yet does not hold image desc.");
-                ImageDesc &desc = std::get<ImageDesc>(node.desc);
+                const ImageDesc &desc = std::get<ImageDesc>(node.desc);
 
                 // Skip if no transition is needed, this should already be checked but anyway...
                 if (ref.currentLayout == access.requiredLayout) {
@@ -261,16 +266,19 @@ namespace hammock {
          */
         void destroyResource(ResourceNode &resourceNode) const;
 
-        void createRenderPassAndFramebuffer(RenderPassNode &renderPassNode, RenderPassContext& context ) const {
+        void createRenderPassAndFramebuffers(RenderPassNode &renderPassNode) const {
             std::vector<VkAttachmentDescription> attachmentDescriptions;
             std::vector<VkAttachmentReference> colorReferences;
             VkAttachmentReference depthReference = {};
-            std::vector<VkImageView> attachmentViews;
+            std::vector<std::vector<VkImageView>> attachmentViews;
+            attachmentViews.resize(SwapChain::MAX_FRAMES_IN_FLIGHT);
 
             bool hasDepth = false;
             bool hasColor = false;
             uint32_t attachmentIndex = 0;
             uint32_t maxLayers = 0;
+
+            ASSERT(!renderPassNode.outputs.empty(), "Render pass has no outputs");
 
             // loop over outputs to collect attachmetn descriptions of color/depth targets
             for (auto &access: renderPassNode.outputs) {
@@ -279,10 +287,9 @@ namespace hammock {
                 // We skip non image outputs as they are not part of the framebuffer
                 if (resourceNode.type != ResourceNode::Type::Image) { continue; }
 
-                auto& imageRef = std::get<ImageResourceRef>(resourceNode.refs[context.frameIndex].resource);
-                auto& imageDesc = std::get<ImageDesc>(resourceNode.desc);
+                ImageDesc& imageDesc = std::get<ImageDesc>(resourceNode.desc);
 
-                attachmentDescriptions.push_back(imageRef.attachmentDesc);
+                attachmentDescriptions.push_back(imageDesc.attachmentDesc);
 
                 if (isDepthStencil(imageDesc.format)) {
                     ASSERT(!hasDepth, "Only one depth attachment allowed");
@@ -294,13 +301,25 @@ namespace hammock {
                     hasColor = true;
                 }
 
-                attachmentViews.push_back(imageRef.view);
-
                 if (imageDesc.layers > maxLayers) {
                     maxLayers = imageDesc.layers;
                 }
 
                 attachmentIndex++;
+            }
+
+            // collect image views
+            for (int i = 0; i < attachmentViews.size(); i++) {
+                std::vector<VkImageView> views = attachmentViews[i];
+                for (auto &access: renderPassNode.outputs) {
+                    ResourceNode resourceNode = resources.at(access.resourceName);
+                    // We skip non image outputs as they are not part of the framebuffer
+                    if (resourceNode.type != ResourceNode::Type::Image) { continue; }
+
+                    ImageResourceRef& imageRef = std::get<ImageResourceRef>(resourceNode.refs[i].resource);
+                    views.push_back(imageRef.view);
+                }
+                attachmentViews[i] = views;
             }
 
             // Default render pass setup uses only one subpass
@@ -341,26 +360,32 @@ namespace hammock {
             renderPassInfo.pSubpasses = &subpass;
             renderPassInfo.dependencyCount = 2;
             renderPassInfo.pDependencies = dependencies.data();
-            checkResult(vkCreateRenderPass(device.device(), &renderPassInfo, nullptr, &context.renderPass));
+            checkResult(vkCreateRenderPass(device.device(), &renderPassInfo, nullptr, &renderPassNode.renderPass));
 
-            VkFramebufferCreateInfo framebufferInfo = {};
-            framebufferInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
-            framebufferInfo.renderPass = context.renderPass;
-            framebufferInfo.pAttachments = attachmentViews.data();
-            framebufferInfo.attachmentCount = static_cast<uint32_t>(attachmentViews.size());
-            framebufferInfo.width = renderPassNode.extent.width;
-            framebufferInfo.height = renderPassNode.extent.height;
-            framebufferInfo.layers = maxLayers;
-            checkResult(vkCreateFramebuffer(device.device(), &framebufferInfo, nullptr, &context.framebuffer));
+            // create framebuffer for each frame in flight
+            renderPassNode.framebuffers.resize(SwapChain::MAX_FRAMES_IN_FLIGHT);
+            for (int i = 0; i < renderPassNode.framebuffers.size(); i++) {
+                VkFramebufferCreateInfo framebufferInfo = {};
+                framebufferInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
+                framebufferInfo.renderPass = renderPassNode.renderPass;
+                framebufferInfo.pAttachments = attachmentViews[i].data();
+                framebufferInfo.attachmentCount = static_cast<uint32_t>(attachmentViews[i].size());
+                framebufferInfo.width = renderPassNode.extent.width;
+                framebufferInfo.height = renderPassNode.extent.height;
+                framebufferInfo.layers = maxLayers;
+                checkResult(vkCreateFramebuffer(device.device(), &framebufferInfo, nullptr, &renderPassNode.framebuffers[i]));
+            }
 
         }
 
-        void destroyRenderPassAndFrambuffer(RenderPassContext& context) {
-            ASSERT(context.framebuffer, "Framebuffer is null");
-            ASSERT(context.renderPass, "RenderPass is null");
+        void destroyRenderPassAndFrambuffers(RenderPassNode &renderPassNode) {
+            ASSERT(!renderPassNode.framebuffers.empty(), "Render pass has no framebuffer");
+            ASSERT(renderPassNode.renderPass, "RenderPass is null");
 
-            vkDestroyFramebuffer(device.device(), context.framebuffer, nullptr);
-            vkDestroyRenderPass(device.device(), context.renderPass, nullptr);
+            for (int i = 0; i < renderPassNode.framebuffers.size(); i++) {
+                vkDestroyFramebuffer(device.device(), renderPassNode.framebuffers[i], nullptr);
+            }
+            vkDestroyRenderPass(device.device(), renderPassNode.renderPass, nullptr);
         }
 
     public:
@@ -376,6 +401,12 @@ namespace hammock {
                 if (resourceNode.isExternal) { continue; }
 
                 destroyResource(resourceNode);
+            }
+
+            for (int i = 0; i < passes.size(); i++) {
+                if (passes[i].renderPass != VK_NULL_HANDLE) {
+                    destroyRenderPassAndFrambuffers(passes[i]);
+                }
             }
         }
 
@@ -409,6 +440,8 @@ namespace hammock {
          * Compiles the render graph - analyzes dependencies and makes optimization
          */
         void compile() {
+            ASSERT(!presentPass.empty(), "Missing present pass");
+
             // TODO we are now making no optimizations and assume that rendering goes in order of render pass submission
 
             // To be replaced when above task is implemented
@@ -482,33 +515,26 @@ namespace hammock {
                             ImageDesc &dec = std::get<ImageDesc>(resourceNode.desc);
                             if (isDepthStencil(dec.format)) {
                                 clearValues.push_back({.depthStencil = {1.0f, 0}});
-                            }
-                            else {
+                            } else {
                                 clearValues.push_back({.color = {0.0f, 0.0f, 0.0f, 0.0f}});
                             }
                         }
                     }
-                    // create pass context
-                    RenderPassContext context{};
-                    context.commandBuffer = cmd;
-                    context.frameIndex = frameIndex;
-
-                    // TODO now in here ww need to identify if we are writing into swapchain image and if so we need to decide if this is the last pass before submit
-                    // if both above is true, wee need to transition the swap images into VK_IMAGE_LAYOUT_PRESENT_SRC_KHR
-
                     // Check if this is a present pass
                     if (pass.name == presentPass) {
                         // Use the swap chain render pass
                         renderContext.beginSwapChainRenderPass(cmd);
-                    }
-                    else {
-                        // create the render pass
-                        createRenderPassAndFramebuffer(pass, context);
+                    } else {
+                        // create the render pass if it does not exist yet
+                        if (pass.renderPass == VK_NULL_HANDLE) {
+                            createRenderPassAndFramebuffers(pass);
+                        }
+
                         // begin render pass
                         VkRenderPassBeginInfo renderPassInfo{};
                         renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
-                        renderPassInfo.renderPass = context.renderPass;
-                        renderPassInfo.framebuffer = context.framebuffer;
+                        renderPassInfo.renderPass = pass.renderPass;
+                        renderPassInfo.framebuffer = pass.framebuffers[frameIndex];
                         renderPassInfo.renderArea.offset = {0, 0};
                         renderPassInfo.renderArea.extent = pass.extent;
                         renderPassInfo.clearValueCount = static_cast<uint32_t>(clearValues.size());
@@ -516,15 +542,24 @@ namespace hammock {
                         vkCmdBeginRenderPass(cmd, &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
                     }
 
+                    // Set viewport and scissors
+                    VkViewport viewport = hammock::Init::viewport(
+                        static_cast<float>(pass.extent.width), static_cast<float>(pass.extent.height),
+                        0.0f, 1.0f);
+                    VkRect2D scissor{{0, 0}, pass.extent};
+                    vkCmdSetViewport(cmd, 0, 1, &viewport);
+                    vkCmdSetScissor(cmd, 0, 1, &scissor);
+
+                    // create pass context
+                    RenderPassContext context{};
+                    context.commandBuffer = cmd;
+                    context.frameIndex = frameIndex;
+
                     // Execute the rendering
                     pass.executeFunc(context);
 
                     // End the render pass
                     vkCmdEndRenderPass(cmd);
-                    // if this is not the present pass, we need to destroy the render pass because it was created here
-                    if (pass.name != presentPass) {
-                        destroyRenderPassAndFrambuffer(context);
-                    }
                 }
 
                 renderContext.endFrame();

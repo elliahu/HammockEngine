@@ -35,6 +35,7 @@ int main() {
     RenderPassNode shadowPass;
     shadowPass.name = "shadow-pass";
     shadowPass.type = RenderPassNode::Type::Graphics;
+    shadowPass.extent = renderContext.getSwapChain()->getSwapChainExtent();
     shadowPass.outputs.push_back({
         "depth-image", VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL, VK_ATTACHMENT_LOAD_OP_DONT_CARE,
         VK_ATTACHMENT_STORE_OP_STORE
@@ -46,7 +47,8 @@ int main() {
 
     RenderPassNode compositionPass;
     compositionPass.name = "composition-pass";
-    shadowPass.type = RenderPassNode::Type::Graphics;
+    compositionPass.type = RenderPassNode::Type::Graphics;
+    compositionPass.extent = renderContext.getSwapChain()->getSwapChainExtent();
     compositionPass.inputs.push_back({
         "depth-image", VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, VK_ATTACHMENT_LOAD_OP_LOAD
     });
@@ -56,7 +58,7 @@ int main() {
     compositionPass.executeFunc = [&](RenderPassContext context) {
         std::cout << "Composition pass executed" << std::endl;
     };
-    graph->addPass(compositionPass);
+    graph->addPresentPass(compositionPass);
     graph->compile();
 
     while (!window.shouldClose()) {
