@@ -18,14 +18,20 @@ namespace hammock {
         enum class Type {
             Buffer,
             Image,
-            SwapChain
+            SwapChainImage
             // Special type of image. If resource is SwapChain, it is the final output resource that gets presented.
         } type;
 
-        std::variant<BufferDesc, ImageDesc> desc;
+
 
         // Name is used for lookup
         std::string name;
+
+        // Resource description
+        std::variant<BufferDesc, ImageDesc> desc;
+
+        // One handle per frame in flight
+        std::vector<ResourceRef> refs;
 
         // Whether resource lives only within a frame
         bool isTransient = true;
@@ -33,9 +39,6 @@ namespace hammock {
         bool isBuffered = true;
         // True if resource is externally owned (e.g. swapchain images)
         bool isExternal = false;
-
-        // One handle per frame in flight
-        std::vector<ResourceRef> refs;
     };
 
     /**
@@ -76,11 +79,11 @@ namespace hammock {
         std::vector<ResourceAccess> inputs; // Read accesses
         std::vector<ResourceAccess> outputs; // Write accesses
 
-        std::vector<VkFramebuffer> framebuffers;
-        VkRenderPass renderPass = VK_NULL_HANDLE;
-
         // callback for rendering
         std::function<void(RenderPassContext)> executeFunc;
+
+        std::vector<VkFramebuffer> framebuffers;
+        VkRenderPass renderPass = VK_NULL_HANDLE;
     };
 
 
@@ -527,6 +530,7 @@ namespace hammock {
                     } else {
                         // create the render pass if it does not exist yet
                         if (pass.renderPass == VK_NULL_HANDLE) {
+                            // TODO in here find out next render pass using this resource and set final layout of the attachment to the requiredLayout to save one barrier
                             createRenderPassAndFramebuffers(pass);
                         }
 

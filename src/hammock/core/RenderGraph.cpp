@@ -1,7 +1,7 @@
 #include "hammock/core/RenderGraph.h"
 
 void hammock::RenderGraph::createResource(ResourceNode &resourceNode, ResourceAccess& access) {
-    ASSERT(resourceNode.type != ResourceNode::Type::SwapChain,
+    ASSERT(resourceNode.type != ResourceNode::Type::SwapChainImage,
            "Cannot create resource for SwapChain. This should not happen.")
     ;
     ASSERT(resourceNode.refs.empty(),

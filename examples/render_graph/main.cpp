@@ -13,52 +13,60 @@ int main() {
 
     std::unique_ptr<RenderGraph> graph = std::make_unique<RenderGraph>(device, renderContext);
 
-    ResourceNode swap;
-    swap.name = "swap-image";
-    swap.type = ResourceNode::Type::SwapChain;
-    swap.isExternal = true; // this image is managed by swapchain
-    swap.refs = renderContext.getSwapChain()->getSwapChainImageRefs();
-    swap.desc = renderContext.getSwapChain()->getSwapChainImageDesc();
-    graph->addResource(swap);
-
-    // This image has no resource ref as it will be created and manged by RenderGraph
-    ResourceNode depth;
-    depth.name = "depth-image";
-    depth.type = ResourceNode::Type::Image;
-    depth.desc = ImageDesc{
-        .size = {1.0f, 1.0f}, // SwapChain relative by default
-        .format = renderContext.getSwapChain()->getSwapChainDepthFormat(),
-        .usage = VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT
-    };
-    graph->addResource(depth);
-
-    RenderPassNode shadowPass;
-    shadowPass.name = "shadow-pass";
-    shadowPass.type = RenderPassNode::Type::Graphics;
-    shadowPass.extent = renderContext.getSwapChain()->getSwapChainExtent();
-    shadowPass.outputs.push_back({
-        "depth-image", VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL, VK_ATTACHMENT_LOAD_OP_DONT_CARE,
-        VK_ATTACHMENT_STORE_OP_STORE
+    graph->addResource(ResourceNode{
+        .type = ResourceNode::Type::SwapChainImage,
+        .name = "swap-image",
+        .desc = renderContext.getSwapChain()->getSwapChainImageDesc(),
+        .refs = renderContext.getSwapChain()->getSwapChainImageRefs(),
+        .isExternal = true
     });
-    shadowPass.executeFunc = [&](RenderPassContext context) {
-        std::cout << "Shadow pass executed" << std::endl;
-    };
-    graph->addPass(shadowPass);
 
-    RenderPassNode compositionPass;
-    compositionPass.name = "composition-pass";
-    compositionPass.type = RenderPassNode::Type::Graphics;
-    compositionPass.extent = renderContext.getSwapChain()->getSwapChainExtent();
-    compositionPass.inputs.push_back({
-        "depth-image", VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, VK_ATTACHMENT_LOAD_OP_LOAD
+    // This image has no resource ref so it will be created and manged by RenderGraph
+    graph->addResource(ResourceNode{
+        .type = ResourceNode::Type::Image,
+        .name = "depth-image",
+        .desc = ImageDesc{
+            .size = {1.0f, 1.0f}, // SwapChain relative by default
+            .format = renderContext.getSwapChain()->getSwapChainDepthFormat(),
+            .usage = VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT
+        }
     });
-    compositionPass.outputs.push_back({
-        "swap-image", VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, VK_ATTACHMENT_LOAD_OP_DONT_CARE
+
+    graph->addPass(RenderPassNode{
+        .type = RenderPassNode::Type::Graphics,
+        .name = "shadow-pass",
+        .extent = renderContext.getSwapChain()->getSwapChainExtent(),
+        .inputs = {},
+        .outputs = {
+            {
+                "depth-image", VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL, VK_ATTACHMENT_LOAD_OP_DONT_CARE,
+                VK_ATTACHMENT_STORE_OP_STORE
+            }
+        },
+        .executeFunc = [&](RenderPassContext context) {
+            std::cout << "Shadow pass executed" << std::endl;
+        }
     });
-    compositionPass.executeFunc = [&](RenderPassContext context) {
-        std::cout << "Composition pass executed" << std::endl;
-    };
-    graph->addPresentPass(compositionPass);
+
+    graph->addPresentPass(RenderPassNode{
+        .type = RenderPassNode::Type::Graphics,
+        .name = "composition-pass",
+        .extent = renderContext.getSwapChain()->getSwapChainExtent(),
+        .inputs = {
+            {
+                "depth-image", VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, VK_ATTACHMENT_LOAD_OP_LOAD
+            }
+        },
+        .outputs = {
+            {
+                "swap-image", VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, VK_ATTACHMENT_LOAD_OP_DONT_CARE
+            }
+        },
+        .executeFunc = [&](RenderPassContext context) {
+            std::cout << "Composition pass executed" << std::endl;
+        }
+    });
+
     graph->compile();
 
     while (!window.shouldClose()) {
