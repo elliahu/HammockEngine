@@ -54,11 +54,12 @@ namespace hammock {
 
     /**
      * Describes a render pass context. This data is passed into rendering callback, and it is only infor available for rendering
-     * TODO add relevant resources so they can be bound
      */
     struct RenderPassContext {
         VkCommandBuffer commandBuffer;
         uint32_t frameIndex;
+        std::vector<std::reference_wrapper<ResourceNode>> inputs;
+        std::vector<std::reference_wrapper<ResourceNode>> outputs;
     };
 
     /**
@@ -122,97 +123,7 @@ namespace hammock {
         /**
          * Applies pipeline barrier transition
          */
-        void apply() {
-            if (node.type == ResourceNode::Type::Image) {
-                // Verify that we're dealing with an image resource
-                ASSERT(std::holds_alternative<ImageResourceRef>(node.refs[frameIndex].resource),
-                       "Node is image node but does not hold image ref");
-
-                // Get the image reference for the current frame
-                ImageResourceRef &ref = std::get<ImageResourceRef>(node.refs[frameIndex].resource);
-
-                ASSERT(std::holds_alternative<ImageDesc>(node.desc),
-                       "Node is image node yet does not hold image desc.");
-                const ImageDesc &desc = std::get<ImageDesc>(node.desc);
-
-                // Skip if no transition is needed, this should already be checked but anyway...
-                if (ref.currentLayout == access.requiredLayout) {
-                    return;
-                }
-
-                // Create image memory barrier
-                VkImageMemoryBarrier imageBarrier{};
-                imageBarrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
-                imageBarrier.oldLayout = ref.currentLayout;
-                imageBarrier.newLayout = access.requiredLayout;
-                imageBarrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-                imageBarrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-                imageBarrier.image = ref.image;
-
-                // Define image subresource range
-                imageBarrier.subresourceRange.aspectMask =
-                        isDepthStencil(desc.format)
-                            ? VK_IMAGE_ASPECT_DEPTH_BIT
-                            : VK_IMAGE_ASPECT_COLOR_BIT;
-                imageBarrier.subresourceRange.baseMipLevel = 0;
-                imageBarrier.subresourceRange.levelCount = desc.mips;
-                imageBarrier.subresourceRange.baseArrayLayer = 0;
-                imageBarrier.subresourceRange.layerCount = desc.layers;
-
-                // Set access masks based on layout transitions
-                switch (ref.currentLayout) {
-                    case VK_IMAGE_LAYOUT_UNDEFINED:
-                        imageBarrier.srcAccessMask = 0;
-                        break;
-                    case VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL:
-                        imageBarrier.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
-                        break;
-                    case VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL:
-                        imageBarrier.srcAccessMask = VK_ACCESS_SHADER_READ_BIT;
-                        break;
-                    case VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL:
-                        imageBarrier.srcAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
-                        break;
-                    case VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL:
-                        imageBarrier.srcAccessMask = VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
-                        break;
-                    default:
-                        imageBarrier.srcAccessMask = 0;
-                }
-
-                switch (access.requiredLayout) {
-                    case VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL:
-                        imageBarrier.dstAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
-                        break;
-                    case VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL:
-                        imageBarrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
-                        break;
-                    case VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL:
-                        imageBarrier.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
-                        break;
-                    case VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL:
-                        imageBarrier.dstAccessMask = VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
-                        break;
-                    default:
-                        imageBarrier.dstAccessMask = 0;
-                }
-
-                // Issue the pipeline barrier command
-                vkCmdPipelineBarrier(
-                    commandBuffer, // commandBuffer
-                    access.stageFlags, // srcStageMask
-                    access.stageFlags, // dstStageMask
-                    0, // dependencyFlags
-                    0, nullptr, // Memory barriers
-                    0, nullptr, // Buffer memory barriers
-                    1, &imageBarrier // Image memory barriers
-                );
-
-                // Update the current layout
-                ref.currentLayout = access.requiredLayout;
-            }
-            // TODO support for buffer transition
-        }
+        void apply() const;
     };
 
     /**
@@ -269,118 +180,16 @@ namespace hammock {
          */
         void destroyResource(ResourceNode &resourceNode) const;
 
-        void createRenderPassAndFramebuffers(RenderPassNode &renderPassNode) const {
-            std::vector<VkAttachmentDescription> attachmentDescriptions;
-            std::vector<VkAttachmentReference> colorReferences;
-            VkAttachmentReference depthReference = {};
-            std::vector<std::vector<VkImageView>> attachmentViews;
-            attachmentViews.resize(SwapChain::MAX_FRAMES_IN_FLIGHT);
+        /**
+         * Creates the actual render pass and framebuffers (one framebuffer for each frame in flight)
+         * @param renderPassNode Render pass node for which to create render pass and framebuffers (one framebuffer of each frame in flight)
+         */
+        void createRenderPassAndFramebuffers(RenderPassNode &renderPassNode) const;
 
-            bool hasDepth = false;
-            bool hasColor = false;
-            uint32_t attachmentIndex = 0;
-            uint32_t maxLayers = 0;
-
-            ASSERT(!renderPassNode.outputs.empty(), "Render pass has no outputs");
-
-            // loop over outputs to collect attachmetn descriptions of color/depth targets
-            for (auto &access: renderPassNode.outputs) {
-                ResourceNode resourceNode = resources.at(access.resourceName);
-
-                // We skip non image outputs as they are not part of the framebuffer
-                if (resourceNode.type != ResourceNode::Type::Image) { continue; }
-
-                ImageDesc& imageDesc = std::get<ImageDesc>(resourceNode.desc);
-
-                attachmentDescriptions.push_back(imageDesc.attachmentDesc);
-
-                if (isDepthStencil(imageDesc.format)) {
-                    ASSERT(!hasDepth, "Only one depth attachment allowed");
-                    depthReference.attachment = attachmentIndex;
-                    depthReference.layout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
-                    hasDepth = true;
-                } else {
-                    colorReferences.push_back({attachmentIndex, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL});
-                    hasColor = true;
-                }
-
-                if (imageDesc.layers > maxLayers) {
-                    maxLayers = imageDesc.layers;
-                }
-
-                attachmentIndex++;
-            }
-
-            // collect image views
-            for (int i = 0; i < attachmentViews.size(); i++) {
-                std::vector<VkImageView> views = attachmentViews[i];
-                for (auto &access: renderPassNode.outputs) {
-                    ResourceNode resourceNode = resources.at(access.resourceName);
-                    // We skip non image outputs as they are not part of the framebuffer
-                    if (resourceNode.type != ResourceNode::Type::Image) { continue; }
-
-                    ImageResourceRef& imageRef = std::get<ImageResourceRef>(resourceNode.refs[i].resource);
-                    views.push_back(imageRef.view);
-                }
-                attachmentViews[i] = views;
-            }
-
-            // Default render pass setup uses only one subpass
-            VkSubpassDescription subpass = {};
-            subpass.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
-            if (hasColor) {
-                subpass.pColorAttachments = colorReferences.data();
-                subpass.colorAttachmentCount = static_cast<uint32_t>(colorReferences.size());
-            }
-            if (hasDepth) {
-                subpass.pDepthStencilAttachment = &depthReference;
-            }
-
-            // Use subpass dependencies for attachment layout transitions
-            std::array<VkSubpassDependency, 2> dependencies{};
-            dependencies[0].srcSubpass = VK_SUBPASS_EXTERNAL;
-            dependencies[0].dstSubpass = 0;
-            dependencies[0].srcStageMask = VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT;
-            dependencies[0].dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
-            dependencies[0].srcAccessMask = VK_ACCESS_MEMORY_READ_BIT;
-            dependencies[0].dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_READ_BIT | VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
-            dependencies[0].dependencyFlags = VK_DEPENDENCY_BY_REGION_BIT;
-
-            dependencies[1].srcSubpass = 0;
-            dependencies[1].dstSubpass = VK_SUBPASS_EXTERNAL;
-            dependencies[1].srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
-            dependencies[1].dstStageMask = VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT;
-            dependencies[1].srcAccessMask = VK_ACCESS_COLOR_ATTACHMENT_READ_BIT | VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
-            dependencies[1].dstAccessMask = VK_ACCESS_MEMORY_READ_BIT;
-            dependencies[1].dependencyFlags = VK_DEPENDENCY_BY_REGION_BIT;
-
-            // Create render pass
-            VkRenderPassCreateInfo renderPassInfo = {};
-            renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
-            renderPassInfo.pAttachments = attachmentDescriptions.data();
-            renderPassInfo.attachmentCount = static_cast<uint32_t>(attachmentDescriptions.size());
-            renderPassInfo.subpassCount = 1;
-            renderPassInfo.pSubpasses = &subpass;
-            renderPassInfo.dependencyCount = 2;
-            renderPassInfo.pDependencies = dependencies.data();
-            checkResult(vkCreateRenderPass(device.device(), &renderPassInfo, nullptr, &renderPassNode.renderPass));
-
-            // create framebuffer for each frame in flight
-            renderPassNode.framebuffers.resize(SwapChain::MAX_FRAMES_IN_FLIGHT);
-            for (int i = 0; i < renderPassNode.framebuffers.size(); i++) {
-                VkFramebufferCreateInfo framebufferInfo = {};
-                framebufferInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
-                framebufferInfo.renderPass = renderPassNode.renderPass;
-                framebufferInfo.pAttachments = attachmentViews[i].data();
-                framebufferInfo.attachmentCount = static_cast<uint32_t>(attachmentViews[i].size());
-                framebufferInfo.width = renderPassNode.extent.width;
-                framebufferInfo.height = renderPassNode.extent.height;
-                framebufferInfo.layers = maxLayers;
-                checkResult(vkCreateFramebuffer(device.device(), &framebufferInfo, nullptr, &renderPassNode.framebuffers[i]));
-            }
-
-        }
-
+        /**
+         * Destroys the VkRenderPass attached to the node and its VkFramebuffer (each one) as well
+         * @param renderPassNode Renderp ass node which will be destroyed
+         */
         void destroyRenderPassAndFrambuffers(RenderPassNode &renderPassNode) {
             ASSERT(!renderPassNode.framebuffers.empty(), "Render pass has no framebuffer");
             ASSERT(renderPassNode.renderPass, "RenderPass is null");
@@ -426,6 +235,9 @@ namespace hammock {
          * @param pass Render pass to be added
          */
         void addPass(const RenderPassNode &pass) {
+            if (pass.renderPass != VK_NULL_HANDLE) {
+                ASSERT(pass.framebuffers.size() >= SwapChain::MAX_FRAMES_IN_FLIGHT, "Render pass must have at least MAX_FRAMES_IN_FLIGHT framebuffers");
+            }
             passes.push_back(pass);
         }
 
@@ -475,7 +287,9 @@ namespace hammock {
                         optimizedOrderOfPasses.end(),
                         "Could not find the pass based of index. This should not happen")
                     ;
+                    // Render pass node and its context
                     RenderPassNode &pass = passes[passIndex];
+                    RenderPassContext context{};
 
                     // Check for necessary transitions of input resources
                     for (auto &access: pass.inputs) {
@@ -490,6 +304,8 @@ namespace hammock {
                         if (Barrier barrier(resourceNode, access, cmd, frameIndex); barrier.isNeeded()) {
                             barrier.apply();
                         }
+
+                        context.inputs.push_back(resourceNode);
                     }
 
                     // clear values for framebuffer
@@ -514,12 +330,14 @@ namespace hammock {
                             barrier.apply();
                         }
 
+                        context.outputs.push_back(resourceNode);
+
                         if (resourceNode.type == ResourceNode::Type::Image) {
                             ImageDesc &dec = std::get<ImageDesc>(resourceNode.desc);
                             if (isDepthStencil(dec.format)) {
                                 clearValues.push_back({.depthStencil = {1.0f, 0}});
                             } else {
-                                clearValues.push_back({.color = {0.0f, 0.0f, 0.0f, 0.0f}});
+                                clearValues.push_back({.color = {1.0f, 1.0f, 0.0f, 1.0f}});
                             }
                         }
                     }
@@ -530,7 +348,7 @@ namespace hammock {
                     } else {
                         // create the render pass if it does not exist yet
                         if (pass.renderPass == VK_NULL_HANDLE) {
-                            // TODO in here find out next render pass using this resource and set final layout of the attachment to the requiredLayout to save one barrier
+                            // TODO find out next render pass using this resource and set final layout of the attachment to the requiredLayout to save one barrier
                             createRenderPassAndFramebuffers(pass);
                         }
 
@@ -554,18 +372,18 @@ namespace hammock {
                     vkCmdSetViewport(cmd, 0, 1, &viewport);
                     vkCmdSetScissor(cmd, 0, 1, &scissor);
 
-                    // create pass context
-                    RenderPassContext context{};
+                    // Add the command buffer and frame index to the context
                     context.commandBuffer = cmd;
                     context.frameIndex = frameIndex;
 
-                    // Execute the rendering
+                    // Dispatch the render pass callback
                     pass.executeFunc(context);
 
                     // End the render pass
                     vkCmdEndRenderPass(cmd);
                 }
 
+                // End work on the current frame and submit the command buffer
                 renderContext.endFrame();
             }
         }

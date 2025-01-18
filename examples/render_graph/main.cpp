@@ -11,7 +11,7 @@ int main() {
     // TODO decouple context and window
     RenderContext renderContext{window, device};
 
-    std::unique_ptr<RenderGraph> graph = std::make_unique<RenderGraph>(device, renderContext);
+    const auto graph = std::make_unique<RenderGraph>(device, renderContext);
 
     graph->addResource(ResourceNode{
         .type = ResourceNode::Type::SwapChainImage,
@@ -24,27 +24,27 @@ int main() {
     // This image has no resource ref so it will be created and manged by RenderGraph
     graph->addResource(ResourceNode{
         .type = ResourceNode::Type::Image,
-        .name = "depth-image",
+        .name = "color-image",
         .desc = ImageDesc{
             .size = {1.0f, 1.0f}, // SwapChain relative by default
-            .format = renderContext.getSwapChain()->getSwapChainDepthFormat(),
-            .usage = VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT
+            .format = renderContext.getSwapChain()->getSwapChainImageFormat(),
+            .usage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT
         }
     });
 
     graph->addPass(RenderPassNode{
         .type = RenderPassNode::Type::Graphics,
-        .name = "shadow-pass",
+        .name = "color-pass",
         .extent = renderContext.getSwapChain()->getSwapChainExtent(),
         .inputs = {},
         .outputs = {
             {
-                "depth-image", VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL, VK_ATTACHMENT_LOAD_OP_DONT_CARE,
+                "color-image", VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, VK_ATTACHMENT_LOAD_OP_DONT_CARE,
                 VK_ATTACHMENT_STORE_OP_STORE
             }
         },
         .executeFunc = [&](RenderPassContext context) {
-            std::cout << "Shadow pass executed" << std::endl;
+            std::cout << "Color pass executed" << std::endl;
         }
     });
 
@@ -54,7 +54,7 @@ int main() {
         .extent = renderContext.getSwapChain()->getSwapChainExtent(),
         .inputs = {
             {
-                "depth-image", VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, VK_ATTACHMENT_LOAD_OP_LOAD
+                "color-image", VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, VK_ATTACHMENT_LOAD_OP_LOAD
             }
         },
         .outputs = {
