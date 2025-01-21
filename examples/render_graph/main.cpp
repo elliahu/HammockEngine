@@ -144,7 +144,7 @@ int main() {
         }
     });
 
-    graph->addPresentPass(RenderPassNode{
+    graph->addPass(RenderPassNode{
         .type = RenderPassNode::Type::Graphics,
         .name = "present-pass",
         .extent = renderContext.getSwapChain()->getSwapChainExtent(),

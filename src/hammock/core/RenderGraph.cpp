@@ -1,6 +1,6 @@
 #include "hammock/core/RenderGraph.h"
 
-void hammock::Barrier::apply(TransitionStage trStage) const {
+void hammock::PipelineBarrier::apply() const {
     if (node.isRenderingAttachment()) {
         // Verify that we're dealing with an image resource
         ASSERT(std::holds_alternative<ImageResourceRef>(node.refs[frameIndex].resource),
@@ -14,13 +14,13 @@ void hammock::Barrier::apply(TransitionStage trStage) const {
         const ImageDesc &desc = std::get<ImageDesc>(node.desc);
         VkImageLayout newLayout =  VK_IMAGE_LAYOUT_UNDEFINED;
 
-        if (trStage == TransitionStage::RequiredLayout) {
+        if (transitionStage == TransitionStage::RequiredLayout) {
             if (ref.currentLayout == access.requiredLayout) {
                 return;
             }
             newLayout = access.requiredLayout;
         }
-        else if (trStage == TransitionStage::FinalLayout) {
+        else if (transitionStage == TransitionStage::FinalLayout) {
             if (ref.currentLayout == access.finalLayout) {
                 return;
             }
@@ -101,7 +101,7 @@ void hammock::Barrier::apply(TransitionStage trStage) const {
     // TODO support for buffer transition
 }
 
-void hammock::RenderGraph::createResource(ResourceNode &resourceNode, ResourceAccess& access) {
+void hammock::RenderGraph::createResource(ResourceNode &resourceNode) {
     ASSERT(resourceNode.type != ResourceNode::Type::SwapChainColorAttachment,
            "Cannot create resource for SwapChain. This should not happen.")
     ;
@@ -117,7 +117,7 @@ void hammock::RenderGraph::createResource(ResourceNode &resourceNode, ResourceAc
         resourceNode.refs.resize(1);
 
     // Check for resource type
-    if (resourceNode.type == ResourceNode::Type::Buffer) {
+    if (resourceNode.isBuffer()) {
         ASSERT(std::holds_alternative<BufferDesc>(resourceNode.desc),
                "Buffer node without buffer desc");
         BufferDesc& desc = std::get<BufferDesc>(resourceNode.desc);
@@ -133,7 +133,7 @@ void hammock::RenderGraph::createResource(ResourceNode &resourceNode, ResourceAc
         ImageDesc& desc = std::get<ImageDesc>(resourceNode.desc);
         // create actual resources and corresponding refs
         for (int i = 0; i < resourceNode.refs.size(); ++i) {
-            createImage(resourceNode.refs[i], desc, access);
+            createImage(resourceNode.refs[i], desc);
         }
     }
 }
@@ -156,7 +156,7 @@ void hammock::RenderGraph::createBuffer(ResourceRef &resourceRef, BufferDesc &bu
     resourceRef.resource = ref;
 }
 
-void hammock::RenderGraph::createImage(ResourceRef &resourceRef, ImageDesc &desc, ResourceAccess& access) const {
+void hammock::RenderGraph::createImage(ResourceRef &resourceRef, ImageDesc &desc) const {
     ImageResourceRef ref{};
 
     // Create the VkImage
@@ -258,7 +258,7 @@ void hammock::RenderGraph::destroyResource(ResourceNode &resourceNode) const {
     // We need to destroy each ResourceRef of the node
     for (auto &resourceRef: resourceNode.refs) {
         // Check for resource type
-        if (resourceNode.type == ResourceNode::Type::Buffer) {
+        if (resourceNode.isBuffer()) {
             ASSERT(std::holds_alternative<BufferResourceRef>(resourceRef.resource),
                    "Node of type Buffer does not hold BufferResourceRef.");
             BufferResourceRef& bufferRef = std::get<BufferResourceRef>(resourceRef.resource);

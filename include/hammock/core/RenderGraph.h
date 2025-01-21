@@ -17,7 +17,11 @@ namespace hammock {
      */
     struct ResourceNode {
         enum class Type {
-            Buffer,
+            UniformBuffer,
+            VertexBuffer,
+            IndexBuffer,
+            StorageBuffer,
+            PushConstantData,
             Image2D,
             Image3D,
             ImageCubeMap,
@@ -29,6 +33,11 @@ namespace hammock {
             ColorAttachment,
             DepthStencilAttachment,
         } type;
+
+        bool isBuffer() const {
+            return type == Type::UniformBuffer || type == Type::VertexBuffer || type == Type::IndexBuffer || type ==
+                   Type::StorageBuffer;
+        }
 
         bool isRenderingAttachment() const {
             return type == Type::ColorAttachment || type == Type::DepthStencilAttachment || type ==
@@ -82,8 +91,8 @@ namespace hammock {
     struct RenderPassContext {
         VkCommandBuffer commandBuffer;
         uint32_t frameIndex;
-        std::vector<std::reference_wrapper<ResourceNode> > inputs;
-        std::vector<std::reference_wrapper<ResourceNode> > outputs;
+        std::unordered_map<std::string, std::reference_wrapper<ResourceNode> > inputs;
+        std::unordered_map<std::string, std::reference_wrapper<ResourceNode> > outputs;
     };
 
     /**
@@ -112,37 +121,30 @@ namespace hammock {
     /**
      * Wraps necessary operation needed for pipeline barrier transitions for a single resource
      */
-    class Barrier {
-        ResourceNode &node;
-        ResourceAccess &access;
-        VkCommandBuffer commandBuffer;
-        uint32_t frameIndex = 0;
-
+    class PipelineBarrier {
     public:
-        explicit Barrier(ResourceNode &node, ResourceAccess &access, VkCommandBuffer commandBuffer,
-                         const uint32_t frameIndex) : node(node),
-                                                      access(access), commandBuffer(commandBuffer),
-                                                      frameIndex(frameIndex) {
-        }
-
         enum class TransitionStage {
             RequiredLayout,
             FinalLayout
         };
-
+        explicit PipelineBarrier(ResourceNode &node, ResourceAccess &access, VkCommandBuffer commandBuffer,
+                         const uint32_t frameIndex, TransitionStage transitionStage) : node(node),
+                                                      access(access), commandBuffer(commandBuffer),
+                                                      frameIndex(frameIndex), transitionStage(transitionStage) {
+        }
         /**
          *  Checks if resource needs barrier transition give its access
          * @return true if resource needs barrier transition, else false
          */
-        bool isNeeded(TransitionStage trStage) const {
+        bool isNeeded() const {
             if (node.isRenderingAttachment()) {
                 ASSERT(std::holds_alternative<ImageResourceRef>(node.refs[frameIndex].resource),
                        "Node is image but does not hold image ref")
                 ;
                 const ImageResourceRef &ref = std::get<ImageResourceRef>(node.refs[frameIndex].resource);
-                if (trStage == TransitionStage::RequiredLayout) {
+                if (transitionStage == TransitionStage::RequiredLayout) {
                     return ref.currentLayout != access.requiredLayout;
-                } else if (trStage == TransitionStage::FinalLayout) {
+                } else if (transitionStage == TransitionStage::FinalLayout) {
                     return ref.currentLayout != access.finalLayout;
                 }
                 return false;
@@ -154,7 +156,13 @@ namespace hammock {
         /**
          * Applies pre-render pipeline barrier transition
          */
-        void apply(TransitionStage trStage) const;
+        void apply() const;
+    private:
+        ResourceNode &node;
+        ResourceAccess &access;
+        VkCommandBuffer commandBuffer;
+        uint32_t frameIndex = 0;
+        TransitionStage transitionStage;
     };
 
     /**
@@ -177,14 +185,13 @@ namespace hammock {
         std::vector<RenderPassNode> passes;
         // Array of indexes into list of passes. Order is optimized by the optimizer.
         std::vector<uint32_t> optimizedOrderOfPasses;
-        // Pass that is called last
-        std::string presentPass;
+
 
         /**
          * Creates a resource for specific node
          * @param resourceNode Node for which to create a resource
          */
-        void createResource(ResourceNode &resourceNode, ResourceAccess &access);
+        void createResource(ResourceNode &resourceNode);
 
         /**
          *  Creates a buffer with a ref
@@ -198,7 +205,7 @@ namespace hammock {
          * @param resourceRef ResourceRef for resource to be created
          * @param imageDesc Desc struct that describes the image to be created
          */
-        void createImage(ResourceRef &resourceRef, ImageDesc &desc, ResourceAccess &access) const;
+        void createImage(ResourceRef &resourceRef, ImageDesc &desc) const;
 
         /**
          * Loops through resources and destroys those that are transient. This should be called at the end of a frame
@@ -233,6 +240,9 @@ namespace hammock {
          */
         void addResource(const ResourceNode &resource) {
             resources[resource.name] = resource;
+            if (resource.refs.empty()) {
+                createResource(resources[resource.name]);
+            }
         }
 
         ResourceNode &getResource(const std::string &name) {
@@ -241,7 +251,7 @@ namespace hammock {
         }
 
         /**
-         * Adds render pass to the render graph and creates VkRenderPass for it if it is not a present pass
+         * Adds render pass to the render graph
          * @param pass Render pass to be added
          */
         void addPass(const RenderPassNode &pass) {
@@ -253,21 +263,9 @@ namespace hammock {
         }
 
         /**
-         * Adds a render pass as a present pass
-         * @param pass Render pass to be added
-         */
-        void addPresentPass(const RenderPassNode &pass) {
-            addPass(pass);
-            ASSERT(presentPass.empty(), "Present pass already set");
-            presentPass = pass.name;
-        }
-
-        /**
          * Compiles the render graph - analyzes dependencies and makes optimization
          */
         void compile() {
-            ASSERT(!presentPass.empty(), "Missing present pass");
-
             // TODO we are now making no optimizations and assume that rendering goes in order of render pass submission
 
             // To be replaced when above task is implemented
@@ -276,15 +274,163 @@ namespace hammock {
             }
         }
 
+        /**
+         * Applies pipeline barrier transition where it is needed based on the stage
+         * @param pass Render pass 
+         * @param cmd Valid command buffer
+         * @param stage Stage of the barrier
+         */
+        void applyPipelineBarriers(RenderPassNode &pass, PipelineBarrier::TransitionStage stage) {
+            for (auto &access: pass.outputs) {
+                ASSERT(resources.find(access.resourceName) != resources.end(),
+                       "Could not find the output");
+
+                ResourceNode &resourceNode = resources[access.resourceName];
+                PipelineBarrier barrier(resourceNode, access, renderContext.getCurrentCommandBuffer(),
+                                    resourceNode.isSwapChainAttachment()
+                                        ? renderContext.getImageIndex()
+                                        : renderContext.getFrameIndex(),stage);
+                if ( barrier.isNeeded()) {
+                    barrier.apply();
+                }
+            }
+        }
+
+        /**
+         * Returns list of color attachments of a render pass
+         * @param pass Render pass
+         * @return Returns list of render passes color attachments
+         */
+        std::vector<VkRenderingAttachmentInfo> collectColorAttachmentInfos(RenderPassNode& pass){
+            std::vector<VkRenderingAttachmentInfo> colorAttachments;
+            for (auto &access: pass.outputs) {
+                ASSERT(resources.find(access.resourceName) != resources.end(),
+                               "Could not find the output");
+                ResourceNode &resourceNode = resources[access.resourceName];
+
+                if (resourceNode.isColorAttachment()) {
+
+                    ImageResourceRef &imageRef = std::get<ImageResourceRef>(
+                                resourceNode.isSwapChainAttachment()
+                                    ? resourceNode.refs[renderContext.getImageIndex()].resource
+                                    : resourceNode.refs[renderContext.getFrameIndex()].resource
+                            );
+                    VkRenderingAttachmentInfo attachment{VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO};
+                    attachment.imageView = imageRef.view;
+                    attachment.imageLayout = imageRef.currentLayout;
+                    attachment.loadOp = access.loadOp;
+                    attachment.storeOp = access.storeOp;
+                    attachment.clearValue = imageRef.clearValue;
+                    colorAttachments.push_back(attachment);
+                }
+            }
+            return colorAttachments;
+        }
+
+        /**
+         * Returns depth attachment of a render pass
+         * @param pass Render pass
+         * @return Returns VkRenderingAttachmentInfo of depth attachment from a pass
+         */
+        VkRenderingAttachmentInfo collectDepthStencilAttachmentInfo(RenderPassNode& pass) {
+            for (auto &access: pass.outputs) {
+                ASSERT(resources.find(access.resourceName) != resources.end(),
+                               "Could not find the output");
+                ResourceNode &resourceNode = resources[access.resourceName];
+
+                if (resourceNode.isDepthAttachment()) {
+
+                    ImageResourceRef &imageRef = std::get<ImageResourceRef>(
+                                resourceNode.isSwapChainAttachment()
+                                    ? resourceNode.refs[renderContext.getImageIndex()].resource
+                                    : resourceNode.refs[renderContext.getFrameIndex()].resource
+                            );
+                    VkRenderingAttachmentInfo attachment{VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO};
+                    attachment.imageView = imageRef.view;
+                    attachment.imageLayout = imageRef.currentLayout;
+                    attachment.loadOp = access.loadOp;
+                    attachment.storeOp = access.storeOp;
+                    attachment.clearValue = imageRef.clearValue;
+                    return attachment;
+                }
+            }
+
+            return VkRenderingAttachmentInfo{};
+        }
+
+        /**
+         * Creates context for the givem renderpass
+         * @param pass Render pass
+         * @return Returns RenderPassContext for the given renderpass
+         */
+        RenderPassContext createRenderPassContext(RenderPassNode &pass) {
+            RenderPassContext context{};
+
+            // Fill the context with input resources
+            for (auto &access: pass.inputs) {
+                ASSERT(resources.find(access.resourceName) != resources.end(),
+                       "Could not find the input");
+                ResourceNode &resourceNode = resources[access.resourceName];
+                // TODO automatically find out next render pass using this resource and set final layout of the attachment to the requiredLayout to save one barrier
+                context.inputs.emplace(resourceNode.name, resourceNode);
+            }
+
+            // fill context with input resources
+            for (auto &access: pass.outputs) {
+                ASSERT(resources.find(access.resourceName) != resources.end(),
+                       "Could not find the output");
+                ResourceNode &resourceNode = resources[access.resourceName];
+                context.outputs.emplace(resourceNode.name, resourceNode);
+            }
+
+            // Add the command buffer and frame index to the context
+            context.commandBuffer = renderContext.getCurrentCommandBuffer();
+            context.frameIndex = renderContext.getFrameIndex();
+
+            return context;
+        }
+
+        void beginRendering(RenderPassNode& pass) {
+            // Collect attachments
+            std::vector<VkRenderingAttachmentInfo> colorAttachments = collectColorAttachmentInfos(pass);
+            VkRenderingAttachmentInfo depthStencilAttachment = collectDepthStencilAttachmentInfo(pass);
+
+
+
+            VkRenderingInfo renderingInfo{VK_STRUCTURE_TYPE_RENDERING_INFO_KHR};
+            renderingInfo.renderArea = {
+                0, 0, renderContext.getSwapChain()->getSwapChainExtent().width,
+                renderContext.getSwapChain()->getSwapChainExtent().height
+            };
+            renderingInfo.layerCount = 1;
+            renderingInfo.colorAttachmentCount = colorAttachments.size();
+            renderingInfo.pColorAttachments = colorAttachments.data();
+            renderingInfo.pDepthAttachment = &depthStencilAttachment;
+            renderingInfo.pStencilAttachment = nullptr;
+
+            // Start a dynamic rendering
+            vkCmdBeginRendering(renderContext.getCurrentCommandBuffer(), &renderingInfo);
+
+            // Set viewport and scissors
+            VkViewport viewport = hammock::Init::viewport(
+                static_cast<float>(pass.extent.width), static_cast<float>(pass.extent.height),
+                0.0f, 1.0f);
+            VkRect2D scissor{{0, 0}, pass.extent};
+            vkCmdSetViewport(renderContext.getCurrentCommandBuffer(), 0, 1, &viewport);
+            vkCmdSetScissor(renderContext.getCurrentCommandBuffer(), 0, 1, &scissor);
+        }
+
+        void endRendering() {
+            vkCmdEndRendering(renderContext.getCurrentCommandBuffer());
+        }
+
 
         /**
          * Executes the graph and makes necessary barrier transitions.
-         * @param cmd CommandBuffer to which the render calls will be recorded
-         * @param frameIndex Index of the current frame.This is used to identify which resource ref should be used of the resource node is buffered.
          */
         void execute() {
             ASSERT(optimizedOrderOfPasses.size() == passes.size(),
-                   "RenderPass queue size don't match. This should not happen.");
+                   "RenderPass queue sizes don't match. This should not happen.");
 
             // Begin frame by creating master command buffer
             if (VkCommandBuffer cmd = renderContext.beginFrame()) {
@@ -301,119 +447,24 @@ namespace hammock {
                     ;
                     // Render pass node and its context
                     RenderPassNode &pass = passes[passIndex];
-                    RenderPassContext context{};
 
-                    // Check for necessary transitions of input resources
-                    for (auto &access: pass.inputs) {
-                        ASSERT(resources.find(access.resourceName) != resources.end(),
-                               "Could not find the input");
+                    // Apply required barriers
+                    applyPipelineBarriers(pass, PipelineBarrier::TransitionStage::RequiredLayout);
 
-                        ResourceNode &resourceNode = resources[access.resourceName];
+                    // Begin rendering
+                    beginRendering(pass);
 
-                        // We do not allow on-the-fly creation of input resources
-
-                        // TODO automatically find out next render pass using this resource and set final layout of the attachment to the requiredLayout to save one barrier
-
-                        // Apply barrier if it is needed
-                        if (Barrier barrier(resourceNode, access, cmd,
-                                            resourceNode.isSwapChainAttachment() ? imageIndex : frameIndex); barrier.
-                            isNeeded(Barrier::TransitionStage::RequiredLayout)) {
-                            barrier.apply(Barrier::TransitionStage::RequiredLayout);
-                        }
-
-                        context.inputs.push_back(resourceNode);
-                    }
-
-                    std::vector<VkRenderingAttachmentInfo> colorAttachments;
-                    VkRenderingAttachmentInfo depthStencilAttachment;
-
-                    // Check for necessary transitions of output resources
-                    // If the resource was just created we need to transform it into correct layout
-                    for (auto &access: pass.outputs) {
-                        ASSERT(resources.find(access.resourceName) != resources.end(),
-                               "Could not find the output");
-                        ResourceNode &resourceNode = resources[access.resourceName];
-
-                        // Check if the node contains refs to resources
-                        if (resourceNode.refs.empty()) {
-                            // Resource node does not contain resource refs
-                            // That means this is first time using this resource and needs to be created
-                            createResource(resourceNode, access);
-                        }
-
-                        // Apply barrier if it is needed
-                        if (Barrier barrier(resourceNode, access, cmd,
-                                            resourceNode.isSwapChainAttachment() ? imageIndex : frameIndex); barrier.
-                            isNeeded(
-                                Barrier::TransitionStage::RequiredLayout)) {
-                            barrier.apply(Barrier::TransitionStage::RequiredLayout);
-                        }
-
-                        context.outputs.push_back(resourceNode);
-
-                        if (resourceNode.isRenderingAttachment()) {
-                            ImageResourceRef &imageRef = std::get<ImageResourceRef>(
-                                resourceNode.isSwapChainAttachment()
-                                    ? resourceNode.refs[imageIndex].resource
-                                    : resourceNode.refs[frameIndex].resource
-                            );
-
-                            VkRenderingAttachmentInfo attachment{VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO};
-                            attachment.imageView = imageRef.view;
-                            attachment.imageLayout = imageRef.currentLayout;
-                            attachment.loadOp = access.loadOp;
-                            attachment.storeOp = access.storeOp;
-                            attachment.clearValue = imageRef.clearValue;
-
-                            if (resourceNode.isColorAttachment()) {
-                                colorAttachments.push_back(attachment);
-                            } else if (resourceNode.isDepthAttachment()) {
-                                depthStencilAttachment = attachment;
-                            }
-                        }
-                    }
-
-                    VkRenderingInfo renderingInfo{VK_STRUCTURE_TYPE_RENDERING_INFO_KHR};
-                    renderingInfo.renderArea = {
-                        0, 0, renderContext.getSwapChain()->getSwapChainExtent().width,
-                        renderContext.getSwapChain()->getSwapChainExtent().height
-                    };
-                    renderingInfo.layerCount = 1;
-                    renderingInfo.colorAttachmentCount = colorAttachments.size();
-                    renderingInfo.pColorAttachments = colorAttachments.data();
-                    renderingInfo.pDepthAttachment = &depthStencilAttachment;
-                    renderingInfo.pStencilAttachment = nullptr;
-
-                    // Start a dynamic rendering
-                    vkCmdBeginRendering(cmd, &renderingInfo);
-
-                    // Set viewport and scissors
-                    VkViewport viewport = hammock::Init::viewport(
-                        static_cast<float>(pass.extent.width), static_cast<float>(pass.extent.height),
-                        0.0f, 1.0f);
-                    VkRect2D scissor{{0, 0}, pass.extent};
-                    vkCmdSetViewport(cmd, 0, 1, &viewport);
-                    vkCmdSetScissor(cmd, 0, 1, &scissor);
-
-                    // Add the command buffer and frame index to the context
-                    context.commandBuffer = cmd;
-                    context.frameIndex = frameIndex;
+                    // Create render passs context
+                    RenderPassContext passCtx = createRenderPassContext(pass);
 
                     // Dispatch the render pass callback
-                    pass.executeFunc(context);
+                    pass.executeFunc(passCtx);
 
-
-                    // End dynamic rendering
-                    vkCmdEndRendering(cmd);
+                    // End rendering
+                    endRendering();
 
                     // post rendering barrier
-                    for (auto &access: pass.outputs) {
-                        ResourceNode &resourceNode = resources[access.resourceName];
-                        if (Barrier barrier(resourceNode, access, cmd, resourceNode.isSwapChainAttachment() ? imageIndex : frameIndex); barrier.isNeeded(
-                            Barrier::TransitionStage::FinalLayout)) {
-                            barrier.apply(Barrier::TransitionStage::FinalLayout);
-                        }
-                    }
+                    applyPipelineBarriers(pass, PipelineBarrier::TransitionStage::FinalLayout);
                 }
 
                 // End work on the current frame and submit the command buffer
