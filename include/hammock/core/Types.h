@@ -46,7 +46,6 @@ namespace hammock {
         VkBorderColor borderColor = VK_BORDER_COLOR_INT_OPAQUE_BLACK;
         VkSamplerMipmapMode mipmapMode = VK_SAMPLER_MIPMAP_MODE_LINEAR;
         VkSampleCountFlagBits imageSampleCount = VK_SAMPLE_COUNT_1_BIT;
-        VkAttachmentDescription attachmentDesc;
     };
 
     /**
@@ -58,6 +57,7 @@ namespace hammock {
         VkSampler sampler;
         VmaAllocation allocation;
         VkImageLayout currentLayout;
+        VkClearValue clearValue = {0.0f, 0.0f, 0.2f, 1.0f};
     };
 
 

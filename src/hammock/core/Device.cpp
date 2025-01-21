@@ -64,13 +64,6 @@ namespace hammock {
             queueCreateInfos.push_back(queueCreateInfo);
         }
 
-        VkPhysicalDeviceRayTracingPipelinePropertiesKHR rayTracingPipelineProperties{};
-        rayTracingPipelineProperties.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_TRACING_PIPELINE_PROPERTIES_KHR;
-        VkPhysicalDeviceProperties2 deviceProperties2{};
-        deviceProperties2.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROPERTIES_2;
-        deviceProperties2.pNext = &rayTracingPipelineProperties;
-        vkGetPhysicalDeviceProperties2(physicalDevice, &deviceProperties2);
-
         VkPhysicalDeviceFeatures deviceFeatures = {};
         deviceFeatures.samplerAnisotropy = VK_TRUE;
         deviceFeatures.fillModeNonSolid = VK_TRUE;
@@ -90,27 +83,12 @@ namespace hammock {
         descriptorIndexingFeatures.shaderStorageBufferArrayNonUniformIndexing = VK_TRUE;
         descriptorIndexingFeatures.descriptorBindingStorageBufferUpdateAfterBind = VK_TRUE;
 
-        VkPhysicalDeviceRayQueryFeaturesKHR rayQueryFeatures{};
-        rayQueryFeatures.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_QUERY_FEATURES_KHR;
-        rayQueryFeatures.rayQuery = VK_TRUE;
-
-        VkPhysicalDeviceBufferDeviceAddressFeaturesKHR bufferDeviceAddressFeatures{};
-        bufferDeviceAddressFeatures.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_BUFFER_DEVICE_ADDRESS_FEATURES_KHR;
-        bufferDeviceAddressFeatures.bufferDeviceAddress = VK_TRUE;
-
-        VkPhysicalDeviceRayTracingPipelineFeaturesKHR rayTracingPipelineFeatures{};
-        rayTracingPipelineFeatures.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_TRACING_PIPELINE_FEATURES_KHR;
-        rayTracingPipelineFeatures.rayTracingPipeline = VK_TRUE;
-
-        VkPhysicalDeviceAccelerationStructureFeaturesKHR accelerationStructureFeatures{};
-        accelerationStructureFeatures.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_ACCELERATION_STRUCTURE_FEATURES_KHR;
-        accelerationStructureFeatures.accelerationStructure = VK_TRUE;
+        VkPhysicalDeviceDynamicRenderingFeaturesKHR dynamicRenderingFeatures{};
+        dynamicRenderingFeatures.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DYNAMIC_RENDERING_FEATURES;
+        dynamicRenderingFeatures.dynamicRendering = VK_TRUE;
 
         // Chain the features structures
-        rayQueryFeatures.pNext = &descriptorIndexingFeatures;
-        bufferDeviceAddressFeatures.pNext = &rayQueryFeatures;
-        rayTracingPipelineFeatures.pNext = &bufferDeviceAddressFeatures;
-        accelerationStructureFeatures.pNext = &rayTracingPipelineFeatures;
+        descriptorIndexingFeatures.pNext = &dynamicRenderingFeatures;
 
         // Populate VkPhysicalDeviceFeatures2
         VkPhysicalDeviceFeatures2 deviceFeatures2{};

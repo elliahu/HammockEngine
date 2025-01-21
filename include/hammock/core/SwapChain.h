@@ -40,24 +40,45 @@ namespace hammock {
             return static_cast<float>(swapChainExtent.width) / static_cast<float>(swapChainExtent.height);
         }
 
-        [[nodiscard]] std::vector<ResourceRef> getSwapChainImageRefs() const {
+        [[nodiscard]] std::vector<ResourceRef> getSwapChainColorAttachmetsRefs() const {
             std::vector<ResourceRef> refs{};
 
             for (int i = 0; i < swapChainImages.size(); i++) {
                 ImageResourceRef ref{};
                 ref.image = swapChainImages[i];
                 ref.view = swapChainImageViews[i];
-                ref.currentLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+                ref.currentLayout = VK_IMAGE_LAYOUT_UNDEFINED;
                 refs.push_back(ResourceRef{ref});
             }
             return refs;
         }
 
-        [[nodiscard]] ImageDesc getSwapChainImageDesc() const {
+        [[nodiscard]] std::vector<ResourceRef> getSwapChainDepthAttachmetsRefs() const {
+            std::vector<ResourceRef> refs{};
+
+            for (int i = 0; i < depthImages.size(); i++) {
+                ImageResourceRef ref{};
+                ref.image = depthImages[i];
+                ref.view = depthImageViews[i];
+                ref.currentLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+                refs.push_back(ResourceRef{ref});
+            }
+            return refs;
+        }
+
+        [[nodiscard]] ImageDesc getSwapChainColorImageDesc() const {
             ImageDesc desc{};
             desc.size = {1.0f, 1.0f};
             desc.relativeSize = RelativeSize::SwapChainRelative;
             desc.format = swapChainImageFormat;
+            return desc;
+        }
+
+        [[nodiscard]] ImageDesc getSwapChainDepthImageDesc() const {
+            ImageDesc desc{};
+            desc.size = {1.0f, 1.0f};
+            desc.relativeSize = RelativeSize::SwapChainRelative;
+            desc.format = swapChainDepthFormat;
             return desc;
         }
 

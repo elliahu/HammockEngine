@@ -98,10 +98,20 @@ hammock::GraphicsPipeline::GraphicsPipeline(hammock::GraphicsPipeline::GraphicsP
 
     pipelineInfo.layout = graphicsPipelineLayout;
     pipelineInfo.renderPass = createInfo.renderPass;
-    pipelineInfo.subpass = createInfo.subpass;
+    pipelineInfo.subpass = 0;
 
     pipelineInfo.basePipelineIndex = -1;
     pipelineInfo.basePipelineHandle = VK_NULL_HANDLE;
+
+    if (createInfo.dynamicRendering.enabled) {
+        // Attachment information for dynamic rendering
+        VkPipelineRenderingCreateInfoKHR pipelineDynamicrenderingCreateInfo{ VK_STRUCTURE_TYPE_PIPELINE_RENDERING_CREATE_INFO_KHR };
+        pipelineDynamicrenderingCreateInfo.colorAttachmentCount = createInfo.dynamicRendering.colorAttachmentCount;
+        pipelineDynamicrenderingCreateInfo.pColorAttachmentFormats = createInfo.dynamicRendering.colorAttachmentFormats.data();
+        pipelineDynamicrenderingCreateInfo.depthAttachmentFormat = createInfo.dynamicRendering.depthAttachmentFormat;
+        pipelineDynamicrenderingCreateInfo.stencilAttachmentFormat = createInfo.dynamicRendering.stencilAttachmentFormat;
+        pipelineInfo.pNext = &pipelineDynamicrenderingCreateInfo;
+    }
 
 
     if (vkCreateGraphicsPipelines(

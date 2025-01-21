@@ -56,8 +56,15 @@ namespace hammock {
                 std::vector<VkDynamicState> dynamicStateEnables{VK_DYNAMIC_STATE_VIEWPORT, VK_DYNAMIC_STATE_SCISSOR};
             } dynamicState;
 
-            VkRenderPass renderPass;
-            uint32_t subpass = 0;
+            struct DynamicRendering {
+                bool enabled = false;
+                uint32_t colorAttachmentCount = 0;
+                std::vector<VkFormat> colorAttachmentFormats{};
+                VkFormat depthAttachmentFormat = VK_FORMAT_UNDEFINED;
+                VkFormat stencilAttachmentFormat = VK_FORMAT_UNDEFINED;
+            } dynamicRendering;
+
+            VkRenderPass renderPass = VK_NULL_HANDLE;
         };
 
     public:

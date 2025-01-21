@@ -40,6 +40,10 @@ namespace hammock {
             return currentFrameIndex;
         }
 
+        [[nodiscard]] int getImageIndex() const {
+            return currentImageIndex;
+        }
+
         VkCommandBuffer beginFrame();
 
         void endFrame();

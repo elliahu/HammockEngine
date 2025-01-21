@@ -4,6 +4,7 @@
 #include <hammock/core/CoreUtils.h>
 #include <functional>
 #include <cassert>
+#include <complex>
 #include <variant>
 
 #include "hammock/core/RenderContext.h"
@@ -17,12 +18,34 @@ namespace hammock {
     struct ResourceNode {
         enum class Type {
             Buffer,
-            Image,
-            SwapChainImage
-            // Special type of image. If resource is SwapChain, it is the final output resource that gets presented.
+            Image2D,
+            Image3D,
+            ImageCubeMap,
+            Image2DArray,
+            Image3DArray,
+            ImageCubeMapArray,
+            SwapChainColorAttachment,
+            SwapChainDepthStencilAttachment,
+            ColorAttachment,
+            DepthStencilAttachment,
         } type;
 
+        bool isRenderingAttachment() const {
+            return type == Type::ColorAttachment || type == Type::DepthStencilAttachment || type ==
+                   Type::SwapChainColorAttachment || type == Type::SwapChainDepthStencilAttachment;
+        }
 
+        bool isColorAttachment() const {
+            return type == Type::ColorAttachment || type == Type::SwapChainColorAttachment;
+        }
+
+        bool isDepthAttachment() const {
+            return type == Type::DepthStencilAttachment || type == Type::SwapChainDepthStencilAttachment;
+        }
+
+        bool isSwapChainAttachment() const {
+            return type == Type::SwapChainColorAttachment || type == Type::SwapChainDepthStencilAttachment;
+        }
 
         // Name is used for lookup
         std::string name;
@@ -46,7 +69,8 @@ namespace hammock {
      */
     struct ResourceAccess {
         std::string resourceName;
-        VkImageLayout requiredLayout;
+        VkImageLayout requiredLayout; // Layout before rendering
+        VkImageLayout finalLayout; // layout after rendering, only for output resources, ignored for input resources
         VkAttachmentLoadOp loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
         VkAttachmentStoreOp storeOp = VK_ATTACHMENT_STORE_OP_STORE;
         VkPipelineStageFlags stageFlags = VK_PIPELINE_STAGE_ALL_COMMANDS_BIT;
@@ -58,8 +82,8 @@ namespace hammock {
     struct RenderPassContext {
         VkCommandBuffer commandBuffer;
         uint32_t frameIndex;
-        std::vector<std::reference_wrapper<ResourceNode>> inputs;
-        std::vector<std::reference_wrapper<ResourceNode>> outputs;
+        std::vector<std::reference_wrapper<ResourceNode> > inputs;
+        std::vector<std::reference_wrapper<ResourceNode> > outputs;
     };
 
     /**
@@ -82,9 +106,6 @@ namespace hammock {
 
         // callback for rendering
         std::function<void(RenderPassContext)> executeFunc;
-
-        std::vector<VkFramebuffer> framebuffers;
-        VkRenderPass renderPass = VK_NULL_HANDLE;
     };
 
 
@@ -104,26 +125,36 @@ namespace hammock {
                                                       frameIndex(frameIndex) {
         }
 
+        enum class TransitionStage {
+            RequiredLayout,
+            FinalLayout
+        };
+
         /**
          *  Checks if resource needs barrier transition give its access
          * @return true if resource needs barrier transition, else false
          */
-        bool isNeeded() const {
-            if (node.type == ResourceNode::Type::Image) {
+        bool isNeeded(TransitionStage trStage) const {
+            if (node.isRenderingAttachment()) {
                 ASSERT(std::holds_alternative<ImageResourceRef>(node.refs[frameIndex].resource),
                        "Node is image but does not hold image ref")
                 ;
-                const ImageResourceRef& ref = std::get<ImageResourceRef>(node.refs[frameIndex].resource);
-                return ref.currentLayout != access.requiredLayout;
+                const ImageResourceRef &ref = std::get<ImageResourceRef>(node.refs[frameIndex].resource);
+                if (trStage == TransitionStage::RequiredLayout) {
+                    return ref.currentLayout != access.requiredLayout;
+                } else if (trStage == TransitionStage::FinalLayout) {
+                    return ref.currentLayout != access.finalLayout;
+                }
+                return false;
             }
             // TODO support for buffer transition
             return false;
         }
 
         /**
-         * Applies pipeline barrier transition
+         * Applies pre-render pipeline barrier transition
          */
-        void apply() const;
+        void apply(TransitionStage trStage) const;
     };
 
     /**
@@ -180,26 +211,6 @@ namespace hammock {
          */
         void destroyResource(ResourceNode &resourceNode) const;
 
-        /**
-         * Creates the actual render pass and framebuffers (one framebuffer for each frame in flight)
-         * @param renderPassNode Render pass node for which to create render pass and framebuffers (one framebuffer of each frame in flight)
-         */
-        void createRenderPassAndFramebuffers(RenderPassNode &renderPassNode) const;
-
-        /**
-         * Destroys the VkRenderPass attached to the node and its VkFramebuffer (each one) as well
-         * @param renderPassNode Renderp ass node which will be destroyed
-         */
-        void destroyRenderPassAndFrambuffers(RenderPassNode &renderPassNode) {
-            ASSERT(!renderPassNode.framebuffers.empty(), "Render pass has no framebuffer");
-            ASSERT(renderPassNode.renderPass, "RenderPass is null");
-
-            for (int i = 0; i < renderPassNode.framebuffers.size(); i++) {
-                vkDestroyFramebuffer(device.device(), renderPassNode.framebuffers[i], nullptr);
-            }
-            vkDestroyRenderPass(device.device(), renderPassNode.renderPass, nullptr);
-        }
-
     public:
         RenderGraph(Device &device, RenderContext &context): device(device), renderContext(context),
                                                              maxFramesInFlight(SwapChain::MAX_FRAMES_IN_FLIGHT) {
@@ -214,12 +225,6 @@ namespace hammock {
 
                 destroyResource(resourceNode);
             }
-
-            for (int i = 0; i < passes.size(); i++) {
-                if (passes[i].renderPass != VK_NULL_HANDLE) {
-                    destroyRenderPassAndFrambuffers(passes[i]);
-                }
-            }
         }
 
         /**
@@ -230,14 +235,20 @@ namespace hammock {
             resources[resource.name] = resource;
         }
 
+        ResourceNode &getResource(const std::string &name) {
+            ASSERT(resources.contains(name), "Resource with name '" + name + "' does not exist");
+            return resources.at(name);
+        }
+
         /**
-         * Adds render pass to the render graph
+         * Adds render pass to the render graph and creates VkRenderPass for it if it is not a present pass
          * @param pass Render pass to be added
          */
         void addPass(const RenderPassNode &pass) {
-            if (pass.renderPass != VK_NULL_HANDLE) {
-                ASSERT(pass.framebuffers.size() >= SwapChain::MAX_FRAMES_IN_FLIGHT, "Render pass must have at least MAX_FRAMES_IN_FLIGHT framebuffers");
+            for (auto &p: passes) {
+                ASSERT(p.name != pass.name, "Pass with this name aleady exists");
             }
+
             passes.push_back(pass);
         }
 
@@ -279,6 +290,7 @@ namespace hammock {
             if (VkCommandBuffer cmd = renderContext.beginFrame()) {
                 // Get the frame index. This is used to select buffered refs
                 uint32_t frameIndex = renderContext.getFrameIndex();
+                uint32_t imageIndex = renderContext.getImageIndex();
 
                 // Loop over passes in the optimized order
                 for (const auto &passIndex: optimizedOrderOfPasses) {
@@ -300,16 +312,20 @@ namespace hammock {
 
                         // We do not allow on-the-fly creation of input resources
 
+                        // TODO automatically find out next render pass using this resource and set final layout of the attachment to the requiredLayout to save one barrier
+
                         // Apply barrier if it is needed
-                        if (Barrier barrier(resourceNode, access, cmd, frameIndex); barrier.isNeeded()) {
-                            barrier.apply();
+                        if (Barrier barrier(resourceNode, access, cmd,
+                                            resourceNode.isSwapChainAttachment() ? imageIndex : frameIndex); barrier.
+                            isNeeded(Barrier::TransitionStage::RequiredLayout)) {
+                            barrier.apply(Barrier::TransitionStage::RequiredLayout);
                         }
 
                         context.inputs.push_back(resourceNode);
                     }
 
-                    // clear values for framebuffer
-                    std::vector<VkClearValue> clearValues{};
+                    std::vector<VkRenderingAttachmentInfo> colorAttachments;
+                    VkRenderingAttachmentInfo depthStencilAttachment;
 
                     // Check for necessary transitions of output resources
                     // If the resource was just created we need to transform it into correct layout
@@ -326,43 +342,50 @@ namespace hammock {
                         }
 
                         // Apply barrier if it is needed
-                        if (Barrier barrier(resourceNode, access, cmd, frameIndex); barrier.isNeeded()) {
-                            barrier.apply();
+                        if (Barrier barrier(resourceNode, access, cmd,
+                                            resourceNode.isSwapChainAttachment() ? imageIndex : frameIndex); barrier.
+                            isNeeded(
+                                Barrier::TransitionStage::RequiredLayout)) {
+                            barrier.apply(Barrier::TransitionStage::RequiredLayout);
                         }
 
                         context.outputs.push_back(resourceNode);
 
-                        if (resourceNode.type == ResourceNode::Type::Image) {
-                            ImageDesc &dec = std::get<ImageDesc>(resourceNode.desc);
-                            if (isDepthStencil(dec.format)) {
-                                clearValues.push_back({.depthStencil = {1.0f, 0}});
-                            } else {
-                                clearValues.push_back({.color = {1.0f, 1.0f, 0.0f, 1.0f}});
+                        if (resourceNode.isRenderingAttachment()) {
+                            ImageResourceRef &imageRef = std::get<ImageResourceRef>(
+                                resourceNode.isSwapChainAttachment()
+                                    ? resourceNode.refs[imageIndex].resource
+                                    : resourceNode.refs[frameIndex].resource
+                            );
+
+                            VkRenderingAttachmentInfo attachment{VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO};
+                            attachment.imageView = imageRef.view;
+                            attachment.imageLayout = imageRef.currentLayout;
+                            attachment.loadOp = access.loadOp;
+                            attachment.storeOp = access.storeOp;
+                            attachment.clearValue = imageRef.clearValue;
+
+                            if (resourceNode.isColorAttachment()) {
+                                colorAttachments.push_back(attachment);
+                            } else if (resourceNode.isDepthAttachment()) {
+                                depthStencilAttachment = attachment;
                             }
                         }
                     }
-                    // Check if this is a present pass
-                    if (pass.name == presentPass) {
-                        // Use the swap chain render pass
-                        renderContext.beginSwapChainRenderPass(cmd);
-                    } else {
-                        // create the render pass if it does not exist yet
-                        if (pass.renderPass == VK_NULL_HANDLE) {
-                            // TODO find out next render pass using this resource and set final layout of the attachment to the requiredLayout to save one barrier
-                            createRenderPassAndFramebuffers(pass);
-                        }
 
-                        // begin render pass
-                        VkRenderPassBeginInfo renderPassInfo{};
-                        renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
-                        renderPassInfo.renderPass = pass.renderPass;
-                        renderPassInfo.framebuffer = pass.framebuffers[frameIndex];
-                        renderPassInfo.renderArea.offset = {0, 0};
-                        renderPassInfo.renderArea.extent = pass.extent;
-                        renderPassInfo.clearValueCount = static_cast<uint32_t>(clearValues.size());
-                        renderPassInfo.pClearValues = clearValues.data();
-                        vkCmdBeginRenderPass(cmd, &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
-                    }
+                    VkRenderingInfo renderingInfo{VK_STRUCTURE_TYPE_RENDERING_INFO_KHR};
+                    renderingInfo.renderArea = {
+                        0, 0, renderContext.getSwapChain()->getSwapChainExtent().width,
+                        renderContext.getSwapChain()->getSwapChainExtent().height
+                    };
+                    renderingInfo.layerCount = 1;
+                    renderingInfo.colorAttachmentCount = colorAttachments.size();
+                    renderingInfo.pColorAttachments = colorAttachments.data();
+                    renderingInfo.pDepthAttachment = &depthStencilAttachment;
+                    renderingInfo.pStencilAttachment = nullptr;
+
+                    // Start a dynamic rendering
+                    vkCmdBeginRendering(cmd, &renderingInfo);
 
                     // Set viewport and scissors
                     VkViewport viewport = hammock::Init::viewport(
@@ -379,8 +402,18 @@ namespace hammock {
                     // Dispatch the render pass callback
                     pass.executeFunc(context);
 
-                    // End the render pass
-                    vkCmdEndRenderPass(cmd);
+
+                    // End dynamic rendering
+                    vkCmdEndRendering(cmd);
+
+                    // post rendering barrier
+                    for (auto &access: pass.outputs) {
+                        ResourceNode &resourceNode = resources[access.resourceName];
+                        if (Barrier barrier(resourceNode, access, cmd, resourceNode.isSwapChainAttachment() ? imageIndex : frameIndex); barrier.isNeeded(
+                            Barrier::TransitionStage::FinalLayout)) {
+                            barrier.apply(Barrier::TransitionStage::FinalLayout);
+                        }
+                    }
                 }
 
                 // End work on the current frame and submit the command buffer
