@@ -171,6 +171,9 @@ namespace hammock {
      * can itself create resources that other passes may depend on. RenderGraph analyzes these dependencies, makes adjustments when possible,
      * makes necessary transitions between resource states. These transitions are done just in time as well as resource allocation.
      *  TODO support for Read Modify Write - render pass writes and reads from the same resource
+     *  TODO support for swapchain dependent resources
+     *  TODO support for resources dependent on other resources
+     *  FIXME crashes on invalid image when swapchain is recreated
      */
     class RenderGraph {
         // Vulkan device
@@ -390,12 +393,14 @@ namespace hammock {
             return context;
         }
 
+        /**
+         * Begins the rendering using the dynamic rendering extension
+         * @param pass Current Render pass
+         */
         void beginRendering(RenderPassNode& pass) {
             // Collect attachments
             std::vector<VkRenderingAttachmentInfo> colorAttachments = collectColorAttachmentInfos(pass);
             VkRenderingAttachmentInfo depthStencilAttachment = collectDepthStencilAttachmentInfo(pass);
-
-
 
             VkRenderingInfo renderingInfo{VK_STRUCTURE_TYPE_RENDERING_INFO_KHR};
             renderingInfo.renderArea = {
@@ -420,6 +425,9 @@ namespace hammock {
             vkCmdSetScissor(renderContext.getCurrentCommandBuffer(), 0, 1, &scissor);
         }
 
+        /**
+         * Ends the rendering for current renderpass
+         */
         void endRendering() {
             vkCmdEndRendering(renderContext.getCurrentCommandBuffer());
         }
@@ -434,10 +442,6 @@ namespace hammock {
 
             // Begin frame by creating master command buffer
             if (VkCommandBuffer cmd = renderContext.beginFrame()) {
-                // Get the frame index. This is used to select buffered refs
-                uint32_t frameIndex = renderContext.getFrameIndex();
-                uint32_t imageIndex = renderContext.getImageIndex();
-
                 // Loop over passes in the optimized order
                 for (const auto &passIndex: optimizedOrderOfPasses) {
                     ASSERT(

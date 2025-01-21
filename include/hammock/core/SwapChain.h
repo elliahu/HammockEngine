@@ -25,8 +25,6 @@ namespace hammock {
 
         SwapChain &operator=(const SwapChain &) = delete;
 
-        [[nodiscard]] VkFramebuffer getFrameBuffer(const int index) const { return swapChainFramebuffers[index]; }
-        [[nodiscard]] VkRenderPass getRenderPass() const { return renderPass; }
         [[nodiscard]] VkImage getImage(const int index) const { return swapChainImages[index]; }
         [[nodiscard]] VkImageView getImageView(const int index) const { return swapChainImageViews[index]; }
         [[nodiscard]] size_t imageCount() const { return swapChainImages.size(); }
@@ -82,9 +80,6 @@ namespace hammock {
             return desc;
         }
 
-        // TODO getSwapChainDepthImageRefs
-        // TODO getSwapChainDepthImageDesc
-
         VkFormat findDepthFormat() const;
 
         VkResult acquireNextImage(uint32_t *imageIndex) const;
@@ -105,10 +100,6 @@ namespace hammock {
 
         void createDepthResources();
 
-        void createRenderPass();
-
-        void createFramebuffers();
-
         void createSyncObjects();
 
         // Helper functions
@@ -123,9 +114,6 @@ namespace hammock {
         VkFormat swapChainImageFormat;
         VkFormat swapChainDepthFormat;
         VkExtent2D swapChainExtent;
-
-        std::vector<VkFramebuffer> swapChainFramebuffers;
-        VkRenderPass renderPass;
 
 
         std::vector<VkImage> depthImages;

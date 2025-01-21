@@ -9,8 +9,6 @@
 #include "hammock/core/SwapChain.h"
 #include "hammock/core/Framebuffer.h"
 
-// black clear color
-#define HMCK_CLEAR_COLOR {0.f,0.f,0.f} //{ 0.f,171.f / 255.f,231.f / 255.f,1.f }
 
 namespace hammock {
     class RenderContext {
@@ -25,7 +23,6 @@ namespace hammock {
         RenderContext &operator=(const RenderContext &) = delete;
 
         [[nodiscard]] SwapChain* getSwapChain() const {return swapChain.get();};
-        [[nodiscard]] VkRenderPass getSwapChainRenderPass() const { return swapChain->getRenderPass(); }
         [[nodiscard]] float getAspectRatio() const { return swapChain->extentAspectRatio(); }
         [[nodiscard]] bool isFrameInProgress() const { return isFrameStarted; }
 
@@ -45,20 +42,10 @@ namespace hammock {
         }
 
         VkCommandBuffer beginFrame();
-
         void endFrame();
 
-        void beginSwapChainRenderPass(VkCommandBuffer commandBuffer) const;
-
-        void beginRenderPass(
-            const std::unique_ptr<Framebuffer> &framebuffer,
-            VkCommandBuffer commandBuffer,
-            const std::vector<VkClearValue> &clearValues) const;
-
-        void endRenderPass(VkCommandBuffer commandBuffer) const;
-
     private:
-        void createCommandBuffer();
+        void createCommandBuffers();
 
         void freeCommandBuffers();
 
