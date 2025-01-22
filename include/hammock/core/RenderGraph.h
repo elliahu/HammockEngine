@@ -12,6 +12,7 @@
 
 
 namespace hammock {
+
     /**
      * RenderGraph node representing a resource
      */

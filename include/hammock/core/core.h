@@ -14,3 +14,6 @@
 #include "HandmadeMath.h"
 #include "RenderGraph.h"
 #include "Types.h"
+#include "Image.h"
+#include "Buffer.h"
+#include "ResourceManager.h"

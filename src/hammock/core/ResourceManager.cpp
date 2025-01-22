@@ -1,4 +1,4 @@
-#include "hammock/core/Resource.h"
+#include "hammock/core/ResourceManager.h"
 
 #include <chrono>
 
