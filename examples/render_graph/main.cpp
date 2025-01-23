@@ -74,10 +74,6 @@ int main() {
     const auto graph = std::make_unique<RenderGraph>(device,rm, renderContext);
 
     graph->addSwapChainImageResource<ResourceNode::Type::SwapChainColorAttachment>("swap-color-image");
-    graph->addSwapChainImageResource<ResourceNode::Type::SwapChainDepthStencilAttachment>("swap-depth-image");
-
-
-
 
     std::unique_ptr<GraphicsPipeline> presentPipeline = GraphicsPipeline::createGraphicsPipelinePtr({
         .debugName = "present-pipeline",
@@ -104,7 +100,7 @@ int main() {
             .enabled = true,
             .colorAttachmentCount = 1,
             .colorAttachmentFormats = {renderContext.getSwapChain()->getSwapChainImageFormat()},
-            .depthAttachmentFormat = renderContext.getSwapChain()->getSwapChainDepthFormat(),
+            .depthAttachmentFormat = VK_FORMAT_UNDEFINED,
         }
     });
 
@@ -113,11 +109,6 @@ int main() {
             .resourceName = "swap-color-image",
             .requiredLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
             .finalLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR,
-        })
-        .write(ResourceAccess{
-            .resourceName = "swap-depth-image",
-            .requiredLayout = VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL,
-            .finalLayout = VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL,
         })
         .execute([&](RenderPassContext context) {
             storage.bindVertexBuffer(vertexBuffer, indexBuffer, context.commandBuffer);

@@ -5,6 +5,7 @@
 #include <complex>
 #include <variant>
 #include <type_traits>
+#include <optional>
 
 #include <hammock/core/Device.h>
 #include <hammock/core/CoreUtils.h>
@@ -404,7 +405,7 @@ namespace hammock {
          * @param pass Render pass
          * @return Returns VkRenderingAttachmentInfo of depth attachment from a pass
          */
-        VkRenderingAttachmentInfo collectDepthStencilAttachmentInfo(RenderPassNode &pass) {
+        std::optional<VkRenderingAttachmentInfo> collectDepthStencilAttachmentInfo(RenderPassNode &pass) {
             for (auto &access: pass.outputs) {
                 ResourceNode &node = resources[access.resourceName];
                 if (node.isSwapChainAttachment() && node.isDepthAttachment()) {
@@ -430,7 +431,7 @@ namespace hammock {
                 }
             }
 
-            return VkRenderingAttachmentInfo{};
+            return std::nullopt;
         }
 
         /**
@@ -472,7 +473,7 @@ namespace hammock {
         void beginRendering(RenderPassNode &pass) {
             // Collect attachments
             std::vector<VkRenderingAttachmentInfo> colorAttachments = collectColorAttachmentInfos(pass);
-            VkRenderingAttachmentInfo depthStencilAttachment = collectDepthStencilAttachmentInfo(pass);
+            auto depthStencilOptional = collectDepthStencilAttachmentInfo(pass);
 
             VkRenderingInfo renderingInfo{VK_STRUCTURE_TYPE_RENDERING_INFO_KHR};
             renderingInfo.renderArea = {
@@ -482,8 +483,8 @@ namespace hammock {
             renderingInfo.layerCount = 1;
             renderingInfo.colorAttachmentCount = colorAttachments.size();
             renderingInfo.pColorAttachments = colorAttachments.data();
-            renderingInfo.pDepthAttachment = &depthStencilAttachment;
-            renderingInfo.pStencilAttachment = nullptr;
+            renderingInfo.pDepthAttachment = depthStencilOptional.has_value() ? &depthStencilOptional.value() : VK_NULL_HANDLE;
+            renderingInfo.pStencilAttachment = VK_NULL_HANDLE;
 
             // Start a dynamic rendering
             vkCmdBeginRendering(renderContext.getCurrentCommandBuffer(), &renderingInfo);
