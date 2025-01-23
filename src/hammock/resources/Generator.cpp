@@ -150,7 +150,7 @@ hammock:: ResourceHandle<hammock::Texture2D> hammock::Generator::generatePrefilt
         checkResult(vkCreateFramebuffer(device.device(), &fbufCreateInfo, nullptr, &offscreen.framebuffer));
 
         VkCommandBuffer layoutCmd = device.beginSingleTimeCommands();
-        setImageLayout(
+        transitionImageLayout(
             layoutCmd,
             offscreen.image,
             VK_IMAGE_ASPECT_COLOR_BIT,
@@ -251,7 +251,7 @@ hammock:: ResourceHandle<hammock::Texture2D> hammock::Generator::generatePrefilt
     subresourceRange.layerCount = 1;
 
     // Change image layout for all cubemap faces to transfer destination
-    setImageLayout(
+    transitionImageLayout(
         cmdBuf,
         resources.getTexture2D(prefilteredMap)->image,
         VK_IMAGE_LAYOUT_UNDEFINED,
@@ -279,7 +279,7 @@ hammock:: ResourceHandle<hammock::Texture2D> hammock::Generator::generatePrefilt
 
         vkCmdEndRenderPass(cmdBuf);
 
-        setImageLayout(
+        transitionImageLayout(
             cmdBuf,
             offscreen.image,
             VK_IMAGE_ASPECT_COLOR_BIT,
@@ -315,7 +315,7 @@ hammock:: ResourceHandle<hammock::Texture2D> hammock::Generator::generatePrefilt
             &copyRegion);
 
         // Transform framebuffer color attachment back
-        setImageLayout(
+        transitionImageLayout(
             cmdBuf,
             offscreen.image,
             VK_IMAGE_ASPECT_COLOR_BIT,
@@ -323,7 +323,7 @@ hammock:: ResourceHandle<hammock::Texture2D> hammock::Generator::generatePrefilt
             VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
     }
 
-    setImageLayout(
+    transitionImageLayout(
         cmdBuf,
         resources.getTexture2D(prefilteredMap)->image,
         VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,

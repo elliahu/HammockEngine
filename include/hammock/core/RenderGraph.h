@@ -1,17 +1,21 @@
 #pragma once
 
-#include <hammock/core/Device.h>
-#include <hammock/core/CoreUtils.h>
 #include <functional>
 #include <cassert>
 #include <complex>
 #include <variant>
+#include <type_traits>
 
+#include <hammock/core/Device.h>
+#include <hammock/core/CoreUtils.h>
+#include "hammock/core/ResourceManager.h"
 #include "hammock/core/RenderContext.h"
 #include "hammock/core/Types.h"
 
 
 namespace hammock {
+    typedef std::function<experimental::ResourceHandle(experimental::ResourceManager &, uint32_t frameIndex)>
+    ResourceResolver;
 
     /**
      * RenderGraph node representing a resource
@@ -35,6 +39,32 @@ namespace hammock {
             DepthStencilAttachment,
         } type;
 
+        // Name is used for lookup
+        std::string name;
+
+        // Resolver is used to resolve the actual resource
+        ResourceResolver resolver;
+
+        // Chase to store handles to avoid constant recreation
+        std::vector<experimental::ResourceHandle> cachedHandles;
+
+        // Needs recreation
+        bool isDirty = true;
+
+        experimental::ResourceHandle resolve(experimental::ResourceManager &rm, uint32_t frameIndex) {
+            if (isDirty || cachedHandles.empty()) {
+                cachedHandles.resize(SwapChain::MAX_FRAMES_IN_FLIGHT);
+                isDirty = false;
+            }
+
+            if (cachedHandles[frameIndex].isValid()) {
+                cachedHandles[frameIndex] = resolver(rm, frameIndex);
+            }
+
+            return cachedHandles[frameIndex];
+        }
+
+
         bool isBuffer() const {
             return type == Type::UniformBuffer || type == Type::VertexBuffer || type == Type::IndexBuffer || type ==
                    Type::StorageBuffer;
@@ -56,34 +86,6 @@ namespace hammock {
         bool isSwapChainAttachment() const {
             return type == Type::SwapChainColorAttachment || type == Type::SwapChainDepthStencilAttachment;
         }
-
-        // Name is used for lookup
-        std::string name;
-
-        // Resource description
-        std::variant<BufferDesc, ImageDesc> desc;
-
-        // One handle per frame in flight
-        std::vector<ResourceRef> refs;
-
-        // Whether resource lives only within a frame
-        bool isTransient = true;
-        // Whether resource has one instance per frame in flight or just one overall
-        bool isBuffered = true;
-        // True if resource is externally owned (e.g. swapchain images)
-        bool isExternal = false;
-    };
-
-    /**
-     * Describes access intentions of a resource. Resource is references by its name from a resource map.
-     */
-    struct ResourceAccess {
-        std::string resourceName;
-        VkImageLayout requiredLayout; // Layout before rendering
-        VkImageLayout finalLayout; // layout after rendering, only for output resources, ignored for input resources
-        VkAttachmentLoadOp loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
-        VkAttachmentStoreOp storeOp = VK_ATTACHMENT_STORE_OP_STORE;
-        VkPipelineStageFlags stageFlags = VK_PIPELINE_STAGE_ALL_COMMANDS_BIT;
     };
 
     /**
@@ -96,26 +98,61 @@ namespace hammock {
         std::unordered_map<std::string, std::reference_wrapper<ResourceNode> > outputs;
     };
 
+    struct ResourceAccess {
+        std::string resourceName;
+        VkImageLayout requiredLayout = VK_IMAGE_LAYOUT_UNDEFINED; // Layout before rendering
+        VkImageLayout finalLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+        // layout after rendering, only for output resources, ignored for input resources
+        VkAttachmentLoadOp loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
+        VkAttachmentStoreOp storeOp = VK_ATTACHMENT_STORE_OP_STORE;
+        VkPipelineStageFlags stageFlags = VK_PIPELINE_STAGE_ALL_COMMANDS_BIT;
+    };
+
+    enum class RenderPassType {
+        // Represents a pass that draws into some image
+        Graphics,
+        // Represents a compute pass
+        Compute,
+        // Represents a transfer pass - data is moved from one location to another (eg. host -> device or device -> host)
+        Transfer
+    };
+
     /**
      * RenderGraph node representing a render pass
      */
     struct RenderPassNode {
-        enum class Type {
-            // Represents a pass that draws into some image
-            Graphics,
-            // Represents a compute pass
-            Compute,
-            // Represents a transfer pass - data is moved from one location to another (eg. host -> device or device -> host)
-            Transfer
-        } type; // Type of the pass
+        RenderPassType type; // Type of the pass
 
         std::string name; // Name of the pass for debug purposes and lookup
         VkExtent2D extent;
         std::vector<ResourceAccess> inputs; // Read accesses
         std::vector<ResourceAccess> outputs; // Write accesses
 
+
         // callback for rendering
         std::function<void(RenderPassContext)> executeFunc;
+
+        // builder methods
+
+        RenderPassNode &read(ResourceAccess access) {
+            inputs.emplace_back(access);
+            return *this;
+        }
+
+        RenderPassNode &write(ResourceAccess access) {
+            outputs.emplace_back(access);
+            return *this;
+        }
+
+        RenderPassNode &readModifyWrite(ResourceAccess access) {
+            // TODO
+            return *this;
+        }
+
+        RenderPassNode &execute(std::function<void(RenderPassContext)> exec) {
+            executeFunc = std::move(exec);
+            return *this;
+        }
     };
 
 
@@ -128,29 +165,36 @@ namespace hammock {
             RequiredLayout,
             FinalLayout
         };
-        explicit PipelineBarrier(ResourceNode &node, ResourceAccess &access, VkCommandBuffer commandBuffer,
-                         const uint32_t frameIndex, TransitionStage transitionStage) : node(node),
-                                                      access(access), commandBuffer(commandBuffer),
-                                                      frameIndex(frameIndex), transitionStage(transitionStage) {
+
+        explicit PipelineBarrier(experimental::ResourceManager &rm, RenderContext &renderContext, ResourceNode &node,
+                                 ResourceAccess &access,
+                                 TransitionStage transitionStage) : rm(rm), renderContext(renderContext), node(node),
+                                                                    access(access), transitionStage(transitionStage) {
         }
+
         /**
-         *  Checks if resource needs barrier transition give its access
+         *  Checks if resource needs barrier transition given its access
          * @return true if resource needs barrier transition, else false
          */
         bool isNeeded() const {
             if (node.isRenderingAttachment()) {
-                ASSERT(std::holds_alternative<ImageResourceRef>(node.refs[frameIndex].resource),
-                       "Node is image but does not hold image ref")
-                ;
-                const ImageResourceRef &ref = std::get<ImageResourceRef>(node.refs[frameIndex].resource);
+                if (node.isSwapChainAttachment()) {
+                    return true;
+                }
+                experimental::ResourceHandle handle = node.resolve(rm, renderContext.getFrameIndex());
+                experimental::Image *attachment = rm.getResource<experimental::Image>(handle);
+
                 if (transitionStage == TransitionStage::RequiredLayout) {
-                    return ref.currentLayout != access.requiredLayout;
-                } else if (transitionStage == TransitionStage::FinalLayout) {
-                    return ref.currentLayout != access.finalLayout;
+                    return attachment->getLayout() != access.requiredLayout;
+                }
+                if (transitionStage == TransitionStage::FinalLayout) {
+                    return attachment->getLayout() != access.finalLayout;
                 }
                 return false;
             }
-            // TODO support for buffer transition
+            if (node.isBuffer()) {
+                // TODO support for buffer transition
+            }
             return false;
         }
 
@@ -158,11 +202,12 @@ namespace hammock {
          * Applies pre-render pipeline barrier transition
          */
         void apply() const;
+
     private:
+        experimental::ResourceManager &rm;
+        RenderContext &renderContext;
         ResourceNode &node;
         ResourceAccess &access;
-        VkCommandBuffer commandBuffer;
-        uint32_t frameIndex = 0;
         TransitionStage transitionStage;
     };
 
@@ -181,6 +226,7 @@ namespace hammock {
         Device &device;
         // Rendering context
         RenderContext &renderContext;
+        experimental::ResourceManager &rm;
         // Maximal numer of frames that GPU works on concurrently
         uint32_t maxFramesInFlight;
         // Holds all the resources
@@ -190,80 +236,103 @@ namespace hammock {
         // Array of indexes into list of passes. Order is optimized by the optimizer.
         std::vector<uint32_t> optimizedOrderOfPasses;
 
-
-        /**
-         * Creates a resource for specific node
-         * @param resourceNode Node for which to create a resource
-         */
-        void createResource(ResourceNode &resourceNode);
-
-        /**
-         *  Creates a buffer with a ref
-         * @param resourceRef ResourceRef for resource to be created
-         * @param bufferDesc Desc struct that describes the buffer to be created
-         */
-        void createBuffer(ResourceRef &resourceRef, BufferDesc &bufferDesc) const;
-
-        /**
-         *  Creates image with a ref
-         * @param resourceRef ResourceRef for resource to be created
-         * @param imageDesc Desc struct that describes the image to be created
-         */
-        void createImage(ResourceRef &resourceRef, ImageDesc &desc) const;
-
-        /**
-         * Loops through resources and destroys those that are transient. This should be called at the end of a frame
-         */
-        void destroyTransientResources();
-
-        /**
-         * Destroys resource connected with this node
-         * @param resourceNode Resource node which resource will be destroyed
-         */
-        void destroyResource(ResourceNode &resourceNode) const;
-
     public:
-        RenderGraph(Device &device, RenderContext &context): device(device), renderContext(context),
-                                                             maxFramesInFlight(SwapChain::MAX_FRAMES_IN_FLIGHT) {
+        RenderGraph(Device &device, experimental::ResourceManager &rm, RenderContext &context): device(device), rm(rm),
+            renderContext(context),
+            maxFramesInFlight(SwapChain::MAX_FRAMES_IN_FLIGHT) {
         }
 
         ~RenderGraph() {
-            for (auto &resource: resources) {
-                ResourceNode &resourceNode = resource.second;
-
-                // We skip nodes of resources that are externally managed, these were created somewhere else and should be destroyed there as well
-                if (resourceNode.isExternal) { continue; }
-
-                destroyResource(resourceNode);
-            }
         }
 
-        /**
-         * Adds a resource node to the render graph
-         * @param resource Resource node to be added
-         */
-        void addResource(const ResourceNode &resource) {
-            resources[resource.name] = resource;
-            if (resource.refs.empty()) {
-                createResource(resources[resource.name]);
-            }
+
+        template<ResourceNode::Type Type>
+        void addStaticResource(const std::string &name, experimental::ResourceHandle handle) {
+            ResourceNode node;
+            node.type = Type;
+            node.name = name;
+            node.resolver = [handle](experimental::ResourceManager &rm, uint32_t frameIndex) {
+                return handle;
+            };
+            resources[name] = std::move(node);
         }
 
-        ResourceNode &getResource(const std::string &name) {
-            ASSERT(resources.contains(name), "Resource with name '" + name + "' does not exist");
-            return resources.at(name);
+        template<ResourceNode::Type Type, typename ResourceType, typename DescriptionType>
+        void addResource(const std::string &name, const DescriptionType &desc) {
+            ResourceNode node;
+            node.type = Type;
+            node.name = name;
+            node.resolver = [name, desc](experimental::ResourceManager &rm, uint32_t frameIndex) {
+                return rm.createResource<frameIndex, ResourceType>(name, desc);
+            };
+            resources[name] = std::move(node);
         }
 
-        /**
-         * Adds render pass to the render graph
-         * @param pass Render pass to be added
-         */
-        void addPass(const RenderPassNode &pass) {
-            for (auto &p: passes) {
-                ASSERT(p.name != pass.name, "Pass with this name aleady exists");
-            }
+        template<ResourceNode::Type Type, typename ResourceType, typename DescriptionType>
+        void addSwapChainDependentResource(const std::string &name,
+                                           std::function<DescriptionType(VkExtent2D)> modifier) {
+            ResourceNode node;
+            node.type = Type;
+            node.name = name;
+            node.resolver = [this,name, modifier](experimental::ResourceManager &rm, uint32_t frameIndex) {
+                VkExtent2D swapChainExtent = renderContext.getSwapChain()->getSwapChainExtent();
+                ASSERT(modifier, "Modifier is null!");
+                DescriptionType depDesc = modifier(swapChainExtent);
+                return rm.createResource<frameIndex, ResourceType>(name, depDesc);
+            };
+            resources[name] = std::move(node);
+        }
 
-            passes.push_back(pass);
+        // Add a resource that depends on another resource
+        template<ResourceNode::Type Type, typename ResourceType, typename DescriptionType>
+        void addDependentResource(const std::string &name, const std::string &dependency,
+                                  std::function<DescriptionType(experimental::ResourceHandle)> modifier) {
+            ResourceNode node;
+            node.type = Type;
+            node.name = name;
+            node.resolver = [this, name, dependency,modifier](experimental::ResourceManager &rm, uint32_t frameIndex) {
+                auto depHandle = resources.at(dependency).resolve(rm, frameIndex);
+                ASSERT(modifier, "Modifier is null!");
+                auto newDesc = modifier(depHandle);
+                return rm.createResource<ResourceType>(name, newDesc);
+            };
+            resources[name] = std::move(node);
+        }
+
+        template<ResourceNode::Type Type, typename = std::enable_if_t<
+            Type == ResourceNode::Type::SwapChainColorAttachment || Type ==
+            ResourceNode::Type::SwapChainDepthStencilAttachment> >
+        void addSwapChainImageResource(const std::string &name) {
+            ResourceNode node;
+            node.name = name;
+            node.type = Type;
+            node.resolver = nullptr;
+            resources[name] = std::move(node);
+        }
+
+
+        // // Add a conditional resource
+        // void addConditionalResource(const std::string& name,
+        //                           const ImageDesc& hdDesc,
+        //                           const ImageDesc& ldDesc) {
+        //     ResourceNode node;
+        //     node.resolver = [hdDesc, ldDesc](ResourceManager& rm, uint32_t frameIndex) {
+        //         return rm.isHighQualityMode() ?
+        //             rm.createResource(hdDesc, frameIndex) :
+        //             rm.createResource(ldDesc, frameIndex);
+        //     };
+        //     resources[name] = std::move(node);
+        // }
+
+
+        template<RenderPassType Type>
+        RenderPassNode &addPass(const std::string &name, VkExtent2D extent) {
+            RenderPassNode node;
+            node.name = name;
+            node.type = Type;
+            node.extent = extent;
+            passes.push_back(node);
+            return passes.back();
         }
 
         /**
@@ -280,7 +349,7 @@ namespace hammock {
 
         /**
          * Applies pipeline barrier transition where it is needed based on the stage
-         * @param pass Render pass 
+         * @param pass Render pass
          * @param cmd Valid command buffer
          * @param stage Stage of the barrier
          */
@@ -290,11 +359,8 @@ namespace hammock {
                        "Could not find the output");
 
                 ResourceNode &resourceNode = resources[access.resourceName];
-                PipelineBarrier barrier(resourceNode, access, renderContext.getCurrentCommandBuffer(),
-                                    resourceNode.isSwapChainAttachment()
-                                        ? renderContext.getImageIndex()
-                                        : renderContext.getFrameIndex(),stage);
-                if ( barrier.isNeeded()) {
+                PipelineBarrier barrier(rm, renderContext, resourceNode, access, stage);
+                if (barrier.isNeeded()) {
                     barrier.apply();
                 }
             }
@@ -305,29 +371,31 @@ namespace hammock {
          * @param pass Render pass
          * @return Returns list of render passes color attachments
          */
-        std::vector<VkRenderingAttachmentInfo> collectColorAttachmentInfos(RenderPassNode& pass){
+        std::vector<VkRenderingAttachmentInfo> collectColorAttachmentInfos(RenderPassNode &pass) {
             std::vector<VkRenderingAttachmentInfo> colorAttachments;
             for (auto &access: pass.outputs) {
-                ASSERT(resources.find(access.resourceName) != resources.end(),
-                               "Could not find the output");
-                ResourceNode &resourceNode = resources[access.resourceName];
-
-                if (resourceNode.isColorAttachment()) {
-
-                    ImageResourceRef &imageRef = std::get<ImageResourceRef>(
-                                resourceNode.isSwapChainAttachment()
-                                    ? resourceNode.refs[renderContext.getImageIndex()].resource
-                                    : resourceNode.refs[renderContext.getFrameIndex()].resource
-                            );
-                    VkRenderingAttachmentInfo attachment{VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO};
-                    attachment.imageView = imageRef.view;
-                    attachment.imageLayout = imageRef.currentLayout;
-                    attachment.loadOp = access.loadOp;
-                    attachment.storeOp = access.storeOp;
-                    attachment.clearValue = imageRef.clearValue;
-                    colorAttachments.push_back(attachment);
+                ResourceNode &node = resources[access.resourceName];
+                if (node.isSwapChainAttachment() && node.isColorAttachment()) {
+                    VkRenderingAttachmentInfo attachmentInfo{};
+                    attachmentInfo.sType = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO;
+                    attachmentInfo.imageView = renderContext.getSwapChain()->
+                            getImageView(renderContext.getImageIndex());
+                    attachmentInfo.imageLayout = access.requiredLayout;
+                    attachmentInfo.clearValue = {};
+                    attachmentInfo.loadOp = access.loadOp;
+                    attachmentInfo.storeOp = access.storeOp;
+                    colorAttachments.push_back(attachmentInfo);
+                } else if (node.isColorAttachment()) {
+                    ASSERT(node.resolver, "Resolver is nullptr!");
+                    experimental::ResourceHandle handle = node.resolve(rm, renderContext.getFrameIndex());
+                    experimental::Image *image = rm.getResource<experimental::Image>(handle);
+                    VkRenderingAttachmentInfo attachmentInfo = image->getRenderingAttachmentInfo();
+                    attachmentInfo.loadOp = access.loadOp;
+                    attachmentInfo.storeOp = access.storeOp;
+                    colorAttachments.push_back(attachmentInfo);
                 }
             }
+
             return colorAttachments;
         }
 
@@ -336,26 +404,29 @@ namespace hammock {
          * @param pass Render pass
          * @return Returns VkRenderingAttachmentInfo of depth attachment from a pass
          */
-        VkRenderingAttachmentInfo collectDepthStencilAttachmentInfo(RenderPassNode& pass) {
+        VkRenderingAttachmentInfo collectDepthStencilAttachmentInfo(RenderPassNode &pass) {
             for (auto &access: pass.outputs) {
-                ASSERT(resources.find(access.resourceName) != resources.end(),
-                               "Could not find the output");
-                ResourceNode &resourceNode = resources[access.resourceName];
+                ResourceNode &node = resources[access.resourceName];
+                if (node.isSwapChainAttachment() && node.isDepthAttachment()) {
+                    VkRenderingAttachmentInfo attachmentInfo{};
+                    attachmentInfo.sType = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO;
+                    attachmentInfo.imageView = renderContext.getSwapChain()->
+                            getDepthImageView(renderContext.getImageIndex());
+                    attachmentInfo.imageLayout = access.requiredLayout;
+                    attachmentInfo.clearValue = {};
+                    attachmentInfo.loadOp = access.loadOp;
+                    attachmentInfo.storeOp = access.storeOp;
+                    return attachmentInfo;
+                }
 
-                if (resourceNode.isDepthAttachment()) {
-
-                    ImageResourceRef &imageRef = std::get<ImageResourceRef>(
-                                resourceNode.isSwapChainAttachment()
-                                    ? resourceNode.refs[renderContext.getImageIndex()].resource
-                                    : resourceNode.refs[renderContext.getFrameIndex()].resource
-                            );
-                    VkRenderingAttachmentInfo attachment{VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO};
-                    attachment.imageView = imageRef.view;
-                    attachment.imageLayout = imageRef.currentLayout;
-                    attachment.loadOp = access.loadOp;
-                    attachment.storeOp = access.storeOp;
-                    attachment.clearValue = imageRef.clearValue;
-                    return attachment;
+                if (node.isDepthAttachment()) {
+                    ASSERT(node.resolver, "Resolver is nullptr!");
+                    experimental::ResourceHandle handle = node.resolve(rm, renderContext.getFrameIndex());
+                    experimental::Image *image = rm.getResource<experimental::Image>(handle);
+                    VkRenderingAttachmentInfo attachmentInfo = image->getRenderingAttachmentInfo();
+                    attachmentInfo.loadOp = access.loadOp;
+                    attachmentInfo.storeOp = access.storeOp;
+                    return attachmentInfo;
                 }
             }
 
@@ -398,7 +469,7 @@ namespace hammock {
          * Begins the rendering using the dynamic rendering extension
          * @param pass Current Render pass
          */
-        void beginRendering(RenderPassNode& pass) {
+        void beginRendering(RenderPassNode &pass) {
             // Collect attachments
             std::vector<VkRenderingAttachmentInfo> colorAttachments = collectColorAttachmentInfos(pass);
             VkRenderingAttachmentInfo depthStencilAttachment = collectDepthStencilAttachmentInfo(pass);

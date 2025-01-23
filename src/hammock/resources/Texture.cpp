@@ -250,7 +250,7 @@ void hammock::Texture2D::createSampler(const Device &device,
 void hammock::Texture2D::generateMipMaps(const Device &device, const uint32_t mipLevels) const {
     VkCommandBuffer commandBuffer = device.beginSingleTimeCommands();
 
-    setImageLayout(commandBuffer, image, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, {
+    transitionImageLayout(commandBuffer, image, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, {
                        .aspectMask = VK_IMAGE_ASPECT_COLOR_BIT,
                        .baseMipLevel = 0,
                        .levelCount = mipLevels,

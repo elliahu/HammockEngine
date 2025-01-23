@@ -26,7 +26,9 @@ namespace hammock {
         SwapChain &operator=(const SwapChain &) = delete;
 
         [[nodiscard]] VkImage getImage(const int index) const { return swapChainImages[index]; }
+        [[nodiscard]] VkImage getDepthImage(const int index) const { return depthImages[index]; }
         [[nodiscard]] VkImageView getImageView(const int index) const { return swapChainImageViews[index]; }
+        [[nodiscard]] VkImageView getDepthImageView(const int index) const { return depthImageViews[index]; }
         [[nodiscard]] size_t imageCount() const { return swapChainImages.size(); }
         [[nodiscard]] VkFormat getSwapChainImageFormat() const { return swapChainImageFormat; }
         [[nodiscard]] VkFormat getSwapChainDepthFormat() const { return swapChainDepthFormat; }

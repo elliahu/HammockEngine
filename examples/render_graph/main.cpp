@@ -15,6 +15,7 @@ int main() {
     hammock::Window window{instance, "Render Graph", 1920, 1080};
     Device device{instance, window.getSurface()};
     DeviceStorage storage{device};
+    experimental::ResourceManager rm{device};
     // TODO decouple context and window
     RenderContext renderContext{window, device};
 
@@ -70,53 +71,13 @@ int main() {
         });
     }
 
-    const auto graph = std::make_unique<RenderGraph>(device, renderContext);
+    const auto graph = std::make_unique<RenderGraph>(device,rm, renderContext);
 
-    ImageDesc swapImageDesc = renderContext.getSwapChain()->getSwapChainColorImageDesc();
-    ImageDesc swapDepthDesc = renderContext.getSwapChain()->getSwapChainDepthImageDesc();
+    graph->addSwapChainImageResource<ResourceNode::Type::SwapChainColorAttachment>("swap-color-image");
+    graph->addSwapChainImageResource<ResourceNode::Type::SwapChainDepthStencilAttachment>("swap-depth-image");
 
-    graph->addResource(ResourceNode{
-        .type = ResourceNode::Type::SwapChainColorAttachment,
-        .name = "swap-image",
-        .desc = swapImageDesc,
-        .refs = renderContext.getSwapChain()->getSwapChainColorAttachmetsRefs(),
-        .isExternal = true
-    });
 
-    graph->addResource(ResourceNode{
-        .type = ResourceNode::Type::SwapChainDepthStencilAttachment,
-        .name = "swap-depth-image",
-        .desc = swapDepthDesc,
-        .refs = renderContext.getSwapChain()->getSwapChainDepthAttachmetsRefs(),
-        .isExternal = true
-    });
 
-    // // This image has no resource ref so it will be created and manged by RenderGraph
-    // graph->addResource(ResourceNode{
-    //     .type = ResourceNode::Type::Image,
-    //     .name = "color-image",
-    //     .desc = ImageDesc{
-    //         .size = {1.0f, 1.0f}, // SwapChain relative by default
-    //         .format = renderContext.getSwapChain()->getSwapChainImageFormat(),
-    //         .usage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT
-    //     }
-    // });
-
-    // graph->addPass(RenderPassNode{
-    //     .type = RenderPassNode::Type::Graphics,
-    //     .name = "color-pass",
-    //     .extent = renderContext.getSwapChain()->getSwapChainExtent(),
-    //     .inputs = {},
-    //     .outputs = {
-    //         {
-    //             "color-image", VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, VK_ATTACHMENT_LOAD_OP_DONT_CARE,
-    //             VK_ATTACHMENT_STORE_OP_STORE
-    //         }
-    //     },
-    //     .executeFunc = [&](RenderPassContext context) {
-    //         std::cout << "Color pass executed" << std::endl;
-    //     }
-    // });
 
     std::unique_ptr<GraphicsPipeline> presentPipeline = GraphicsPipeline::createGraphicsPipelinePtr({
         .debugName = "present-pipeline",
@@ -139,35 +100,30 @@ int main() {
         .dynamicRendering = {
             .enabled = true,
             .colorAttachmentCount = 1,
-            .colorAttachmentFormats = {swapImageDesc.format},
+            .colorAttachmentFormats = {renderContext.getSwapChain()->getSwapChainImageFormat()},
             .depthAttachmentFormat = renderContext.getSwapChain()->getSwapChainDepthFormat(),
         }
     });
 
-    graph->addPass(RenderPassNode{
-        .type = RenderPassNode::Type::Graphics,
-        .name = "present-pass",
-        .extent = renderContext.getSwapChain()->getSwapChainExtent(),
-        // .inputs = {
-        //     {
-        //         "color-image", VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, VK_ATTACHMENT_LOAD_OP_LOAD
-        //     }
-        // },
-        .outputs = {
-            {
-                "swap-image", VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, VK_IMAGE_LAYOUT_PRESENT_SRC_KHR,
-                VK_ATTACHMENT_LOAD_OP_DONT_CARE
-            },
-            {
-                "swap-depth-image", VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL, VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL,
-                VK_ATTACHMENT_LOAD_OP_DONT_CARE
-            }
-        },
-        .executeFunc = [&](RenderPassContext context) {
+    graph->addPass<RenderPassType::Graphics>("present-pass", renderContext.getSwapChain()->getSwapChainExtent())
+        .write(ResourceAccess{
+            .resourceName = "swap-color-image",
+            .requiredLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+            .finalLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR,
+        })
+        .write(ResourceAccess{
+            .resourceName = "swap-depth-image",
+            .requiredLayout = VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL,
+            .finalLayout = VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL,
+        })
+        .execute([&](RenderPassContext context) {
             storage.bindVertexBuffer(vertexBuffer, indexBuffer, context.commandBuffer);
             presentPipeline->bind(context.commandBuffer);
 
             // Update buffer data
+            HmckMat4 projection = Projection().perspective(45.f, renderContext.getAspectRatio(), 0.1f, 100.f);
+            HmckMat4 view = Projection().view(HmckVec3{0.f, 0.f, 2.0f}, HmckVec3{0.f,0.f,0.f}, Projection().upPosY());
+            ubo.mvp = projection * view;
 
             storage.getBuffer(buffers[context.frameIndex])->writeToBuffer(&ubo);
 
@@ -181,8 +137,9 @@ int main() {
                 nullptr);
 
             vkCmdDraw(context.commandBuffer, 3, 1, 0, 0);
-        }
-    });
+        });
+
+
 
     graph->compile();
 

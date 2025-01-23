@@ -17,14 +17,19 @@ namespace hammock {
             static std::unique_ptr<T> create(Device &device, uint64_t id, Args &&... args) {
                 return std::unique_ptr<T>(new T(device, id, std::forward<Args>(args)...));
             }
+
         };
 ;
 
         // Resource Manager class
         class ResourceManager {
         private:
+          	using ResourceMap = std::unordered_map<uint64_t, std::unique_ptr<Resource> >;
+
             Device &device;
-            std::unordered_map<uint64_t, std::unique_ptr<Resource> > resources;
+            ResourceMap resources;
+            std::unordered_map<uint64_t, int32_t> frameDependencies;
+
             VkDeviceSize totalMemoryUsed;
             VkDeviceSize memoryBudget;
             uint64_t nextId;
@@ -38,6 +43,7 @@ namespace hammock {
             std::unordered_map<uint64_t, CacheEntry> resourceCache;
 
         public:
+
             explicit ResourceManager(Device &device, VkDeviceSize memoryBudget = 6ULL * 1024 * 1024 * 1024)
             // 6GB default
                 : device(device), totalMemoryUsed(0), memoryBudget(memoryBudget), nextId(1) {
@@ -46,7 +52,7 @@ namespace hammock {
             ~ResourceManager();
 
 
-            template<typename T, typename... Args>
+            template<int FrameIdx = -1, typename T,  typename... Args>
             ResourceHandle createResource(Args &&... args) {
                 static_assert(ResourceTypeTraits<T>::type != ResourceType::Invalid,
                               "Resource type not registered in ResourceTypeTraits");
@@ -63,10 +69,14 @@ namespace hammock {
                 }
 
                 resources[id] = std::move(resource);
+                frameDependencies[id] = FrameIdx;
                 resourceCache[id] = {getCurrentTimestamp(), 0};
 
                 return ResourceHandle::create(ResourceTypeTraits<T>::type, id);
             }
+
+
+
 
             template<typename T>
             T *getResource(ResourceHandle handle) {
@@ -92,6 +102,7 @@ namespace hammock {
                 }
                 return nullptr;
             }
+
 
             // Helper to get resource type name
             const char *getResourceTypeName(ResourceHandle handle) {

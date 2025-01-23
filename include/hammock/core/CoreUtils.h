@@ -237,7 +237,7 @@ namespace hammock {
         return static_cast<uint32_t>(floor(log2(std::ranges::min(width, height)))) + 1;
     }
 
-    inline void setImageLayout(
+    inline void transitionImageLayout(
         VkCommandBuffer cmdbuffer,
         VkImage image,
         VkImageLayout oldImageLayout,
@@ -357,7 +357,7 @@ namespace hammock {
     }
 
     // Fixed sub resource on first mip level and layer
-    inline void setImageLayout(
+    inline void transitionImageLayout(
         VkCommandBuffer cmdbuffer,
         VkImage image,
         VkImageAspectFlags aspectMask,
@@ -370,7 +370,7 @@ namespace hammock {
         subresourceRange.baseMipLevel = 0;
         subresourceRange.levelCount = 1;
         subresourceRange.layerCount = 1;
-        setImageLayout(cmdbuffer, image, oldImageLayout, newImageLayout, subresourceRange, srcStageMask, dstStageMask);
+        transitionImageLayout(cmdbuffer, image, oldImageLayout, newImageLayout, subresourceRange, srcStageMask, dstStageMask);
     }
 
     inline size_t alignSize(size_t size, size_t alignment) {

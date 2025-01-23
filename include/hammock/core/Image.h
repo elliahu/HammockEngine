@@ -1,9 +1,9 @@
 #pragma once
 #include "hammock/core/Types.h"
+#include "hammock/core/CoreUtils.h"
 
 namespace hammock {
     namespace experimental {
-
         class Image : public Resource {
         protected:
             // Format and usage
@@ -22,7 +22,7 @@ namespace hammock {
             VmaAllocation m_allocation = VK_NULL_HANDLE;
 
             // Attachment
-            VkClearValue clearValue = {};
+            VkClearValue m_clearValue = {};
 
             Image(Device &device, uint64_t id, const std::string &name, const ImageDesc &desc) : Resource(
                 device, id, name) {
@@ -43,7 +43,7 @@ namespace hammock {
                 // Vulkan handles are created in load function on demand
 
                 // attachment
-                clearValue = desc.clearValue;
+                m_clearValue = desc.clearValue;
 
                 // Check for support
                 VkFormatProperties formatProperties;
@@ -62,6 +62,54 @@ namespace hammock {
             }
 
         public:
+            VkImageLayout getLayout() const { return m_layout; }
+            VkImage getImage() const { return m_image; }
+            VkImageView getView() const { return m_view; }
+            VkFormat getFormat() const { return m_format; }
+            uint32_t getMipLevel() const { return m_mips; }
+            uint32_t getLayerLevel() const { return m_layers; }
+
+            [[nodiscard]] VkRenderingAttachmentInfo getRenderingAttachmentInfo() const {
+                return {
+                    .sType = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO,
+                    .imageView = m_view,
+                    .imageLayout = m_layout,
+                    .clearValue = m_clearValue
+                };
+            }
+
+            VkImageAspectFlags getAspectMask() const {
+                return isDepthStencilImage()
+                           ? VK_IMAGE_ASPECT_DEPTH_BIT
+                           : VK_IMAGE_ASPECT_COLOR_BIT;
+            };
+
+            /**
+             * Transitions to new layout. Transition is recorder to separate command buffer that is submitted after at the end of the call.
+             * Might cause sync hazard. Do not call in frame.
+             * @param newLayout New layout
+             */
+            void queueTransitionImageLayout(VkImageLayout newLayout) {
+                device.transitionImageLayout(m_image, m_layout, newLayout, m_layers, 0, m_mips, 0);
+                m_layout = newLayout;
+            }
+
+            /**
+             * Transitions to new layout. Transition is recorder in the provied command buffer.
+             * @param cmd Command buffer
+             * @param newLayout New layout
+             */
+            void transitionLayout(VkCommandBuffer cmd, VkImageLayout newLayout) {
+                VkImageSubresourceRange subresourceRange = {};
+                subresourceRange.aspectMask = getAspectMask();
+                subresourceRange.baseMipLevel = 0;
+                subresourceRange.levelCount = m_mips;
+                subresourceRange.baseArrayLayer = 0;
+                subresourceRange.layerCount = m_layers;
+                transitionImageLayout(cmd, m_image, m_layout, newLayout, subresourceRange);
+                m_layout = newLayout;
+            }
+
             /**
              * Creates the resource on device. This is called when ever this resource is requested and is not resident
              */
@@ -129,12 +177,13 @@ namespace hammock {
             void generateMips() {
                 VkCommandBuffer commandBuffer = device.beginSingleTimeCommands();
 
-                setImageLayout(commandBuffer, m_image, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, {
-                                   .aspectMask = VK_IMAGE_ASPECT_COLOR_BIT,
-                                   .baseMipLevel = 0,
-                                   .levelCount = m_mips,
-                                   .layerCount = 1
-                               });
+                transitionImageLayout(commandBuffer, m_image, VK_IMAGE_LAYOUT_UNDEFINED,
+                                      VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, {
+                                          .aspectMask = VK_IMAGE_ASPECT_COLOR_BIT,
+                                          .baseMipLevel = 0,
+                                          .levelCount = m_mips,
+                                          .layerCount = 1
+                                      });
 
                 VkImageMemoryBarrier barrier{};
                 barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
@@ -214,10 +263,22 @@ namespace hammock {
                 device.endSingleTimeCommands(commandBuffer);
                 vkQueueWaitIdle(device.graphicsQueue());
             }
+
+            bool isDepthImage() const {
+                return isDepthFormat(m_format);
+            }
+
+            bool isSteniclImage() const {
+                return isStencilFormat(m_format);
+            }
+
+            bool isDepthStencilImage() const {
+                return isDepthStencil(m_format);
+            }
         };
 
         template<>
-       struct ResourceTypeTraits<Image> {
+        struct ResourceTypeTraits<Image> {
             static constexpr ResourceType type = ResourceType::Image;
         };
     }
