@@ -83,7 +83,7 @@ int main() {
         .debugName = "present-pipeline",
         .device = device,
         .VS
-        {.byteCode = Filesystem::readFile(compiledShaderPath("fullscreen.vert")),},
+        {.byteCode = Filesystem::readFile(compiledShaderPath("rendergraph.vert")),},
         .FS
         {.byteCode = Filesystem::readFile(compiledShaderPath("rendergraph.frag")),},
         .descriptorSetLayouts = {
@@ -91,7 +91,10 @@ int main() {
         },
         .pushConstantRanges{},
         .graphicsState{
-            .cullMode = VK_CULL_MODE_NONE,
+            .depthTest = VK_FALSE,
+            .blendAtaAttachmentStates{
+                Init::pipelineColorBlendAttachmentState(0xf, VK_FALSE)
+            },
             .vertexBufferBindings{
                 .vertexBindingDescriptions = Vertex::vertexInputBindingDescriptions(),
                 .vertexAttributeDescriptions = Vertex::vertexInputAttributeDescriptions()
@@ -122,7 +125,7 @@ int main() {
 
             // Update buffer data
             HmckMat4 projection = Projection().perspective(45.f, renderContext.getAspectRatio(), 0.1f, 100.f);
-            HmckMat4 view = Projection().view(HmckVec3{0.f, 0.f, 2.0f}, HmckVec3{0.f,0.f,0.f}, Projection().upPosY());
+            HmckMat4 view = Projection().view(HmckVec3{0.f, 0.f, 6.0f}, HmckVec3{0.f,0.f,0.f}, Projection().upPosY());
             ubo.mvp = projection * view;
 
             storage.getBuffer(buffers[context.frameIndex])->writeToBuffer(&ubo);
@@ -136,7 +139,7 @@ int main() {
                 0,
                 nullptr);
 
-            vkCmdDraw(context.commandBuffer, 3, 1, 0, 0);
+            vkCmdDrawIndexed(context.commandBuffer, geometry.indices.size(), 1, 0, 0,0);
         });
 
 
