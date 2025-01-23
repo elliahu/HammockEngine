@@ -118,14 +118,20 @@ namespace hammock {
         Transfer
     };
 
+    enum class ViewPortSize {
+        SwapChainRelative,
+        Fixed,
+    };
+
     /**
      * RenderGraph node representing a render pass
      */
     struct RenderPassNode {
         RenderPassType type; // Type of the pass
+        ViewPortSize viewportSize; // Size of viewport
 
         std::string name; // Name of the pass for debug purposes and lookup
-        VkExtent2D extent;
+        HmckVec4 viewport;
         std::vector<ResourceAccess> inputs; // Read accesses
         std::vector<ResourceAccess> outputs; // Write accesses
 
@@ -348,12 +354,13 @@ namespace hammock {
 
 
 
-        template<RenderPassType Type>
-        RenderPassNode &addPass(const std::string &name, VkExtent2D extent) {
+        template<RenderPassType Type, ViewPortSize ViewPortSize, float ViewPortWidth = 1.0f, float ViewPortHeight = 1.0f, float ViewPortDepthMin = 0.f, float ViewPortDepthMax = 1.f>
+        RenderPassNode &addPass(const std::string &name) {
             RenderPassNode node;
             node.name = name;
             node.type = Type;
-            node.extent = extent;
+            node.viewportSize = ViewPortSize;
+            node.viewport = HmckVec4{ViewPortWidth, ViewPortHeight, ViewPortDepthMin, ViewPortDepthMax};
             passes.push_back(node);
             return passes.back();
         }
@@ -512,10 +519,11 @@ namespace hammock {
             vkCmdBeginRendering(renderContext.getCurrentCommandBuffer(), &renderingInfo);
 
             // Set viewport and scissors
-            VkViewport viewport = hammock::Init::viewport(
-                static_cast<float>(pass.extent.width), static_cast<float>(pass.extent.height),
-                0.0f, 1.0f);
-            VkRect2D scissor{{0, 0}, pass.extent};
+            VkViewport viewport = Init::viewport(pass.viewport.X, pass.viewport.Y, pass.viewport.Z, pass.viewport.W);
+            if (pass.viewportSize == ViewPortSize::SwapChainRelative) {
+                viewport = Init::viewport(pass.viewport.X * renderContext.getSwapChain()->getSwapChainExtent().width, pass.viewport.Y * renderContext.getSwapChain()->getSwapChainExtent().height, pass.viewport.Z, pass.viewport.W);
+            }
+            VkRect2D scissor{{0, 0}, VkExtent2D{static_cast<uint32_t>(viewport.width), static_cast<uint32_t>(viewport.height)}};
             vkCmdSetViewport(renderContext.getCurrentCommandBuffer(), 0, 1, &viewport);
             vkCmdSetScissor(renderContext.getCurrentCommandBuffer(), 0, 1, &scissor);
         }

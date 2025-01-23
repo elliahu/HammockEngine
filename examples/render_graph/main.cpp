@@ -107,7 +107,7 @@ int main() {
     //
     //     });
 
-    graph->addPass<RenderPassType::Graphics>("present-pass", renderContext.getSwapChain()->getSwapChainExtent())
+    graph->addPass<RenderPassType::Graphics, ViewPortSize::SwapChainRelative>("present-pass")
         .write(ResourceAccess{
             .resourceName = "swap-color-image",
             .requiredLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
