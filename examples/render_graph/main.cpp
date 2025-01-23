@@ -51,6 +51,10 @@ int main() {
                 .binding = 0, .descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
                 .stageFlags = VK_SHADER_STAGE_ALL_GRAPHICS
             },
+            {
+                .binding = 1, .descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
+                .stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT
+            }
         }
     });
 
@@ -65,6 +69,7 @@ int main() {
 
     for (int i = 0; i < SwapChain::MAX_FRAMES_IN_FLIGHT; i++) {
         auto fbufferInfo = storage.getBuffer(buffers[i])->descriptorInfo();
+        auto imageInfo =
         descriptorSets[i] = storage.createDescriptorSet({
             .descriptorSetLayout = descriptorSetLayout,
             .bufferWrites = {{0, fbufferInfo}},
@@ -74,7 +79,40 @@ int main() {
     const auto graph = std::make_unique<RenderGraph>(device,rm, renderContext);
 
     graph->addSwapChainImageResource<ResourceNode::Type::SwapChainColorAttachment>("swap-color-image");
+    graph->addSwapChainDependentResource<ResourceNode::Type::ColorAttachment, experimental::Image, ImageDesc>("half-res-image", [&](VkExtent2D swapchain)->ImageDesc {
+        return ImageDesc{
+            .width =  swapchain.width / 2,
+            .height =  swapchain.height / 2,
+            .channels = 4,
+            .format = VK_FORMAT_R8G8B8A8_SRGB,
+            .usage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,
+            .imageType = VK_IMAGE_TYPE_2D,
+            .imageViewType =VK_IMAGE_VIEW_TYPE_2D,
+        };
+    });
 
+
+    std::unique_ptr<GraphicsPipeline> halfResPipeline = GraphicsPipeline::createGraphicsPipelinePtr({
+        .debugName = "half-res-pipeline",
+        .device = device,
+        .VS
+        {.byteCode = Filesystem::readFile(compiledShaderPath("fullscreen.vert")),},
+        .FS
+        {.byteCode = Filesystem::readFile(compiledShaderPath("fullscreen.frag")),},
+        .descriptorSetLayouts = {},
+        .pushConstantRanges{},
+        .graphicsState{
+            .vertexBufferBindings{
+                .vertexBindingDescriptions = Vertex::vertexInputBindingDescriptions(),
+                .vertexAttributeDescriptions = Vertex::vertexInputAttributeDescriptions()
+            }
+        },
+        .dynamicRendering = {
+            .enabled = true,
+            .colorAttachmentCount = 1,
+            .colorAttachmentFormats = {renderContext.getSwapChain()->getSwapChainImageFormat()},
+        }
+    });
 
     std::unique_ptr<GraphicsPipeline> presentPipeline = GraphicsPipeline::createGraphicsPipelinePtr({
         .debugName = "present-pipeline",
@@ -97,23 +135,33 @@ int main() {
             .enabled = true,
             .colorAttachmentCount = 1,
             .colorAttachmentFormats = {renderContext.getSwapChain()->getSwapChainImageFormat()},
-            .depthAttachmentFormat = VK_FORMAT_UNDEFINED,
         }
     });
 
-    // graph->addPass<RenderPassType::Graphics>("first-pass", renderContext.getSwapChain()->getSwapChainExtent())
-    //     .write(ResourceAccess{
-    //         .resourceName = "generated-image",
-    //
-    //     });
+    graph->addPass<RenderPassType::Graphics, ViewPortSize::SwapChainRelative>("half-res-pass")
+        .write(ResourceAccess{
+            .resourceName = "half-res-image",
+            .requiredLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+            .finalLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+        })
+        .execute([&](RenderPassContext context)->void {
+            storage.bindVertexBuffer(vertexBuffer, indexBuffer, context.commandBuffer);
+            halfResPipeline->bind(context.commandBuffer);
+            vkCmdDraw(context.commandBuffer, 3, 1, 0, 0);
+        });
 
     graph->addPass<RenderPassType::Graphics, ViewPortSize::SwapChainRelative>("present-pass")
+        .read(ResourceAccess{
+            .resourceName = "half-res-image",
+            .requiredLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+            .loadOp = VK_ATTACHMENT_LOAD_OP_LOAD
+        })
         .write(ResourceAccess{
             .resourceName = "swap-color-image",
             .requiredLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
             .finalLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR,
         })
-        .execute([&](RenderPassContext context) {
+        .execute([&](RenderPassContext context)->void {
             storage.bindVertexBuffer(vertexBuffer, indexBuffer, context.commandBuffer);
             presentPipeline->bind(context.commandBuffer);
 
@@ -136,31 +184,7 @@ int main() {
             vkCmdDrawIndexed(context.commandBuffer, geometry.indices.size(), 1, 0, 0,0);
         });
 
-
-
     graph->compile();
-
-
-    // std::unique_ptr<GraphicsPipeline> colorPipeline = GraphicsPipeline::createGraphicsPipelinePtr({
-    //     .debugName = "color-pipeline",
-    //     .device = device,
-    //     .VS
-    //     {.byteCode = Filesystem::readFile(compiledShaderPath("rendergraph.vert")),},
-    //     .FS
-    //     {.byteCode = Filesystem::readFile(compiledShaderPath("rendergraph.frag")),},
-    //     .descriptorSetLayouts = {
-    //         storage.getDescriptorSetLayout(descriptorSetLayout).getDescriptorSetLayout()
-    //     },
-    //     .pushConstantRanges{},
-    //     .graphicsState{
-    //         .cullMode = VK_CULL_MODE_NONE,
-    //         .vertexBufferBindings{
-    //             .vertexBindingDescriptions = Vertex::vertexInputBindingDescriptions(),
-    //             .vertexAttributeDescriptions = Vertex::vertexInputAttributeDescriptions()
-    //         }
-    //     },
-    //     .renderPass = graph->getRenderPass("color-pass"),
-    // });
 
 
     while (!window.shouldClose()) {

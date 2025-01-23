@@ -129,7 +129,6 @@ namespace hammock {
     * Describes general image.
     */
     struct ImageDesc {
-        HmckVec2 size{};
         uint32_t width, height, channels = 4, depth = 1, layers = 1, mips = 1;
         VkFormat format;
         VkImageUsageFlags usage;

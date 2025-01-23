@@ -141,6 +141,7 @@ namespace hammock {
 
         // builder methods
 
+        // TODO sampler info
         RenderPassNode &read(ResourceAccess access) {
             inputs.emplace_back(access);
             return *this;
@@ -353,7 +354,17 @@ namespace hammock {
         }
 
 
-
+        /**
+         *
+         * @tparam Type Type of the Pass (Graphics, Transfer, Compute)
+         * @tparam ViewPortSize ViewPortSize class (SwapChainRelative, Fixed)
+         * @tparam ViewPortWidth ViewPort width multiplier (if Fixed, then absolute width)
+         * @tparam ViewPortHeight ViewPort height multiplier (if Fixed, then absolute height)
+         * @tparam ViewPortDepthMin Min depth value
+         * @tparam ViewPortDepthMax Max depth value
+         * @param name Name of the render pass
+         * @return Returns reference to the RenderPassNode node that can be used to set additional parameters. See RenderPassNode definition.
+         */
         template<RenderPassType Type, ViewPortSize ViewPortSize, float ViewPortWidth = 1.0f, float ViewPortHeight = 1.0f, float ViewPortDepthMin = 0.f, float ViewPortDepthMax = 1.f>
         RenderPassNode &addPass(const std::string &name) {
             RenderPassNode node;
