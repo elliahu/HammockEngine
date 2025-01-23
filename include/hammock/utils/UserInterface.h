@@ -2,7 +2,7 @@
 
 #include "hammock/core/Device.h"
 #include "imgui.h"
-#include "hammock/core/RenderContext.h"
+#include "hammock/core/FrameManager.h"
 #include "hammock/core/HandmadeMath.h"
 #include <memory>
 

@@ -1,16 +1,16 @@
-#include "hammock/core/RenderContext.h"
+#include "hammock/core/FrameManager.h"
 
-hammock::RenderContext::RenderContext(Window &window, Device &device) : window{window}, device{device} {
+hammock::FrameManager::FrameManager(Window &window, Device &device) : window{window}, device{device} {
     recreateSwapChain();
     createCommandBuffers();
 }
 
-hammock::RenderContext::~RenderContext() {
+hammock::FrameManager::~FrameManager() {
     freeCommandBuffers();
 }
 
 
-void hammock::RenderContext::createCommandBuffers() {
+void hammock::FrameManager::createCommandBuffers() {
     commandBuffers.resize(SwapChain::MAX_FRAMES_IN_FLIGHT);
 
     VkCommandBufferAllocateInfo allocInfo{};
@@ -25,7 +25,7 @@ void hammock::RenderContext::createCommandBuffers() {
 }
 
 
-void hammock::RenderContext::freeCommandBuffers() {
+void hammock::FrameManager::freeCommandBuffers() {
     vkFreeCommandBuffers(
         device.device(),
         device.getCommandPool(),
@@ -34,7 +34,7 @@ void hammock::RenderContext::freeCommandBuffers() {
     commandBuffers.clear();
 }
 
-void hammock::RenderContext::recreateSwapChain() {
+void hammock::FrameManager::recreateSwapChain() {
     auto extent = window.getExtent();
 
     while (extent.width == 0 || extent.height == 0) {
@@ -55,7 +55,7 @@ void hammock::RenderContext::recreateSwapChain() {
     }
 }
 
-VkCommandBuffer hammock::RenderContext::beginFrame() {
+VkCommandBuffer hammock::FrameManager::beginFrame() {
     assert(!isFrameStarted && "Cannot call beginFrame while already in progress");
 
     auto result = swapChain->acquireNextImage(&currentImageIndex);
@@ -81,7 +81,7 @@ VkCommandBuffer hammock::RenderContext::beginFrame() {
     return commandBuffer;
 }
 
-void hammock::RenderContext::endFrame() {
+void hammock::FrameManager::endFrame() {
     assert(isFrameStarted && "Cannot call endFrame while frame is not in progress");
     const auto commandBuffer = getCurrentCommandBuffer();
 

@@ -10,7 +10,7 @@
 #include <hammock/core/Device.h>
 #include <hammock/core/CoreUtils.h>
 #include "hammock/core/ResourceManager.h"
-#include "hammock/core/RenderContext.h"
+#include "hammock/core/FrameManager.h"
 #include "hammock/core/Types.h"
 
 
@@ -167,7 +167,7 @@ namespace hammock {
             FinalLayout
         };
 
-        explicit PipelineBarrier(experimental::ResourceManager &rm, RenderContext &renderContext, ResourceNode &node,
+        explicit PipelineBarrier(experimental::ResourceManager &rm, FrameManager &renderContext, ResourceNode &node,
                                  ResourceAccess &access,
                                  TransitionStage transitionStage) : rm(rm), renderContext(renderContext), node(node),
                                                                     access(access), transitionStage(transitionStage) {
@@ -206,7 +206,7 @@ namespace hammock {
 
     private:
         experimental::ResourceManager &rm;
-        RenderContext &renderContext;
+        FrameManager &renderContext;
         ResourceNode &node;
         ResourceAccess &access;
         TransitionStage transitionStage;
@@ -218,15 +218,14 @@ namespace hammock {
      * can itself create resources that other passes may depend on. RenderGraph analyzes these dependencies, makes adjustments when possible,
      * makes necessary transitions between resource states. These transitions are done just in time as well as resource allocation.
      *  TODO support for Read Modify Write - render pass writes and reads from the same resource
-     *  TODO support for swapchain dependent resources
-     *  TODO support for resources dependent on other resources
-     *  FIXME crashes on invalid image when swapchain is recreated
+     *  TODO support for conditional resource
+     *  TODO support for swapchain dependent rendperPass
      */
     class RenderGraph {
         // Vulkan device
         Device &device;
         // Rendering context
-        RenderContext &renderContext;
+        FrameManager &renderContext;
         experimental::ResourceManager &rm;
         // Maximal numer of frames that GPU works on concurrently
         uint32_t maxFramesInFlight;
@@ -238,7 +237,7 @@ namespace hammock {
         std::vector<uint32_t> optimizedOrderOfPasses;
 
     public:
-        RenderGraph(Device &device, experimental::ResourceManager &rm, RenderContext &context): device(device), rm(rm),
+        RenderGraph(Device &device, experimental::ResourceManager &rm, FrameManager &context): device(device), rm(rm),
             renderContext(context),
             maxFramesInFlight(SwapChain::MAX_FRAMES_IN_FLIGHT) {
         }
@@ -247,17 +246,14 @@ namespace hammock {
         }
 
 
-        template<ResourceNode::Type Type>
-        void addStaticResource(const std::string &name, experimental::ResourceHandle handle) {
-            ResourceNode node;
-            node.type = Type;
-            node.name = name;
-            node.resolver = [handle](experimental::ResourceManager &rm, uint32_t frameIndex) {
-                return handle;
-            };
-            resources[name] = std::move(node);
-        }
-
+        /**
+         * Creates a resource in the graph
+         * @tparam Type Type of the resource Node
+         * @tparam ResourceType Type of the actual resource
+         * @tparam DescriptionType Type of the description of the resource based on the type of the resource 
+         * @param name Name of the resource for lookup and reference
+         * @param desc Description of the resource
+         */
         template<ResourceNode::Type Type, typename ResourceType, typename DescriptionType>
         void addResource(const std::string &name, const DescriptionType &desc) {
             ResourceNode node;
@@ -269,6 +265,32 @@ namespace hammock {
             resources[name] = std::move(node);
         }
 
+        /**
+         * Create a static (external, non-buffered) resource
+         * @tparam Type Type of the resource node
+         * @param name Name of the resource
+         * @param handle Handle of the actuall resource
+         */
+        template<ResourceNode::Type Type>
+        void addStaticResource(const std::string &name, experimental::ResourceHandle handle) {
+            ResourceNode node;
+            node.type = Type;
+            node.name = name;
+            node.resolver = [handle](experimental::ResourceManager &rm, uint32_t frameIndex) {
+                return handle;
+            };
+            resources[name] = std::move(node);
+        }
+
+
+        /**
+         * Create a resource that dependes on swapchain size
+         * @tparam Type Type of the dependant resource node
+         * @tparam ResourceType Type of the actual resource
+         * @tparam DescriptionType Type of the resource description
+         * @param name Name of the resource
+         * @param modifier Callback to create a description of the dependant resource based on the swapchain size
+         */
         template<ResourceNode::Type Type, typename ResourceType, typename DescriptionType>
         void addSwapChainDependentResource(const std::string &name,
                                            std::function<DescriptionType(VkExtent2D)> modifier) {
@@ -284,7 +306,15 @@ namespace hammock {
             resources[name] = std::move(node);
         }
 
-        // Add a resource that depends on another resource
+        /**
+         * Creates a resource that dependes on another resource
+         * @tparam Type Type of the resource node
+         * @tparam ResourceType Type of the actual resource
+         * @tparam DescriptionType Type of the resource description
+         * @param name Name of the dependent resource
+         * @param dependency Name of dependency resource
+         * @param modifier Call back that creates dependent description base on the dependency description
+         */
         template<ResourceNode::Type Type, typename ResourceType, typename DescriptionType>
         void addDependentResource(const std::string &name, const std::string &dependency,
                                   std::function<DescriptionType(experimental::ResourceHandle)> modifier) {
@@ -300,6 +330,11 @@ namespace hammock {
             resources[name] = std::move(node);
         }
 
+        /**
+         * Creates a resource that represents swapchain image. This way you can reference to swapchain image using the resource name.
+         * @tparam Type Type of the SwapChain attachment (SwapChainColorAttachment or SwapChainDepthStencilAttachment)
+         * @param name Name of the resource
+         */
         template<ResourceNode::Type Type, typename = std::enable_if_t<
             Type == ResourceNode::Type::SwapChainColorAttachment || Type ==
             ResourceNode::Type::SwapChainDepthStencilAttachment> >
@@ -311,19 +346,6 @@ namespace hammock {
             resources[name] = std::move(node);
         }
 
-
-        // // Add a conditional resource
-        // void addConditionalResource(const std::string& name,
-        //                           const ImageDesc& hdDesc,
-        //                           const ImageDesc& ldDesc) {
-        //     ResourceNode node;
-        //     node.resolver = [hdDesc, ldDesc](ResourceManager& rm, uint32_t frameIndex) {
-        //         return rm.isHighQualityMode() ?
-        //             rm.createResource(hdDesc, frameIndex) :
-        //             rm.createResource(ldDesc, frameIndex);
-        //     };
-        //     resources[name] = std::move(node);
-        // }
 
 
         template<RenderPassType Type>

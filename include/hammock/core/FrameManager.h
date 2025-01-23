@@ -11,16 +11,16 @@
 
 
 namespace hammock {
-    class RenderContext {
+    class FrameManager {
     public:
-        RenderContext(Window &window, Device &device);
+        FrameManager(Window &window, Device &device);
 
-        ~RenderContext();
+        ~FrameManager();
 
         // delete copy constructor and copy destructor
-        RenderContext(const RenderContext &) = delete;
+        FrameManager(const FrameManager &) = delete;
 
-        RenderContext &operator=(const RenderContext &) = delete;
+        FrameManager &operator=(const FrameManager &) = delete;
 
         [[nodiscard]] SwapChain* getSwapChain() const {return swapChain.get();};
         [[nodiscard]] float getAspectRatio() const { return swapChain->extentAspectRatio(); }
@@ -38,6 +38,7 @@ namespace hammock {
         }
 
         [[nodiscard]] int getImageIndex() const {
+          assert(isFrameStarted && "Cannot get image index when frame not in progress");
             return currentImageIndex;
         }
 

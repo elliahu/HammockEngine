@@ -6,7 +6,7 @@
 #include "Framebuffer.h"
 #include "GraphicsPipeline.h"
 #include "Raytracing.h"
-#include "RenderContext.h"
+#include "FrameManager.h"
 #include "Shader.h"
 #include "SwapChain.h"
 #include "ThreadPool.h"

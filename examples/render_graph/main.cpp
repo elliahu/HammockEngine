@@ -17,7 +17,7 @@ int main() {
     DeviceStorage storage{device};
     experimental::ResourceManager rm{device};
     // TODO decouple context and window
-    RenderContext renderContext{window, device};
+    FrameManager renderContext{window, device};
 
     struct UniformBuffer {
         HmckMat4 mvp;
@@ -75,6 +75,7 @@ int main() {
 
     graph->addSwapChainImageResource<ResourceNode::Type::SwapChainColorAttachment>("swap-color-image");
 
+
     std::unique_ptr<GraphicsPipeline> presentPipeline = GraphicsPipeline::createGraphicsPipelinePtr({
         .debugName = "present-pipeline",
         .device = device,
@@ -87,10 +88,6 @@ int main() {
         },
         .pushConstantRanges{},
         .graphicsState{
-            .depthTest = VK_FALSE,
-            .blendAtaAttachmentStates{
-                Init::pipelineColorBlendAttachmentState(0xf, VK_FALSE)
-            },
             .vertexBufferBindings{
                 .vertexBindingDescriptions = Vertex::vertexInputBindingDescriptions(),
                 .vertexAttributeDescriptions = Vertex::vertexInputAttributeDescriptions()
@@ -103,6 +100,12 @@ int main() {
             .depthAttachmentFormat = VK_FORMAT_UNDEFINED,
         }
     });
+
+    // graph->addPass<RenderPassType::Graphics>("first-pass", renderContext.getSwapChain()->getSwapChainExtent())
+    //     .write(ResourceAccess{
+    //         .resourceName = "generated-image",
+    //
+    //     });
 
     graph->addPass<RenderPassType::Graphics>("present-pass", renderContext.getSwapChain()->getSwapChainExtent())
         .write(ResourceAccess{
