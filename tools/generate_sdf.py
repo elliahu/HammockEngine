@@ -1,56 +1,34 @@
+from mesh_to_sdf import mesh_to_voxels
 import trimesh
-import numpy as np
-import struct
+import skimage
 import argparse
-
-def compute_sdf(mesh, grid_size=128):
-    """
-    Computes a Signed Distance Field (SDF) for a mesh using a voxel grid.
-    Returns a 3D numpy array of SDF values.
-    """
-    # Generate a grid of points that covers the bounding box of the mesh
-    min_bound = mesh.bounds[0]
-    max_bound = mesh.bounds[1]
-    grid = np.mgrid[min_bound[0]:max_bound[0]:complex(grid_size),
-           min_bound[1]:max_bound[1]:complex(grid_size),
-           min_bound[2]:max_bound[2]:complex(grid_size)]
-
-    grid_points = np.vstack([grid[0].ravel(), grid[1].ravel(), grid[2].ravel()]).T
-
-    # Ensure grid_points is of shape (n, 3)
-    grid_points = np.array(grid_points)
-
-    # Compute SDF values for all points at once
-    sdf_values = mesh.nearest.on_surface(grid_points)[1]  # Get distances for all points
-    sdf_grid = sdf_values.reshape((grid_size, grid_size, grid_size))
-
-    return sdf_grid
-
-def save_sdf_to_file(sdf_grid, filename="sdf_data.bin"):
-    """
-    Saves the SDF grid to a binary file.
-    """
-    with open(filename, "wb") as file:
-        # Write the grid size (int) and the sdf grid as floats
-        grid_size = sdf_grid.shape[0]
-        file.write(struct.pack("I", grid_size))  # Write grid size as an unsigned int
-        file.write(sdf_grid.astype(np.float32).tobytes())  # Write the SDF grid data as floats
+import numpy as np
 
 def main():
-    parser = argparse.ArgumentParser(description='Generate and visualize a Signed Distance Field (SDF) from a mesh.')
-    parser.add_argument('mesh_path', help='Path to the input mesh file')
-    parser.add_argument('sdf_path', help='Path to save the SDF output file')
-    parser.add_argument('--res', type=int, default=64, help='Resolution of the voxel grid')
+    parser = argparse.ArgumentParser(description="Generate an SDF from a mesh")
+    parser.add_argument('input_mesh', type=str, help="Input mesh file (e.g., .glb)")
+    parser.add_argument('output_file', type=str, help="Output file to save the SDF")
+    parser.add_argument('--res', type=int, help="Voxel resolution", default=64)
     args = parser.parse_args()
 
-    # Load the mesh
-    mesh = trimesh.load_mesh(args.mesh_path)
+    mesh = trimesh.load(args.input_mesh)
 
-    # Compute the SDF
-    sdf_grid = compute_sdf(mesh, args.res)
+    voxels = mesh_to_voxels(mesh, args.res - 2, pad=True)
 
-    # Save the SDF to a file
-    save_sdf_to_file(sdf_grid, args.sdf_path)
+    voxels = voxels.astype(np.float32)  # Ensure the data is in float32 format
+
+    voxels.tofile(args.output_file)  # Save as raw binary file
+    print(f"Voxels saved to {args.output_file} as raw binary floats")
+    print(voxels.shape)
+    print(min(voxels.flatten()))
+    print(max(voxels.flatten()))
+    print(len(voxels.flatten()))
+
+
+
+    vertices, faces, normals, _ = skimage.measure.marching_cubes(voxels, level=0)
+    mesh = trimesh.Trimesh(vertices=vertices, faces=faces, vertex_normals=normals)
+    mesh.show()
 
 if __name__ == "__main__":
     main()

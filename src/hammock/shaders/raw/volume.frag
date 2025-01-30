@@ -21,15 +21,15 @@ layout (set = 0, binding = 1) uniform CloudParams {
 } params;
 
 layout (set = 0, binding = 2) uniform sampler3D noiseTex;
+layout (set = 0, binding = 3) uniform sampler3D signedDistanceField;
 
 layout (push_constant) uniform PushConstants {
     mat4 cloudTransform;
 } pushConstants;
 
-float sdTorus(vec3 p, vec2 t)
-{
-    vec2 q = vec2(length(p.xz) - t.x, p.y);
-    return length(q) - t.y;
+
+float sdf(vec3 p){
+    return texture(signedDistanceField, p* 0.5 + 0.5).r;
 }
 
 
@@ -37,9 +37,9 @@ float sdTorus(vec3 p, vec2 t)
 vec3 getNormal(vec3 p) {
     float epsilon = 0.001;
     return normalize(vec3(
-                     sdTorus(p + vec3(epsilon, 0.0, 0.0), vec2(1.0, 0.5)) - sdTorus(p - vec3(epsilon, 0.0, 0.0), vec2(1.0, 0.5)),
-                     sdTorus(p + vec3(0.0, epsilon, 0.0), vec2(1.0, 0.5)) - sdTorus(p - vec3(0.0, epsilon, 0.0), vec2(1.0, 0.5)),
-                     sdTorus(p + vec3(0.0, 0.0, epsilon), vec2(1.0, 0.5)) - sdTorus(p - vec3(0.0, 0.0, epsilon), vec2(1.0, 0.5))
+                     sdf(p + vec3(epsilon, 0.0, 0.0)) - sdf(p - vec3(epsilon, 0.0, 0.0)),
+                     sdf(p + vec3(0.0, epsilon, 0.0)) - sdf(p - vec3(0.0, epsilon, 0.0)),
+                     sdf(p + vec3(0.0, 0.0, epsilon)) - sdf(p - vec3(0.0, 0.0, epsilon))
                      ));
 }
 
@@ -54,8 +54,9 @@ void main() {
     uv -= 0.5;
     uv.x *= float(camera.width) / float(camera.height);
 
+
     // Flip the Y-coordinate for Vulkan
-    //uv.y *= -1.0;
+    uv.y *= -1.0;
 
     // Ray Origin - camera
     vec3 rayOrigin = camera.pos.xyz;
@@ -73,7 +74,7 @@ void main() {
     // Raymarching loop
     for (int i = 0; i < params.maxSteps; i++) {
         // Compute the distance to the closest surface (Torus SDF)
-        float dist = sdTorus(pos, vec2(1.0, 0.5));  // Torus with radii 1.0 and 0.5
+        float dist = sdf(pos);  // Torus with radii 1.0 and 0.5
 
         if (dist < 0.01) {
             // If we hit something, compute the normal

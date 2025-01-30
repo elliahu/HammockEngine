@@ -28,11 +28,23 @@ void CloudRenderer::run() {
 }
 
 void CloudRenderer::load() {
-    int32_t grid = 64;
+    int32_t grid = 258;
+    ScopedMemory sdfData(SignedDistanceField().loadFromFile(assetPath("sdf/dragon"), grid).data());
     ScopedMemory noiseData(PerlinNoise3D(69420).generateNoiseVolume(grid, grid, grid));
 
     noiseVolumeHandle = deviceStorage.createTexture3D({
         .buffer = noiseData.get(),
+        .instanceSize = sizeof(float),
+        .width = static_cast<uint32_t>(grid),
+        .height = static_cast<uint32_t>(grid),
+        .channels = 1,
+        .depth = static_cast<uint32_t>(grid),
+        .format = VK_FORMAT_R32_SFLOAT,
+        .imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+    });
+
+    cloudSdfHandle = deviceStorage.createTexture3D({
+        .buffer = sdfData.get(),
         .instanceSize = sizeof(float),
         .width = static_cast<uint32_t>(grid),
         .height = static_cast<uint32_t>(grid),
@@ -74,10 +86,10 @@ void CloudRenderer::prepareDescriptors() {
                 .binding = 2, .descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
                 .stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT
             },
-            // {
-            //     .binding = 3, .descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
-            //     .stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT
-            // },
+            {
+                .binding = 3, .descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
+                .stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT
+            },
         }
     });
 
@@ -100,11 +112,11 @@ void CloudRenderer::prepareDescriptors() {
         auto cameraBufferInfo = deviceStorage.getBuffer(cameraBuffers[i])->descriptorInfo();
         auto cloudBufferInfo = deviceStorage.getBuffer(cloudBuffers[i])->descriptorInfo();
         auto noiseInfo = deviceStorage.getTexture3DDescriptorImageInfo(noiseVolumeHandle);
-        //auto sdfInfo = deviceStorage.getTexture3DDescriptorImageInfo(cloudSdfHandle);
+        auto sdfInfo = deviceStorage.getTexture3DDescriptorImageInfo(cloudSdfHandle);
         descriptorSets[i] = deviceStorage.createDescriptorSet({
             .descriptorSetLayout = descriptorSetLayout,
             .bufferWrites = {{0, cameraBufferInfo},{1, cloudBufferInfo}},
-            .imageWrites = {{2, noiseInfo}, }
+            .imageWrites = {{2, noiseInfo}, {3, sdfInfo}}
         });
     }
 }

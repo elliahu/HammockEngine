@@ -14,9 +14,6 @@ public:
 
         assert(file.is_open());
 
-        // Read the grid size (first 4 bytes are the unsigned int grid size)
-        file.read(reinterpret_cast<char*>(&gridSize), sizeof(int));
-
         // Calculate the total number of elements (grid_size^3 for a cubic grid)
         size_t total_elements = gridSize * gridSize * gridSize;
 
@@ -29,6 +26,18 @@ public:
         assert(!file.fail());
 
         file.close();
+
+
+        float min = field[0], max = field[0];
+        for (int i = 0; i < total_elements; ++i) {
+            if (field[i] < min) {
+                min = field[i];
+            }
+            if (field[i] > max) {
+                max = field[i];
+            }
+        }
+        std::cout << "Min: " << min << ", Max: " << max  << "Total: " << total_elements << std::endl;
 
         return *this;
     }
