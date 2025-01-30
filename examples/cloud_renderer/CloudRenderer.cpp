@@ -31,7 +31,7 @@ void CloudRenderer::run() {
 void CloudRenderer::load() {
     int32_t grid = 258;
     ScopedMemory sdfData(SignedDistanceField().loadFromFile(assetPath("sdf/dragon"), grid).data());
-    ScopedMemory noiseData(PerlinNoise3D(69420).generateNoiseVolume(grid, grid, grid));
+    ScopedMemory noiseData(PerlinNoise3D(69420).generateNoiseVolume(grid, grid, grid, 25.f));
 
     noiseVolumeHandle = deviceStorage.createTexture3D({
         .buffer = noiseData.get(),
@@ -42,6 +42,9 @@ void CloudRenderer::load() {
         .depth = static_cast<uint32_t>(grid),
         .format = VK_FORMAT_R32_SFLOAT,
         .imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+        .samplerInfo = {
+            .addressMode = VK_SAMPLER_ADDRESS_MODE_REPEAT,
+        }
     });
 
     cloudSdfHandle = deviceStorage.createTexture3D({

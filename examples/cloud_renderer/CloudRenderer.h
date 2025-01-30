@@ -75,7 +75,7 @@ private:
         float absorption = 0.5f;
         float phase = 0.3f;
         float stepSize = 0.01f;
-        int maxSteps = 100;
+        int maxSteps = 300;
         float lsMul = 5.0f;
         int maxLs = 6;
     } cloudBuffer;

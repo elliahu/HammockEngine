@@ -99,13 +99,14 @@ void main() {
     rayDir = (inverseView * vec4(rayDir, 0.0)).xyz;
 
 
-    float t = 0.0;  // Ray marching distance
+    float t = sdf(rayOrigin);
     vec3 pos = rayOrigin + rayDir * t;
     float transmittance = 1.0;
     vec3 scatteredLight = vec3(0.0);
 
     // Main raymarching loop
     for(int i = 0; i < params.maxSteps; i++) {
+
         float density = sampleCloud(pos);
 
         if(density > 0.0) {
