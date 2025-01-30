@@ -1,67 +1,85 @@
 #version 450
-
-layout (location = 0) in vec2 inUv; // uv of the fragment
-layout (location = 1) in float dist; // distance of the fragment from the camera
+layout (location = 0) in vec2 uv;
 layout (location = 0) out vec4 outColor;
 
-layout(binding = 0) uniform UniformBufferObject {
-    mat4 projMatrix;
-    mat4 viewMatrix;
-    mat4 modelMatrix;
-    vec4 cameraPos;
-    vec4 lightDirection;
+layout(set = 0, binding = 0) uniform CameraUBO {
+    mat4 view;
+    mat4 proj;
+    vec4 pos;
+    int width;
+    int height;
+} camera;
+
+layout (set = 0, binding = 1) uniform CloudParams {
+    vec4 lightDir;
     vec4 lightColor;
-} ubo;
-
-layout(binding = 1) uniform sampler3D volumeTexture;
-
-layout (push_constant) uniform PushConstants {
+    float density;
+    float absorption;
+    float phase;
     float stepSize;
     int maxSteps;
-    float minDensityThreshold;
-    float time;
-} push;
+} params;
 
-// Function to compute ray direction
-vec3 computeRayDirection(vec2 uv) {
-    vec4 clipSpace = vec4(uv * 2.0 - 1.0, -1.0, 1.0);
-    vec4 eyeSpace = inverse(ubo.projMatrix) * clipSpace;
-    eyeSpace.z = -1.0; // Ensure ray direction
-    eyeSpace.w = 0.0;  // Vector, not point
-    return normalize((inverse(ubo.viewMatrix) * eyeSpace).xyz);
-}
+layout (set = 0, binding = 2) uniform sampler3D noiseTex;
 
-// Function to perform raymarching
-vec4 raymarch(vec3 rayOrigin, vec3 rayDir) {
-    vec3 currentPosition = rayOrigin;
-    for (int step = 0; step < push.maxSteps; ++step) {
-        float density = texture(volumeTexture, currentPosition).r;
+layout (push_constant) uniform PushConstants {
+    mat4 cloudTransform;
+} pushConstants;
 
-        // Early exit if density exceeds threshold
-        if (density > push.minDensityThreshold) {
-            vec3 color = vec3(density); // Simple grayscale based on density
-            return vec4(color, density);
-        }
-
-        // Advance along the ray
-        currentPosition += rayDir * push.stepSize;
-
-        // Terminate if the ray exits the volume
-        if (any(greaterThan(currentPosition, vec3(1.0))) || any(lessThan(currentPosition, vec3(0.0)))) {
-            break;
-        }
-    }
-    return vec4(0.0); // Return transparent if no hit
+float sdTorus( vec3 p, vec2 t )
+{
+    vec2 q = vec2(length(p.xz)-t.x,p.y);
+    return length(q)-t.y;
 }
 
 void main() {
-    // Calculate ray origin (camera position) and ray direction
-    vec3 rayOrigin = ubo.cameraPos.xyz;
-    vec3 rayDirection = computeRayDirection(inUv);
+    mat4 inverseView = inverse(camera.view);
 
-    // Perform raymarching
-    vec4 volumeColor = raymarch(rayOrigin, rayDirection);
+    // Calculate aspect ratio
+    float aspectRatio = float(camera.width) / float(camera.height);
 
-    // Set the fragment color
-    outColor = volumeColor;
+    vec2 uv = gl_FragCoord.xy / vec2(camera.width, camera.height);
+    uv -= 0.5;
+    uv.x *= float(camera.width) / float(camera.height);
+
+    // Flip the Y-coordinate for Vulkan
+    //uv.y *= -1.0;
+
+    // Ray Origin - camera
+    vec3 rayOrigin = camera.pos.xyz;
+
+    // Ray Direction
+    vec3 rayDir = normalize(vec3(uv, -1.0));
+
+    // Transform ray direction by the camera's orientation
+    rayDir = (inverseView * vec4(rayDir, 0.0)).xyz;
+
+
+    float t = 0.0;  // Ray marching distance
+    vec3 pos = rayOrigin + rayDir * t;
+
+    // Raymarching loop
+    for (int i = 0; i < params.maxSteps; i++) {
+        // Compute the distance to the closest surface (simple sphere SDF)
+        float dist = sdTorus(pos, vec2(1.0 , 0.5));  // Sphere with radius 0.2
+
+        if (dist < 0.01) {
+            // If we hit something, output color
+            outColor = vec4(1.0, 0.0, 0.0, 1.0);  // Red color
+            return;
+        }
+
+        // Accumulate ray distance
+        t += dist * 0.5;  // Step size is half of the distance
+        pos = rayOrigin + rayDir * t;
+
+        // Early exit if the ray is too far
+        if (t > 10.0) {
+            outColor = vec4(0.0, 0.0, 0.0, 1.0);  // Black background
+            return;
+        }
+    }
+
+    // If no hit is found, output background color
+    outColor = vec4(0.5, 0.5, 0.5, 1.0);  // Gray background
 }

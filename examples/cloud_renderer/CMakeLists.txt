@@ -5,6 +5,8 @@ add_executable(cloud_renderer
         CloudRenderer.h
         PerlinNoise3D.h
         PerlinNoise3D.cpp
+        SignedDistanceField.h
+        BoundingBox.h
 )
 
 # Link the engine library

@@ -185,7 +185,7 @@ void Hammock::PBRApp::run() {
 void Hammock::PBRApp::load() {
     // Load the meshes
     Loader(geometry, device, deviceStorage)
-    .loadglTF(assetPath("models/helmet/helmet.glb"));
+    .loadglTF(assetPath("models/dragon/dragon.glb"));
     //.loadglTF(dataRepository("models/helmet/DamagedHelmet.glb");
 
     int32_t w, h, c;
