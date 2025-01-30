@@ -85,3 +85,6 @@ vcpkg_installed/
 # ignore compiled chaders
 *.spv
 
+# ignore python env
+tools/env
+
