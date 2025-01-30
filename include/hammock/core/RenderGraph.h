@@ -3,12 +3,15 @@
 #include <functional>
 #include <cassert>
 #include <complex>
+#include <utility>
 #include <variant>
 #include <type_traits>
 #include <optional>
 
 #include <hammock/core/Device.h>
 #include <hammock/core/CoreUtils.h>
+#include <hammock/resources/Descriptors.h>
+
 #include "hammock/core/ResourceManager.h"
 #include "hammock/core/FrameManager.h"
 #include "hammock/core/Types.h"
@@ -134,10 +137,18 @@ namespace hammock {
         HmckVec4 viewport;
         std::vector<ResourceAccess> inputs; // Read accesses
         std::vector<ResourceAccess> outputs; // Write accesses
+        std::unordered_map<uint32_t, std::vector<std::pair<uint32_t, std::vector<std::string>>>> descriptors{};
+
+        struct Descriptor {
+            DescriptorSetLayout layout;
+            VkDescriptorSet set;
+        };
+
 
 
         // callback for rendering
         std::function<void(RenderPassContext)> executeFunc;
+
 
         // builder methods
 
@@ -159,6 +170,12 @@ namespace hammock {
 
         RenderPassNode &execute(std::function<void(RenderPassContext)> exec) {
             executeFunc = std::move(exec);
+            return *this;
+        }
+
+        RenderPassNode &descriptor(const uint32_t set, std::vector<std::pair<uint32_t, std::vector<std::string>>> bindings) {
+            ASSERT(!descriptors.contains(set), "Descriptor already set");
+            descriptors[set] = std::move(bindings);
             return *this;
         }
     };
@@ -232,10 +249,8 @@ namespace hammock {
         // Vulkan device
         Device &device;
         // Rendering context
-        FrameManager &renderContext;
+        FrameManager &fm;
         experimental::ResourceManager &rm;
-        // Maximal numer of frames that GPU works on concurrently
-        uint32_t maxFramesInFlight;
         // Holds all the resources
         std::unordered_map<std::string, ResourceNode> resources;
         // Holds all the render passes
@@ -244,9 +259,7 @@ namespace hammock {
         std::vector<uint32_t> optimizedOrderOfPasses;
 
     public:
-        RenderGraph(Device &device, experimental::ResourceManager &rm, FrameManager &context): device(device), rm(rm),
-            renderContext(context),
-            maxFramesInFlight(SwapChain::MAX_FRAMES_IN_FLIGHT) {
+        RenderGraph(Device &device, experimental::ResourceManager &rm, FrameManager &fm): device(device), rm(rm), fm(fm){
         }
 
         ~RenderGraph() {
@@ -305,7 +318,7 @@ namespace hammock {
             node.type = Type;
             node.name = name;
             node.resolver = [this,name, modifier](experimental::ResourceManager &rm, uint32_t frameIndex) {
-                VkExtent2D swapChainExtent = renderContext.getSwapChain()->getSwapChainExtent();
+                VkExtent2D swapChainExtent = fm.getSwapChain()->getSwapChainExtent();
                 ASSERT(modifier, "Modifier is null!");
                 DescriptionType depDesc = modifier(swapChainExtent);
                 return rm.createResource<frameIndex, ResourceType>(name, depDesc);
@@ -379,19 +392,30 @@ namespace hammock {
         /**
          * Compiles the render graph - analyzes dependencies and makes optimization
          */
-        void compile() {
+        void build() {
             // TODO we are now making no optimizations and assume that rendering goes in order of render pass submission
 
             // To be replaced when above task is implemented
             for (int i = 0; i < passes.size(); i++) {
                 optimizedOrderOfPasses.push_back(i);
             }
+
+
+        }
+
+        void buildDescriptors(){
+            ASSERT(!optimizedOrderOfPasses.empty(), "Optimized Order of Passes is empty!");
+            // Create descriptors
+            for (auto& passIdx : optimizedOrderOfPasses) {
+                RenderPassNode &node = passes[passIdx];
+
+
+            }
         }
 
         /**
          * Applies pipeline barrier transition where it is needed based on the stage
          * @param pass Render pass
-         * @param cmd Valid command buffer
          * @param stage Stage of the barrier
          */
         void applyPipelineBarriers(RenderPassNode &pass, PipelineBarrier::TransitionStage stage) {
@@ -400,7 +424,7 @@ namespace hammock {
                        "Could not find the output");
 
                 ResourceNode &resourceNode = resources[access.resourceName];
-                PipelineBarrier barrier(rm, renderContext, resourceNode, access, stage);
+                PipelineBarrier barrier(rm, fm, resourceNode, access, stage);
                 if (barrier.isNeeded()) {
                     barrier.apply();
                 }
@@ -419,8 +443,8 @@ namespace hammock {
                 if (node.isSwapChainAttachment() && node.isColorAttachment()) {
                     VkRenderingAttachmentInfo attachmentInfo{};
                     attachmentInfo.sType = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO;
-                    attachmentInfo.imageView = renderContext.getSwapChain()->
-                            getImageView(renderContext.getImageIndex());
+                    attachmentInfo.imageView = fm.getSwapChain()->
+                            getImageView(fm.getImageIndex());
                     attachmentInfo.imageLayout = access.requiredLayout;
                     attachmentInfo.clearValue = {};
                     attachmentInfo.loadOp = access.loadOp;
@@ -428,7 +452,7 @@ namespace hammock {
                     colorAttachments.push_back(attachmentInfo);
                 } else if (node.isColorAttachment()) {
                     ASSERT(node.resolver, "Resolver is nullptr!");
-                    experimental::ResourceHandle handle = node.resolve(rm, renderContext.getFrameIndex());
+                    experimental::ResourceHandle handle = node.resolve(rm, fm.getFrameIndex());
                     experimental::Image *image = rm.getResource<experimental::Image>(handle);
                     VkRenderingAttachmentInfo attachmentInfo = image->getRenderingAttachmentInfo();
                     attachmentInfo.loadOp = access.loadOp;
@@ -451,8 +475,8 @@ namespace hammock {
                 if (node.isSwapChainAttachment() && node.isDepthAttachment()) {
                     VkRenderingAttachmentInfo attachmentInfo{};
                     attachmentInfo.sType = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO;
-                    attachmentInfo.imageView = renderContext.getSwapChain()->
-                            getDepthImageView(renderContext.getImageIndex());
+                    attachmentInfo.imageView = fm.getSwapChain()->
+                            getDepthImageView(fm.getImageIndex());
                     attachmentInfo.imageLayout = access.requiredLayout;
                     attachmentInfo.clearValue = {};
                     attachmentInfo.loadOp = access.loadOp;
@@ -462,7 +486,7 @@ namespace hammock {
 
                 if (node.isDepthAttachment()) {
                     ASSERT(node.resolver, "Resolver is nullptr!");
-                    experimental::ResourceHandle handle = node.resolve(rm, renderContext.getFrameIndex());
+                    experimental::ResourceHandle handle = node.resolve(rm, fm.getFrameIndex());
                     experimental::Image *image = rm.getResource<experimental::Image>(handle);
                     VkRenderingAttachmentInfo attachmentInfo = image->getRenderingAttachmentInfo();
                     attachmentInfo.loadOp = access.loadOp;
@@ -500,8 +524,8 @@ namespace hammock {
             }
 
             // Add the command buffer and frame index to the context
-            context.commandBuffer = renderContext.getCurrentCommandBuffer();
-            context.frameIndex = renderContext.getFrameIndex();
+            context.commandBuffer = fm.getCurrentCommandBuffer();
+            context.frameIndex = fm.getFrameIndex();
 
             return context;
         }
@@ -517,8 +541,8 @@ namespace hammock {
 
             VkRenderingInfo renderingInfo{VK_STRUCTURE_TYPE_RENDERING_INFO_KHR};
             renderingInfo.renderArea = {
-                0, 0, renderContext.getSwapChain()->getSwapChainExtent().width,
-                renderContext.getSwapChain()->getSwapChainExtent().height
+                0, 0, fm.getSwapChain()->getSwapChainExtent().width,
+                fm.getSwapChain()->getSwapChainExtent().height
             };
             renderingInfo.layerCount = 1;
             renderingInfo.colorAttachmentCount = colorAttachments.size();
@@ -527,23 +551,23 @@ namespace hammock {
             renderingInfo.pStencilAttachment = VK_NULL_HANDLE;
 
             // Start a dynamic rendering
-            vkCmdBeginRendering(renderContext.getCurrentCommandBuffer(), &renderingInfo);
+            vkCmdBeginRendering(fm.getCurrentCommandBuffer(), &renderingInfo);
 
             // Set viewport and scissors
             VkViewport viewport = Init::viewport(pass.viewport.X, pass.viewport.Y, pass.viewport.Z, pass.viewport.W);
             if (pass.viewportSize == ViewPortSize::SwapChainRelative) {
-                viewport = Init::viewport(pass.viewport.X * renderContext.getSwapChain()->getSwapChainExtent().width, pass.viewport.Y * renderContext.getSwapChain()->getSwapChainExtent().height, pass.viewport.Z, pass.viewport.W);
+                viewport = Init::viewport(pass.viewport.X * fm.getSwapChain()->getSwapChainExtent().width, pass.viewport.Y * fm.getSwapChain()->getSwapChainExtent().height, pass.viewport.Z, pass.viewport.W);
             }
             VkRect2D scissor{{0, 0}, VkExtent2D{static_cast<uint32_t>(viewport.width), static_cast<uint32_t>(viewport.height)}};
-            vkCmdSetViewport(renderContext.getCurrentCommandBuffer(), 0, 1, &viewport);
-            vkCmdSetScissor(renderContext.getCurrentCommandBuffer(), 0, 1, &scissor);
+            vkCmdSetViewport(fm.getCurrentCommandBuffer(), 0, 1, &viewport);
+            vkCmdSetScissor(fm.getCurrentCommandBuffer(), 0, 1, &scissor);
         }
 
         /**
          * Ends the rendering for current renderpass
          */
         void endRendering() {
-            vkCmdEndRendering(renderContext.getCurrentCommandBuffer());
+            vkCmdEndRendering(fm.getCurrentCommandBuffer());
         }
 
 
@@ -555,7 +579,7 @@ namespace hammock {
                    "RenderPass queue sizes don't match. This should not happen.");
 
             // Begin frame by creating master command buffer
-            if (VkCommandBuffer cmd = renderContext.beginFrame()) {
+            if (VkCommandBuffer cmd = fm.beginFrame()) {
                 // Loop over passes in the optimized order
                 for (const auto &passIndex: optimizedOrderOfPasses) {
                     ASSERT(
@@ -586,7 +610,7 @@ namespace hammock {
                 }
 
                 // End work on the current frame and submit the command buffer
-                renderContext.endFrame();
+                fm.endFrame();
             }
         }
     };

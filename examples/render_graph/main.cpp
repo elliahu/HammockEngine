@@ -70,27 +70,28 @@ int main() {
     for (int i = 0; i < SwapChain::MAX_FRAMES_IN_FLIGHT; i++) {
         auto fbufferInfo = storage.getBuffer(buffers[i])->descriptorInfo();
         auto imageInfo =
-        descriptorSets[i] = storage.createDescriptorSet({
-            .descriptorSetLayout = descriptorSetLayout,
-            .bufferWrites = {{0, fbufferInfo}},
-        });
+                descriptorSets[i] = storage.createDescriptorSet({
+                    .descriptorSetLayout = descriptorSetLayout,
+                    .bufferWrites = {{0, fbufferInfo}},
+                });
     }
 
-    const auto graph = std::make_unique<RenderGraph>(device,rm, renderContext);
+    const auto graph = std::make_unique<RenderGraph>(device, rm, renderContext);
 
     graph->addSwapChainImageResource<ResourceNode::Type::SwapChainColorAttachment>("swap-color-image");
-    graph->addSwapChainDependentResource<ResourceNode::Type::ColorAttachment, experimental::Image, ImageDesc>("half-res-image", [&](VkExtent2D swapchain)->ImageDesc {
-        return ImageDesc{
-            .width =  swapchain.width / 2,
-            .height =  swapchain.height / 2,
-            .channels = 4,
-            .format = VK_FORMAT_R8G8B8A8_SRGB,
-            .usage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,
-            .imageType = VK_IMAGE_TYPE_2D,
-            .imageViewType =VK_IMAGE_VIEW_TYPE_2D,
-        };
-    });
-
+    graph->addSwapChainDependentResource<ResourceNode::Type::ColorAttachment, experimental::Image, ImageDesc>(
+        "half-res-image", [&](VkExtent2D swapchain)-> ImageDesc {
+            return ImageDesc{
+                .width = swapchain.width / 2,
+                .height = swapchain.height / 2,
+                .channels = 4,
+                .format = VK_FORMAT_R8G8B8A8_SRGB,
+                .usage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,
+                .imageType = VK_IMAGE_TYPE_2D,
+                .imageViewType = VK_IMAGE_VIEW_TYPE_2D,
+            };
+        });
+    //graph->addStaticResource<ResourceNode::Type::VertexBuffer>("vertex-buffer", )
 
     std::unique_ptr<GraphicsPipeline> halfResPipeline = GraphicsPipeline::createGraphicsPipelinePtr({
         .debugName = "half-res-pipeline",
@@ -139,52 +140,56 @@ int main() {
     });
 
     graph->addPass<RenderPassType::Graphics, ViewPortSize::SwapChainRelative>("half-res-pass")
-        .write(ResourceAccess{
-            .resourceName = "half-res-image",
-            .requiredLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
-            .finalLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
-        })
-        .execute([&](RenderPassContext context)->void {
-            storage.bindVertexBuffer(vertexBuffer, indexBuffer, context.commandBuffer);
-            halfResPipeline->bind(context.commandBuffer);
-            vkCmdDraw(context.commandBuffer, 3, 1, 0, 0);
-        });
+            .write(ResourceAccess{
+                .resourceName = "half-res-image",
+                .requiredLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+                .finalLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+            })
+            .execute([&](RenderPassContext context)-> void {
+                storage.bindVertexBuffer(vertexBuffer, indexBuffer, context.commandBuffer);
+                halfResPipeline->bind(context.commandBuffer);
+                vkCmdDraw(context.commandBuffer, 3, 1, 0, 0);
+            });
 
     graph->addPass<RenderPassType::Graphics, ViewPortSize::SwapChainRelative>("present-pass")
-        .read(ResourceAccess{
-            .resourceName = "half-res-image",
-            .requiredLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
-            .loadOp = VK_ATTACHMENT_LOAD_OP_LOAD
-        })
-        .write(ResourceAccess{
-            .resourceName = "swap-color-image",
-            .requiredLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
-            .finalLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR,
-        })
-        .execute([&](RenderPassContext context)->void {
-            storage.bindVertexBuffer(vertexBuffer, indexBuffer, context.commandBuffer);
-            presentPipeline->bind(context.commandBuffer);
+            .read(ResourceAccess{
+                .resourceName = "half-res-image",
+                .requiredLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+                .loadOp = VK_ATTACHMENT_LOAD_OP_LOAD
+            })
+            .descriptor(0, {
+                {0, {"half-res-image"}}
+            })
+            .write(ResourceAccess{
+                .resourceName = "swap-color-image",
+                .requiredLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+                .finalLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR,
+            })
+            .execute([&](RenderPassContext context)-> void {
+                storage.bindVertexBuffer(vertexBuffer, indexBuffer, context.commandBuffer);
+                presentPipeline->bind(context.commandBuffer);
 
-            // Update buffer data
-            HmckMat4 projection = Projection().perspective(45.f, renderContext.getAspectRatio(), 0.1f, 100.f);
-            HmckMat4 view = Projection().view(HmckVec3{0.f, 0.f, 6.0f}, HmckVec3{0.f,0.f,0.f}, Projection().upPosY());
-            ubo.mvp = projection * view;
+                // Update buffer data
+                HmckMat4 projection = Projection().perspective(45.f, renderContext.getAspectRatio(), 0.1f, 100.f);
+                HmckMat4 view = Projection().view(HmckVec3{0.f, 0.f, 6.0f}, HmckVec3{0.f, 0.f, 0.f},
+                                                  Projection().upPosY());
+                ubo.mvp = projection * view;
 
-            storage.getBuffer(buffers[context.frameIndex])->writeToBuffer(&ubo);
+                storage.getBuffer(buffers[context.frameIndex])->writeToBuffer(&ubo);
 
-            storage.bindDescriptorSet(
-                context.commandBuffer,
-                VK_PIPELINE_BIND_POINT_GRAPHICS,
-                presentPipeline->graphicsPipelineLayout,
-                0, 1,
-                descriptorSets[context.frameIndex],
-                0,
-                nullptr);
+                storage.bindDescriptorSet(
+                    context.commandBuffer,
+                    VK_PIPELINE_BIND_POINT_GRAPHICS,
+                    presentPipeline->graphicsPipelineLayout,
+                    0, 1,
+                    descriptorSets[context.frameIndex],
+                    0,
+                    nullptr);
 
-            vkCmdDrawIndexed(context.commandBuffer, geometry.indices.size(), 1, 0, 0,0);
-        });
+                vkCmdDrawIndexed(context.commandBuffer, geometry.indices.size(), 1, 0, 0, 0);
+            });
 
-    graph->compile();
+    graph->build();
 
 
     while (!window.shouldClose()) {
