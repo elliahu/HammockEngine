@@ -18,9 +18,10 @@ void CloudRenderer::run() {
         window.pollEvents();
 
         auto newTime = std::chrono::high_resolution_clock::now();
-        float frameTime = std::chrono::duration<float, std::chrono::seconds::period>(newTime - currentTime).count();
+        frameTime = std::chrono::duration<float, std::chrono::seconds::period>(newTime - currentTime).count();
+        currentTime = newTime;
 
-        update(frameTime);
+        update();
         draw();
     }
 
@@ -150,7 +151,7 @@ void CloudRenderer::preparePipelines() {
     });
 }
 
-void CloudRenderer::update(float frameTime) {
+void CloudRenderer::update() {
     float speed = 0.001f;
     if(window.getKeyState(KEY_A) == KeyState::DOWN) azimuth += speed * frameTime;
     if(window.getKeyState(KEY_D) == KeyState::DOWN) azimuth -= speed * frameTime;
@@ -200,7 +201,6 @@ void CloudRenderer::draw() {
 
         ui.beginUserInterface();
         drawUi();
-        ui.showDebugStats(cameraBuffer.view, frameIndex);
         ui.endUserInterface(commandBuffer);
 
         renderContext.endRenderPass(commandBuffer);
@@ -217,10 +217,14 @@ void CloudRenderer::drawUi() {
     ImGui::DragFloat("Phase", &cloudBuffer.phase, 0.01f, -1.0f, 1.0f);
     ImGui::DragFloat("Step size", &cloudBuffer.stepSize, 0.0001f, 0.0f, 100.f);
     ImGui::DragInt("Max steps", &cloudBuffer.maxSteps, 1.f, 0.0f, 10000.0f);
+    ImGui::DragFloat("Light march step size multiplier", &cloudBuffer.lsMul, 0.01f, 0.0f, 100.f);
+    ImGui::DragInt("Light march max steps", &cloudBuffer.maxLs, 1.f, 0.0f, 10000.0f);
     ImGui::DragFloat3("Position", &cloudTranslation.Elements[0], 0.01f);
     ImGui::End();
 
     ImGui::Begin("Camera", (bool *) false, ImGuiWindowFlags_AlwaysAutoResize);
+    ImGui::Text("%.1f FPS ", 1.0f / frameTime);
+    ImGui::Text("Frametime: %.2f ms", frameTime * 1000.0f);
     ImGui::DragFloat("Radius", &radius, 0.01f );
     ImGui::DragFloat("Azimuth", &azimuth, 0.01f );
     ImGui::DragFloat("Elevation", &elevation, 0.01f);

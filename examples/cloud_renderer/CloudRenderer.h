@@ -24,7 +24,7 @@ protected:
 
     void preparePipelines();
 
-    void update(float frameTime);
+    void update();
 
     void draw();
 
@@ -71,29 +71,13 @@ private:
         HmckVec4 lightDir = {1.0f, 1.0f, -1.0f, 0.0f}; // W is padding
         HmckVec4 lightColor = {1.0f, 0.9f, 0.8f, 1.0f}; // W is padding
 
-        float density = 1.0; // Range: 0.5 - 2.0
-        // Controls overall cloud density
-        // Lower values = wispy clouds
-        // Higher values = thick clouds
-
-        float absorption = 0.5; // Range: 0.1 - 1.0
-        // Controls how quickly light is absorbed
-        // Lower values = more light penetration
-        // Higher values = darker clouds
-
-        float phase = 0.3; // Range: -0.9 to 0.9
-        // Controls light scattering direction
-        // 0.0 = uniform scattering
-        // Positive = forward scattering
-        // Negative = backward scattering
-
-        float stepSize = 0.1; // Range: 0.05 - 0.2
-        // Smaller = better quality but slower
-        // Larger = faster but might miss details
-
-        int maxSteps = 100; // Range: 64 - 256
-        // More steps = better quality but slower
-        // Fewer steps = faster but might have artifacts
+        float density = 1.0f;
+        float absorption = 0.5f;
+        float phase = 0.3f;
+        float stepSize = 0.01f;
+        int maxSteps = 100;
+        float lsMul = 5.0f;
+        int maxLs = 6;
     } cloudBuffer;
 
     struct PushConstants {
@@ -109,7 +93,8 @@ private:
     }
 
     // Camera
-    float radius{4.0f}, azimuth, elevation;
+    float radius{2.0f}, azimuth, elevation;
+    float frameTime;
     HmckVec4 cameraPosition = {0.f, 0.f, 6.f, 0.f};
     HmckVec3 cloudTranslation = {0.f, 0.f, 0.f};
     HmckVec4 cloudRotation = {0.f, 0.f, 0.f, 1.f};

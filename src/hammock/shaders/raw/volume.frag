@@ -18,6 +18,8 @@ layout (set = 0, binding = 1) uniform CloudParams {
     float phase;
     float stepSize;
     int maxSteps;
+    float lMul;
+    int maxLightSteps;
 } params;
 
 layout (set = 0, binding = 2) uniform sampler3D noiseTex;
@@ -28,19 +30,51 @@ layout (push_constant) uniform PushConstants {
 } pushConstants;
 
 
-float sdf(vec3 p){
-    return texture(signedDistanceField, p* 0.5 + 0.5).r;
+// Sample signed distance filed
+float sdf(vec3 p) {
+    return texture(signedDistanceField, p * 0.5 + 0.5).r;
+}
+
+// Sample cloud density at a point
+float sampleCloud(vec3 pos) {
+    float dist = sdf(pos);
+
+    if (dist > 0.0) return 0.0;
+
+    // Sample noise for cloud detail
+    float baseNoise = texture(noiseTex, pos * 0.1).r;
+    float detailNoise = texture(noiseTex, pos * 0.3).r;
+
+    return max(0.0, baseNoise * 0.625 + detailNoise * 0.375) * params.density;
+}
+
+// Light march through cloud
+float lightMarch(vec3 pos) {
+    float transmittance = 1.0;
+    float stepSize = params.stepSize * params.lMul;  // Larger steps for light
+
+    for (int i = 0; i < params.maxLightSteps; i++) {
+        // Fewer steps for light
+        pos += params.lightDir.xyz * stepSize;
+        float density = sampleCloud(pos);
+        transmittance *= exp(-density * stepSize * params.absorption);
+    }
+
+    return transmittance;
+}
+
+// Henyey-Greenstein phase function
+float phaseFunction(float cosTheta) {
+    float g = params.phase;
+    float g2 = g * g;
+    return (1.0 - g2) / (4.0 * 3.14159 * pow(1.0 + g2 - 2.0 * g * cosTheta, 1.5));
 }
 
 
 // Compute surface normal using SDF gradient approximation
-vec3 getNormal(vec3 p) {
+vec3 normal(vec3 p) {
     float epsilon = 0.001;
-    return normalize(vec3(
-                     sdf(p + vec3(epsilon, 0.0, 0.0)) - sdf(p - vec3(epsilon, 0.0, 0.0)),
-                     sdf(p + vec3(0.0, epsilon, 0.0)) - sdf(p - vec3(0.0, epsilon, 0.0)),
-                     sdf(p + vec3(0.0, 0.0, epsilon)) - sdf(p - vec3(0.0, 0.0, epsilon))
-                     ));
+    return normalize(vec3(sdf(p + vec3(epsilon, 0.0, 0.0)) - sdf(p - vec3(epsilon, 0.0, 0.0)), sdf(p + vec3(0.0, epsilon, 0.0)) - sdf(p - vec3(0.0, epsilon, 0.0)), sdf(p + vec3(0.0, 0.0, epsilon)) - sdf(p - vec3(0.0, 0.0, epsilon))));
 }
 
 
@@ -52,10 +86,7 @@ void main() {
 
     vec2 uv = gl_FragCoord.xy / vec2(camera.width, camera.height);
     uv -= 0.5;
-    uv.x *= float(camera.width) / float(camera.height);
-
-
-    // Flip the Y-coordinate for Vulkan
+    uv.x *= aspectRatio;
     uv.y *= -1.0;
 
     // Ray Origin - camera
@@ -70,50 +101,34 @@ void main() {
 
     float t = 0.0;  // Ray marching distance
     vec3 pos = rayOrigin + rayDir * t;
+    float transmittance = 1.0;
+    vec3 scatteredLight = vec3(0.0);
 
-    // Raymarching loop
-    for (int i = 0; i < params.maxSteps; i++) {
-        // Compute the distance to the closest surface (Torus SDF)
-        float dist = sdf(pos);  // Torus with radii 1.0 and 0.5
+    // Main raymarching loop
+    for(int i = 0; i < params.maxSteps; i++) {
+        float density = sampleCloud(pos);
 
-        if (dist < 0.01) {
-            // If we hit something, compute the normal
-            vec3 normal = getNormal(pos);
+        if(density > 0.0) {
+            // Calculate lighting
+            float light = lightMarch(pos);
+            float cosTheta = dot(rayDir, params.lightDir.xyz);
+            float phase = phaseFunction(cosTheta);
 
-            // Lighting calculations
-            // 1. Ambient lighting
-            vec3 ambient = 0.1 * params.lightColor.rgb;  // Basic ambient light
+            // Accumulate scattered light
+            vec3 luminance = params.lightColor.xyz * light  * density;
+            scatteredLight += luminance * transmittance * params.stepSize;
 
-            // 2. Diffuse lighting (Lambertian)
-            vec3 lightDir = normalize(params.lightDir.xyz);
-            float diff = max(dot(normal, lightDir), 0.0);
-            vec3 diffuse = diff * params.lightColor.rgb;
+            // Update transmittance
+            transmittance *= exp(-density * params.stepSize * params.absorption);
 
-            // 3. Specular lighting (Phong)
-            vec3 viewDir = normalize(rayOrigin - pos);
-            vec3 reflectDir = reflect(-lightDir, normal);
-            float spec = pow(max(dot(viewDir, reflectDir), 0.0), 16.0);  // Hardcoded shininess
-            vec3 specular = 0.5 * spec * params.lightColor.rgb;  // Specular strength of 0.5
-
-            // Combine lighting components
-            vec3 color = ambient + diffuse + specular;
-
-            // Output color
-            outColor = vec4(color, 1.0);
-            return;
+            // Early exit if nearly opaque
+            if(transmittance < 0.01) break;
         }
 
-        // Accumulate ray distance
-        t += dist * 0.5;  // Step size is half of the distance
+        t += params.stepSize;
         pos = rayOrigin + rayDir * t;
-
-        // Early exit if the ray is too far
-        if (t > 10.0) {
-            outColor = vec4(0.0, 0.0, 0.0, 1.0);  // Black background
-            return;
-        }
     }
 
-    // If no hit is found, output background color
-    outColor = vec4(0.5, 0.5, 0.5, 1.0);  // Gray background
+    // Final color
+    outColor = vec4(scatteredLight, 1.0 - transmittance);
 }
