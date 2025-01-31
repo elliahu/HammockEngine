@@ -236,6 +236,8 @@ void CloudRenderer::update() {
     cameraBuffer.width = window.width * cloudPass.resolution.X;
     cameraBuffer.height = window.height * cloudPass.resolution.X;
 
+    cloudBuffer.elapsedTime += frameTime;
+
     HmckMat4 translation = HmckTranslate(cloudTranslation);
     pushConstants.cloudTransform = translation;
 }

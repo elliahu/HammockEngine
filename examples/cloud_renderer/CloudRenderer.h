@@ -81,6 +81,7 @@ private:
         int maxSteps = 300;
         float lsMul = 5.0f;
         int maxLs = 6;
+        float elapsedTime = 0.0f;
     } cloudBuffer;
 
     struct PushConstants {
