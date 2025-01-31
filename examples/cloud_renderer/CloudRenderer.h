@@ -20,9 +20,8 @@ public:
 protected:
     void load();
 
-    void prepareDescriptors();
+    void prepareRenderPasses();
 
-    void preparePipelines();
 
     void update();
 
@@ -42,21 +41,27 @@ private:
 
     // Rendering
     struct {
+        HmckVec2 resolution {0.5f, 0.5f}; // SwapChain relative
+        std::unique_ptr<Framebuffer> framebuffer;
         std::unique_ptr<GraphicsPipeline> pipeline;
+        std::array<ResourceHandle<VkDescriptorSet>, SwapChain::MAX_FRAMES_IN_FLIGHT> descriptorSets;
+        std::array<ResourceHandle<Buffer>, SwapChain::MAX_FRAMES_IN_FLIGHT> cameraBuffers;
+        std::array<ResourceHandle<Buffer>, SwapChain::MAX_FRAMES_IN_FLIGHT> cloudBuffers;
+        ResourceHandle<DescriptorSetLayout> descriptorSetLayout;
+        ResourceHandle<Texture3D> noiseVolumeHandle;
+        ResourceHandle<Texture3D> cloudSdfHandle;
+    } cloudPass;
+
+    struct {
+        std::unique_ptr<GraphicsPipeline> pipeline;
+        std::array<ResourceHandle<VkDescriptorSet>, SwapChain::MAX_FRAMES_IN_FLIGHT> descriptorSets;
+        ResourceHandle<DescriptorSetLayout> descriptorSetLayout;
     } compositionPass;
 
-    // descriptors
-    std::array<ResourceHandle<VkDescriptorSet>, SwapChain::MAX_FRAMES_IN_FLIGHT> descriptorSets;
-    std::array<ResourceHandle<Buffer>, SwapChain::MAX_FRAMES_IN_FLIGHT> cameraBuffers;
-    std::array<ResourceHandle<Buffer>, SwapChain::MAX_FRAMES_IN_FLIGHT> cloudBuffers;
-    ResourceHandle<DescriptorSetLayout> descriptorSetLayout;
 
-    // Resources
+    // Global resources
     ResourceHandle<Buffer> vertexBuffer;
     ResourceHandle<Buffer> indexBuffer;
-    ResourceHandle<Texture3D> noiseVolumeHandle;
-    ResourceHandle<Texture3D> cloudSdfHandle;
-
 
     // Shader data
     struct CameraBuffer {
@@ -93,7 +98,7 @@ private:
     }
 
     // Camera
-    float radius{2.0f}, azimuth, elevation;
+    float radius{2.0f}, azimuth{0.0f}, elevation{0.0f};
     float frameTime;
     HmckVec4 cameraPosition = {0.f, 0.f, 6.f, 0.f};
     HmckVec3 cloudTranslation = {0.f, 0.f, 0.f};

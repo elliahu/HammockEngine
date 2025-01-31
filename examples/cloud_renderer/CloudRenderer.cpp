@@ -5,8 +5,7 @@ using namespace Hammock;
 CloudRenderer::CloudRenderer(const int32_t width, const int32_t height)
     : window{instance, "Cloud Renderer", width, height}, device(instance, window.getSurface()) {
     load();
-    prepareDescriptors();
-    preparePipelines();
+    prepareRenderPasses();
 }
 
 CloudRenderer::~CloudRenderer() {
@@ -33,7 +32,7 @@ void CloudRenderer::load() {
     ScopedMemory sdfData(SignedDistanceField().loadFromFile(assetPath("sdf/dragon"), grid).data());
     ScopedMemory noiseData(PerlinNoise3D(69420).generateNoiseVolume(grid, grid, grid, 25.f));
 
-    noiseVolumeHandle = deviceStorage.createTexture3D({
+    cloudPass.noiseVolumeHandle = deviceStorage.createTexture3D({
         .buffer = noiseData.get(),
         .instanceSize = sizeof(float),
         .width = static_cast<uint32_t>(grid),
@@ -47,7 +46,7 @@ void CloudRenderer::load() {
         }
     });
 
-    cloudSdfHandle = deviceStorage.createTexture3D({
+    cloudPass.cloudSdfHandle = deviceStorage.createTexture3D({
         .buffer = sdfData.get(),
         .instanceSize = sizeof(float),
         .width = static_cast<uint32_t>(grid),
@@ -75,8 +74,8 @@ void CloudRenderer::load() {
     });
 }
 
-void CloudRenderer::prepareDescriptors() {
-    descriptorSetLayout = deviceStorage.createDescriptorSetLayout({
+void CloudRenderer::prepareRenderPasses() {
+    cloudPass.descriptorSetLayout = deviceStorage.createDescriptorSetLayout({
         .bindings = {
             {
                 .binding = 0, .descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
@@ -98,13 +97,13 @@ void CloudRenderer::prepareDescriptors() {
     });
 
     for (int i = 0; i < SwapChain::MAX_FRAMES_IN_FLIGHT; i++) {
-        cameraBuffers[i] = deviceStorage.createBuffer({
+        cloudPass.cameraBuffers[i] = deviceStorage.createBuffer({
             .instanceSize = sizeof(CameraBuffer),
             .instanceCount = 1,
             .usageFlags = VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
             .memoryPropertyFlags = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT
         });
-        cloudBuffers[i] = deviceStorage.createBuffer({
+        cloudPass.cloudBuffers[i] = deviceStorage.createBuffer({
             .instanceSize = sizeof(CloudBuffer),
             .instanceCount = 1,
             .usageFlags = VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
@@ -113,35 +112,101 @@ void CloudRenderer::prepareDescriptors() {
     }
 
     for (int i = 0; i < SwapChain::MAX_FRAMES_IN_FLIGHT; i++) {
-        auto cameraBufferInfo = deviceStorage.getBuffer(cameraBuffers[i])->descriptorInfo();
-        auto cloudBufferInfo = deviceStorage.getBuffer(cloudBuffers[i])->descriptorInfo();
-        auto noiseInfo = deviceStorage.getTexture3DDescriptorImageInfo(noiseVolumeHandle);
-        auto sdfInfo = deviceStorage.getTexture3DDescriptorImageInfo(cloudSdfHandle);
-        descriptorSets[i] = deviceStorage.createDescriptorSet({
-            .descriptorSetLayout = descriptorSetLayout,
+        auto cameraBufferInfo = deviceStorage.getBuffer(cloudPass.cameraBuffers[i])->descriptorInfo();
+        auto cloudBufferInfo = deviceStorage.getBuffer(cloudPass.cloudBuffers[i])->descriptorInfo();
+        auto noiseInfo = deviceStorage.getTexture3DDescriptorImageInfo(cloudPass.noiseVolumeHandle);
+        auto sdfInfo = deviceStorage.getTexture3DDescriptorImageInfo(cloudPass.cloudSdfHandle);
+        cloudPass.descriptorSets[i] = deviceStorage.createDescriptorSet({
+            .descriptorSetLayout = cloudPass.descriptorSetLayout,
             .bufferWrites = {{0, cameraBufferInfo},{1, cloudBufferInfo}},
             .imageWrites = {{2, noiseInfo}, {3, sdfInfo}}
         });
     }
-}
 
-void CloudRenderer::preparePipelines() {
-    compositionPass.pipeline = GraphicsPipeline::createGraphicsPipelinePtr({
-        .debugName = "Composition pass",
+    cloudPass.framebuffer = Framebuffer::createFramebufferPtr({
+       .device = device,
+       .width = static_cast<uint32_t>(cloudPass.resolution.X * window.width),
+       .height = static_cast<uint32_t>(cloudPass.resolution.Y * window.height),
+       .attachments{
+           // 1 albedo
+           {
+               .width = static_cast<uint32_t>(cloudPass.resolution.X * window.width),
+               .height = static_cast<uint32_t>(cloudPass.resolution.Y * window.height),
+               .layerCount = 1,
+               .format = VK_FORMAT_R8G8B8A8_UNORM,
+               .usage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,
+           },
+       }
+   });
+
+    cloudPass.pipeline = GraphicsPipeline::createGraphicsPipelinePtr({
+        .debugName = "Cloud pass",
         .device = device,
         .VS
         {.byteCode = Filesystem::readFile(compiledShaderPath("fullscreen.vert")),},
         .FS
         {.byteCode = Filesystem::readFile(compiledShaderPath("volume.frag")),},
         .descriptorSetLayouts = {
-            deviceStorage.getDescriptorSetLayout(descriptorSetLayout).getDescriptorSetLayout()
+            deviceStorage.getDescriptorSetLayout(cloudPass.descriptorSetLayout).getDescriptorSetLayout()
         },
-        .pushConstantRanges{
+        .pushConstantRanges = {
             {
                 .stageFlags = VK_SHADER_STAGE_ALL_GRAPHICS,
                 .offset = 0,
                 .size = sizeof(PushConstants)
             }
+        },
+        .graphicsState{
+            .cullMode = VK_CULL_MODE_NONE,
+            .blendAtaAttachmentStates = {
+                Init::pipelineColorBlendAttachmentState(0xf, VK_FALSE),
+            },
+            .vertexBufferBindings{
+                .vertexBindingDescriptions = Vertex::vertexInputBindingDescriptions(),
+                .vertexAttributeDescriptions = Vertex::vertexInputAttributeDescriptions()
+            }
+        },
+        .renderPass = cloudPass.framebuffer->renderPass
+    });
+
+    compositionPass.descriptorSetLayout = deviceStorage.createDescriptorSetLayout({
+        .bindings = {
+            {
+                .binding = 0, .descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
+                .stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT
+            },
+        }
+    });
+
+    for (int i = 0; i < SwapChain::MAX_FRAMES_IN_FLIGHT; i++) {
+        VkDescriptorImageInfo imageInfo{
+            .sampler = cloudPass.framebuffer->sampler,
+            .imageView = cloudPass.framebuffer->attachments[0].view,
+            .imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL
+        };
+        compositionPass.descriptorSets[i] = deviceStorage.createDescriptorSet({
+           .descriptorSetLayout = compositionPass.descriptorSetLayout,
+           .imageWrites = {{0, imageInfo}, }
+       });
+    }
+
+    compositionPass.pipeline = GraphicsPipeline::createGraphicsPipelinePtr({
+        .debugName = "Composition pass",
+        .device = device,
+        .VS
+        {.byteCode = Filesystem::readFile(compiledShaderPath("fullscreen.vert")),},
+        .FS
+        {.byteCode = Filesystem::readFile(compiledShaderPath("cloud_composition.frag")),},
+        .descriptorSetLayouts = {
+            deviceStorage.getDescriptorSetLayout(cloudPass.descriptorSetLayout).getDescriptorSetLayout(),
+            deviceStorage.getDescriptorSetLayout(compositionPass.descriptorSetLayout).getDescriptorSetLayout()
+        },
+        .pushConstantRanges{
+                {
+                    .stageFlags = VK_SHADER_STAGE_ALL_GRAPHICS,
+                    .offset = 0,
+                    .size = sizeof(PushConstants)
+                }
         },
         .graphicsState{
             .cullMode = VK_CULL_MODE_NONE,
@@ -153,6 +218,7 @@ void CloudRenderer::preparePipelines() {
         .renderPass = renderContext.getSwapChainRenderPass()
     });
 }
+
 
 void CloudRenderer::update() {
     float speed = 0.001f;
@@ -167,8 +233,8 @@ void CloudRenderer::update() {
     cameraBuffer.proj = Projection().perspective(45.0f, renderContext.getAspectRatio(), 0.1f, 64.0f);
     cameraBuffer.view = Projection().view(cameraPosition.XYZ, {0.f, 0.f, 0.f}, Projection().upPosY());
     cameraBuffer.cameraPosition = cameraPosition;
-    cameraBuffer.width = window.width;
-    cameraBuffer.height = window.height;
+    cameraBuffer.width = window.width * cloudPass.resolution.X;
+    cameraBuffer.height = window.height * cloudPass.resolution.X;
 
     HmckMat4 translation = HmckTranslate(cloudTranslation);
     pushConstants.cloudTransform = translation;
@@ -178,30 +244,43 @@ void CloudRenderer::draw() {
     if (const auto commandBuffer = renderContext.beginFrame()) {
         const int frameIndex = renderContext.getFrameIndex();
 
-        deviceStorage.getBuffer(cameraBuffers[frameIndex])->writeToBuffer(&cameraBuffer);
-        deviceStorage.getBuffer(cloudBuffers[frameIndex])->writeToBuffer(&cloudBuffer);
-
-        renderContext.beginSwapChainRenderPass(commandBuffer);
-
+        deviceStorage.getBuffer(cloudPass.cameraBuffers[frameIndex])->writeToBuffer(&cameraBuffer);
+        deviceStorage.getBuffer(cloudPass.cloudBuffers[frameIndex])->writeToBuffer(&cloudBuffer);
         deviceStorage.bindVertexBuffer(vertexBuffer, indexBuffer, commandBuffer);
-        compositionPass.pipeline->bind(commandBuffer);
 
+        // Cloud pass
+        renderContext.beginRenderPass(cloudPass.framebuffer, commandBuffer, {
+                {.color = {0.0f, 0.0f, 0.0f, 0.0f}}
+        });
+        cloudPass.pipeline->bind(commandBuffer);
         deviceStorage.bindDescriptorSet(
-            commandBuffer,
-            VK_PIPELINE_BIND_POINT_GRAPHICS,
-            compositionPass.pipeline->graphicsPipelineLayout,
-            0, 1,
-            descriptorSets[frameIndex],
-            0,
-            nullptr);
-
-        vkCmdPushConstants(commandBuffer, compositionPass.pipeline->graphicsPipelineLayout,
+             commandBuffer,
+             VK_PIPELINE_BIND_POINT_GRAPHICS,
+             cloudPass.pipeline->graphicsPipelineLayout,
+             0, 1,
+             cloudPass.descriptorSets[frameIndex],
+             0,
+             nullptr);
+        vkCmdPushConstants(commandBuffer, cloudPass.pipeline->graphicsPipelineLayout,
                            VK_SHADER_STAGE_ALL_GRAPHICS, 0,
                            sizeof(PushConstants), &pushConstants);
+        vkCmdDraw(commandBuffer, 3, 1, 0, 0);
+        renderContext.endRenderPass(commandBuffer);
 
-        // draw single triangle to trigger fullscreen vertex shader
+        // Composition pass
+        renderContext.beginSwapChainRenderPass(commandBuffer);
+        compositionPass.pipeline->bind(commandBuffer);
+        deviceStorage.bindDescriptorSet(
+             commandBuffer,
+             VK_PIPELINE_BIND_POINT_GRAPHICS,
+             compositionPass.pipeline->graphicsPipelineLayout,
+             1, 1,
+             compositionPass.descriptorSets[frameIndex],
+             0,
+             nullptr);
         vkCmdDraw(commandBuffer, 3, 1, 0, 0);
 
+        // UI
         ui.beginUserInterface();
         drawUi();
         ui.endUserInterface(commandBuffer);
