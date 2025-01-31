@@ -30,7 +30,7 @@ void CloudRenderer::run() {
 void CloudRenderer::load() {
     int32_t grid = 258;
     ScopedMemory sdfData(SignedDistanceField().loadFromFile(assetPath("sdf/dragon"), grid).data());
-    ScopedMemory noiseData(PerlinNoise3D(69420).generateNoiseVolume(grid, grid, grid, 25.f));
+    ScopedMemory noiseData(PerlinNoise3D(69420).generateNoiseVolume(grid, grid, grid, 10.f));
 
     cloudPass.noiseVolumeHandle = deviceStorage.createTexture3D({
         .buffer = noiseData.get(),
@@ -292,11 +292,13 @@ void CloudRenderer::draw() {
 
 void CloudRenderer::drawUi() {
     ImGui::Begin("Cloud Property editor", (bool *) false, ImGuiWindowFlags_AlwaysAutoResize);
-    ImGui::DragFloat3("LightDir", &cloudBuffer.lightDir.Elements[0]);
+    ImGui::DragFloat3("LightDir", &cloudBuffer.lightDir.Elements[0], 0.1f);
     ImGui::ColorEdit4("LightColor", &cloudBuffer.lightColor.Elements[0]);
-    ImGui::DragFloat("Density", &cloudBuffer.density, 0.01f, 0.5f, 2.f);
-    ImGui::DragFloat("Absorption", &cloudBuffer.absorption, 0.01f, 0.01f, 1.f);
-    ImGui::DragFloat("Phase", &cloudBuffer.phase, 0.01f, -1.0f, 1.0f);
+    ImGui::ColorEdit4("Base sky color", &cloudBuffer.baseSkyColor.Elements[0]);
+    ImGui::ColorEdit4("Gradient sky color", &cloudBuffer.gradientSkyColor.Elements[0]);
+    ImGui::DragFloat("Density", &pushConstants.density, 0.01f, 0.01f, 10.f);
+    ImGui::DragFloat("Absorption", &pushConstants.absorption, 0.01f, 0.01f, 10.f);
+    ImGui::DragFloat("Scattering coef.", &pushConstants.scatteringAniso, 0.01f, -1.0f, 1.0f);
     ImGui::DragFloat("Step size", &cloudBuffer.stepSize, 0.0001f, 0.0f, 100.f);
     ImGui::DragInt("Max steps", &cloudBuffer.maxSteps, 1.f, 0.0f, 10000.0f);
     ImGui::DragFloat("Light march step size multiplier", &cloudBuffer.lsMul, 0.01f, 0.0f, 100.f);

@@ -13,9 +13,8 @@ layout (set = 0, binding = 0) uniform CameraUBO {
 layout (set = 0, binding = 1) uniform CloudParams {
     vec4 lightDir;
     vec4 lightColor;
-    float density;
-    float absorption;
-    float phase;
+    vec4 baseSkyColor;
+    vec4 gradientSkyColor;
     float stepSize;
     int maxSteps;
     float lMul;
@@ -27,12 +26,35 @@ layout (set = 0, binding = 3) uniform sampler3D signedDistanceField;
 
 layout (push_constant) uniform PushConstants {
     mat4 cloudTransform;
+    float density;
+    float absorption;
+    float scatteringAniso;
 } pushConstants;
 
+#define PI 3.14159265359
 
-// Sample signed distance filed
+// Transform a point from world space to cloud space
+vec3 worldToCloudSpace(vec3 worldPos) {
+    vec4 cloudPos = inverse(pushConstants.cloudTransform) * vec4(worldPos, 1.0);
+    return cloudPos.xyz;
+}
+
+float beer(float dist, float absorption) {
+    return exp(-dist * absorption);
+}
+
+float henyeyGreenstein(float g, float mu) {
+    float gg = g * g;
+    return (1.0 / (4.0 * PI)) * ((1.0 - gg) / pow(1.0 + gg - 2.0 * g * mu, 1.5));
+}
+
+
+
+// Sample signed distance field
 float sdf(vec3 p) {
-    return texture(signedDistanceField, p * 0.5 + 0.5).r;
+    // Transform the sampling position to cloud space
+    vec3 cloudSpacePos = worldToCloudSpace(p);
+    return texture(signedDistanceField, cloudSpacePos * 0.5 + 0.5).r;
 }
 
 // Sample cloud density at a point
@@ -41,35 +63,15 @@ float sampleCloud(vec3 pos) {
 
     if (dist > 0.0) return 0.0;
 
+    // Transform the sampling position to cloud space for noise sampling
+    vec3 cloudSpacePos = worldToCloudSpace(pos);
+
     // Sample noise for cloud detail
-    float baseNoise = texture(noiseTex, pos * 0.1).r;
-    float detailNoise = texture(noiseTex, pos * 0.3).r;
+    float baseNoise = texture(noiseTex, cloudSpacePos * 0.1).r;
+    float detailNoise = texture(noiseTex, cloudSpacePos * 0.3).r;
 
-    return max(0.0, baseNoise * 0.625 + detailNoise * 0.375) * params.density;
+    return max(0.0, baseNoise * 0.625 + detailNoise * 0.375) * pushConstants.density;
 }
-
-// Light march through cloud
-float lightMarch(vec3 pos) {
-    float transmittance = 1.0;
-    float stepSize = params.stepSize * params.lMul;  // Larger steps for light
-
-    for (int i = 0; i < params.maxLightSteps; i++) {
-        // Fewer steps for light
-        pos += params.lightDir.xyz * stepSize;
-        float density = sampleCloud(pos);
-        transmittance *= exp(-density * stepSize * params.absorption);
-    }
-
-    return transmittance;
-}
-
-// Henyey-Greenstein phase function
-float phaseFunction(float cosTheta) {
-    float g = params.phase;
-    float g2 = g * g;
-    return (1.0 - g2) / (4.0 * 3.14159 * pow(1.0 + g2 - 2.0 * g * cosTheta, 1.5));
-}
-
 
 // Compute surface normal using SDF gradient approximation
 vec3 normal(vec3 p) {
@@ -77,6 +79,50 @@ vec3 normal(vec3 p) {
     return normalize(vec3(sdf(p + vec3(epsilon, 0.0, 0.0)) - sdf(p - vec3(epsilon, 0.0, 0.0)), sdf(p + vec3(0.0, epsilon, 0.0)) - sdf(p - vec3(0.0, epsilon, 0.0)), sdf(p + vec3(0.0, 0.0, epsilon)) - sdf(p - vec3(0.0, 0.0, epsilon))));
 }
 
+
+float lightmarch(vec3 position, vec3 rayDirection) {
+    float totalDensity = 0.0;
+    float marchSize = 0.03;
+
+    for (int step = 0; step < params.maxLightSteps; step++) {
+        position += normalize(params.lightDir.xyz) * marchSize * float(step) * params.lMul;
+
+        float lightSample = sampleCloud(position);
+        totalDensity += lightSample;
+    }
+
+    float transmittance = beer(totalDensity, pushConstants.absorption);
+    return transmittance;
+}
+
+float raymarch(vec3 rayOrigin, vec3 rayDirection, float offset) {
+    float depth = 0.0;
+    depth += params.stepSize * offset;
+    vec3 p = rayOrigin + depth * rayDirection;
+
+    float totalTransmittance = 1.0;
+    float lightEnergy = 0.0;
+
+    float phase = henyeyGreenstein(pushConstants.scatteringAniso, dot(rayDirection, normalize(params.lightDir.xyz)));
+
+    for (int i = 0; i < params.maxSteps; i++) {
+        float density = sampleCloud(p);
+
+        // We only draw the transmittance if it's greater than 0
+        if (density > 0.0) {
+            float lightTransmittance = lightmarch(p, rayDirection);
+            float luminance = 0.025 + density * phase;
+
+            totalTransmittance *= lightTransmittance;
+            lightEnergy += totalTransmittance * luminance;
+        }
+
+        depth += params.stepSize;
+        p = rayOrigin + depth * rayDirection;
+    }
+
+    return lightEnergy;
+}
 
 void main() {
     mat4 inverseView = inverse(camera.view);
@@ -99,37 +145,26 @@ void main() {
     rayDir = (inverseView * vec4(rayDir, 0.0)).xyz;
 
 
-    float t = sdf(rayOrigin);
-    vec3 pos = rayOrigin + rayDir * t;
-    float transmittance = 1.0;
-    vec3 scatteredLight = vec3(0.0);
+    vec3 color = vec3(0.0);
 
-    // Main raymarching loop
-    for(int i = 0; i < params.maxSteps; i++) {
+    // Sun and Sky
+    vec3 sunColor = params.lightColor.rgb;
+    vec3 sunDirection = normalize(params.lightDir.xyz);
+    sunDirection.y *= -1;
+    float sun = clamp(dot(sunDirection, rayDir), 0.0, 1.0);
+    // Base sky color
+    color = params.baseSkyColor.rgb;
+    // Add vertical gradient
+    color -= params.gradientSkyColor.a* params.gradientSkyColor.rgb * -rayDir.y;
+    // Add sun color to sky
+    color += 0.5 * sunColor * pow(sun, 10.0);
 
-        float density = sampleCloud(pos);
+//    float blueNoise = texture(blueNoiseSampler, gl_FragCoord.xy / 1024.0).r;
+//    float offset = fract(blueNoise);
 
-        if(density > 0.0) {
-            // Calculate lighting
-            float light = lightMarch(pos);
-            float cosTheta = dot(rayDir, params.lightDir.xyz);
-            float phase = phaseFunction(cosTheta);
+    // Cloud
+    float res = raymarch(rayOrigin, rayDir, 0);
+    color = color + sunColor * res;
 
-            // Accumulate scattered light
-            vec3 luminance = params.lightColor.xyz * light  * density;
-            scatteredLight += luminance * transmittance * params.stepSize;
-
-            // Update transmittance
-            transmittance *= exp(-density * params.stepSize * params.absorption);
-
-            // Early exit if nearly opaque
-            if(transmittance < 0.01) break;
-        }
-
-        t += params.stepSize;
-        pos = rayOrigin + rayDir * t;
-    }
-
-    // Final color
-    outColor = vec4(scatteredLight, 1.0 - transmittance);
+    outColor = vec4(color, 1.0);
 }

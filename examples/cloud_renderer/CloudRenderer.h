@@ -41,7 +41,7 @@ private:
 
     // Rendering
     struct {
-        HmckVec2 resolution {0.5f, 0.5f}; // SwapChain relative
+        HmckVec2 resolution{0.5f, 0.5f}; // SwapChain relative
         std::unique_ptr<Framebuffer> framebuffer;
         std::unique_ptr<GraphicsPipeline> pipeline;
         std::array<ResourceHandle<VkDescriptorSet>, SwapChain::MAX_FRAMES_IN_FLIGHT> descriptorSets;
@@ -73,12 +73,10 @@ private:
     } cameraBuffer;
 
     struct CloudBuffer {
-        HmckVec4 lightDir = {1.0f, 1.0f, -1.0f, 0.0f}; // W is padding
-        HmckVec4 lightColor = {1.0f, 0.9f, 0.8f, 1.0f}; // W is padding
-
-        float density = 1.0f;
-        float absorption = 0.5f;
-        float phase = 0.3f;
+        HmckVec4 lightDir = {-26.f, 6.0f, 0.0f, 0.0f}; // W is padding
+        HmckVec4 lightColor = {1.0f, 0.9f, 0.8f, 1.0f};
+        HmckVec4 baseSkyColor = {0.7f, 0.7f, 0.90, 1.0f};
+        HmckVec4 gradientSkyColor = {0.90f, 0.75f, 0.90f, 0.8f};
         float stepSize = 0.01f;
         int maxSteps = 300;
         float lsMul = 5.0f;
@@ -87,6 +85,9 @@ private:
 
     struct PushConstants {
         HmckMat4 cloudTransform;
+        float density = 1.0f;
+        float absorption = 0.9f;
+        float scatteringAniso = 0.3f;
     } pushConstants;
 
     static std::string assetPath(const std::string &asset) {
