@@ -1,19 +1,20 @@
-#ifndef CLOUDRENDERER_H
-#define CLOUDRENDERER_H
+#ifndef CLOUDBOUNDINGBOXTESTSCENE_H
+#define CLOUDBOUNDINGBOXTESTSCENE_H
 #include <cstdint>
 
 #include <hammock/hammock.h>
-#include "PerlinNoise3D.h"
-#include "BoundingBox.h"
-#include "SignedDistanceField.h"
+#include "../PerlinNoise3D.h"
+#include "../BoundingBox.h"
+#include "../SignedDistanceField.h"
+#include "../Noise3D.h"
 
 using namespace Hammock;
 
-class CloudRenderer {
+class CloudBoundingBoxTestScene{
 public:
-    CloudRenderer(const int32_t width, const int32_t height);
+    CloudBoundingBoxTestScene(const int32_t width, const int32_t height);
 
-    ~CloudRenderer();
+    ~CloudBoundingBoxTestScene();
 
     void run();
 
@@ -39,19 +40,42 @@ private:
     RenderContext renderContext{window, device};
     UserInterface ui{device, renderContext.getSwapChainRenderPass(), deviceStorage.getDescriptorPool(), window};
 
-    // Rendering
+
+
+    // Rendering passes in order of rendering
+
+    /**
+     * This pass draws a scene into color and depth attachments
+     * Order: 0
+     */
     struct {
-        HmckVec2 resolution{0.5f, 0.5f}; // SwapChain relative
+        HmckVec2 resolution{1.0f, 1.0f}; // SwapChain relative, same size as SwapChain
         std::unique_ptr<Framebuffer> framebuffer;
         std::unique_ptr<GraphicsPipeline> pipeline;
         std::array<ResourceHandle<VkDescriptorSet>, SwapChain::MAX_FRAMES_IN_FLIGHT> descriptorSets;
         std::array<ResourceHandle<Buffer>, SwapChain::MAX_FRAMES_IN_FLIGHT> cameraBuffers;
+        ResourceHandle<DescriptorSetLayout> descriptorSetLayout;
+    } scenePass;
+
+
+    /**
+     * Draws a cloud into a color attachment
+     * Order: 1
+     */
+    struct {
+        HmckVec2 resolution{0.5f, 0.5f}; // SwapChain relative, half resolution for better performance
+        std::unique_ptr<Framebuffer> framebuffer;
+        std::unique_ptr<GraphicsPipeline> pipeline;
+        std::array<ResourceHandle<VkDescriptorSet>, SwapChain::MAX_FRAMES_IN_FLIGHT> descriptorSets;
         std::array<ResourceHandle<Buffer>, SwapChain::MAX_FRAMES_IN_FLIGHT> cloudBuffers;
         ResourceHandle<DescriptorSetLayout> descriptorSetLayout;
         ResourceHandle<Texture3D> noiseVolumeHandle;
-        ResourceHandle<Texture3D> cloudSdfHandle;
     } cloudPass;
 
+    /**
+     * This is a final composition pass that places cloud into a scene and color attachment of this pass is submitted to SwapChain
+     * Order: Last
+     */
     struct {
         std::unique_ptr<GraphicsPipeline> pipeline;
         std::array<ResourceHandle<VkDescriptorSet>, SwapChain::MAX_FRAMES_IN_FLIGHT> descriptorSets;
@@ -68,27 +92,28 @@ private:
         HmckMat4 view;
         HmckMat4 proj;
         HmckVec4 cameraPosition;
+        HmckVec4 lightDir = {-1.f, 1.0f, 0.5f, 0.0f}; // W is padding
+        HmckVec4 lightColor = {1.0f, 0.9f, 0.8f, 1.0f};
         int width;
         int height;
     } cameraBuffer;
 
     struct CloudBuffer {
-        HmckVec4 lightDir = {-26.f, 6.0f, 0.0f, 0.0f}; // W is padding
-        HmckVec4 lightColor = {1.0f, 0.9f, 0.8f, 1.0f};
-        HmckVec4 baseSkyColor = {0.7f, 0.7f, 0.90, 1.0f};
-        HmckVec4 gradientSkyColor = {0.90f, 0.75f, 0.90f, 0.8f};
-        float stepSize = 0.01f;
-        int maxSteps = 300;
-        float lsMul = 5.0f;
-        int maxLs = 6;
-        float elapsedTime = 0.0f;
+        HmckVec4 offset = {0.0f, 0.0f, 0.0f, 0.0f}; // W is padding
+        float scale = 72.0f;
+        float densityThreshold = 0.5f;
+        int numSteps = 100;     // max steps
+        float lightStepMult = 1.0f;     // light step multiplier
+        int maxLightSteps = 4;  // max light steps
+        float elapsedTime = 0.0f;   // elapsed time
+        float density = 5.0f; // density multiplier
+        float absorption = 0.1f;    // absorption coef
+        float scatteringAniso = 0.3f;   // scattering coef
     } cloudBuffer;
 
     struct PushConstants {
-        HmckMat4 cloudTransform;
-        float density = 1.0f;
-        float absorption = 0.9f;
-        float scatteringAniso = 0.3f;
+        HmckVec4 bb1 = {1.f, 0.f, 1.f};
+        HmckVec4 bb2 = {-1.f, 1.f, -1.f};
     } pushConstants;
 
     static std::string assetPath(const std::string &asset) {
@@ -100,10 +125,9 @@ private:
     }
 
     // Camera
-    float radius{2.0f}, azimuth{0.0f}, elevation{0.0f};
+    float radius{10.0f}, azimuth{0.35f}, elevation{0.35f};
     float frameTime;
     HmckVec4 cameraPosition = {0.f, 0.f, 6.f, 0.f};
-    HmckVec3 cloudTranslation = {0.f, 0.f, 0.f};
     HmckVec4 cloudRotation = {0.f, 0.f, 0.f, 1.f};
 };
 

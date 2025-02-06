@@ -73,13 +73,14 @@ namespace Hammock {
     */
     struct FramebufferAttachmentCreateInfo {
         uint32_t width, height;
-        uint32_t layerCount;
+        uint32_t layerCount = 1;
         VkFormat format;
         VkImageUsageFlags usage;
         VkSampleCountFlagBits imageSampleCount = VK_SAMPLE_COUNT_1_BIT;
         VkAttachmentLoadOp loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
         VkAttachmentStoreOp storeOp = VK_ATTACHMENT_STORE_OP_STORE;
         VkImageLayout initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+        VkImageLayout finalLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
     };
 
     /**
@@ -288,11 +289,7 @@ namespace Hammock {
             attachment.description.initialLayout = createinfo.initialLayout;
             // Final layout
             // If not, final layout depends on attachment type
-            if (attachment.hasDepth() || attachment.hasStencil()) {
-                attachment.description.finalLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL;
-            } else {
-                attachment.description.finalLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-            }
+            attachment.description.finalLayout = createinfo.finalLayout;
 
             attachments.push_back(attachment);
 

@@ -1,17 +1,17 @@
-#include "CloudRenderer.h"
+#include "ParticipatingMediumTestScene.h"
 
 using namespace Hammock;
 
-CloudRenderer::CloudRenderer(const int32_t width, const int32_t height)
+ParticipatingMediumTestScene::ParticipatingMediumTestScene(const int32_t width, const int32_t height)
     : window{instance, "Cloud Renderer", width, height}, device(instance, window.getSurface()) {
     load();
     prepareRenderPasses();
 }
 
-CloudRenderer::~CloudRenderer() {
+ParticipatingMediumTestScene::~ParticipatingMediumTestScene() {
 }
 
-void CloudRenderer::run() {
+void ParticipatingMediumTestScene::run() {
     auto currentTime = std::chrono::high_resolution_clock::now();
     while (!window.shouldClose()) {
         window.pollEvents();
@@ -27,18 +27,33 @@ void CloudRenderer::run() {
     device.waitIdle();
 }
 
-void CloudRenderer::load() {
+void ParticipatingMediumTestScene::load() {
+    // Noise3D noiseGenerator(100, 100, 1, 3);
+    // std::vector<WorleyNoiseSettings> settings = {
+    //     {42, 16}, // Channel 1 settings
+    //     {42, 16}, // Channel 2 settings
+    //     {84, 64}, // Channel 3 settings
+    // };
+    //
+    // noiseGenerator.generateWorleyNoise(settings);
+    // const std::vector<float> &data = noiseGenerator.getData();
+    //
+    // Filesystem::writeImage("noise3D.png", data.data(), sizeof(float), 100, 100, 3);
+
+
     int32_t grid = 258;
     ScopedMemory sdfData(SignedDistanceField().loadFromFile(assetPath("sdf/dragon"), grid).data());
-    ScopedMemory noiseData(PerlinNoise3D(69420).generateNoiseVolume(grid, grid, grid, 10.f));
+
+
+    ScopedMemory noiseData(PerlinNoise3D(69420).generateNoiseVolume(512, 16, 512, 1.0f));
 
     cloudPass.noiseVolumeHandle = deviceStorage.createTexture3D({
         .buffer = noiseData.get(),
         .instanceSize = sizeof(float),
-        .width = static_cast<uint32_t>(grid),
-        .height = static_cast<uint32_t>(grid),
+        .width = 512,
+        .height = 16,
         .channels = 1,
-        .depth = static_cast<uint32_t>(grid),
+        .depth = 512,
         .format = VK_FORMAT_R32_SFLOAT,
         .imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
         .samplerInfo = {
@@ -59,8 +74,10 @@ void CloudRenderer::load() {
 
 
     BoundingBox cloudBoundingBox = BoundingBox({0.f, 0.f, 0.f}, 2.f);
-    geometry.vertices.insert(geometry.vertices.end(), cloudBoundingBox.getVertices().begin(), cloudBoundingBox.getVertices().end());
-    geometry.indices.insert(geometry.indices.end(), cloudBoundingBox.getIndices().begin(), cloudBoundingBox.getIndices().end());
+    geometry.vertices.insert(geometry.vertices.end(), cloudBoundingBox.getVertices().begin(),
+                             cloudBoundingBox.getVertices().end());
+    geometry.indices.insert(geometry.indices.end(), cloudBoundingBox.getIndices().begin(),
+                            cloudBoundingBox.getIndices().end());
 
     vertexBuffer = deviceStorage.createVertexBuffer({
         .vertexSize = sizeof(geometry.vertices[0]),
@@ -74,7 +91,7 @@ void CloudRenderer::load() {
     });
 }
 
-void CloudRenderer::prepareRenderPasses() {
+void ParticipatingMediumTestScene::prepareRenderPasses() {
     cloudPass.descriptorSetLayout = deviceStorage.createDescriptorSetLayout({
         .bindings = {
             {
@@ -93,6 +110,7 @@ void CloudRenderer::prepareRenderPasses() {
                 .binding = 3, .descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
                 .stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT
             },
+
         }
     });
 
@@ -116,28 +134,29 @@ void CloudRenderer::prepareRenderPasses() {
         auto cloudBufferInfo = deviceStorage.getBuffer(cloudPass.cloudBuffers[i])->descriptorInfo();
         auto noiseInfo = deviceStorage.getTexture3DDescriptorImageInfo(cloudPass.noiseVolumeHandle);
         auto sdfInfo = deviceStorage.getTexture3DDescriptorImageInfo(cloudPass.cloudSdfHandle);
+
         cloudPass.descriptorSets[i] = deviceStorage.createDescriptorSet({
             .descriptorSetLayout = cloudPass.descriptorSetLayout,
-            .bufferWrites = {{0, cameraBufferInfo},{1, cloudBufferInfo}},
+            .bufferWrites = {{0, cameraBufferInfo}, {1, cloudBufferInfo}},
             .imageWrites = {{2, noiseInfo}, {3, sdfInfo}}
         });
     }
 
     cloudPass.framebuffer = Framebuffer::createFramebufferPtr({
-       .device = device,
-       .width = static_cast<uint32_t>(cloudPass.resolution.X * window.width),
-       .height = static_cast<uint32_t>(cloudPass.resolution.Y * window.height),
-       .attachments{
-           // 1 albedo
-           {
-               .width = static_cast<uint32_t>(cloudPass.resolution.X * window.width),
-               .height = static_cast<uint32_t>(cloudPass.resolution.Y * window.height),
-               .layerCount = 1,
-               .format = VK_FORMAT_R8G8B8A8_UNORM,
-               .usage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,
-           },
-       }
-   });
+        .device = device,
+        .width = static_cast<uint32_t>(cloudPass.resolution.X * window.width),
+        .height = static_cast<uint32_t>(cloudPass.resolution.Y * window.height),
+        .attachments{
+            // 1 albedo
+            {
+                .width = static_cast<uint32_t>(cloudPass.resolution.X * window.width),
+                .height = static_cast<uint32_t>(cloudPass.resolution.Y * window.height),
+                .layerCount = 1,
+                .format = VK_FORMAT_R8G8B8A8_UNORM,
+                .usage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,
+            },
+        }
+    });
 
     cloudPass.pipeline = GraphicsPipeline::createGraphicsPipelinePtr({
         .debugName = "Cloud pass",
@@ -185,9 +204,9 @@ void CloudRenderer::prepareRenderPasses() {
             .imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL
         };
         compositionPass.descriptorSets[i] = deviceStorage.createDescriptorSet({
-           .descriptorSetLayout = compositionPass.descriptorSetLayout,
-           .imageWrites = {{0, imageInfo}, }
-       });
+            .descriptorSetLayout = compositionPass.descriptorSetLayout,
+            .imageWrites = {{0, imageInfo},}
+        });
     }
 
     compositionPass.pipeline = GraphicsPipeline::createGraphicsPipelinePtr({
@@ -202,11 +221,11 @@ void CloudRenderer::prepareRenderPasses() {
             deviceStorage.getDescriptorSetLayout(compositionPass.descriptorSetLayout).getDescriptorSetLayout()
         },
         .pushConstantRanges{
-                {
-                    .stageFlags = VK_SHADER_STAGE_ALL_GRAPHICS,
-                    .offset = 0,
-                    .size = sizeof(PushConstants)
-                }
+            {
+                .stageFlags = VK_SHADER_STAGE_ALL_GRAPHICS,
+                .offset = 0,
+                .size = sizeof(PushConstants)
+            }
         },
         .graphicsState{
             .cullMode = VK_CULL_MODE_NONE,
@@ -220,15 +239,15 @@ void CloudRenderer::prepareRenderPasses() {
 }
 
 
-void CloudRenderer::update() {
+void ParticipatingMediumTestScene::update() {
     float speed = 0.001f;
-    if(window.getKeyState(KEY_A) == KeyState::DOWN) azimuth += speed * frameTime;
-    if(window.getKeyState(KEY_D) == KeyState::DOWN) azimuth -= speed * frameTime;
-    if(window.getKeyState(KEY_W) == KeyState::DOWN) elevation += speed * frameTime;
-    if(window.getKeyState(KEY_S) == KeyState::DOWN) elevation -= speed * frameTime;
-    if(window.getKeyState(KEY_UP) == KeyState::DOWN) radius -= speed * frameTime;
-    if(window.getKeyState(KEY_DOWN) == KeyState::DOWN) radius += speed * frameTime;
-    cameraPosition.XYZ = Math::orbitalPosition(HmckVec3{.0f,.0f,.0f}, radius, azimuth, elevation);
+    if (window.getKeyState(KEY_A) == KeyState::DOWN) azimuth += speed * frameTime;
+    if (window.getKeyState(KEY_D) == KeyState::DOWN) azimuth -= speed * frameTime;
+    if (window.getKeyState(KEY_W) == KeyState::DOWN) elevation += speed * frameTime;
+    if (window.getKeyState(KEY_S) == KeyState::DOWN) elevation -= speed * frameTime;
+    if (window.getKeyState(KEY_UP) == KeyState::DOWN) radius -= speed * frameTime;
+    if (window.getKeyState(KEY_DOWN) == KeyState::DOWN) radius += speed * frameTime;
+    cameraPosition.XYZ = Math::orbitalPosition(HmckVec3{.0f, .0f, .0f}, radius, azimuth, elevation);
 
     cameraBuffer.proj = Projection().perspective(45.0f, renderContext.getAspectRatio(), 0.1f, 64.0f);
     cameraBuffer.view = Projection().view(cameraPosition.XYZ, {0.f, 0.f, 0.f}, Projection().upPosY());
@@ -242,7 +261,7 @@ void CloudRenderer::update() {
     pushConstants.cloudTransform = translation;
 }
 
-void CloudRenderer::draw() {
+void ParticipatingMediumTestScene::draw() {
     if (const auto commandBuffer = renderContext.beginFrame()) {
         const int frameIndex = renderContext.getFrameIndex();
 
@@ -252,17 +271,17 @@ void CloudRenderer::draw() {
 
         // Cloud pass
         renderContext.beginRenderPass(cloudPass.framebuffer, commandBuffer, {
-                {.color = {0.0f, 0.0f, 0.0f, 0.0f}}
-        });
+                                          {.color = {0.0f, 0.0f, 0.0f, 0.0f}}
+                                      });
         cloudPass.pipeline->bind(commandBuffer);
         deviceStorage.bindDescriptorSet(
-             commandBuffer,
-             VK_PIPELINE_BIND_POINT_GRAPHICS,
-             cloudPass.pipeline->graphicsPipelineLayout,
-             0, 1,
-             cloudPass.descriptorSets[frameIndex],
-             0,
-             nullptr);
+            commandBuffer,
+            VK_PIPELINE_BIND_POINT_GRAPHICS,
+            cloudPass.pipeline->graphicsPipelineLayout,
+            0, 1,
+            cloudPass.descriptorSets[frameIndex],
+            0,
+            nullptr);
         vkCmdPushConstants(commandBuffer, cloudPass.pipeline->graphicsPipelineLayout,
                            VK_SHADER_STAGE_ALL_GRAPHICS, 0,
                            sizeof(PushConstants), &pushConstants);
@@ -273,13 +292,13 @@ void CloudRenderer::draw() {
         renderContext.beginSwapChainRenderPass(commandBuffer);
         compositionPass.pipeline->bind(commandBuffer);
         deviceStorage.bindDescriptorSet(
-             commandBuffer,
-             VK_PIPELINE_BIND_POINT_GRAPHICS,
-             compositionPass.pipeline->graphicsPipelineLayout,
-             1, 1,
-             compositionPass.descriptorSets[frameIndex],
-             0,
-             nullptr);
+            commandBuffer,
+            VK_PIPELINE_BIND_POINT_GRAPHICS,
+            compositionPass.pipeline->graphicsPipelineLayout,
+            1, 1,
+            compositionPass.descriptorSets[frameIndex],
+            0,
+            nullptr);
         vkCmdDraw(commandBuffer, 3, 1, 0, 0);
 
         // UI
@@ -292,7 +311,7 @@ void CloudRenderer::draw() {
     }
 }
 
-void CloudRenderer::drawUi() {
+void ParticipatingMediumTestScene::drawUi() {
     ImGui::Begin("Cloud Property editor", (bool *) false, ImGuiWindowFlags_AlwaysAutoResize);
     ImGui::DragFloat3("LightDir", &cloudBuffer.lightDir.Elements[0], 0.1f);
     ImGui::ColorEdit4("LightColor", &cloudBuffer.lightColor.Elements[0]);
@@ -301,18 +320,23 @@ void CloudRenderer::drawUi() {
     ImGui::DragFloat("Density", &pushConstants.density, 0.01f, 0.01f, 10.f);
     ImGui::DragFloat("Absorption", &pushConstants.absorption, 0.01f, 0.01f, 10.f);
     ImGui::DragFloat("Scattering coef.", &pushConstants.scatteringAniso, 0.01f, -1.0f, 1.0f);
-    ImGui::DragFloat("Step size", &cloudBuffer.stepSize, 0.0001f, 0.0f, 100.f);
-    ImGui::DragInt("Max steps", &cloudBuffer.maxSteps, 1.f, 0.0f, 10000.0f);
+    ImGui::DragFloat("Step size", &cloudBuffer.stepSize, 0.1f, 0.0f, 100.f);
+    ImGui::DragInt("Max steps", &cloudBuffer.maxSteps, .01f, 0.0f, 10000.0f);
     ImGui::DragFloat("Light march step size multiplier", &cloudBuffer.lsMul, 0.01f, 0.0f, 100.f);
     ImGui::DragInt("Light march max steps", &cloudBuffer.maxLs, 1.f, 0.0f, 10000.0f);
     ImGui::DragFloat3("Position", &cloudTranslation.Elements[0], 0.01f);
+    ImGui::DragFloat("Cloud start height", &cloudBuffer.cloudStartHeight, .1f);
+    ImGui::DragFloat("Cloud End height", &cloudBuffer.cloudEndHeight, .1f);
+    ImGui::DragFloat("Noise scale", &cloudBuffer.noiseScale, 0.1f);
+    ImGui::DragFloat("Noise lower cutoff", &cloudBuffer.noiseLowerCutoff, 0.01f);
+    ImGui::DragFloat("Noise highrt cutoff", &cloudBuffer.noiseHigherCutoff, .001f);
     ImGui::End();
 
     ImGui::Begin("Camera", (bool *) false, ImGuiWindowFlags_AlwaysAutoResize);
     ImGui::Text("%.1f FPS ", 1.0f / frameTime);
     ImGui::Text("Frametime: %.2f ms", frameTime * 1000.0f);
-    ImGui::DragFloat("Radius", &radius, 0.01f );
-    ImGui::DragFloat("Azimuth", &azimuth, 0.01f );
+    ImGui::DragFloat("Radius", &radius, 0.01f);
+    ImGui::DragFloat("Azimuth", &azimuth, 0.01f);
     ImGui::DragFloat("Elevation", &elevation, 0.01f);
     ImGui::End();
 }

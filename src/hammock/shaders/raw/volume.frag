@@ -20,6 +20,11 @@ layout (set = 0, binding = 1) uniform CloudParams {
     float lMul;
     int maxLightSteps;
     float elapsedTime;
+    float cloudsMin;
+    float cloudsMax;
+    float noiseScale;
+    float noiseLowerCutoff;
+    float noiseHigherCutoff;
 } params;
 
 layout (set = 0, binding = 2) uniform sampler3D noiseTex;
@@ -40,13 +45,32 @@ vec3 worldToCloudSpace(vec3 worldPos) {
     return cloudPos.xyz;
 }
 
-float beer(float dist, float absorption) {
-    return exp(-dist * absorption);
+// Improved light extinction calculation
+float beer(float density, float rayDist) {
+    // Beer-Lambert law with improved extinction coefficient
+    return exp(-density * rayDist * pushConstants.absorption);
 }
 
-float henyeyGreenstein(float g, float mu) {
-    float gg = g * g;
-    return (1.0 / (4.0 * PI)) * ((1.0 - gg) / pow(1.0 + gg - 2.0 * g * mu, 1.5));
+// Multiple scattering approximation from the paper
+float multipleScattering(float density) {
+    // Powder effect approximation
+    float powder = 1.0 - exp(-density * 2.0);
+    return mix(1.0, powder, 0.5); // Blend between single and multiple scattering
+}
+
+
+// Improved phase function (Section 2.2 of the paper)
+float henyeyGreenstein(float cosTheta, float g) {
+    float g2 = g * g;
+    return (1.0 - g2) / (4.0 * PI * pow(1.0 + g2 - 2.0 * g * cosTheta, 1.5));
+}
+
+
+// Improved phase function with dual-lobe scattering
+float dualLobePhase(float cosTheta) {
+    float back = henyeyGreenstein(cosTheta, -0.3); // Back-scattering lobe
+    float forward = henyeyGreenstein(cosTheta, pushConstants.scatteringAniso); // Forward-scattering lobe
+    return mix(forward, back, 0.7); // Blend between forward and backward scattering
 }
 
 
@@ -79,20 +103,24 @@ vec3 normal(vec3 p) {
     return normalize(vec3(sdf(p + vec3(epsilon, 0.0, 0.0)) - sdf(p - vec3(epsilon, 0.0, 0.0)), sdf(p + vec3(0.0, epsilon, 0.0)) - sdf(p - vec3(0.0, epsilon, 0.0)), sdf(p + vec3(0.0, 0.0, epsilon)) - sdf(p - vec3(0.0, 0.0, epsilon))));
 }
 
-
 float lightmarch(vec3 position, vec3 rayDirection) {
     float totalDensity = 0.0;
-    float marchSize = 0.03;
+    float stepSize = 0.03;
+    float transmittance = 1.0;
 
     for (int step = 0; step < params.maxLightSteps; step++) {
-        position += normalize(params.lightDir.xyz) * marchSize * float(step) * params.lMul;
-
+        position += normalize(params.lightDir.xyz) * stepSize * float(step) * params.lMul;
         float lightSample = sampleCloud(position);
-        totalDensity += lightSample;
+
+        // Accumulate density with improved extinction
+        if (lightSample > 0.0) {
+            totalDensity += lightSample;
+            // Early exit for performance
+            if (transmittance < 0.01) break;
+        }
     }
 
-    float transmittance = beer(totalDensity, pushConstants.absorption);
-    return transmittance;
+    return beer(totalDensity, stepSize * params.maxLightSteps);
 }
 
 float raymarch(vec3 rayOrigin, vec3 rayDirection, float offset) {
@@ -100,21 +128,36 @@ float raymarch(vec3 rayOrigin, vec3 rayDirection, float offset) {
     depth += params.stepSize * offset;
     vec3 p = rayOrigin + depth * rayDirection;
 
-    float totalTransmittance = 1.0;
+    float transmittance = 1.0;
     float lightEnergy = 0.0;
 
-    float phase = henyeyGreenstein(pushConstants.scatteringAniso, dot(rayDirection, normalize(params.lightDir.xyz)));
+    // Calculate cosine of angle between view and light directions
+    float cosTheta = dot(rayDirection, normalize(params.lightDir.xyz));
+
+    // Calculate phase function value
+    float phase = dualLobePhase(cosTheta);
 
     for (int i = 0; i < params.maxSteps; i++) {
         float density = sampleCloud(p);
 
-        // We only draw the transmittance if it's greater than 0
         if (density > 0.0) {
+            // Calculate light contribution
             float lightTransmittance = lightmarch(p, rayDirection);
-            float luminance = 0.025 + density * phase;
 
-            totalTransmittance *= lightTransmittance;
-            lightEnergy += totalTransmittance * luminance;
+            // Multiple scattering approximation
+            float ms = multipleScattering(density);
+
+            // Combine all lighting factors
+            float luminance = density * phase * ms;
+
+            // Accumulate light energy with transmittance
+            lightEnergy += transmittance * luminance * lightTransmittance;
+
+            // Update transmittance along view ray
+            transmittance *= beer(density, params.stepSize);
+
+            // Early exit if transmittance is too low
+            if (transmittance < 0.01) break;
         }
 
         depth += params.stepSize;
@@ -157,14 +200,14 @@ void main() {
     // Add vertical gradient
     color -= params.gradientSkyColor.a* params.gradientSkyColor.rgb * -rayDir.y;
     // Add sun color to sky
-    color += 0.5 * sunColor * pow(sun, 10.0);
+    color += 0.3 * sunColor * pow(sun, 10.0);
 
 //    float blueNoise = texture(blueNoiseSampler, gl_FragCoord.xy / 1024.0).r;
 //    float offset = fract(blueNoise);
 
     // Cloud
     float res = raymarch(rayOrigin, rayDir, 0);
-    color = color + sunColor * res;
+    color = color + (sunColor * res);
 
     outColor = vec4(color, 1.0);
 }
