@@ -3,7 +3,6 @@
 #include <cstdint>
 
 #include <hammock/hammock.h>
-#include "../PerlinNoise3D.h"
 #include "../BoundingBox.h"
 #include "../SignedDistanceField.h"
 #include "../Noise3D.h"
@@ -108,7 +107,8 @@ private:
         float elapsedTime = 0.0f;   // elapsed time
         float density = 5.0f; // density multiplier
         float absorption = 0.1f;    // absorption coef
-        float scatteringAniso = 0.3f;   // scattering coef
+        float forwardScattering= 0.3f;   // scattering coef
+        float backwardScattering= -0.3f;
     } cloudBuffer;
 
     struct PushConstants {

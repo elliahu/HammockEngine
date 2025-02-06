@@ -23,7 +23,8 @@ layout (set = 1, binding = 0) uniform CloudParams {
     float elapsedTime;
     float density;
     float absorption;
-    float scatteringAniso;
+    float forwardScattering;
+    float backwardScattering;
 } params;
 
 layout (set = 1, binding = 1) uniform sampler3D noiseTex;
@@ -76,9 +77,9 @@ vec2 rayBoxDst(vec3 boundMin, vec3 boundMax, vec3 rayOrigin, vec3 rayDirection) 
 }
 
 float sampleDensity(vec3 position) {
-    vec3 uvw = position * params.scale * 0.01 + params.offset.xyz * 0.01;
+    vec3 uvw = position * params.scale * 0.001 + params.offset.xyz * 0.01;
     vec4 shape = texture(noiseTex, uvw);
-    float density = max(0.0, shape.g - params.densityThreshold) * params.density;
+    float density = max(0.0, (1.0 - shape.g) - params.densityThreshold) * params.density;
     return density;
 }
 

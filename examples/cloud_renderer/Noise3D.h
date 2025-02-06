@@ -1,127 +1,97 @@
 #ifndef NOISE3D_H
 #define NOISE3D_H
 
-#include <vector>
-#include <functional>
-#include <random>
-#include <cmath>
+#include <iostream>
+#include <memory>
 #include <algorithm>
-#include <thread>
-#include <mutex>
+#include <array>
+#include "FastNoiseLite.h"  // Include FastNoiseLite
 
-struct WorleyNoiseSettings {
-    int seed = 42;
-    int featurePoints = 16;
-    bool invert = true;
-};
-
+// Abstract Base Class for 3D Noise
 class Noise3D {
 public:
-    Noise3D(int width, int height, int depth, int channels = 1)
-        : width(width), height(height), depth(depth),
-          channels(std::min(channels, 4)),
-          noiseData(width * height * depth * this->channels) {}
+    virtual ~Noise3D() = default;
+    virtual void setSeed(int seed) = 0;
+    virtual void setFrequency(float frequency) = 0;
+    virtual float getNoise(float x, float y, float z) const = 0;
+};
 
-    void generateWorleyNoise(const std::vector<WorleyNoiseSettings>& settings) {
-        if (settings.size() != static_cast<size_t>(channels)) {
-            throw std::runtime_error("Number of settings must match channels.");
-        }
+// Cellular Noise (Worley Noise) Implementation
+class CellularNoise3D : public Noise3D {
+private:
+    FastNoiseLite noise;
+    float frequency;
 
-        std::vector<std::thread> threads;
-        for (int c = 0; c < channels; ++c) {
-            threads.emplace_back(&Noise3D::generateChannelWorley, this, c, settings[c]);
-        }
+public:
+    CellularNoise3D(int seed = 0, float freq = 0.01f)
+        : frequency(freq) {
+        noise.SetSeed(seed);
+        noise.SetNoiseType(FastNoiseLite::NoiseType_Cellular);
+        noise.SetFrequency(frequency);
+    }
 
-        for (auto& thread : threads) {
-            thread.join();
+    void setSeed(int seed) override { noise.SetSeed(seed); }
+    void setFrequency(float freq) override { frequency = freq; noise.SetFrequency(frequency); }
+
+    float getNoise(float x, float y, float z) const override {
+        return noise.GetNoise(x, y, z);
+    }
+};
+
+// Multi-Channel Noise System with Separate Settings per Channel
+class MultiChannelNoise3D {
+private:
+    struct ChannelSettings {
+        int seed;
+        float frequency;
+    };
+
+    std::vector<std::unique_ptr<CellularNoise3D>> noiseChannels;  // Store noise for each channel
+    std::vector<ChannelSettings> channelSettings;  // Settings for each channel
+    int numChannels;
+    float minValue, maxValue;  // For scaling
+
+public:
+    MultiChannelNoise3D(
+        const std::vector<ChannelSettings>& settings,  // Separate settings per channel
+        float minValue = 0.0f,
+        float maxValue = 1.0f)
+        : numChannels(settings.size()), minValue(minValue), maxValue(maxValue) {
+
+        // Create the noise channels with individual settings
+        for (const auto& setting : settings) {
+            noiseChannels.push_back(std::make_unique<CellularNoise3D>(setting.seed, setting.frequency));
         }
     }
 
-    const std::vector<float>& getData() const { return noiseData; }
+    // Function to scale the values to a custom interval
+    float scaleValue(float value) const {
+        // Normalize value from [-1, 1] to [0, 1]
+        float normalizedValue = (value + 1.0f) * 0.5f;
 
-private:
-    int width, height, depth, channels;
-    std::vector<float> noiseData;
-    std::mutex noiseMutex;
+        // Then scale to [minValue, maxValue]
+        return minValue + normalizedValue * (maxValue - minValue);
+    }
 
-    void generateChannelWorley(int channel, const WorleyNoiseSettings& settings) {
-        std::mt19937 rng(settings.seed);
-        std::uniform_real_distribution<float> dist(0.0f, 1.0f);
+    // Generate the noise texture buffer
+    float* getTextureBuffer(int width, int height, int depth) const {
+        float* buffer = new float[width * height * depth * numChannels];  // Allocate for variable channels
 
-        // Precompute feature points as vector of 3D points
-        std::vector<std::tuple<float, float, float>> featurePoints;
-        featurePoints.reserve(settings.featurePoints);
-        for (int i = 0; i < settings.featurePoints; ++i) {
-            featurePoints.emplace_back(dist(rng), dist(rng), dist(rng));
-        }
-
-        // Parallel processing of noise volume
-        int threadCount = std::thread::hardware_concurrency();
-        std::vector<std::thread> sliceThreads;
-        int slicesPerThread = depth / threadCount;
-
-        auto processSliceRange = [&](int startZ, int endZ) {
-            std::vector<float> localChannelNoise;
-            float localMinDist = std::numeric_limits<float>::max();
-            float localMaxDist = std::numeric_limits<float>::lowest();
-
-            // Compute distances for this slice range
-            for (int z = startZ; z < endZ; ++z) {
-                for (int y = 0; y < height; ++y) {
-                    for (int x = 0; x < width; ++x) {
-                        float minDist = 1e6f;
-                        float normX = static_cast<float>(x) / width;
-                        float normY = static_cast<float>(y) / height;
-                        float normZ = static_cast<float>(z) / depth;
-
-                        for (const auto& fp : featurePoints) {
-                            for (int ox = -1; ox <= 1; ++ox) {
-                                for (int oy = -1; oy <= 1; ++oy) {
-                                    for (int oz = -1; oz <= 1; ++oz) {
-                                        float dx = normX - (std::get<0>(fp) + ox);
-                                        float dy = normY - (std::get<1>(fp) + oy);
-                                        float dz = normZ - (std::get<2>(fp) + oz);
-                                        float distSq = dx * dx + dy * dy + dz * dz;
-                                        minDist = std::min(minDist, std::sqrt(distSq));
-                                    }
-                                }
-                            }
-                        }
-
-                        localChannelNoise.push_back(minDist);
-                        localMinDist = std::min(localMinDist, minDist);
-                        localMaxDist = std::max(localMaxDist, minDist);
+        int idx = 0;
+        for (int z = 0; z < depth; ++z) {
+            for (int y = 0; y < height; ++y) {
+                for (int x = 0; x < width; ++x) {
+                    // Generate noise values for each channel and scale them
+                    for (int c = 0; c < numChannels; ++c) {
+                        float noiseValue = noiseChannels[c]->getNoise(x, y, z);
+                        float scaledValue = scaleValue(noiseValue); // Scale to the defined range
+                        buffer[idx++] = scaledValue;
                     }
                 }
             }
-
-            // Thread-safe update of global results
-            std::lock_guard<std::mutex> lock(noiseMutex);
-            for (size_t i = 0; i < localChannelNoise.size(); ++i) {
-                float normalized = (localChannelNoise[i] - localMinDist) /
-                                   (localMaxDist - localMinDist);
-
-                if (settings.invert) {
-                    normalized = 1.0f - normalized;
-                }
-
-                size_t globalIndex = ((startZ * height * width + i) * channels) + channel;
-                noiseData[globalIndex] = normalized;
-            }
-        };
-
-        // Distribute Z slices across threads
-        for (int t = 0; t < threadCount; ++t) {
-            int startZ = t * slicesPerThread;
-            int endZ = (t == threadCount - 1) ? depth : startZ + slicesPerThread;
-            sliceThreads.emplace_back(processSliceRange, startZ, endZ);
         }
 
-        // Wait for all slice threads to complete
-        for (auto& thread : sliceThreads) {
-            thread.join();
-        }
+        return buffer;  // Caller is responsible for deleting the buffer
     }
 };
-
 #endif

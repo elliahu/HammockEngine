@@ -33,21 +33,17 @@ void CloudBoundingBoxTestScene::load() {
             .loadglTF(assetPath("models/SampleScene/SampleScene.glb"));
 
     // Data for cloud pass
-    uint32_t w = 64, h = 64, d = 64, c = 2;
-    Noise3D noiseGenerator(static_cast<int>(w), static_cast<int>(h), static_cast<int>(d), static_cast<int>(c));
-    noiseGenerator.generateWorleyNoise({
-        {420, 32},
-        {69, 256},
-    });
-    const std::vector<float> &data = noiseGenerator.getData();
+    int width = 128, height = 128, depth = 128, channels = 2;
+    MultiChannelNoise3D noise({{42, 0.05f}, {99, 0.1f},}, 0.f, 1.0f);
+    ScopedMemory noiseBufferMemory = ScopedMemory(noise.getTextureBuffer(width, height, depth));
 
     cloudPass.noiseVolumeHandle = deviceStorage.createTexture3D({
-        .buffer = data.data(),
+        .buffer = noiseBufferMemory.get(),
         .instanceSize = sizeof(float),
-        .width = w,
-        .height = h,
-        .channels = c,
-        .depth = d,
+        .width = static_cast<uint32_t>(width),
+        .height = static_cast<uint32_t>(height),
+        .channels = static_cast<uint32_t>(channels),
+        .depth = static_cast<uint32_t>(depth),
         .format = VK_FORMAT_R32G32_SFLOAT,
         .imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
         .samplerInfo = {
@@ -265,10 +261,10 @@ void CloudBoundingBoxTestScene::prepareRenderPasses() {
                 .stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT
             },
             // cloud bb view-space position
-           {
-               .binding = 3, .descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
-               .stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT
-           },
+            {
+                .binding = 3, .descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
+                .stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT
+            },
         }
     });
 
@@ -296,7 +292,7 @@ void CloudBoundingBoxTestScene::prepareRenderPasses() {
         };
         compositionPass.descriptorSets[i] = deviceStorage.createDescriptorSet({
             .descriptorSetLayout = compositionPass.descriptorSetLayout,
-            .imageWrites = {{0, sceneColor}, {1, sceneDepth}, {2, cloudColor},{3, cloudPos}}
+            .imageWrites = {{0, sceneColor}, {1, sceneDepth}, {2, cloudColor}, {3, cloudPos}}
         });
     }
 
@@ -426,7 +422,8 @@ void CloudBoundingBoxTestScene::drawUi() {
     ImGui::DragFloat("Density threshold", &cloudBuffer.densityThreshold, 0.01f, 0.f);
     ImGui::DragFloat("Density", &cloudBuffer.density, 0.01f, 0.01f, 10.f);
     ImGui::DragFloat("Absorption", &cloudBuffer.absorption, 0.01f, 0.01f, 10.f);
-    ImGui::DragFloat("Scattering coef.", &cloudBuffer.scatteringAniso, 0.01f, -1.0f, 1.0f);
+    ImGui::DragFloat("Forward scattering", &cloudBuffer.forwardScattering, 0.01f, 0.0f, 10.0f);
+    ImGui::DragFloat("Backward scattering", &cloudBuffer.backwardScattering, 0.01f, -10.0, 0.0f);
     ImGui::DragInt("Num steps", &cloudBuffer.numSteps, 1, 1);
     ImGui::DragFloat("Light march step size multiplier", &cloudBuffer.lightStepMult, 0.01f, 0.0f, 100.f);
     ImGui::DragInt("Light march max steps", &cloudBuffer.maxLightSteps, 1.f, 0.0f, 10000.0f);

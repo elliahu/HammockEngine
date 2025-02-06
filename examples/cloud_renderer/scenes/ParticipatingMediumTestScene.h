@@ -3,7 +3,6 @@
 #include <cstdint>
 
 #include <hammock/hammock.h>
-#include "../PerlinNoise3D.h"
 #include "../BoundingBox.h"
 #include "../SignedDistanceField.h"
 #include "../Noise3D.h"
