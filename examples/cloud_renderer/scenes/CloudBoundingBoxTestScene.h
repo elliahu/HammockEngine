@@ -91,24 +91,34 @@ private:
         HmckMat4 view;
         HmckMat4 proj;
         HmckVec4 cameraPosition;
-        HmckVec4 lightDir = {-1.f, 1.0f, 0.5f, 0.0f}; // W is padding
+        HmckVec4 lightDir = {0.0f, 1.4f, 0.7f, 0.0f}; // W is padding
         HmckVec4 lightColor = {1.0f, 0.9f, 0.8f, 1.0f};
+        HmckVec4 baseSkyColor = {0.7f, 0.7f, 0.90, 1.0f};
+        HmckVec4 gradientSkyColor = {0.90f, 0.75f, 0.90f, 0.2f};
         int width;
         int height;
+        float sunFactor = 0.3;
+        float sunExp = 20.0;
     } cameraBuffer;
 
     struct CloudBuffer {
-        HmckVec4 offset = {0.0f, 0.0f, 0.0f, 0.0f}; // W is padding
-        float scale = 72.0f;
-        float densityThreshold = 0.5f;
+        // Noise
+        HmckVec4 baseNoiseOffset = {0.0f, 0.0f, 0.0f, 0.0f}; // W is padding
+        HmckVec4 detailNoiseOffset = {0.0f, 0.0f, 0.0f, 0.0f}; // W is padding
+        float baseNoiseScale = .125f;
+        float detailNoiseScale = .5f;
+        float noiseFactor = 0.625f;
+
+        // Raymarching
         int numSteps = 100;     // max steps
-        float lightStepMult = 1.0f;     // light step multiplier
-        int maxLightSteps = 4;  // max light steps
-        float elapsedTime = 0.0f;   // elapsed time
+        int numLightSteps = 4;  // max light steps
+
+        // Cloud props
+        float baseDensityThreshold = 0.75f;
+        float detailDensityThreshold = 0.75f;
         float density = 5.0f; // density multiplier
         float absorption = 0.1f;    // absorption coef
-        float forwardScattering= 0.3f;   // scattering coef
-        float backwardScattering= -0.3f;
+        float scattering= 0.3f;   // scattering coef
     } cloudBuffer;
 
     struct PushConstants {

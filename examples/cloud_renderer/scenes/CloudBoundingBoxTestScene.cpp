@@ -33,10 +33,11 @@ void CloudBoundingBoxTestScene::load() {
             .loadglTF(assetPath("models/SampleScene/SampleScene.glb"));
 
     // Data for cloud pass
-    constexpr int width = 128, height = 128, depth = 128;
+    constexpr int width = 256, height = 256, depth = 256;
     MultiChannelNoise3D noise({
-        {FastNoiseLite::NoiseType_Perlin, 42, 0.05f},      // Channel 0: Perlin Noise
-        {FastNoiseLite::NoiseType_Cellular, 69, 0.2f},    // Channel 1: Cellular Noise
+        {FastNoiseLite::NoiseType_Cellular, 69, 0.015f},
+        {FastNoiseLite::NoiseType_Perlin, 42, 0.1f},
+
     }, 0.0f, 1.0f); // Min/Max values for scaling
     ScopedMemory noiseBufferMemory(noise.getTextureBuffer(width, height, depth));
     const int channels = noise.getNumChannels();
@@ -346,7 +347,6 @@ void CloudBoundingBoxTestScene::update() {
     cameraBuffer.width = window.width * cloudPass.resolution.X;
     cameraBuffer.height = window.height * cloudPass.resolution.X;
 
-    cloudBuffer.elapsedTime += frameTime;
 }
 
 void CloudBoundingBoxTestScene::draw() {
@@ -421,19 +421,31 @@ void CloudBoundingBoxTestScene::draw() {
 
 void CloudBoundingBoxTestScene::drawUi() {
     ImGui::Begin("Cloud Property editor", (bool *) false, ImGuiWindowFlags_AlwaysAutoResize);
-    ImGui::DragFloat3("Offset", &cloudBuffer.offset.Elements[0], 0.1f);
-    ImGui::DragFloat("Scale", &cloudBuffer.scale, 0.1f);
-    ImGui::DragFloat("Density threshold", &cloudBuffer.densityThreshold, 0.01f, 0.f);
-    ImGui::DragFloat("Density", &cloudBuffer.density, 0.01f, 0.01f, 10.f);
-    ImGui::DragFloat("Absorption", &cloudBuffer.absorption, 0.01f, 0.01f, 10.f);
-    ImGui::DragFloat("Forward scattering", &cloudBuffer.forwardScattering, 0.01f, 0.0f, 10.0f);
-    ImGui::DragFloat("Backward scattering", &cloudBuffer.backwardScattering, 0.01f, -10.0, 0.0f);
-    ImGui::DragInt("Num steps", &cloudBuffer.numSteps, 1, 1);
-    ImGui::DragFloat("Light march step size multiplier", &cloudBuffer.lightStepMult, 0.01f, 0.0f, 100.f);
-    ImGui::DragInt("Light march max steps", &cloudBuffer.maxLightSteps, 1.f, 0.0f, 10000.0f);
+
+    ImGui::Text("Noise options:");
+    ImGui::DragFloat3("Base offset", &cloudBuffer.baseNoiseOffset.Elements[0], 0.1f);
+    ImGui::SliderFloat("Base scale", &cloudBuffer.baseNoiseScale, 0.001f, 1.0f);
+    ImGui::DragFloat3("Detail offset", &cloudBuffer.detailNoiseOffset.Elements[0], 0.1f);
+    ImGui::SliderFloat("Detail scale", &cloudBuffer.detailNoiseScale, 0.001f, 1.0f);
+    ImGui::SliderFloat("Blend factor (less detail - more detail)", &cloudBuffer.noiseFactor, 0.0f, 1.0f);
+
+    ImGui::Text("Cloud properties:");
+    ImGui::SliderFloat("Base density threshold", &cloudBuffer.baseDensityThreshold, 0.0f, 1.0f);
+    ImGui::SliderFloat("Detail density threshold", &cloudBuffer.detailDensityThreshold, 0.0f, 1.0f);
+    ImGui::DragFloat("Density factor", &cloudBuffer.density, 0.01f, 0.01f );
+    ImGui::DragFloat("Absorption factor", &cloudBuffer.absorption, 0.01f, 0.01f);
+    ImGui::SliderFloat("Scattering (Aniso - Iso)", &cloudBuffer.scattering, 0.0f, 1.0f);
+
+    ImGui::Text("Cloud placement (bounding box):");
     ImGui::DragFloat3("BB1", &pushConstants.bb1.Elements[0], 0.1f);
     ImGui::DragFloat3("BB2", &pushConstants.bb2.Elements[0], 0.1f);
+
+
+    ImGui::Text("Rendering options:");
+    ImGui::DragInt("Num steps", &cloudBuffer.numSteps, 1, 1);
+    ImGui::DragInt("Light march num steps", &cloudBuffer.numLightSteps, 1, 1);
     ImGui::End();
+
 
     ImGui::Begin("Camera", (bool *) false, ImGuiWindowFlags_AlwaysAutoResize);
     ImGui::Text("%.1f FPS ", 1.0f / frameTime);

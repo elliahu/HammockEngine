@@ -9,22 +9,29 @@ layout (set = 0, binding = 0) uniform CameraUBO {
     vec4 pos;
     vec4 lightDir;
     vec4 lightColor;
+    vec4 baseSkyColor;
+    vec4 gradientSkyColor;
     int width;
     int height;
+    float sunFactor;
+    float sunExp;
 } camera;
 
 layout (set = 1, binding = 0) uniform CloudParams {
-    vec4 offset;
-    float scale;
-    float densityThreshold;
+    vec4 baseNoiseOffset;
+    vec4 detailNoiseOffset;
+    float baseNoiseScale;
+    float detailNoiseScale;
+    float noiseFactor;
+
     int numSteps;
-    float lMul;
-    int maxLightSteps;
-    float elapsedTime;
+    int numLightSteps;
+
+    float baseDensityThreshold;
+    float detailDensityThreshold;
     float density;
     float absorption;
-    float forwardScattering;
-    float backwardScattering;
+    float scattering;
 } params;
 
 layout (set = 1, binding = 1) uniform sampler3D noiseTex;
@@ -77,10 +84,16 @@ vec2 rayBoxDst(vec3 boundMin, vec3 boundMax, vec3 rayOrigin, vec3 rayDirection) 
 }
 
 float sampleDensity(vec3 position) {
-    vec3 uvw = position * params.scale * 0.001 + params.offset.xyz * 0.01;
-    vec4 shape = texture(noiseTex, uvw);
-    float density = max(0.0, (1.0 - shape.g) - params.densityThreshold) * params.density;
-    return density;
+    vec3 baseUvw = position * params.baseNoiseScale + params.baseNoiseOffset.xyz * 0.01;
+    float baseNoise = texture(noiseTex, baseUvw).r;
+
+    vec3 detailUvw = position * params.detailNoiseScale + params.detailNoiseOffset.xyz * 0.01;
+    float detailNoise = texture(noiseTex, detailUvw).g;
+
+    float shape = max(0.0, (1.0 - baseNoise) - params.baseDensityThreshold);
+    float detail = max(0.0, (1.0 - baseNoise) - params.detailDensityThreshold);
+
+    return max(0.0, shape * params.noiseFactor + detail * (1.0 - params.noiseFactor)) * params.density;
 }
 
 
