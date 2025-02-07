@@ -28,14 +28,18 @@ void ParticipatingMediumTestScene::run() {
 }
 
 void ParticipatingMediumTestScene::load() {
-
     int32_t grid = 258;
-    ScopedMemory sdfDataMemory(SignedDistanceField().loadFromFile(assetPath("sdf/dragon"), grid).data());
+    ScopedMemory dragonSdfMemory(SignedDistanceField().loadFromFile(assetPath("sdf/dragon"), grid).data());
 
 
-    int width = 128, height = 128, depth = 128, channels = 1;
-    MultiChannelNoise3D noise({{42, 0.2f}}, 0.f, 1.0f);
+    constexpr int width = 128, height = 128, depth = 128;
+    MultiChannelNoise3D noise({
+                                  {FastNoiseLite::NoiseType_Perlin, 42, 0.075f}, // Channel 0: Perlin Noise
+                                  {FastNoiseLite::NoiseType_Cellular, 69, 0.15f}, // Channel 1: Cellular Noise
+                              }, 0.0f, 1.0f); // Min/Max values for scaling
     ScopedMemory noiseBufferMemory(noise.getTextureBuffer(width, height, depth));
+    const int channels = noise.getNumChannels();
+
 
     cloudPass.noiseVolumeHandle = deviceStorage.createTexture3D({
         .buffer = noiseBufferMemory.get(),
@@ -44,15 +48,15 @@ void ParticipatingMediumTestScene::load() {
         .height = static_cast<uint32_t>(height),
         .channels = static_cast<uint32_t>(channels),
         .depth = static_cast<uint32_t>(depth),
-        .format = VK_FORMAT_R32_SFLOAT,
+        .format = VK_FORMAT_R32G32_SFLOAT,
         .imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
         .samplerInfo = {
             .addressMode = VK_SAMPLER_ADDRESS_MODE_REPEAT,
         }
     });
 
-    cloudPass.cloudSdfHandle = deviceStorage.createTexture3D({
-        .buffer = sdfDataMemory.get(),
+    cloudPass.dragonSdfHandle = deviceStorage.createTexture3D({
+        .buffer = dragonSdfMemory.get(),
         .instanceSize = sizeof(float),
         .width = static_cast<uint32_t>(grid),
         .height = static_cast<uint32_t>(grid),
@@ -61,6 +65,7 @@ void ParticipatingMediumTestScene::load() {
         .format = VK_FORMAT_R32_SFLOAT,
         .imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
     });
+
 
 
     BoundingBox cloudBoundingBox = BoundingBox({0.f, 0.f, 0.f}, 2.f);
@@ -97,10 +102,10 @@ void ParticipatingMediumTestScene::prepareRenderPasses() {
                 .stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT
             },
             {
+                // Dragon
                 .binding = 3, .descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
                 .stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT
             },
-
         }
     });
 
@@ -123,12 +128,11 @@ void ParticipatingMediumTestScene::prepareRenderPasses() {
         auto cameraBufferInfo = deviceStorage.getBuffer(cloudPass.cameraBuffers[i])->descriptorInfo();
         auto cloudBufferInfo = deviceStorage.getBuffer(cloudPass.cloudBuffers[i])->descriptorInfo();
         auto noiseInfo = deviceStorage.getTexture3DDescriptorImageInfo(cloudPass.noiseVolumeHandle);
-        auto sdfInfo = deviceStorage.getTexture3DDescriptorImageInfo(cloudPass.cloudSdfHandle);
-
+        auto dragonSdfInfo = deviceStorage.getTexture3DDescriptorImageInfo(cloudPass.dragonSdfHandle);
         cloudPass.descriptorSets[i] = deviceStorage.createDescriptorSet({
             .descriptorSetLayout = cloudPass.descriptorSetLayout,
             .bufferWrites = {{0, cameraBufferInfo}, {1, cloudBufferInfo}},
-            .imageWrites = {{2, noiseInfo}, {3, sdfInfo}}
+            .imageWrites = {{2, noiseInfo}, {3, dragonSdfInfo}}
         });
     }
 
@@ -305,22 +309,43 @@ void ParticipatingMediumTestScene::drawUi() {
     ImGui::Begin("Cloud Property editor", (bool *) false, ImGuiWindowFlags_AlwaysAutoResize);
     ImGui::DragFloat("Density", &cloudBuffer.density, 0.01f, 0.01f, 10.f);
     ImGui::DragFloat("Absorption", &cloudBuffer.absorption, 0.01f, 0.01f, 10.f);
-    ImGui::DragFloat("Scattering Aniso.", &cloudBuffer.scatteringAniso, 0.01f, 0.0f, 1.0f);
-    ImGui::DragFloat("Scattering Iso.", &cloudBuffer.scatteringIso, 0.01f, -1.0f, .0f);
-    ImGui::DragFloat("Scattering blend", &cloudBuffer.scatteringBlend, 0.01f, 0.0f, 1.0f);
+    ImGui::SliderFloat("Scattering", &cloudBuffer.scattering, 0.0f, 1.0f);
+    ImGui::SliderFloat("Scattering K (Aniso - Iso blend)", &cloudBuffer.scatteringBlend, 0.0f, 1.0f);
     ImGui::DragFloat("Step size", &cloudBuffer.stepSize, 0.1f, 0.0f, 100.f);
     ImGui::DragInt("Max steps", &cloudBuffer.maxSteps, 1.0f, 0.0f, 10000.0f);
     ImGui::DragFloat("Light march step size multiplier", &cloudBuffer.lsMul, 0.01f, 0.0f, 100.f);
     ImGui::DragInt("Light march max steps", &cloudBuffer.maxLs, 1.f, 0.0f, 10000.0f);
     ImGui::DragFloat3("Position", &cloudTranslation.Elements[0], 0.01f);
-    ImGui::DragFloat("Noise scale", &cloudBuffer.noiseScale, 0.1f);
-    ImGui::DragFloat("Noise lower cutoff", &cloudBuffer.noiseLowerCutoff, 0.01f);
-    ImGui::DragFloat("Noise highrt cutoff", &cloudBuffer.noiseHigherCutoff, .001f);
+    ImGui::SliderFloat("Noise scale", &cloudBuffer.noiseScale, 0.0f, 1000.f);
+    ImGui::SliderFloat("Noise factor blend (less detail - more detail)", &cloudBuffer.noiseFactor, 0.0f, 1.0f);
     ImGui::End();
 
     ImGui::Begin("Camera", (bool *) false, ImGuiWindowFlags_AlwaysAutoResize);
     ImGui::Text("%.1f FPS ", 1.0f / frameTime);
     ImGui::Text("Frametime: %.2f ms", frameTime * 1000.0f);
+
+    const char* items[] = { "Stanford dragon", "Stanford bunny"};
+    static int item_selected_idx = 0; // Here we store our selection data as an index.
+    const char* combo_preview_value = items[item_selected_idx];
+
+
+    if (ImGui::BeginCombo("Model", combo_preview_value, 0))
+    {
+        for (int n = 0; n < IM_ARRAYSIZE(items); n++)
+        {
+            const bool is_selected = (item_selected_idx == n);
+            if (ImGui::Selectable(items[n], is_selected))
+                item_selected_idx = n;
+
+            // Set the initial focus when opening the combo (scrolling + keyboard navigation focus)
+            if (is_selected)
+                ImGui::SetItemDefaultFocus();
+        }
+        ImGui::EndCombo();
+    }
+
+    cameraBuffer.sdf = item_selected_idx;
+
     ImGui::DragFloat("Radius", &radius, 0.01f);
     ImGui::DragFloat("Azimuth", &azimuth, 0.01f);
     ImGui::DragFloat("Elevation", &elevation, 0.01f);
@@ -328,7 +353,7 @@ void ParticipatingMediumTestScene::drawUi() {
     ImGui::ColorEdit4("LightColor", &cameraBuffer.lightColor.Elements[0]);
     ImGui::ColorEdit4("Base sky color", &cameraBuffer.baseSkyColor.Elements[0]);
     ImGui::ColorEdit4("Gradient sky color", &cameraBuffer.gradientSkyColor.Elements[0]);
-    ImGui::DragFloat("Sun factor", &cameraBuffer.sunFactor, 0.01f, 0.0f, 10.0f);
-    ImGui::DragFloat("Sun exponent", &cameraBuffer.sunExp, 1.0f, 0.0f, 100.0f);
+    ImGui::DragFloat("Sun factor", &cameraBuffer.sunFactor, 0.01f, 0.0f);
+    ImGui::DragFloat("Sun exponent", &cameraBuffer.sunExp, 1.0f, 0.0f);
     ImGui::End();
 }

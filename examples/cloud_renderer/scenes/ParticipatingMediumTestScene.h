@@ -49,7 +49,8 @@ private:
         std::array<ResourceHandle<Buffer>, SwapChain::MAX_FRAMES_IN_FLIGHT> cloudBuffers;
         ResourceHandle<DescriptorSetLayout> descriptorSetLayout;
         ResourceHandle<Texture3D> noiseVolumeHandle;
-        ResourceHandle<Texture3D> cloudSdfHandle;
+        ResourceHandle<Texture3D> dragonSdfHandle;
+        ResourceHandle<Texture3D> bunnySdfHandle;
     } cloudPass;
 
     struct {
@@ -76,23 +77,20 @@ private:
         int height;
         float sunFactor = 0.3;
         float sunExp = 20.0;
+        int sdf = 0;
     } cameraBuffer;
 
     struct CloudBuffer {
-
-
+        float noiseFactor = 0.625f;
         float stepSize = 0.01f; // size of single raymarching step
         int maxSteps = 300;     // max steps
         float lsMul = 1.0f;     // light step multiplier
         int maxLs = 4;  // max light steps
         float elapsedTime = 0.0f;   // elapsed time
-        float noiseScale = 2.0f;
-        float noiseLowerCutoff = 0.3f;
-        float noiseHigherCutoff = 1.0f;
+        float noiseScale = 20.0f;
         float density = 1.0f; // density multiplier
         float absorption = 0.1f;    // absorption coef
-        float scatteringAniso = 0.3f;   // scattering coef
-        float scatteringIso = -0.3f;   // scattering coef
+        float scattering = 0.3f;   // scattering coef
         float scatteringBlend = 0.7;
     } cloudBuffer;
 

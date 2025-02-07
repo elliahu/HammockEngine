@@ -14,9 +14,11 @@ layout (set = 0, binding = 0) uniform CameraUBO {
     int height;
     float sunFactor;
     float sunExp;
+    int sdf;
 } camera;
 
 layout (set = 0, binding = 1) uniform CloudParams {
+    float noiseFactor;
     float stepSize;
     int maxSteps;
     float lMul;
@@ -27,13 +29,12 @@ layout (set = 0, binding = 1) uniform CloudParams {
     float noiseHigherCutoff;
     float density;
     float absorption;
-    float scatteringAniso;
-    float scatteringIso;
+    float scattering;
     float scatteringBlend;
 } params;
 
 layout (set = 0, binding = 2) uniform sampler3D noiseTex;
-layout (set = 0, binding = 3) uniform sampler3D signedDistanceField;
+layout (set = 0, binding = 3) uniform sampler3D dragonSdf;
 
 layout (push_constant) uniform PushConstants {
     mat4 cloudTransform;
@@ -70,8 +71,8 @@ float henyeyGreenstein(float cosTheta, float g) {
 
 // Improved phase function with dual-lobe scattering
 float dualLobePhase(float cosTheta) {
-    float back = henyeyGreenstein(cosTheta, params.scatteringIso); // Back-scattering lobe
-    float forward = henyeyGreenstein(cosTheta, params.scatteringAniso); // Forward-scattering lobe
+    float back = henyeyGreenstein(cosTheta, -params.scattering); // Back-scattering lobe
+    float forward = henyeyGreenstein(cosTheta, params.scattering); // Forward-scattering lobe
     return mix(forward, back, params.scatteringBlend); // Blend between forward and backward scattering
 }
 
@@ -80,7 +81,7 @@ float dualLobePhase(float cosTheta) {
 float sdf(vec3 p) {
     // Transform the sampling position to cloud space
     vec3 cloudSpacePos = worldToCloudSpace(p);
-    return texture(signedDistanceField, cloudSpacePos * 0.5 + 0.5).r;
+    return texture(dragonSdf, cloudSpacePos * 0.5 + 0.5).r;
 }
 
 // Sample cloud density at a point
@@ -90,13 +91,13 @@ float sampleCloud(vec3 pos) {
     if (dist > 0.0) return 0.0;
 
     // Transform the sampling position to cloud space for noise sampling
-    vec3 cloudSpacePos = worldToCloudSpace(pos) * params.noiseScale * 0.001;
+    vec3 cloudSpacePos = worldToCloudSpace(pos) * params.noiseScale * 0.1;
 
     // Sample noise for cloud detail
-    float baseNoise = texture(noiseTex, cloudSpacePos * 0.1).r;
-    float detailNoise = texture(noiseTex, cloudSpacePos * 0.3).r;
+    float baseNoise = texture(noiseTex, cloudSpacePos ).g;
+    float detailNoise = texture(noiseTex, cloudSpacePos).r;
 
-    return max(0.0, baseNoise * 0.625 + detailNoise * 0.375) * params.density;
+    return max(0.0, baseNoise * params.noiseFactor + detailNoise * (1.0 - params.noiseFactor)) * params.density;
 }
 
 // Compute surface normal using SDF gradient approximation

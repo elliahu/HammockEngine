@@ -33,9 +33,13 @@ void CloudBoundingBoxTestScene::load() {
             .loadglTF(assetPath("models/SampleScene/SampleScene.glb"));
 
     // Data for cloud pass
-    int width = 128, height = 128, depth = 128, channels = 2;
-    MultiChannelNoise3D noise({{42, 0.05f}, {99, 0.1f},}, 0.f, 1.0f);
-    ScopedMemory noiseBufferMemory = ScopedMemory(noise.getTextureBuffer(width, height, depth));
+    constexpr int width = 128, height = 128, depth = 128;
+    MultiChannelNoise3D noise({
+        {FastNoiseLite::NoiseType_Perlin, 42, 0.05f},      // Channel 0: Perlin Noise
+        {FastNoiseLite::NoiseType_Cellular, 69, 0.2f},    // Channel 1: Cellular Noise
+    }, 0.0f, 1.0f); // Min/Max values for scaling
+    ScopedMemory noiseBufferMemory(noise.getTextureBuffer(width, height, depth));
+    const int channels = noise.getNumChannels();
 
     cloudPass.noiseVolumeHandle = deviceStorage.createTexture3D({
         .buffer = noiseBufferMemory.get(),
