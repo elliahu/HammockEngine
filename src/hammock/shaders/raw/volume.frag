@@ -6,25 +6,30 @@ layout (set = 0, binding = 0) uniform CameraUBO {
     mat4 view;
     mat4 proj;
     vec4 pos;
-    int width;
-    int height;
-} camera;
-
-layout (set = 0, binding = 1) uniform CloudParams {
     vec4 lightDir;
     vec4 lightColor;
     vec4 baseSkyColor;
     vec4 gradientSkyColor;
+    int width;
+    int height;
+    float sunFactor;
+    float sunExp;
+} camera;
+
+layout (set = 0, binding = 1) uniform CloudParams {
     float stepSize;
     int maxSteps;
     float lMul;
     int maxLightSteps;
     float elapsedTime;
-    float cloudsMin;
-    float cloudsMax;
     float noiseScale;
     float noiseLowerCutoff;
     float noiseHigherCutoff;
+    float density;
+    float absorption;
+    float scatteringAniso;
+    float scatteringIso;
+    float scatteringBlend;
 } params;
 
 layout (set = 0, binding = 2) uniform sampler3D noiseTex;
@@ -32,9 +37,6 @@ layout (set = 0, binding = 3) uniform sampler3D signedDistanceField;
 
 layout (push_constant) uniform PushConstants {
     mat4 cloudTransform;
-    float density;
-    float absorption;
-    float scatteringAniso;
 } pushConstants;
 
 #define PI 3.14159265359
@@ -48,7 +50,7 @@ vec3 worldToCloudSpace(vec3 worldPos) {
 // Improved light extinction calculation
 float beer(float density, float rayDist) {
     // Beer-Lambert law with improved extinction coefficient
-    return exp(-density * rayDist * pushConstants.absorption);
+    return exp(-density * rayDist * params.absorption);
 }
 
 // Multiple scattering approximation from the paper
@@ -68,9 +70,9 @@ float henyeyGreenstein(float cosTheta, float g) {
 
 // Improved phase function with dual-lobe scattering
 float dualLobePhase(float cosTheta) {
-    float back = henyeyGreenstein(cosTheta, -0.3); // Back-scattering lobe
-    float forward = henyeyGreenstein(cosTheta, pushConstants.scatteringAniso); // Forward-scattering lobe
-    return mix(forward, back, 0.7); // Blend between forward and backward scattering
+    float back = henyeyGreenstein(cosTheta, params.scatteringIso); // Back-scattering lobe
+    float forward = henyeyGreenstein(cosTheta, params.scatteringAniso); // Forward-scattering lobe
+    return mix(forward, back, params.scatteringBlend); // Blend between forward and backward scattering
 }
 
 
@@ -88,13 +90,13 @@ float sampleCloud(vec3 pos) {
     if (dist > 0.0) return 0.0;
 
     // Transform the sampling position to cloud space for noise sampling
-    vec3 cloudSpacePos = worldToCloudSpace(pos);
+    vec3 cloudSpacePos = worldToCloudSpace(pos) * params.noiseScale * 0.001;
 
     // Sample noise for cloud detail
     float baseNoise = texture(noiseTex, cloudSpacePos * 0.1).r;
     float detailNoise = texture(noiseTex, cloudSpacePos * 0.3).r;
 
-    return max(0.0, baseNoise * 0.625 + detailNoise * 0.375) * pushConstants.density;
+    return max(0.0, baseNoise * 0.625 + detailNoise * 0.375) * params.density;
 }
 
 // Compute surface normal using SDF gradient approximation
@@ -109,7 +111,7 @@ float lightmarch(vec3 position, vec3 rayDirection) {
     float transmittance = 1.0;
 
     for (int step = 0; step < params.maxLightSteps; step++) {
-        position += normalize(params.lightDir.xyz) * stepSize * float(step) * params.lMul;
+        position += normalize(camera.lightDir.xyz) * stepSize * float(step) * params.lMul;
         float lightSample = sampleCloud(position);
 
         // Accumulate density with improved extinction
@@ -132,7 +134,7 @@ float raymarch(vec3 rayOrigin, vec3 rayDirection, float offset) {
     float lightEnergy = 0.0;
 
     // Calculate cosine of angle between view and light directions
-    float cosTheta = dot(rayDirection, normalize(params.lightDir.xyz));
+    float cosTheta = dot(rayDirection, normalize(camera.lightDir.xyz));
 
     // Calculate phase function value
     float phase = dualLobePhase(cosTheta);
@@ -191,16 +193,16 @@ void main() {
     vec3 color = vec3(0.0);
 
     // Sun and Sky
-    vec3 sunColor = params.lightColor.rgb;
-    vec3 sunDirection = normalize(params.lightDir.xyz);
+    vec3 sunColor = camera.lightColor.rgb;
+    vec3 sunDirection = normalize(camera.lightDir.xyz);
     sunDirection.y *= -1;
     float sun = clamp(dot(sunDirection, rayDir), 0.0, 1.0);
     // Base sky color
-    color = params.baseSkyColor.rgb;
+    color = camera.baseSkyColor.rgb;
     // Add vertical gradient
-    color -= params.gradientSkyColor.a* params.gradientSkyColor.rgb * -rayDir.y;
+    color -= camera.gradientSkyColor.a * camera.gradientSkyColor.rgb * -rayDir.y;
     // Add sun color to sky
-    color += 0.3 * sunColor * pow(sun, 10.0);
+    color += camera.sunFactor * sunColor * pow(sun, camera.sunExp);
 
 //    float blueNoise = texture(blueNoiseSampler, gl_FragCoord.xy / 1024.0).r;
 //    float offset = fract(blueNoise);

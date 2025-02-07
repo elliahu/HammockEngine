@@ -112,8 +112,8 @@ private:
     } cloudBuffer;
 
     struct PushConstants {
-        HmckVec4 bb1 = {1.f, 0.f, 1.f};
-        HmckVec4 bb2 = {-1.f, 1.f, -1.f};
+        HmckVec4 bb1 = {2.5f, 0.f, 4.6f};
+        HmckVec4 bb2 = {-4.3f, 1.f, -3.9f};
     } pushConstants;
 
     static std::string assetPath(const std::string &asset) {

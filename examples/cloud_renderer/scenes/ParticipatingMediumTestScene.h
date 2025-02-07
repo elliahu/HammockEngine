@@ -68,33 +68,36 @@ private:
         HmckMat4 view;
         HmckMat4 proj;
         HmckVec4 cameraPosition;
+        HmckVec4 lightDir = {-1.4f, -0.3f, -0.8f, 0.0f}; // W is padding
+        HmckVec4 lightColor = {1.0f, 0.9f, 0.8f, 1.0f};
+        HmckVec4 baseSkyColor = {0.7f, 0.7f, 0.90, 1.0f};
+        HmckVec4 gradientSkyColor = {0.90f, 0.75f, 0.90f, 0.2f};
         int width;
         int height;
+        float sunFactor = 0.3;
+        float sunExp = 20.0;
     } cameraBuffer;
 
     struct CloudBuffer {
-        HmckVec4 lightDir = {0.f, 1.0f, 0.0f, 0.0f}; // W is padding
-        HmckVec4 lightColor = {1.0f, 0.9f, 0.8f, 1.0f};
-        HmckVec4 baseSkyColor = {0.7f, 0.7f, 0.90, 1.0f};
-        HmckVec4 gradientSkyColor = {0.90f, 0.75f, 0.90f, 0.8f};
+
 
         float stepSize = 0.01f; // size of single raymarching step
         int maxSteps = 300;     // max steps
         float lsMul = 1.0f;     // light step multiplier
         int maxLs = 4;  // max light steps
         float elapsedTime = 0.0f;   // elapsed time
-        float cloudStartHeight = 20.f;  // what height clouds start to appear
-        float cloudEndHeight = 30.f;    // what height clouds stop to appear
         float noiseScale = 2.0f;
         float noiseLowerCutoff = 0.3f;
         float noiseHigherCutoff = 1.0f;
+        float density = 1.0f; // density multiplier
+        float absorption = 0.1f;    // absorption coef
+        float scatteringAniso = 0.3f;   // scattering coef
+        float scatteringIso = -0.3f;   // scattering coef
+        float scatteringBlend = 0.7;
     } cloudBuffer;
 
     struct PushConstants {
         HmckMat4 cloudTransform;
-        float density = 1.0f; // density multiplier
-        float absorption = 0.1f;    // absorption coef
-        float scatteringAniso = 0.3f;   // scattering coef
     } pushConstants;
 
     static std::string assetPath(const std::string &asset) {

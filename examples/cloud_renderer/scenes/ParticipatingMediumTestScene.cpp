@@ -28,32 +28,22 @@ void ParticipatingMediumTestScene::run() {
 }
 
 void ParticipatingMediumTestScene::load() {
-    // Noise3D noiseGenerator(100, 100, 1, 3);
-    // std::vector<WorleyNoiseSettings> settings = {
-    //     {42, 16}, // Channel 1 settings
-    //     {42, 16}, // Channel 2 settings
-    //     {84, 64}, // Channel 3 settings
-    // };
-    //
-    // noiseGenerator.generateWorleyNoise(settings);
-    // const std::vector<float> &data = noiseGenerator.getData();
-    //
-    // Filesystem::writeImage("noise3D.png", data.data(), sizeof(float), 100, 100, 3);
-
 
     int32_t grid = 258;
-    ScopedMemory sdfData(SignedDistanceField().loadFromFile(assetPath("sdf/dragon"), grid).data());
+    ScopedMemory sdfDataMemory(SignedDistanceField().loadFromFile(assetPath("sdf/dragon"), grid).data());
 
 
-    ScopedMemory noiseData(PerlinNoise3D(69420).generateNoiseVolume(512, 16, 512, 1.0f));
+    int width = 128, height = 128, depth = 128, channels = 1;
+    MultiChannelNoise3D noise({{42, 0.2f}}, 0.f, 1.0f);
+    ScopedMemory noiseBufferMemory(noise.getTextureBuffer(width, height, depth));
 
     cloudPass.noiseVolumeHandle = deviceStorage.createTexture3D({
-        .buffer = noiseData.get(),
+        .buffer = noiseBufferMemory.get(),
         .instanceSize = sizeof(float),
-        .width = 512,
-        .height = 16,
-        .channels = 1,
-        .depth = 512,
+        .width = static_cast<uint32_t>(width),
+        .height = static_cast<uint32_t>(height),
+        .channels = static_cast<uint32_t>(channels),
+        .depth = static_cast<uint32_t>(depth),
         .format = VK_FORMAT_R32_SFLOAT,
         .imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
         .samplerInfo = {
@@ -62,7 +52,7 @@ void ParticipatingMediumTestScene::load() {
     });
 
     cloudPass.cloudSdfHandle = deviceStorage.createTexture3D({
-        .buffer = sdfData.get(),
+        .buffer = sdfDataMemory.get(),
         .instanceSize = sizeof(float),
         .width = static_cast<uint32_t>(grid),
         .height = static_cast<uint32_t>(grid),
@@ -147,7 +137,7 @@ void ParticipatingMediumTestScene::prepareRenderPasses() {
         .width = static_cast<uint32_t>(cloudPass.resolution.X * window.width),
         .height = static_cast<uint32_t>(cloudPass.resolution.Y * window.height),
         .attachments{
-            // 1 albedo
+            // 0 color
             {
                 .width = static_cast<uint32_t>(cloudPass.resolution.X * window.width),
                 .height = static_cast<uint32_t>(cloudPass.resolution.Y * window.height),
@@ -215,7 +205,7 @@ void ParticipatingMediumTestScene::prepareRenderPasses() {
         .VS
         {.byteCode = Filesystem::readFile(compiledShaderPath("fullscreen.vert")),},
         .FS
-        {.byteCode = Filesystem::readFile(compiledShaderPath("cloud_composition.frag")),},
+        {.byteCode = Filesystem::readFile(compiledShaderPath("volume_upsample.frag")),},
         .descriptorSetLayouts = {
             deviceStorage.getDescriptorSetLayout(cloudPass.descriptorSetLayout).getDescriptorSetLayout(),
             deviceStorage.getDescriptorSetLayout(compositionPass.descriptorSetLayout).getDescriptorSetLayout()
@@ -313,20 +303,16 @@ void ParticipatingMediumTestScene::draw() {
 
 void ParticipatingMediumTestScene::drawUi() {
     ImGui::Begin("Cloud Property editor", (bool *) false, ImGuiWindowFlags_AlwaysAutoResize);
-    ImGui::DragFloat3("LightDir", &cloudBuffer.lightDir.Elements[0], 0.1f);
-    ImGui::ColorEdit4("LightColor", &cloudBuffer.lightColor.Elements[0]);
-    ImGui::ColorEdit4("Base sky color", &cloudBuffer.baseSkyColor.Elements[0]);
-    ImGui::ColorEdit4("Gradient sky color", &cloudBuffer.gradientSkyColor.Elements[0]);
-    ImGui::DragFloat("Density", &pushConstants.density, 0.01f, 0.01f, 10.f);
-    ImGui::DragFloat("Absorption", &pushConstants.absorption, 0.01f, 0.01f, 10.f);
-    ImGui::DragFloat("Scattering coef.", &pushConstants.scatteringAniso, 0.01f, -1.0f, 1.0f);
+    ImGui::DragFloat("Density", &cloudBuffer.density, 0.01f, 0.01f, 10.f);
+    ImGui::DragFloat("Absorption", &cloudBuffer.absorption, 0.01f, 0.01f, 10.f);
+    ImGui::DragFloat("Scattering Aniso.", &cloudBuffer.scatteringAniso, 0.01f, 0.0f, 1.0f);
+    ImGui::DragFloat("Scattering Iso.", &cloudBuffer.scatteringIso, 0.01f, -1.0f, .0f);
+    ImGui::DragFloat("Scattering blend", &cloudBuffer.scatteringBlend, 0.01f, 0.0f, 1.0f);
     ImGui::DragFloat("Step size", &cloudBuffer.stepSize, 0.1f, 0.0f, 100.f);
-    ImGui::DragInt("Max steps", &cloudBuffer.maxSteps, .01f, 0.0f, 10000.0f);
+    ImGui::DragInt("Max steps", &cloudBuffer.maxSteps, 1.0f, 0.0f, 10000.0f);
     ImGui::DragFloat("Light march step size multiplier", &cloudBuffer.lsMul, 0.01f, 0.0f, 100.f);
     ImGui::DragInt("Light march max steps", &cloudBuffer.maxLs, 1.f, 0.0f, 10000.0f);
     ImGui::DragFloat3("Position", &cloudTranslation.Elements[0], 0.01f);
-    ImGui::DragFloat("Cloud start height", &cloudBuffer.cloudStartHeight, .1f);
-    ImGui::DragFloat("Cloud End height", &cloudBuffer.cloudEndHeight, .1f);
     ImGui::DragFloat("Noise scale", &cloudBuffer.noiseScale, 0.1f);
     ImGui::DragFloat("Noise lower cutoff", &cloudBuffer.noiseLowerCutoff, 0.01f);
     ImGui::DragFloat("Noise highrt cutoff", &cloudBuffer.noiseHigherCutoff, .001f);
@@ -338,5 +324,11 @@ void ParticipatingMediumTestScene::drawUi() {
     ImGui::DragFloat("Radius", &radius, 0.01f);
     ImGui::DragFloat("Azimuth", &azimuth, 0.01f);
     ImGui::DragFloat("Elevation", &elevation, 0.01f);
+    ImGui::DragFloat3("LightDir", &cameraBuffer.lightDir.Elements[0], 0.1f);
+    ImGui::ColorEdit4("LightColor", &cameraBuffer.lightColor.Elements[0]);
+    ImGui::ColorEdit4("Base sky color", &cameraBuffer.baseSkyColor.Elements[0]);
+    ImGui::ColorEdit4("Gradient sky color", &cameraBuffer.gradientSkyColor.Elements[0]);
+    ImGui::DragFloat("Sun factor", &cameraBuffer.sunFactor, 0.01f, 0.0f, 10.0f);
+    ImGui::DragFloat("Sun exponent", &cameraBuffer.sunExp, 1.0f, 0.0f, 100.0f);
     ImGui::End();
 }

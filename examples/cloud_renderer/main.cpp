@@ -18,6 +18,6 @@ int main(int argc, char * argv[]) {
     const int32_t width = parser.get<int32_t>("width");
     const int32_t height = parser.get<int32_t>("height");
 
-    CloudBoundingBoxTestScene scene(width, height);
+    ParticipatingMediumTestScene scene(width, height);
     scene.run();
 }
