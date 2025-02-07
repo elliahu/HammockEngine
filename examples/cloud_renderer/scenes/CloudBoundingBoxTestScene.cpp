@@ -33,23 +33,38 @@ void CloudBoundingBoxTestScene::load() {
             .loadglTF(assetPath("models/SampleScene/SampleScene.glb"));
 
     // Data for cloud pass
-    constexpr int width = 256, height = 256, depth = 256;
-    MultiChannelNoise3D noise({
-        {FastNoiseLite::NoiseType_Cellular, 69, 0.015f},
-        {FastNoiseLite::NoiseType_Perlin, 42, 0.1f},
+    constexpr int width = 64, height = 64, depth = 64;
+    MultiChannelNoise3D shapeNoise({
+                                       {FastNoiseLite::NoiseType_Cellular, 0, 0.015f},
+                                       {FastNoiseLite::NoiseType_Cellular, 0, 0.025f},
+                                       {FastNoiseLite::NoiseType_Cellular, 0, 0.035f},
+                                       {FastNoiseLite::NoiseType_Cellular, 0, 0.045f},
+                                   }, 0.0f, 1.0f); // Min/Max values for scaling
+    ScopedMemory noiseBufferMemory(shapeNoise.getTextureBuffer(width, height, depth));
+    const int channels = shapeNoise.getNumChannels();
 
-    }, 0.0f, 1.0f); // Min/Max values for scaling
-    ScopedMemory noiseBufferMemory(noise.getTextureBuffer(width, height, depth));
-    const int channels = noise.getNumChannels();
-
-    cloudPass.noiseVolumeHandle = deviceStorage.createTexture3D({
+    cloudPass.shapeNoiseHandle = deviceStorage.createTexture3D({
         .buffer = noiseBufferMemory.get(),
         .instanceSize = sizeof(float),
         .width = static_cast<uint32_t>(width),
         .height = static_cast<uint32_t>(height),
         .channels = static_cast<uint32_t>(channels),
         .depth = static_cast<uint32_t>(depth),
-        .format = VK_FORMAT_R32G32_SFLOAT,
+        .format = VK_FORMAT_R32G32B32A32_SFLOAT,
+        .imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+        .samplerInfo = {
+            .addressMode = VK_SAMPLER_ADDRESS_MODE_REPEAT,
+        }
+    });
+
+    cloudPass.detailNoiseHandle = deviceStorage.createTexture3D({
+        .buffer = noiseBufferMemory.get(),
+        .instanceSize = sizeof(float),
+        .width = static_cast<uint32_t>(width),
+        .height = static_cast<uint32_t>(height),
+        .channels = static_cast<uint32_t>(channels),
+        .depth = static_cast<uint32_t>(depth),
+        .format = VK_FORMAT_R32G32B32A32_SFLOAT,
         .imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
         .samplerInfo = {
             .addressMode = VK_SAMPLER_ADDRESS_MODE_REPEAT,
@@ -74,6 +89,7 @@ void CloudBoundingBoxTestScene::prepareRenderPasses() {
     scenePass.descriptorSetLayout = deviceStorage.createDescriptorSetLayout({
         .bindings = {
             {
+                // Camera buffer
                 .binding = 0, .descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
                 .stageFlags = VK_SHADER_STAGE_ALL_GRAPHICS,
             },
@@ -84,14 +100,20 @@ void CloudBoundingBoxTestScene::prepareRenderPasses() {
     cloudPass.descriptorSetLayout = deviceStorage.createDescriptorSetLayout({
         .bindings = {
             {
+                // Cloud buffer
                 .binding = 0, .descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
                 .stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT,
             },
             {
+                // Cloud shape noise
                 .binding = 1, .descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
                 .stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT
             },
-
+            {
+                // Cloud detail noise
+                .binding = 2, .descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
+                .stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT
+            },
         }
     });
 
@@ -122,11 +144,12 @@ void CloudBoundingBoxTestScene::prepareRenderPasses() {
         });
 
         auto cloudBufferInfo = deviceStorage.getBuffer(cloudPass.cloudBuffers[i])->descriptorInfo();
-        auto noiseInfo = deviceStorage.getTexture3DDescriptorImageInfo(cloudPass.noiseVolumeHandle);
+        auto shapeInfo = deviceStorage.getTexture3DDescriptorImageInfo(cloudPass.shapeNoiseHandle);
+        auto detailInfo = deviceStorage.getTexture3DDescriptorImageInfo(cloudPass.detailNoiseHandle);
         cloudPass.descriptorSets[i] = deviceStorage.createDescriptorSet({
             .descriptorSetLayout = cloudPass.descriptorSetLayout,
             .bufferWrites = {{0, cloudBufferInfo}},
-            .imageWrites = {{1, noiseInfo},}
+            .imageWrites = {{1, shapeInfo}, {2, detailInfo}}
         });
     }
 
@@ -346,7 +369,6 @@ void CloudBoundingBoxTestScene::update() {
     cameraBuffer.cameraPosition = cameraPosition;
     cameraBuffer.width = window.width * cloudPass.resolution.X;
     cameraBuffer.height = window.height * cloudPass.resolution.X;
-
 }
 
 void CloudBoundingBoxTestScene::draw() {
@@ -422,20 +444,19 @@ void CloudBoundingBoxTestScene::draw() {
 void CloudBoundingBoxTestScene::drawUi() {
     ImGui::Begin("Cloud Property editor", (bool *) false, ImGuiWindowFlags_AlwaysAutoResize);
 
-    ImGui::Text("Noise options:");
-    ImGui::DragFloat3("Base offset", &cloudBuffer.baseNoiseOffset.Elements[0], 0.1f);
-    ImGui::SliderFloat("Base scale", &cloudBuffer.baseNoiseScale, 0.001f, 1.0f);
-    ImGui::DragFloat3("Detail offset", &cloudBuffer.detailNoiseOffset.Elements[0], 0.1f);
-    ImGui::SliderFloat("Detail scale", &cloudBuffer.detailNoiseScale, 0.001f, 1.0f);
-    ImGui::SliderFloat("Blend factor (less detail - more detail)", &cloudBuffer.noiseFactor, 0.0f, 1.0f);
+    ImGui::Text("Shape options:");
+    ImGui::DragFloat4("Shape weights", &cloudBuffer.shapeWeights.Elements[0], 0.01f);
+    ImGui::DragFloat3("Shape offset", &cloudBuffer.shapeOffset.Elements[0], 0.1f);
+    ImGui::SliderFloat("Shape scale", &cloudBuffer.shapeScale, 0.001f, 1.0f);
+    ImGui::Text("Detail options:");
+    ImGui::DragFloat3("Detail weights", &cloudBuffer.detailWeights.Elements[0], 0.01f);
+    ImGui::DragFloat3("Detail offset", &cloudBuffer.detailOffset.Elements[0], 0.1f);
+    ImGui::SliderFloat("Detail scale", &cloudBuffer.detailScale, 0.001f, 1.0f);
+    ImGui::Text("Niose options:");
+    ImGui::SliderFloat("Density offset", &cloudBuffer.densityOffset, 0.0f, 1.0f);
+    ImGui::SliderFloat("Density multiplier", &cloudBuffer.densityMultiplier, .0f, 100.0f);
 
     ImGui::Text("Cloud properties:");
-    ImGui::SliderFloat("Base density threshold", &cloudBuffer.baseDensityThreshold, 0.0f, 1.0f);
-    ImGui::SliderFloat("Detail density threshold", &cloudBuffer.detailDensityThreshold, 0.0f, 1.0f);
-    ImGui::DragFloat("Density factor", &cloudBuffer.density, 0.01f, 0.01f );
-    ImGui::DragFloat("Absorption factor", &cloudBuffer.absorption, 0.01f, 0.01f);
-    ImGui::SliderFloat("Scattering (Aniso - Iso)", &cloudBuffer.scattering, 0.0f, 1.0f);
-
     ImGui::Text("Cloud placement (bounding box):");
     ImGui::DragFloat3("BB1", &pushConstants.bb1.Elements[0], 0.1f);
     ImGui::DragFloat3("BB2", &pushConstants.bb2.Elements[0], 0.1f);

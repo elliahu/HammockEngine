@@ -68,7 +68,8 @@ private:
         std::array<ResourceHandle<VkDescriptorSet>, SwapChain::MAX_FRAMES_IN_FLIGHT> descriptorSets;
         std::array<ResourceHandle<Buffer>, SwapChain::MAX_FRAMES_IN_FLIGHT> cloudBuffers;
         ResourceHandle<DescriptorSetLayout> descriptorSetLayout;
-        ResourceHandle<Texture3D> noiseVolumeHandle;
+        ResourceHandle<Texture3D> shapeNoiseHandle;
+        ResourceHandle<Texture3D> detailNoiseHandle;
     } cloudPass;
 
     /**
@@ -103,27 +104,23 @@ private:
 
     struct CloudBuffer {
         // Noise
-        HmckVec4 baseNoiseOffset = {0.0f, 0.0f, 0.0f, 0.0f}; // W is padding
-        HmckVec4 detailNoiseOffset = {0.0f, 0.0f, 0.0f, 0.0f}; // W is padding
-        float baseNoiseScale = .125f;
-        float detailNoiseScale = .5f;
-        float noiseFactor = 0.625f;
+        HmckVec4 shapeWeights = {1.0f, 0.0f, 0.0f, 0.0f};
+        HmckVec4 shapeOffset = {0.0f, 0.0f, 0.0f, 0.0f}; // W is padding
+        HmckVec4 detailWeights = {0.0f, 0.0f, 1.0f, 0.0f}; // W is padding
+        HmckVec4 detailOffset = {0.0f, 0.0f, 0.0f, 0.0f}; // W is padding
+        float shapeScale = 0.5f;
+        float detailScale = .5f;
+        float densityOffset = .5f;
+        float densityMultiplier = 50.0;
 
         // Raymarching
         int numSteps = 100;     // max steps
         int numLightSteps = 4;  // max light steps
-
-        // Cloud props
-        float baseDensityThreshold = 0.75f;
-        float detailDensityThreshold = 0.75f;
-        float density = 5.0f; // density multiplier
-        float absorption = 0.1f;    // absorption coef
-        float scattering= 0.3f;   // scattering coef
     } cloudBuffer;
 
     struct PushConstants {
         HmckVec4 bb1 = {2.5f, 0.f, 4.6f};
-        HmckVec4 bb2 = {-4.3f, 1.f, -3.9f};
+        HmckVec4 bb2 = {-4.3f, 2.5f, -3.9f};
     } pushConstants;
 
     static std::string assetPath(const std::string &asset) {

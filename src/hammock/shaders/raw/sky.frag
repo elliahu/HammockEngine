@@ -18,23 +18,21 @@ layout (set = 0, binding = 0) uniform CameraUBO {
 } camera;
 
 layout (set = 1, binding = 0) uniform CloudParams {
-    vec4 baseNoiseOffset;
-    vec4 detailNoiseOffset;
-    float baseNoiseScale;
-    float detailNoiseScale;
-    float noiseFactor;
+    vec4 shapeWeigths;
+    vec4 shapeOffset;
+    vec4 detailWeights;
+    vec4 detailOffset;
+    float shapeScale;
+    float detailScale;
+    float densityOffset;
+    float densityMultiplier;
 
     int numSteps;
     int numLightSteps;
-
-    float baseDensityThreshold;
-    float detailDensityThreshold;
-    float density;
-    float absorption;
-    float scattering;
 } params;
 
 layout (set = 1, binding = 1) uniform sampler3D noiseTex;
+layout (set = 1, binding = 2) uniform sampler3D detailTex;
 
 layout (push_constant) uniform PushConstants {
     vec4 bb1;
@@ -83,17 +81,36 @@ vec2 rayBoxDst(vec3 boundMin, vec3 boundMax, vec3 rayOrigin, vec3 rayDirection) 
     return vec2(dstToBox, dstInsideBox);
 }
 
+float remap(float value, float inMin, float inMax, float outMin, float outMax) {
+    return outMin + (value - inMin) * (outMax - outMin) / (inMax - inMin);
+}
+
+float saturate(float value) {
+    return clamp(value, 0.0, 1.0);
+}
+
 float sampleDensity(vec3 position) {
-    vec3 baseUvw = position * params.baseNoiseScale + params.baseNoiseOffset.xyz * 0.01;
-    float baseNoise = texture(noiseTex, baseUvw).r;
+    vec3 size = push.bb1.xyz - push.bb2.xyz;
+    vec3 uvw = (size * 0.5 + position) * params.shapeScale; // * scale
+    vec3 shapeSamplePos = uvw + params.shapeOffset.xyz; // * offsetSpeed
 
-    vec3 detailUvw = position * params.detailNoiseScale + params.detailNoiseOffset.xyz * 0.01;
-    float detailNoise = texture(noiseTex, detailUvw).g;
+    // Calculate base shape density
+    vec4 shapeNoise = texture(noiseTex, shapeSamplePos);
+    vec4 normalizedShapeWeights = params.shapeWeigths / dot(params.shapeWeigths, vec4(1.0));
+    float shapeFBM = dot(shapeNoise, normalizedShapeWeights);
+    float baseShapeDensity = shapeFBM + params.densityOffset;
 
-    float shape = max(0.0, (1.0 - baseNoise) - params.baseDensityThreshold);
-    float detail = max(0.0, (1.0 - baseNoise) - params.detailDensityThreshold);
-
-    return max(0.0, shape * params.noiseFactor + detail * (1.0 - params.noiseFactor)) * params.density;
+    if (baseShapeDensity > 0) {
+        // Sample detail noise
+        vec3 detailSamplePos = uvw * params.detailScale + params.detailOffset.xyz;
+        vec4 detailNoise = texture(detailTex, detailSamplePos);
+        vec3 normalizedDetailWeights = (params.detailWeights.xyz / dot(params.detailWeights.xyz, vec3(1.0)));
+        float detailFBM = dot(detailNoise.xyz, normalizedDetailWeights);
+        // Subtract detail noise from base shape
+        float detailErodeWeights = (1.0 - shapeFBM) * (1.0 - shapeFBM) * (1.0 - shapeFBM);
+        float cloudDensity = baseShapeDensity - (1.0 - detailFBM) * detailErodeWeights * params.detailScale;
+        return cloudDensity * params.densityMultiplier * 0.1;
+    }
 }
 
 
@@ -108,8 +125,8 @@ void main() {
     // Ray hit
     if (dstInsideBox > 0) {
 
-        if(dstInsideBox < 0.15){
-            outColor = vec4(1.0, 0.0,0.0,1.0);
+        if (dstInsideBox < 0.15) {
+            outColor = vec4(1.0, 0.0, 0.0, 1.0);
             return;
         }
 
@@ -129,7 +146,7 @@ void main() {
         }
 
         float transmittance = exp(-totalDensity);
-        outColor = vec4(1.0-transmittance);
+        outColor = vec4(1.0 - transmittance);
     }
     else {
         discard;

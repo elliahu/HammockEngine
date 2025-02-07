@@ -79,6 +79,8 @@ public:
 
     // Generate the noise texture buffer
     float* getTextureBuffer(int width, int height, int depth) const {
+        Hammock::Logger::log(Hammock::LOG_LEVEL_DEBUG, "Generating multichannel noise ... \n");
+        float min = 1.0, max = 0.0;
         float* buffer = new float[width * height * depth * numChannels];  // Allocate for variable channels
 
         int idx = 0;
@@ -90,11 +92,20 @@ public:
                         float noiseValue = noiseChannels[c]->getNoise(x, y, z);
                         float scaledValue = scaleValue(noiseValue); // Scale to the defined range
                         buffer[idx++] = scaledValue;
+
+                        if (scaledValue > max) {
+                            max = scaledValue;
+                        }
+                        if (scaledValue < min) {
+                            min = scaledValue;
+                        }
                     }
                 }
             }
         }
 
+        Hammock::Logger::log(Hammock::LOG_LEVEL_DEBUG, "DONE\n");
+        Hammock::Logger::log(Hammock::LOG_LEVEL_DEBUG, "Min %f, Max %f\n", min, max);
         return buffer;  // Caller is responsible for deleting the buffer
     }
 
