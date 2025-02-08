@@ -91,21 +91,21 @@ float saturate(float value) {
 
 float sampleDensity(vec3 position) {
     vec3 size = push.bb1.xyz - push.bb2.xyz;
-    vec3 uvw = (size * 0.5 + position) * params.shapeScale; // * scale
+    vec3 uvw = (size * 0.5 + position) * params.shapeScale ; // * scale
     vec3 shapeSamplePos = uvw + params.shapeOffset.xyz; // * offsetSpeed
 
     // Calculate base shape density
-    vec4 shapeNoise = texture(noiseTex, shapeSamplePos);
-    vec4 normalizedShapeWeights = params.shapeWeigths / dot(params.shapeWeigths, vec4(1.0));
+    vec3 shapeNoise = texture(noiseTex, shapeSamplePos).xyz;
+    vec3 normalizedShapeWeights =  normalize(params.shapeWeigths.xyz);
     float shapeFBM = dot(shapeNoise, normalizedShapeWeights);
     float baseShapeDensity = shapeFBM + params.densityOffset;
 
     if (baseShapeDensity > 0) {
         // Sample detail noise
         vec3 detailSamplePos = uvw * params.detailScale + params.detailOffset.xyz;
-        vec4 detailNoise = texture(detailTex, detailSamplePos);
-        vec3 normalizedDetailWeights = (params.detailWeights.xyz / dot(params.detailWeights.xyz, vec3(1.0)));
-        float detailFBM = dot(detailNoise.xyz, normalizedDetailWeights);
+        vec3 detailNoise = texture(detailTex, detailSamplePos).xyz;
+        vec3 normalizedDetailWeights =  normalize(params.detailWeights.xyz);
+        float detailFBM = dot(detailNoise, normalizedDetailWeights);
         // Subtract detail noise from base shape
         float detailErodeWeights = (1.0 - shapeFBM) * (1.0 - shapeFBM) * (1.0 - shapeFBM);
         float cloudDensity = baseShapeDensity - (1.0 - detailFBM) * detailErodeWeights * params.detailScale;

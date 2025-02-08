@@ -14,6 +14,8 @@ public:
     virtual void setSeed(int seed) = 0;
     virtual void setFrequency(float frequency) = 0;
     virtual float getNoise(float x, float y, float z) const = 0;
+    virtual float getTiledNoise(float x, float y, float z, float period) const = 0;
+    virtual float getMirroredNoise(float x, float y, float z, float tileSize) = 0;
 };
 
 // Generic Noise Class using FastNoiseLite, allowing different noise types
@@ -37,6 +39,27 @@ public:
 
     float getNoise(float x, float y, float z) const override {
         return noise.GetNoise(x, y, z);
+    }
+
+    float getTiledNoise(float x, float y, float z, float period) const override{
+        float nx = std::cos(x * 2.0f * M_PI / period);
+        float ny = std::cos(y * 2.0f * M_PI / period);
+        float nz = std::cos(z * 2.0f * M_PI / period);
+        float nw = std::sin(x * 2.0f * M_PI / period);
+        float nv = std::sin(y * 2.0f * M_PI / period);
+        float nu = std::sin(z * 2.0f * M_PI / period);
+        return noise.GetNoise(nx, ny, nz);
+    }
+
+    float mirror(float coord, float maxCoord) {
+        return maxCoord - std::abs(std::fmod(coord, maxCoord) - maxCoord);
+    }
+
+    float getMirroredNoise(float x, float y, float z, float tileSize){
+        float mx = mirror(x, tileSize);
+        float my = mirror(y, tileSize);
+        float mz = mirror(z, tileSize);
+        return noise.GetNoise(mx, my, mz);
     }
 };
 
@@ -89,7 +112,7 @@ public:
                 for (int x = 0; x < width; ++x) {
                     // Generate noise values for each channel and scale them
                     for (int c = 0; c < numChannels; ++c) {
-                        float noiseValue = noiseChannels[c]->getNoise(x, y, z);
+                        float noiseValue = noiseChannels[c]->getMirroredNoise(x,y,z, 128.0f);
                         float scaledValue = scaleValue(noiseValue); // Scale to the defined range
                         buffer[idx++] = scaledValue;
 

@@ -21,8 +21,8 @@ int main(int argc, char * argv[]) {
     auto scene = parser.get<std::string>("scene");
 
     if (scene == "medium") {
-        ParticipatingMediumTestScene s(width, height);
-        s.run();
+        //ParticipatingMediumTestScene s(width, height);
+        //s.run();
     }
     else if (scene == "clouds") {
         CloudBoundingBoxTestScene s(width, height);

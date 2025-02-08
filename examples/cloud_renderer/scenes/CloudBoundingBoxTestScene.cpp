@@ -33,12 +33,12 @@ void CloudBoundingBoxTestScene::load() {
             .loadglTF(assetPath("models/SampleScene/SampleScene.glb"));
 
     // Data for cloud pass
-    constexpr int width = 64, height = 64, depth = 64;
+    constexpr int width = 128, height = 128, depth = 128;
     MultiChannelNoise3D shapeNoise({
-                                       {FastNoiseLite::NoiseType_Cellular, 0, 0.015f},
-                                       {FastNoiseLite::NoiseType_Cellular, 0, 0.025f},
-                                       {FastNoiseLite::NoiseType_Cellular, 0, 0.035f},
-                                       {FastNoiseLite::NoiseType_Cellular, 0, 0.045f},
+                                       {FastNoiseLite::NoiseType_OpenSimplex2, 0, 0.015f},
+                                       {FastNoiseLite::NoiseType_OpenSimplex2, 0, 0.025f},
+                                       {FastNoiseLite::NoiseType_OpenSimplex2, 0, 0.035f},
+                                       {FastNoiseLite::NoiseType_OpenSimplex2, 0, 0.055f},
                                    }, 0.0f, 1.0f); // Min/Max values for scaling
     ScopedMemory noiseBufferMemory(shapeNoise.getTextureBuffer(width, height, depth));
     const int channels = shapeNoise.getNumChannels();
@@ -453,7 +453,7 @@ void CloudBoundingBoxTestScene::drawUi() {
     ImGui::DragFloat3("Detail offset", &cloudBuffer.detailOffset.Elements[0], 0.1f);
     ImGui::SliderFloat("Detail scale", &cloudBuffer.detailScale, 0.001f, 1.0f);
     ImGui::Text("Niose options:");
-    ImGui::SliderFloat("Density offset", &cloudBuffer.densityOffset, 0.0f, 1.0f);
+    ImGui::SliderFloat("Density offset", &cloudBuffer.densityOffset, -5.0f, 5.0f);
     ImGui::SliderFloat("Density multiplier", &cloudBuffer.densityMultiplier, .0f, 100.0f);
 
     ImGui::Text("Cloud properties:");

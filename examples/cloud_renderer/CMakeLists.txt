@@ -1,8 +1,8 @@
 # Add the executable
 add_executable(cloud_renderer
         main.cpp
-        scenes/ParticipatingMediumTestScene.h
-        scenes/ParticipatingMediumTestScene.cpp
+        #scenes/ParticipatingMediumTestScene.h
+        #scenes/ParticipatingMediumTestScene.cpp
         scenes/CloudBoundingBoxTestScene.h
         scenes/CloudBoundingBoxTestScene.cpp
         SignedDistanceField.h
