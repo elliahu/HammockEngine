@@ -101,7 +101,7 @@ def generate_worley_2d():
     for y in range(size):
         for x in range(size):
             distances = [distance.euclidean((x, y), point) for point in points]
-            world[y, x] = min(distances)
+            world[y, x] = 1 - min(distances)
     
     return (world - world.min()) / (world.max() - world.min())
 
@@ -114,7 +114,7 @@ def generate_worley_3d():
         for y in range(size):
             for x in range(size):
                 distances = [distance.euclidean((x, y, z), point) for point in points]
-                world[z, y, x] = min(distances)
+                world[z, y, x] = 1 - min(distances)
     
     return (world - world.min()) / (world.max() - world.min())
 
