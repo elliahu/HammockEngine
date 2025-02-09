@@ -117,6 +117,8 @@ private:
         // Raymarching
         int numSteps = 100;     // max steps
         int numLightSteps = 4;  // max light steps
+
+        float phaseG = -0.45;
     } cloudBuffer;
 
     struct PushConstants {

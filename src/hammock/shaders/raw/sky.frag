@@ -29,6 +29,8 @@ layout (set = 1, binding = 0) uniform CloudParams {
 
     int numSteps;
     int numLightSteps;
+
+    float phaseG;
 } params;
 
 layout (set = 1, binding = 1) uniform sampler3D lowFreqNoiseSampler;
@@ -121,6 +123,46 @@ float sampleDensity(vec3 position) {
     return 0.0;
 }
 
+float attenuation(float densityAlongRay){
+    return exp(-densityAlongRay);
+}
+
+float henyeyGreenstein(float cosTheta, float g){
+    return (1.0 / 4.0 * PI) * ((1 - (g * g)) / pow((1 - (g * cosTheta)), 2));
+}
+
+float multipleScattering(float densitySample){
+    return 1 - exp(-densitySample);
+}
+
+
+float lightmarch(vec3 position) {
+    vec3 rayDirection = -normalize(camera.lightDir.xyz);
+    float dstInsideBox = rayBoxDst(push.bb1.xyz, push.bb2.xyz, position, rayDirection).y;
+
+    if (dstInsideBox <= 0.0) {
+        return 0.0; // No light interaction if outside the bounding box
+    }
+
+    float stepSize = dstInsideBox / float(params.numLightSteps);
+    float totalDensity = 0.0;
+    float totalLight = 0.0;
+
+    for (int step = 0; step < params.numLightSteps; step++) {
+        float dstTraveled = step * stepSize;
+        vec3 rayPos = position + rayDirection * dstTraveled;
+        float densitySample = sampleDensity(rayPos) * stepSize;
+
+        totalDensity += densitySample;
+        float transmittance = exp(-totalDensity);
+        float phase = henyeyGreenstein(dot(rayDirection, normalize(camera.lightDir.xyz)), params.phaseG);
+
+        totalLight += transmittance * phase * multipleScattering(densitySample);
+    }
+
+    return totalLight;
+}
+
 
 void main() {
     vec3 rayOrigin = getRayOrigin();
@@ -130,31 +172,42 @@ void main() {
     float dstToBox = bboxIntersection.x;
     float dstInsideBox = bboxIntersection.y;
 
-    // Ray hit
     if (dstInsideBox > 0) {
-
         if (dstInsideBox < 0.15) {
-            outColor = vec4(1.0, 0.0, 0.0, 1.0);
+            outColor = vec4(1.0, 0.0, 0.0, 1.0); // Debug: Too thin to render
             return;
         }
 
         vec3 hitPos = rayOrigin + rayDirection * dstToBox;
-        float depth = dstToBox;
-        viewSpaceDepth = depth;
+        viewSpaceDepth = dstToBox;
 
         float dstTravelled = 0.0;
-        float stepSize = dstInsideBox / (params.numSteps < 1 ? 1 : params.numSteps);
+        float stepSize = dstInsideBox / float(params.numSteps);
         float dstLimit = dstInsideBox;
 
         float totalDensity = 0.0;
+        vec3 accumulatedLight = vec3(0.0);
+        float alpha = 0.0;  // Track accumulated opacity
+
         while (dstTravelled < dstLimit) {
             vec3 rayPos = rayOrigin + rayDirection * (dstToBox + dstTravelled);
-            totalDensity += sampleDensity(rayPos) * stepSize;
+            float densitySample = sampleDensity(rayPos) * stepSize;
+            totalDensity += densitySample;
+
+            float transmittance = exp(-totalDensity); // Beer's Law
+            float lightEnergy = lightmarch(rayPos);
+            vec3 scatteredLight = lightEnergy * camera.lightColor.rgb;
+
+            accumulatedLight += scatteredLight * transmittance * densitySample;
+
+            // Compute alpha accumulation for blending
+            alpha += (1.0 - alpha) * densitySample * stepSize;
+
             dstTravelled += stepSize;
         }
 
-        float transmittance = exp(-totalDensity);
-        outColor = vec4(1.0 - transmittance);
+        vec3 finalColor = accumulatedLight;
+        outColor = vec4(finalColor, alpha);  // Alpha included for blending
     }
     else {
         discard;

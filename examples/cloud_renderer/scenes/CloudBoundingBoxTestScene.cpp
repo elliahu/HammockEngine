@@ -464,6 +464,7 @@ void CloudBoundingBoxTestScene::drawUi() {
     ImGui::Text("Density options:");
     ImGui::SliderFloat("Freq offset", &cloudBuffer.freqOffset, -5.0f, 0.0f);
     ImGui::SliderFloat("Density multiplier", &cloudBuffer.densityMultiplier, 0.f, 20.f);
+    ImGui::SliderFloat("Phase G", &cloudBuffer.phaseG, -1.f, 1.f);
 
     ImGui::Text("Cloud properties:");
     ImGui::Text("Cloud placement (bounding box):");
