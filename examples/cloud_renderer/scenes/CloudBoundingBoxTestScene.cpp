@@ -453,11 +453,16 @@ void CloudBoundingBoxTestScene::draw() {
 void CloudBoundingBoxTestScene::drawUi() {
     ImGui::Begin("Cloud Property editor", (bool *) false, ImGuiWindowFlags_AlwaysAutoResize);
 
-    ImGui::Text("Shape options:");
-    ImGui::DragFloat3("Shape offset", &cloudBuffer.shapeOffset.Elements[0], 0.1f);
-    ImGui::SliderFloat("Shape scale", &cloudBuffer.shapeScale, 0.001f, 1.0f);
-    ImGui::Text("Niose options:");
-    ImGui::SliderFloat("Density offset", &cloudBuffer.densityOffset, -5.0f, 0.0f);
+    ImGui::Text("Frequency options:");
+    ImGui::SliderFloat4("Low frequency channels weights (Base shape)", &cloudBuffer.lowFreqWeights.Elements[0], 0.0f, 1.0f);
+    ImGui::SliderFloat("Low frequency scale", &cloudBuffer.lowFreqScale, 0.0f, 1.0f);
+    ImGui::SliderFloat3("High channels weights (Erosion)", &cloudBuffer.highFreqWeights.Elements[0], 0.0f, 1.0f);
+    ImGui::SliderFloat("High frequency scale", &cloudBuffer.highFreqScale, 0.0f, 1.0f);
+    ImGui::DragFloat3("Frequency sampling offset", &cloudBuffer.freqSamplOffset.Elements[0], 0.1f);
+    ImGui::SliderFloat("Frequency sampling scale", &cloudBuffer.freqSampleScale, 0.0f, 1.0f);
+
+    ImGui::Text("Density options:");
+    ImGui::SliderFloat("Freq offset", &cloudBuffer.freqOffset, -5.0f, 0.0f);
     ImGui::SliderFloat("Density multiplier", &cloudBuffer.densityMultiplier, 0.f, 20.f);
 
     ImGui::Text("Cloud properties:");

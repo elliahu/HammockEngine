@@ -105,9 +105,13 @@ private:
 
     struct CloudBuffer {
         // Noise
-        HmckVec4 shapeOffset = {0.0f, 0.0f, 0.0f, 0.0f}; // W is padding
-        float shapeScale = 0.1f;
-        float densityOffset = -.82f;
+        HmckVec4 lowFreqWeights = {1.0f, 1.0f, 1.0f, 1.0f};
+        HmckVec4 highFreqWeights = {1.0f, 1.0f, 1.0f, 0.0f}; // A(W) is padding
+        HmckVec4 freqSamplOffset = {0.0f, 0.0f, 0.0f, 0.0f};
+        float lowFreqScale = 1.0f;
+        float highFreqScale = 1.0f;
+        float freqSampleScale = .1f;
+        float freqOffset = -.82f;
         float densityMultiplier = 6.f;
 
         // Raymarching

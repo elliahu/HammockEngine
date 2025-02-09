@@ -18,8 +18,12 @@ layout (set = 0, binding = 0) uniform CameraUBO {
 } camera;
 
 layout (set = 1, binding = 0) uniform CloudParams {
-    vec4 lowFreqOffset;
+    vec4 lowFreqWeights;
+    vec4 highFreqWeights;
+    vec4 freqSampleOffset;
     float lowFreqScale;
+    float highFreqScale;
+    float freqSampleScale;
     float freqOffset;
     float densityMultiplier;
 
@@ -87,24 +91,24 @@ float saturate(float value) {
 
 float getLowFreqNoise(vec3 samplePosition){
     vec4 lowFeqNoiseRGBA = texture(lowFreqNoiseSampler, samplePosition);
-    vec4 lowFreqChannelWeights = normalize(vec4(1.0, 1.0, 1.0, 1.0));
+    vec4 lowFreqChannelWeights = normalize(params.lowFreqWeights);
     float lowFreqDot = dot(lowFeqNoiseRGBA, lowFreqChannelWeights);
     float lowFreqNoise = lowFreqDot + params.freqOffset;
-    return lowFreqNoise;
+    return lowFreqNoise * params.lowFreqScale;
 }
 
 float getHighFreqNoise(vec3 samplePosition){
     vec3 highFreqNoiseRGB = texture(highFreqNoiseSampler, samplePosition).rgb;
-    vec3 highFreqChannelWeights = normalize(vec3(1.0, 1.0, 1.0));
+    vec3 highFreqChannelWeights = normalize(params.highFreqWeights.rgb);
     float highFreqDot = dot(highFreqNoiseRGB, highFreqChannelWeights);
     float highFreqNoise = highFreqDot + params.freqOffset;
-    return highFreqNoise;
+    return highFreqNoise * params.highFreqScale;
 }
 
 float sampleDensity(vec3 position) {
     vec3 size = push.bb1.xyz - push.bb2.xyz;
-    vec3 uvw = position * params.lowFreqScale;
-    vec3 samplePosition = uvw + params.lowFreqOffset.xyz;
+    vec3 uvw = position * params.freqSampleScale;
+    vec3 samplePosition = uvw + params.freqSampleOffset.xyz;
 
     float lowFreqNoise = getLowFreqNoise(samplePosition);
 
@@ -115,24 +119,6 @@ float sampleDensity(vec3 position) {
     }
 
     return 0.0;
-
-    // Calculate base shape density
-//    vec3 shapeNoise = texture(noiseTex, shapeSamplePos).xyz;
-//    vec3 normalizedShapeWeights =  normalize(params.shapeWeigths.xyz);
-//    float shapeFBM = dot(shapeNoise, normalizedShapeWeights);
-//    float baseShapeDensity = shapeFBM + params.densityOffset;
-//
-//    if (baseShapeDensity > 0) {
-//        // Sample detail noise
-//        vec3 detailSamplePos = uvw * params.detailScale + params.detailOffset.xyz;
-//        vec3 detailNoise = texture(detailTex, detailSamplePos).xyz;
-//        vec3 normalizedDetailWeights =  normalize(params.detailWeights.xyz);
-//        float detailFBM = dot(detailNoise, normalizedDetailWeights);
-//        // Subtract detail noise from base shape
-//        float detailErodeWeights = (1.0 - shapeFBM) * (1.0 - shapeFBM) * (1.0 - shapeFBM);
-//        float cloudDensity = baseShapeDensity - (1.0 - detailFBM) * detailErodeWeights * params.detailScale;
-//        return cloudDensity * params.densityMultiplier * 0.1;
-//    }
 }
 
 
