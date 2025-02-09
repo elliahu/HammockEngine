@@ -33,18 +33,16 @@ void CloudBoundingBoxTestScene::load() {
             .loadglTF(assetPath("models/SampleScene/SampleScene.glb"));
 
     // Data for cloud pass
-    constexpr int width = 128, height = 128, depth = 128;
-    MultiChannelNoise3D shapeNoise({
-                                       {FastNoiseLite::NoiseType_OpenSimplex2, 0, 0.015f},
-                                       {FastNoiseLite::NoiseType_OpenSimplex2, 0, 0.025f},
-                                       {FastNoiseLite::NoiseType_OpenSimplex2, 0, 0.035f},
-                                       {FastNoiseLite::NoiseType_OpenSimplex2, 0, 0.055f},
-                                   }, 0.0f, 1.0f); // Min/Max values for scaling
-    ScopedMemory noiseBufferMemory(shapeNoise.getTextureBuffer(width, height, depth));
-    const int channels = shapeNoise.getNumChannels();
 
-    cloudPass.shapeNoiseHandle = deviceStorage.createTexture3D({
-        .buffer = noiseBufferMemory.get(),
+    // Low frequency noise
+    int width, height, depth, channels;
+    const auto lowFreqNoiseSlices = Filesystem::ls(assetPath("noise/perlin-worley-128x128x128"));
+    ScopedMemory lowFreqNoiseBuffer{
+        readVolume(lowFreqNoiseSlices, width, height, channels, depth, Filesystem::ImageFormat::R32G32B32A32_SFLOAT)
+    };
+
+    cloudPass.lowFreqNoise = deviceStorage.createTexture3D({
+        .buffer = lowFreqNoiseBuffer.get(),
         .instanceSize = sizeof(float),
         .width = static_cast<uint32_t>(width),
         .height = static_cast<uint32_t>(height),
@@ -57,8 +55,14 @@ void CloudBoundingBoxTestScene::load() {
         }
     });
 
-    cloudPass.detailNoiseHandle = deviceStorage.createTexture3D({
-        .buffer = noiseBufferMemory.get(),
+    // High frequency noise
+    const auto highFreqNoiseSlices = Filesystem::ls(assetPath("noise/worley-32x32x32"));
+    ScopedMemory highFreqNoiseBuffer{
+        readVolume(lowFreqNoiseSlices, width, height, channels, depth, Filesystem::ImageFormat::R32G32B32A32_SFLOAT)
+    };
+
+    cloudPass.highFreqNoise = deviceStorage.createTexture3D({
+        .buffer = highFreqNoiseBuffer.get(),
         .instanceSize = sizeof(float),
         .width = static_cast<uint32_t>(width),
         .height = static_cast<uint32_t>(height),
@@ -70,6 +74,11 @@ void CloudBoundingBoxTestScene::load() {
             .addressMode = VK_SAMPLER_ADDRESS_MODE_REPEAT,
         }
     });
+
+   // ScopedMemory densityGradientBuffer{Filesystem::readImage(assetPath("noise/denistygradient.png"),width, height, channels, Filesystem::ImageFormat::R32_SFLOAT)};
+
+
+
 
     // Create vertex and index buffers
     vertexBuffer = deviceStorage.createVertexBuffer({
@@ -144,8 +153,8 @@ void CloudBoundingBoxTestScene::prepareRenderPasses() {
         });
 
         auto cloudBufferInfo = deviceStorage.getBuffer(cloudPass.cloudBuffers[i])->descriptorInfo();
-        auto shapeInfo = deviceStorage.getTexture3DDescriptorImageInfo(cloudPass.shapeNoiseHandle);
-        auto detailInfo = deviceStorage.getTexture3DDescriptorImageInfo(cloudPass.detailNoiseHandle);
+        auto shapeInfo = deviceStorage.getTexture3DDescriptorImageInfo(cloudPass.lowFreqNoise);
+        auto detailInfo = deviceStorage.getTexture3DDescriptorImageInfo(cloudPass.highFreqNoise);
         cloudPass.descriptorSets[i] = deviceStorage.createDescriptorSet({
             .descriptorSetLayout = cloudPass.descriptorSetLayout,
             .bufferWrites = {{0, cloudBufferInfo}},
@@ -445,16 +454,11 @@ void CloudBoundingBoxTestScene::drawUi() {
     ImGui::Begin("Cloud Property editor", (bool *) false, ImGuiWindowFlags_AlwaysAutoResize);
 
     ImGui::Text("Shape options:");
-    ImGui::DragFloat4("Shape weights", &cloudBuffer.shapeWeights.Elements[0], 0.01f);
     ImGui::DragFloat3("Shape offset", &cloudBuffer.shapeOffset.Elements[0], 0.1f);
     ImGui::SliderFloat("Shape scale", &cloudBuffer.shapeScale, 0.001f, 1.0f);
-    ImGui::Text("Detail options:");
-    ImGui::DragFloat3("Detail weights", &cloudBuffer.detailWeights.Elements[0], 0.01f);
-    ImGui::DragFloat3("Detail offset", &cloudBuffer.detailOffset.Elements[0], 0.1f);
-    ImGui::SliderFloat("Detail scale", &cloudBuffer.detailScale, 0.001f, 1.0f);
     ImGui::Text("Niose options:");
-    ImGui::SliderFloat("Density offset", &cloudBuffer.densityOffset, -5.0f, 5.0f);
-    ImGui::SliderFloat("Density multiplier", &cloudBuffer.densityMultiplier, .0f, 100.0f);
+    ImGui::SliderFloat("Density offset", &cloudBuffer.densityOffset, -5.0f, 0.0f);
+    ImGui::SliderFloat("Density multiplier", &cloudBuffer.densityMultiplier, 0.f, 20.f);
 
     ImGui::Text("Cloud properties:");
     ImGui::Text("Cloud placement (bounding box):");

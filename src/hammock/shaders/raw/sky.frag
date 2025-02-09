@@ -18,21 +18,17 @@ layout (set = 0, binding = 0) uniform CameraUBO {
 } camera;
 
 layout (set = 1, binding = 0) uniform CloudParams {
-    vec4 shapeWeigths;
-    vec4 shapeOffset;
-    vec4 detailWeights;
-    vec4 detailOffset;
-    float shapeScale;
-    float detailScale;
-    float densityOffset;
+    vec4 lowFreqOffset;
+    float lowFreqScale;
+    float freqOffset;
     float densityMultiplier;
 
     int numSteps;
     int numLightSteps;
 } params;
 
-layout (set = 1, binding = 1) uniform sampler3D noiseTex;
-layout (set = 1, binding = 2) uniform sampler3D detailTex;
+layout (set = 1, binding = 1) uniform sampler3D lowFreqNoiseSampler;
+layout (set = 1, binding = 2) uniform sampler3D highFreqNoiseSampler;
 
 layout (push_constant) uniform PushConstants {
     vec4 bb1;
@@ -89,28 +85,54 @@ float saturate(float value) {
     return clamp(value, 0.0, 1.0);
 }
 
+float getLowFreqNoise(vec3 samplePosition){
+    vec4 lowFeqNoiseRGBA = texture(lowFreqNoiseSampler, samplePosition);
+    vec4 lowFreqChannelWeights = normalize(vec4(1.0, 1.0, 1.0, 1.0));
+    float lowFreqDot = dot(lowFeqNoiseRGBA, lowFreqChannelWeights);
+    float lowFreqNoise = lowFreqDot + params.freqOffset;
+    return lowFreqNoise;
+}
+
+float getHighFreqNoise(vec3 samplePosition){
+    vec3 highFreqNoiseRGB = texture(highFreqNoiseSampler, samplePosition).rgb;
+    vec3 highFreqChannelWeights = normalize(vec3(1.0, 1.0, 1.0));
+    float highFreqDot = dot(highFreqNoiseRGB, highFreqChannelWeights);
+    float highFreqNoise = highFreqDot + params.freqOffset;
+    return highFreqNoise;
+}
+
 float sampleDensity(vec3 position) {
     vec3 size = push.bb1.xyz - push.bb2.xyz;
-    vec3 uvw = (size * 0.5 + position) * params.shapeScale ; // * scale
-    vec3 shapeSamplePos = uvw + params.shapeOffset.xyz; // * offsetSpeed
+    vec3 uvw = position * params.lowFreqScale;
+    vec3 samplePosition = uvw + params.lowFreqOffset.xyz;
+
+    float lowFreqNoise = getLowFreqNoise(samplePosition);
+
+    if(lowFreqNoise > 0.0){
+        float highFreqNoise = getHighFreqNoise(samplePosition);
+        float baseCloudDensity = remap(lowFreqNoise, highFreqNoise, 1.0, 0.0, 1.0);
+        return baseCloudDensity * params.densityMultiplier;
+    }
+
+    return 0.0;
 
     // Calculate base shape density
-    vec3 shapeNoise = texture(noiseTex, shapeSamplePos).xyz;
-    vec3 normalizedShapeWeights =  normalize(params.shapeWeigths.xyz);
-    float shapeFBM = dot(shapeNoise, normalizedShapeWeights);
-    float baseShapeDensity = shapeFBM + params.densityOffset;
-
-    if (baseShapeDensity > 0) {
-        // Sample detail noise
-        vec3 detailSamplePos = uvw * params.detailScale + params.detailOffset.xyz;
-        vec3 detailNoise = texture(detailTex, detailSamplePos).xyz;
-        vec3 normalizedDetailWeights =  normalize(params.detailWeights.xyz);
-        float detailFBM = dot(detailNoise, normalizedDetailWeights);
-        // Subtract detail noise from base shape
-        float detailErodeWeights = (1.0 - shapeFBM) * (1.0 - shapeFBM) * (1.0 - shapeFBM);
-        float cloudDensity = baseShapeDensity - (1.0 - detailFBM) * detailErodeWeights * params.detailScale;
-        return cloudDensity * params.densityMultiplier * 0.1;
-    }
+//    vec3 shapeNoise = texture(noiseTex, shapeSamplePos).xyz;
+//    vec3 normalizedShapeWeights =  normalize(params.shapeWeigths.xyz);
+//    float shapeFBM = dot(shapeNoise, normalizedShapeWeights);
+//    float baseShapeDensity = shapeFBM + params.densityOffset;
+//
+//    if (baseShapeDensity > 0) {
+//        // Sample detail noise
+//        vec3 detailSamplePos = uvw * params.detailScale + params.detailOffset.xyz;
+//        vec3 detailNoise = texture(detailTex, detailSamplePos).xyz;
+//        vec3 normalizedDetailWeights =  normalize(params.detailWeights.xyz);
+//        float detailFBM = dot(detailNoise, normalizedDetailWeights);
+//        // Subtract detail noise from base shape
+//        float detailErodeWeights = (1.0 - shapeFBM) * (1.0 - shapeFBM) * (1.0 - shapeFBM);
+//        float cloudDensity = baseShapeDensity - (1.0 - detailFBM) * detailErodeWeights * params.detailScale;
+//        return cloudDensity * params.densityMultiplier * 0.1;
+//    }
 }
 
 

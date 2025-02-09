@@ -8,66 +8,62 @@ import threading
 from scipy.spatial import Voronoi, distance
 from PIL import Image
 
-# Streamlit UI
-st.title("🌥️ Cloud Noise Editor")
+# Move control elements to sidebar
+st.sidebar.title("🌥️ Cloud Noise Editor")
 
-# Select noise type for each channel
-st.subheader("Channel Configuration")
-col1, col2, col3, col4 = st.columns(4)
+# Channel selection in sidebar
+st.sidebar.subheader("Channel Configuration")
+red_noise = st.sidebar.selectbox("Red Channel", ["None", "Perlin", "Worley", "Curl", "Perlin-Worley"], key="red")
+green_noise = st.sidebar.selectbox("Green Channel", ["None", "Perlin", "Worley", "Curl", "Perlin-Worley"], key="green")
+blue_noise = st.sidebar.selectbox("Blue Channel", ["None", "Perlin", "Worley", "Curl", "Perlin-Worley"], key="blue")
+alpha_noise = st.sidebar.selectbox("Alpha Channel", ["None", "Perlin", "Worley", "Curl", "Perlin-Worley"], key="alpha")
 
-with col1:
-    red_noise = st.selectbox("Red Channel", ["None", "Perlin", "Worley", "Curl", "Perlin-Worley"], key="red")
-with col2:
-    green_noise = st.selectbox("Green Channel", ["None", "Perlin", "Worley", "Curl", "Perlin-Worley"], key="green")
-with col3:
-    blue_noise = st.selectbox("Blue Channel", ["None", "Perlin", "Worley", "Curl", "Perlin-Worley"], key="blue")
-with col4:
-    alpha_noise = st.selectbox("Alpha Channel", ["None", "Perlin", "Worley", "Curl", "Perlin-Worley"], key="alpha")
+# Display settings in sidebar
+st.sidebar.subheader("Display Settings")
+show_channels = st.sidebar.multiselect("Show Channels", ["Red", "Green", "Blue", "Alpha"], default=["Red"])
+dimensionality = st.sidebar.radio("Noise Dimension", ["2D", "3D"])
+size = st.sidebar.slider("Resolution", 16, 512, 64, step=16)
 
-# Display options
-st.subheader("Display Settings")
-show_channels = st.multiselect("Show Channels", ["Red", "Green", "Blue", "Alpha"], default=["Red"])
-
-# Select 2D or 3D
-dimensionality = st.radio("Noise Dimension", ["2D", "3D"])
-
-# Resolution slider
-size = st.slider("Resolution", 16, 512, 64, step=16)
-
-# 3D Slice Selector
-z_slice = 0
 if dimensionality == "3D":
-    z_slice = st.slider("Z-Slice", 0, size - 1, 0)
+    z_slice = st.sidebar.slider("Z-Slice", 0, size - 1, 0)
 
-# Common Parameters
-seed = st.slider("Seed", 0, 1000, 42)
+seed = st.sidebar.slider("Seed", 0, 1000, 42)
 
 # Channel-specific parameters
 def show_noise_params(noise_type, channel):
     if noise_type in ["Perlin", "Curl", "Perlin-Worley"]:
         return {
-            'scale': st.slider(f"Scale ({channel})", 1.0, 100.0, 30.0, step=1.0, key=f"scale_{channel}"),
-            'octaves': st.slider(f"Octaves ({channel})", 1, 8, 5, key=f"octaves_{channel}"),
-            'persistence': st.slider(f"Persistence ({channel})", 0.1, 1.0, 0.5, step=0.05, key=f"persistence_{channel}"),
-            'lacunarity': st.slider(f"Lacunarity ({channel})", 1.0, 4.0, 2.0, step=0.1, key=f"lacunarity_{channel}")
+            'scale': st.sidebar.slider(f"Scale ({channel})", 1.0, 100.0, 30.0, step=1.0, key=f"scale_{channel}"),
+            'octaves': st.sidebar.slider(f"Octaves ({channel})", 1, 8, 5, key=f"octaves_{channel}"),
+            'persistence': st.sidebar.slider(f"Persistence ({channel})", 0.1, 1.0, 0.5, step=0.05, key=f"persistence_{channel}"),
+            'lacunarity': st.sidebar.slider(f"Lacunarity ({channel})", 1.0, 4.0, 2.0, step=0.1, key=f"lacunarity_{channel}")
+        }
+    elif noise_type == "Worley":
+        return {
+            'num_points': st.sidebar.slider(f"Number of Points ({channel})", 1, 100, 20, key=f"points_{channel}"),
+            'distance_func': st.sidebar.selectbox(f"Distance Function ({channel})", ['Euclidean', 'Manhattan', 'Chebyshev'], key=f"dist_{channel}"),
+            'combination': st.sidebar.selectbox(f"Combination Method ({channel})", ['Nearest', 'Second Nearest', 'Difference'], key=f"comb_{channel}")
         }
     return {}
 
-# Show parameters for active channels
-st.subheader("Channel Parameters")
+# Channel parameters in sidebar
+st.sidebar.subheader("Channel Parameters")
 params = {}
 if red_noise != "None":
-    st.markdown("### 🔴 Red Channel Parameters")
+    st.sidebar.markdown("### 🔴 Red Channel")
     params['red'] = show_noise_params(red_noise, 'red')
 if green_noise != "None":
-    st.markdown("### 🟢 Green Channel Parameters")
+    st.sidebar.markdown("### 🟢 Green Channel")
     params['green'] = show_noise_params(green_noise, 'green')
 if blue_noise != "None":
-    st.markdown("### 🔵 Blue Channel Parameters")
+    st.sidebar.markdown("### 🔵 Blue Channel")
     params['blue'] = show_noise_params(blue_noise, 'blue')
 if alpha_noise != "None":
-    st.markdown("### ⚪ Alpha Channel Parameters")
+    st.sidebar.markdown("### ⚪ Alpha Channel")
     params['alpha'] = show_noise_params(alpha_noise, 'alpha')
+
+# Main content area for preview and export
+st.title("Preview & Export")
 
 # [Previous noise generation functions remain the same]
 def generate_perlin_2d(params):
@@ -93,28 +89,58 @@ def generate_perlin_3d(params):
                 )
     return (world - world.min()) / (world.max() - world.min())
 
-def generate_worley_2d():
+def generate_worley_2d(params):
     np.random.seed(seed)
-    points = np.random.randint(0, size, (50, 2))
+    num_points = params.get('num_points', 20)
+    points = np.random.randint(0, size, (num_points, 2))
     world = np.zeros((size, size))
+    
+    distance_funcs = {
+        'Euclidean': lambda p1, p2: distance.euclidean(p1, p2),
+        'Manhattan': lambda p1, p2: distance.cityblock(p1, p2),
+        'Chebyshev': lambda p1, p2: distance.chebyshev(p1, p2)
+    }
+    
+    dist_func = distance_funcs[params.get('distance_func', 'Euclidean')]
+    combination = params.get('combination', 'Nearest')
     
     for y in range(size):
         for x in range(size):
-            distances = [distance.euclidean((x, y), point) for point in points]
-            world[y, x] = 1 - min(distances)
+            distances = sorted([dist_func((x, y), point) for point in points])
+            if combination == 'Nearest':
+                world[y, x] = 1 - distances[0]
+            elif combination == 'Second Nearest':
+                world[y, x] = 1 - distances[1]
+            else:  # Difference
+                world[y, x] = 1 - (distances[1] - distances[0])
     
     return (world - world.min()) / (world.max() - world.min())
 
-def generate_worley_3d():
+def generate_worley_3d(params):
     np.random.seed(seed)
-    points = np.random.randint(0, size, (50, 3))
+    num_points = params.get('num_points', 20)
+    points = np.random.randint(0, size, (num_points, 3))
     world = np.zeros((size, size, size))
+    
+    distance_funcs = {
+        'Euclidean': lambda p1, p2: distance.euclidean(p1, p2),
+        'Manhattan': lambda p1, p2: distance.cityblock(p1, p2),
+        'Chebyshev': lambda p1, p2: distance.chebyshev(p1, p2)
+    }
+    
+    dist_func = distance_funcs[params.get('distance_func', 'Euclidean')]
+    combination = params.get('combination', 'Nearest')
     
     for z in range(size):
         for y in range(size):
             for x in range(size):
-                distances = [distance.euclidean((x, y, z), point) for point in points]
-                world[z, y, x] = 1 - min(distances)
+                distances = sorted([dist_func((x, y, z), point) for point in points])
+                if combination == 'Nearest':
+                    world[z, y, x] = 1 - distances[0]
+                elif combination == 'Second Nearest':
+                    world[z, y, x] = 1 - distances[1]
+                else:  # Difference
+                    world[z, y, x] = 1 - (distances[1] - distances[0])
     
     return (world - world.min()) / (world.max() - world.min())
 
@@ -132,17 +158,19 @@ def generate_curl_3d(params):
 
 def generate_perlin_worley_2d(params):
     perlin = generate_perlin_2d(params)
-    worley = generate_worley_2d()
+    worley = generate_worley_2d(params)
     return (perlin + worley) / 2
 
 def generate_perlin_worley_3d(params):
     perlin = generate_perlin_3d(params)
-    worley = generate_worley_3d()
+    worley = generate_worley_3d(params)
     return (perlin + worley) / 2
 
-def generate_channel_noise(noise_type, channel_params, is_3d=False):
+@st.cache_data
+def cached_noise_generation(noise_type, is_3d, seed_val, size_val, channel_id=None, **params):
+    """Cached wrapper for noise generation with channel-specific caching"""
     if noise_type == "None":
-        return np.zeros((size, size, size) if is_3d else (size, size))
+        return np.zeros((size_val, size_val, size_val) if is_3d else (size_val, size_val))
     
     noise_generators = {
         "Perlin": (generate_perlin_3d, generate_perlin_2d),
@@ -152,22 +180,29 @@ def generate_channel_noise(noise_type, channel_params, is_3d=False):
     }
     
     if noise_type not in noise_generators:
-        return np.zeros((size, size, size) if is_3d else (size, size))
+        return np.zeros((size_val, size_val, size_val) if is_3d else (size_val, size_val))
         
     generator_3d, generator_2d = noise_generators[noise_type]
-    
-    if noise_type == "Worley":
-        return generator_3d() if is_3d else generator_2d()
-    else:
-        return generator_3d(channel_params) if is_3d else generator_2d(channel_params)
+    return generator_3d(params) if is_3d else generator_2d(params)
+
+def generate_channel_noise(noise_type, channel_params, is_3d=False, channel_id=None):
+    params_dict = dict(channel_params) if channel_params else {}
+    return cached_noise_generation(
+        noise_type=noise_type,
+        is_3d=is_3d,
+        seed_val=seed,
+        size_val=size,
+        channel_id=channel_id,
+        **params_dict
+    )
 
 # Generate noise for each channel
 is_3d = dimensionality == "3D"
 noise_data = {
-    'red': generate_channel_noise(red_noise, params.get('red', {}), is_3d) if red_noise != "None" else None,
-    'green': generate_channel_noise(green_noise, params.get('green', {}), is_3d) if green_noise != "None" else None,
-    'blue': generate_channel_noise(blue_noise, params.get('blue', {}), is_3d) if blue_noise != "None" else None,
-    'alpha': generate_channel_noise(alpha_noise, params.get('alpha', {}), is_3d) if alpha_noise != "None" else None
+    'red': generate_channel_noise(red_noise, params.get('red', {}), is_3d, 'red'),
+    'green': generate_channel_noise(green_noise, params.get('green', {}), is_3d, 'green'),
+    'blue': generate_channel_noise(blue_noise, params.get('blue', {}), is_3d, 'blue'),
+    'alpha': generate_channel_noise(alpha_noise, params.get('alpha', {}), is_3d, 'alpha')
 }
 
 # Combine channels for display
@@ -221,11 +256,10 @@ else:
 ax.axis("off")
 st.pyplot(fig)
 
-# Export functionality
-save_path = st.text_input("📁 Enter full export file path with filename", "noise_exports/noise.png")
 
-if not save_path.lower().endswith(".png"):
-    st.error("❌ Please specify a valid PNG file path (including .png extension).")
+# Export status
+if "export_status" in st.session_state:
+    st.info(st.session_state["export_status"])
 
 def export_noise(file_path):
     start_time = time.time()
@@ -268,9 +302,21 @@ def export_noise(file_path):
     
     st.session_state["export_status"] = f"✅ Export completed in {time.time() - start_time:.2f} sec."
 
-if st.button("📤 Export as PNG") and save_path.lower().endswith(".png"):
-    st.session_state["export_status"] = "Initializing..."
-    threading.Thread(target=export_noise, args=(save_path,), daemon=True).start()
 
-if "export_status" in st.session_state:
-    st.info(st.session_state["export_status"])
+# Export controls in columns
+col1, col2, col3 = st.columns([2, 1, 1])
+with col1:
+    save_path = st.text_input("📁 Export file path", "noise_exports/noise.png")
+with col2:
+    if st.button("📤 Export as PNG") and save_path.lower().endswith(".png"):
+        st.session_state["export_status"] = "Initializing..."
+        threading.Thread(target=export_noise, args=(save_path,), daemon=True).start()
+with col3:
+    if os.path.exists(save_path):
+        with open(save_path, "rb") as file:
+            st.download_button(
+                label="⬇️ Download",
+                data=file,
+                file_name=os.path.basename(save_path),
+                mime="image/png"
+            )

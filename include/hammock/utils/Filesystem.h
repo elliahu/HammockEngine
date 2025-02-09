@@ -6,7 +6,7 @@
 #include <fstream>
 #include <iostream>
 #include <string>
-#include <cmath>
+#include <cstring>
 #include <stb_image.h>
 #include <stb_image_write.h>
 
@@ -289,6 +289,41 @@ namespace Hammock{
 
             return volumeData;
         }
+
+        /**
+         * Merges up to four channels into a single image that has also up to four channels (can be 3D texture as well)
+         * @param channels Pointers into channel buffers
+         * @param instanceSize Size of a single pixel (eg. sizeof(float) or sizeof(unsigned char))
+         * @param width width of the image
+         * @param height height of the image
+         * @param depth depth of the image (can be 3D texture)
+         * @return returns combined buffer that has up to four channels
+         */
+        inline const void* mergeChannels(const std::vector<void*>& channels, uint32_t instanceSize, uint32_t width, uint32_t height, uint32_t depth) {
+            if (channels.empty() || channels.size() > 4) {
+                return nullptr; // Ensure only 1 to 4 channels are provided
+            }
+
+            uint32_t pixelCount = width * height * depth;
+            uint32_t channelCount = static_cast<uint32_t>(channels.size());
+            uint32_t mergedInstanceSize = instanceSize * channelCount;
+            uint32_t totalSize = pixelCount * mergedInstanceSize;
+
+            auto* mergedBuffer = (instanceSize == sizeof(float)) ? static_cast<void*>(new float[totalSize / sizeof(float)]) : static_cast<void*>(new uint8_t[totalSize]);
+
+            for (uint32_t i = 0; i < pixelCount; ++i) {
+                for (uint32_t c = 0; c < channelCount; ++c) {
+                    memcpy(
+                        static_cast<uint8_t*>(mergedBuffer) + i * mergedInstanceSize + c * instanceSize,
+                        static_cast<uint8_t*>(channels[c]) + i * instanceSize,
+                        instanceSize
+                    );
+                }
+            }
+
+            return mergedBuffer; // Caller is responsible for freeing the memory
+        }
+
 
 
     } // namespace Filesystem

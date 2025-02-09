@@ -68,8 +68,9 @@ private:
         std::array<ResourceHandle<VkDescriptorSet>, SwapChain::MAX_FRAMES_IN_FLIGHT> descriptorSets;
         std::array<ResourceHandle<Buffer>, SwapChain::MAX_FRAMES_IN_FLIGHT> cloudBuffers;
         ResourceHandle<DescriptorSetLayout> descriptorSetLayout;
-        ResourceHandle<Texture3D> shapeNoiseHandle;
-        ResourceHandle<Texture3D> detailNoiseHandle;
+        ResourceHandle<Texture3D> lowFreqNoise;
+        ResourceHandle<Texture3D> highFreqNoise;
+        ResourceHandle<Texture2D> gradientsHandle;
     } cloudPass;
 
     /**
@@ -104,14 +105,10 @@ private:
 
     struct CloudBuffer {
         // Noise
-        HmckVec4 shapeWeights = {1.0f, 0.0f, 0.0f, 0.0f};
         HmckVec4 shapeOffset = {0.0f, 0.0f, 0.0f, 0.0f}; // W is padding
-        HmckVec4 detailWeights = {0.0f, 0.0f, 1.0f, 0.0f}; // W is padding
-        HmckVec4 detailOffset = {0.0f, 0.0f, 0.0f, 0.0f}; // W is padding
-        float shapeScale = 0.5f;
-        float detailScale = .5f;
-        float densityOffset = .5f;
-        float densityMultiplier = 50.0;
+        float shapeScale = 0.1f;
+        float densityOffset = -.82f;
+        float densityMultiplier = 6.f;
 
         // Raymarching
         int numSteps = 100;     // max steps
