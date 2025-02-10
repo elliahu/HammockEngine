@@ -48,11 +48,11 @@ namespace hammock {
     }
 
     void Device::createLogicalDevice() {
-        auto [graphicsFamily, presentFamily, graphicsFamilyHasValue, presentFamilyHasValue] = findQueueFamilies(
+        auto queFamilyIndices = findQueueFamilies(
             physicalDevice);
 
         std::vector<VkDeviceQueueCreateInfo> queueCreateInfos;
-        std::set<uint32_t> uniqueQueueFamilies = {graphicsFamily, presentFamily};
+        std::set<uint32_t> uniqueQueueFamilies = {queFamilyIndices.graphicsFamily, queFamilyIndices.presentFamily};
 
         float queuePriority = 1.0f;
         for (uint32_t queueFamily: uniqueQueueFamilies) {
@@ -112,17 +112,19 @@ namespace hammock {
             throw std::runtime_error("failed to create logical device!");
         }
 
-        vkGetDeviceQueue(device_, graphicsFamily, 0, &graphicsQueue_);
-        vkGetDeviceQueue(device_, presentFamily, 0, &presentQueue_);
+        vkGetDeviceQueue(device_, queFamilyIndices.graphicsFamily, 0, &graphicsQueue_);
+        vkGetDeviceQueue(device_, queFamilyIndices.presentFamily, 0, &presentQueue_);
+        vkGetDeviceQueue(device_, queFamilyIndices.transferFamily, 0, &transferQueue_);
+        vkGetDeviceQueue(device_, queFamilyIndices.computeFamily, 0, &computeQueue_);
     }
 
     void Device::createCommandPool() {
-        auto [graphicsFamily, presentFamily, graphicsFamilyHasValue, presentFamilyHasValue] =
+        auto queFamilyIndices =
                 findPhysicalQueueFamilies();
 
         VkCommandPoolCreateInfo poolInfo = {};
         poolInfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
-        poolInfo.queueFamilyIndex = graphicsFamily;
+        poolInfo.queueFamilyIndex = queFamilyIndices.graphicsFamily;
         poolInfo.flags =
                 VK_COMMAND_POOL_CREATE_TRANSIENT_BIT | VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
 
@@ -197,21 +199,59 @@ namespace hammock {
 
         int i = 0;
         for (const auto &queueFamily: queueFamilies) {
-            if (queueFamily.queueCount > 0 && queueFamily.queueFlags & VK_QUEUE_GRAPHICS_BIT) {
-                indices.graphicsFamily = i;
-                indices.graphicsFamilyHasValue = true;
-            }
-            VkBool32 presentSupport = false;
-            vkGetPhysicalDeviceSurfaceSupportKHR(device, i, surface_, &presentSupport);
-            if (queueFamily.queueCount > 0 && presentSupport) {
-                indices.presentFamily = i;
-                indices.presentFamilyHasValue = true;
-            }
-            if (indices.isComplete()) {
-                break;
+            if (queueFamily.queueCount > 0) {
+                // Graphics queue
+                if (queueFamily.queueFlags & VK_QUEUE_GRAPHICS_BIT) {
+                    indices.graphicsFamily = i;
+                    indices.graphicsFamilyHasValue = true;
+                }
+
+                // Present queue
+                VkBool32 presentSupport = false;
+                vkGetPhysicalDeviceSurfaceSupportKHR(device, i, surface_, &presentSupport);
+                if (presentSupport) {
+                    indices.presentFamily = i;
+                    indices.presentFamilyHasValue = true;
+                }
+
+                // Compute queue (preferably separate from graphics)
+                if ((queueFamily.queueFlags & VK_QUEUE_COMPUTE_BIT) &&
+                    !(queueFamily.queueFlags & VK_QUEUE_GRAPHICS_BIT)) {
+                    indices.computeFamily = i;
+                    indices.computeFamilyHasValue = true;
+                }
+
+                // Transfer queue (preferably separate from graphics and compute)
+                if ((queueFamily.queueFlags & VK_QUEUE_TRANSFER_BIT) &&
+                    !(queueFamily.queueFlags & VK_QUEUE_GRAPHICS_BIT) &&
+                    !(queueFamily.queueFlags & VK_QUEUE_COMPUTE_BIT)) {
+                    indices.transferFamily = i;
+                    indices.transferFamilyHasValue = true;
+                }
             }
 
             i++;
+        }
+
+        // Fallbacks: Use graphics queue for compute/transfer if no dedicated queues are found
+        if (!indices.computeFamilyHasValue) {
+            for (i = 0; i < queueFamilies.size(); i++) {
+                if (queueFamilies[i].queueFlags & VK_QUEUE_COMPUTE_BIT) {
+                    indices.computeFamily = i;
+                    indices.computeFamilyHasValue = true;
+                    break;
+                }
+            }
+        }
+
+        if (!indices.transferFamilyHasValue) {
+            for (i = 0; i < queueFamilies.size(); i++) {
+                if (queueFamilies[i].queueFlags & VK_QUEUE_TRANSFER_BIT) {
+                    indices.transferFamily = i;
+                    indices.transferFamilyHasValue = true;
+                    break;
+                }
+            }
         }
 
         return indices;

@@ -123,7 +123,7 @@ namespace hammock {
     };
 
     /**
-     * Describes type of a renderpass
+     * Describes type of a render pass
      */
     enum class RenderPassType {
         // Represents a pass that draws into some image
@@ -246,7 +246,8 @@ namespace hammock {
                     return attachment->getLayout() != access.requiredLayout;
                 }
                 if (transitionStage == TransitionStage::FinalLayout) {
-                    return attachment->getLayout() != access.finalLayout && access.finalLayout != VK_IMAGE_LAYOUT_UNDEFINED;
+                    return attachment->getLayout() != access.finalLayout && access.finalLayout !=
+                           VK_IMAGE_LAYOUT_UNDEFINED;
                 }
                 return false;
             }
@@ -277,6 +278,7 @@ namespace hammock {
      *  TODO support for Read Modify Write - render pass writes and reads from the same resource
      *  TODO support for conditional resource
      *  TODO support for swapchain dependent rendperPass
+     *  TODO support for pipeline caching
      */
     class RenderGraph {
         // Vulkan device
@@ -294,8 +296,6 @@ namespace hammock {
 
         bool rebuildDescriptors = true;
 
-
-
     public:
         RenderGraph(Device &device, experimental::ResourceManager &rm,
                     FrameManager &fm, DescriptorPool &pool): device(device), rm(rm), fm(fm), pool(pool) {
@@ -305,8 +305,8 @@ namespace hammock {
         ~RenderGraph() {
             Logger::log(LOG_LEVEL_DEBUG, "Releasing rendegraph\n");
             // Render pass hold samplers for all attachments and these need to be released
-            for (auto &pass : passes) {
-                for (auto& sampler : pass.samplers) {
+            for (auto &pass: passes) {
+                for (auto &sampler: pass.samplers) {
                     vkDestroySampler(device.device(), sampler, nullptr);
                 }
             }
@@ -427,7 +427,8 @@ namespace hammock {
          * @param name Name of the render pass
          * @return Returns reference to the RenderPassNode node that can be used to set additional parameters. See RenderPassNode definition.
          */
-        template<RenderPassType Type, RelativeViewPortSize ViewPortSize, float ViewPortWidth = 1.0f, float ViewPortHeight = 1.0f
+        template<RenderPassType Type, RelativeViewPortSize ViewPortSize = RelativeViewPortSize::SwapChainRelative, float
+            ViewPortWidth = 1.0f, float ViewPortHeight = 1.0f
             , float ViewPortDepthMin = 0.f, float ViewPortDepthMax = 1.f>
         RenderPassNode &addPass(const std::string &name) {
             RenderPassNode node;
@@ -470,15 +471,17 @@ namespace hammock {
 
             // Transition all input images to required layouts and map all uniform buffers
             for (auto &pass: passes) {
-                for (auto& input: pass.inputs) {
-                    ResourceNode& resource = resources[input.resourceName];
+                for (auto &input: pass.inputs) {
+                    ResourceNode &resource = resources[input.resourceName];
                     for (int frameIndex = 0; frameIndex < SwapChain::MAX_FRAMES_IN_FLIGHT; frameIndex++) {
                         if (resource.isRenderingAttachment()) {
-                            experimental::Image * image = rm.getResource<experimental::Image>(resource.resolve(rm, frameIndex));
+                            experimental::Image *image = rm.getResource<experimental::Image>(
+                                resource.resolve(rm, frameIndex));
                             image->queueImageLayoutTransition(VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
                         }
                         if (resource.type == ResourceNode::Type::UniformBuffer) {
-                            experimental::Buffer * buffer = rm.getResource<experimental::Buffer>(resource.resolve(rm, frameIndex));
+                            experimental::Buffer *buffer = rm.getResource<experimental::Buffer>(
+                                resource.resolve(rm, frameIndex));
                             buffer->map();
                         }
                     }

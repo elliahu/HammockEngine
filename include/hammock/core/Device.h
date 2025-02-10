@@ -25,9 +25,13 @@ namespace hammock {
     struct QueueFamilyIndices {
         uint32_t graphicsFamily;
         uint32_t presentFamily;
+        uint32_t computeFamily;
+        uint32_t transferFamily;
         bool graphicsFamilyHasValue = false;
         bool presentFamilyHasValue = false;
-        [[nodiscard]] bool isComplete() const { return graphicsFamilyHasValue && presentFamilyHasValue; }
+        bool computeFamilyHasValue = false;
+        bool transferFamilyHasValue = false;
+        [[nodiscard]] bool isComplete() const { return graphicsFamilyHasValue && presentFamilyHasValue && computeFamilyHasValue && transferFamilyHasValue; }
     };
 
     class Device {
@@ -53,6 +57,8 @@ namespace hammock {
         [[nodiscard]] VkSurfaceKHR surface() const { return surface_; }
         [[nodiscard]] VkQueue graphicsQueue() const { return graphicsQueue_; }
         [[nodiscard]] VkQueue presentQueue() const { return presentQueue_; }
+        [[nodiscard]] VkQueue computeQueue() const { return computeQueue_; }
+        [[nodiscard]] VkQueue transferQueue() const { return transferQueue_; }
 
         [[nodiscard]] SwapChainSupportDetails getSwapChainSupport() const {
             return querySwapChainSupport(physicalDevice);
@@ -134,6 +140,8 @@ namespace hammock {
         VkSurfaceKHR surface_;
         VkQueue graphicsQueue_;
         VkQueue presentQueue_;
+        VkQueue transferQueue_;
+        VkQueue computeQueue_;
 
         VmaAllocator allocator_;
 
