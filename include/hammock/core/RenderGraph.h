@@ -55,6 +55,12 @@ namespace hammock {
         // Needs recreation
         bool isDirty = true;
 
+        /**
+         * Returns handle corresponding to resource of specific frame
+         * @param rm ResourceManager where resource is registered
+         * @param frameIndex Frame index of the resource
+         * @return Returns resolved handle
+         */
         experimental::ResourceHandle resolve(experimental::ResourceManager &rm, uint32_t frameIndex) {
             if (isDirty || cachedHandles.empty()) {
                 cachedHandles.resize(SwapChain::MAX_FRAMES_IN_FLIGHT);
@@ -104,16 +110,21 @@ namespace hammock {
         std::vector<VkDescriptorSet> descriptorSets;
     };
 
+    /**
+     * Describes how the resource will be accessed
+     */
     struct ResourceAccess {
-        std::string resourceName;
+        std::string resourceName; // Name of the accessed resource
         VkImageLayout requiredLayout = VK_IMAGE_LAYOUT_UNDEFINED; // Layout before rendering
-        VkImageLayout finalLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-        // layout after rendering, only for output resources, ignored for input resources
-        VkAttachmentLoadOp loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
-        VkAttachmentStoreOp storeOp = VK_ATTACHMENT_STORE_OP_STORE;
+        VkImageLayout finalLayout = VK_IMAGE_LAYOUT_UNDEFINED; // Layout after rendering, optional
+        VkAttachmentLoadOp loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR; // Load op
+        VkAttachmentStoreOp storeOp = VK_ATTACHMENT_STORE_OP_STORE; // Store op
         VkPipelineStageFlags stageFlags = VK_PIPELINE_STAGE_ALL_COMMANDS_BIT;
     };
 
+    /**
+     * Describes type of a renderpass
+     */
     enum class RenderPassType {
         // Represents a pass that draws into some image
         Graphics,
@@ -123,7 +134,10 @@ namespace hammock {
         Transfer
     };
 
-    enum class ViewPortSize {
+    /**
+     * Describes relative size of a viewport
+     */
+    enum class RelativeViewPortSize {
         SwapChainRelative,
         Fixed,
     };
@@ -147,7 +161,7 @@ namespace hammock {
         };
 
         RenderPassType type; // Type of the pass
-        ViewPortSize viewportSize; // Size of viewport
+        RelativeViewPortSize viewportSize; // Size of viewport
 
         std::string name; // Name of the pass for debug purposes and lookup
         HmckVec4 viewport;
@@ -157,6 +171,7 @@ namespace hammock {
 
 
         std::unordered_map<uint32_t, Descriptor> descriptors;
+        // TODO samplers should be standalone resources
         std::vector<VkSampler> samplers;
 
 
@@ -289,6 +304,7 @@ namespace hammock {
 
         ~RenderGraph() {
             Logger::log(LOG_LEVEL_DEBUG, "Releasing rendegraph\n");
+            // Render pass hold samplers for all attachments and these need to be released
             for (auto &pass : passes) {
                 for (auto& sampler : pass.samplers) {
                     vkDestroySampler(device.device(), sampler, nullptr);
@@ -411,7 +427,7 @@ namespace hammock {
          * @param name Name of the render pass
          * @return Returns reference to the RenderPassNode node that can be used to set additional parameters. See RenderPassNode definition.
          */
-        template<RenderPassType Type, ViewPortSize ViewPortSize, float ViewPortWidth = 1.0f, float ViewPortHeight = 1.0f
+        template<RenderPassType Type, RelativeViewPortSize ViewPortSize, float ViewPortWidth = 1.0f, float ViewPortHeight = 1.0f
             , float ViewPortDepthMin = 0.f, float ViewPortDepthMax = 1.f>
         RenderPassNode &addPass(const std::string &name) {
             RenderPassNode node;
@@ -423,6 +439,11 @@ namespace hammock {
             return passes.back();
         }
 
+        /**
+         * Returns list of descriptor set layouts used in the render pass
+         * @param passName Name of the render pass
+         * @return Vector of descriptor set layouts used in the render pass
+         */
         std::vector<VkDescriptorSetLayout> getDescriptorSetLayouts(const std::string &passName) {
             std::vector<VkDescriptorSetLayout> layouts = {};
             for (auto &pass: passes) {
@@ -470,6 +491,10 @@ namespace hammock {
         }
 
 
+        /**
+         * Creates all descriptor layouts and sets. One set per frame in flight is created. One layout per set is created
+         * TODO cache the descriptor layouts
+         */
         void buildDescriptors() {
             ASSERT(!optimizedOrderOfPasses.empty(), "Optimized Order of Passes is empty!");
             // Create descriptors
@@ -696,7 +721,7 @@ namespace hammock {
 
             // Set viewport and scissors
             VkViewport viewport = Init::viewport(pass.viewport.X, pass.viewport.Y, pass.viewport.Z, pass.viewport.W);
-            if (pass.viewportSize == ViewPortSize::SwapChainRelative) {
+            if (pass.viewportSize == RelativeViewPortSize::SwapChainRelative) {
                 viewport = Init::viewport(pass.viewport.X * fm.getSwapChain()->getSwapChainExtent().width,
                                           pass.viewport.Y * fm.getSwapChain()->getSwapChainExtent().height,
                                           pass.viewport.Z, pass.viewport.W);

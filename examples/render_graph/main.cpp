@@ -86,7 +86,7 @@ int main() {
     //graph->addStaticResource<ResourceNode::Type::VertexBuffer>("vertex-buffer", )
 
 
-    auto halfResPass = graph->addPass<RenderPassType::Graphics, ViewPortSize::SwapChainRelative>("half-res-pass")
+    auto halfResPass = graph->addPass<RenderPassType::Graphics, RelativeViewPortSize::SwapChainRelative>("half-res-pass")
             .read(ResourceAccess{
                 .resourceName = "vertex-buffer",
             })
@@ -110,7 +110,7 @@ int main() {
             });
 
 
-    auto presentPass = graph->addPass<RenderPassType::Graphics, ViewPortSize::SwapChainRelative>("present-pass")
+    auto presentPass = graph->addPass<RenderPassType::Graphics, RelativeViewPortSize::SwapChainRelative>("present-pass")
             .read(ResourceAccess{
                 .resourceName = "uniform-buffer",
             })
