@@ -68,10 +68,8 @@ namespace hammock {
             static constexpr ResourceType type = ResourceType::Invalid;
         };
 
-
         // Base resource class
         class Resource : public NonCopyable {
-            friend struct ResourceFactory;
 
         protected:
             Device &device;
@@ -85,11 +83,11 @@ namespace hammock {
             }
 
         public:
-            virtual ~Resource() = 0;
+            virtual ~Resource() = default;
 
-            virtual void load() = 0;
+            virtual void create() = 0;
 
-            virtual void unload() = 0;
+            virtual void release() = 0;
 
             uint64_t getUid() const { return uid; }
             const std::string &getName() const { return debug_name; }
@@ -105,7 +103,7 @@ namespace hammock {
         VkDeviceSize instanceSize;
         uint32_t instanceCount;
         VkBufferUsageFlags usageFlags;
-        VkMemoryPropertyFlags memoryPropertyFlags;
+        VmaAllocationCreateFlags allocationFlags;
         VkDeviceSize minOffsetAlignment;
     };
 

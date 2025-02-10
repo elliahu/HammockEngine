@@ -49,7 +49,7 @@ namespace hammock {
         // Resolver is used to resolve the actual resource
         ResourceResolver resolver;
 
-        // Chase to store handles to avoid constant recreation
+        // cache to store handles to avoid constant recreation
         std::vector<experimental::ResourceHandle> cachedHandles;
 
         // Needs recreation
@@ -61,7 +61,7 @@ namespace hammock {
                 isDirty = false;
             }
 
-            if (cachedHandles[frameIndex].isValid()) {
+            if (!cachedHandles[frameIndex].isValid()) {
                 cachedHandles[frameIndex] = resolver(rm, frameIndex);
             }
 
@@ -98,8 +98,10 @@ namespace hammock {
     struct RenderPassContext {
         VkCommandBuffer commandBuffer;
         uint32_t frameIndex;
-        std::unordered_map<std::string, std::reference_wrapper<ResourceNode> > inputs;
-        std::unordered_map<std::string, std::reference_wrapper<ResourceNode> > outputs;
+        // TODO change this to resource handles
+        std::unordered_map<std::string, ResourceNode *> inputs;
+        std::unordered_map<std::string, ResourceNode *> outputs;
+        std::vector<VkDescriptorSet> descriptorSets;
     };
 
     struct ResourceAccess {
@@ -130,6 +132,20 @@ namespace hammock {
      * RenderGraph node representing a render pass
      */
     struct RenderPassNode {
+        typedef std::function<void(RenderPassContext)> ExecuteFunction;
+
+        struct Descriptor {
+            std::shared_ptr<DescriptorSetLayout> layout;
+            std::vector<VkDescriptorSet> setCache;
+        };
+
+        struct DescriptorBinding {
+            uint32_t bindingIndex;
+            std::vector<std::string> bindingNames;
+            VkShaderStageFlags stageFlags;
+            VkDescriptorBindingFlags bindingFlags = 0;
+        };
+
         RenderPassType type; // Type of the pass
         ViewPortSize viewportSize; // Size of viewport
 
@@ -137,22 +153,24 @@ namespace hammock {
         HmckVec4 viewport;
         std::vector<ResourceAccess> inputs; // Read accesses
         std::vector<ResourceAccess> outputs; // Write accesses
-        std::unordered_map<uint32_t, std::vector<std::pair<uint32_t, std::vector<std::string>>>> descriptors{};
+        std::unordered_map<uint32_t, std::vector<DescriptorBinding> > descriptorLayoutInfos{};
 
-        struct Descriptor {
-            DescriptorSetLayout layout;
-            VkDescriptorSet set;
-        };
 
+        std::unordered_map<uint32_t, Descriptor> descriptors;
+        std::vector<VkSampler> samplers;
 
 
         // callback for rendering
-        std::function<void(RenderPassContext)> executeFunc;
+        ExecuteFunction executeFunc = nullptr;
+
+        VkDescriptorSet resolveDescriptorSet(uint32_t setIndex, uint32_t frameIndex) {
+            ASSERT(descriptors.contains(setIndex), "Invalid set index or called before build");
+            Descriptor &descriptor = descriptors.at(setIndex);
+            return descriptor.setCache[frameIndex];
+        }
 
 
         // builder methods
-
-        // TODO sampler info
         RenderPassNode &read(ResourceAccess access) {
             inputs.emplace_back(access);
             return *this;
@@ -168,14 +186,14 @@ namespace hammock {
             return *this;
         }
 
-        RenderPassNode &execute(std::function<void(RenderPassContext)> exec) {
-            executeFunc = std::move(exec);
+        RenderPassNode &execute(ExecuteFunction exec) {
+            executeFunc = exec;
             return *this;
         }
 
-        RenderPassNode &descriptor(const uint32_t set, std::vector<std::pair<uint32_t, std::vector<std::string>>> bindings) {
-            ASSERT(!descriptors.contains(set), "Descriptor already set");
-            descriptors[set] = std::move(bindings);
+        RenderPassNode &descriptor(const uint32_t set, std::vector<DescriptorBinding> bindings) {
+            ASSERT(!descriptorLayoutInfos.contains(set), "Descriptor already set");
+            descriptorLayoutInfos[set] = std::move(bindings);
             return *this;
         }
     };
@@ -213,7 +231,7 @@ namespace hammock {
                     return attachment->getLayout() != access.requiredLayout;
                 }
                 if (transitionStage == TransitionStage::FinalLayout) {
-                    return attachment->getLayout() != access.finalLayout;
+                    return attachment->getLayout() != access.finalLayout && access.finalLayout != VK_IMAGE_LAYOUT_UNDEFINED;
                 }
                 return false;
             }
@@ -251,6 +269,7 @@ namespace hammock {
         // Rendering context
         FrameManager &fm;
         experimental::ResourceManager &rm;
+        DescriptorPool &pool;
         // Holds all the resources
         std::unordered_map<std::string, ResourceNode> resources;
         // Holds all the render passes
@@ -258,11 +277,25 @@ namespace hammock {
         // Array of indexes into list of passes. Order is optimized by the optimizer.
         std::vector<uint32_t> optimizedOrderOfPasses;
 
+        bool rebuildDescriptors = true;
+
+
+
     public:
-        RenderGraph(Device &device, experimental::ResourceManager &rm, FrameManager &fm): device(device), rm(rm), fm(fm){
+        RenderGraph(Device &device, experimental::ResourceManager &rm,
+                    FrameManager &fm, DescriptorPool &pool): device(device), rm(rm), fm(fm), pool(pool) {
+            Logger::log(LOG_LEVEL_DEBUG, "Creating rendegraph\n");
         }
 
         ~RenderGraph() {
+            Logger::log(LOG_LEVEL_DEBUG, "Releasing rendegraph\n");
+            for (auto &pass : passes) {
+                for (auto& sampler : pass.samplers) {
+                    vkDestroySampler(device.device(), sampler, nullptr);
+                }
+            }
+            passes.clear();
+            resources.clear();
         }
 
 
@@ -270,7 +303,7 @@ namespace hammock {
          * Creates a resource in the graph
          * @tparam Type Type of the resource Node
          * @tparam ResourceType Type of the actual resource
-         * @tparam DescriptionType Type of the description of the resource based on the type of the resource 
+         * @tparam DescriptionType Type of the description of the resource based on the type of the resource
          * @param name Name of the resource for lookup and reference
          * @param desc Description of the resource
          */
@@ -280,7 +313,7 @@ namespace hammock {
             node.type = Type;
             node.name = name;
             node.resolver = [name, desc](experimental::ResourceManager &rm, uint32_t frameIndex) {
-                return rm.createResource<frameIndex, ResourceType>(name, desc);
+                return rm.createResource<ResourceType>(name, desc);
             };
             resources[name] = std::move(node);
         }
@@ -321,7 +354,7 @@ namespace hammock {
                 VkExtent2D swapChainExtent = fm.getSwapChain()->getSwapChainExtent();
                 ASSERT(modifier, "Modifier is null!");
                 DescriptionType depDesc = modifier(swapChainExtent);
-                return rm.createResource<frameIndex, ResourceType>(name, depDesc);
+                return rm.createResource<ResourceType>(name, depDesc);
             };
             resources[name] = std::move(node);
         }
@@ -378,7 +411,8 @@ namespace hammock {
          * @param name Name of the render pass
          * @return Returns reference to the RenderPassNode node that can be used to set additional parameters. See RenderPassNode definition.
          */
-        template<RenderPassType Type, ViewPortSize ViewPortSize, float ViewPortWidth = 1.0f, float ViewPortHeight = 1.0f, float ViewPortDepthMin = 0.f, float ViewPortDepthMax = 1.f>
+        template<RenderPassType Type, ViewPortSize ViewPortSize, float ViewPortWidth = 1.0f, float ViewPortHeight = 1.0f
+            , float ViewPortDepthMin = 0.f, float ViewPortDepthMax = 1.f>
         RenderPassNode &addPass(const std::string &name) {
             RenderPassNode node;
             node.name = name;
@@ -389,11 +423,23 @@ namespace hammock {
             return passes.back();
         }
 
+        std::vector<VkDescriptorSetLayout> getDescriptorSetLayouts(const std::string &passName) {
+            std::vector<VkDescriptorSetLayout> layouts = {};
+            for (auto &pass: passes) {
+                if (pass.name == passName) {
+                    for (const auto &descriptor: pass.descriptors) {
+                        layouts.push_back(descriptor.second.layout->getDescriptorSetLayout());
+                    }
+                }
+            }
+            return layouts;
+        }
+
         /**
          * Compiles the render graph - analyzes dependencies and makes optimization
          */
         void build() {
-            // TODO we are now making no optimizations and assume that rendering goes in order of render pass submission
+            // TODO right now, wea re making no optimizations and assume that rendering goes in order of render pass submission
 
             // To be replaced when above task is implemented
             for (int i = 0; i < passes.size(); i++) {
@@ -401,15 +447,93 @@ namespace hammock {
             }
 
 
+            // Transition all input images to required layouts and map all uniform buffers
+            for (auto &pass: passes) {
+                for (auto& input: pass.inputs) {
+                    ResourceNode& resource = resources[input.resourceName];
+                    for (int frameIndex = 0; frameIndex < SwapChain::MAX_FRAMES_IN_FLIGHT; frameIndex++) {
+                        if (resource.isRenderingAttachment()) {
+                            experimental::Image * image = rm.getResource<experimental::Image>(resource.resolve(rm, frameIndex));
+                            image->queueImageLayoutTransition(VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+                        }
+                        if (resource.type == ResourceNode::Type::UniformBuffer) {
+                            experimental::Buffer * buffer = rm.getResource<experimental::Buffer>(resource.resolve(rm, frameIndex));
+                            buffer->map();
+                        }
+                    }
+                }
+            }
+
+
+            // Next, we need to build the descriptor layouts for each pass
+            buildDescriptors();
         }
 
-        void buildDescriptors(){
+
+        void buildDescriptors() {
             ASSERT(!optimizedOrderOfPasses.empty(), "Optimized Order of Passes is empty!");
             // Create descriptors
-            for (auto& passIdx : optimizedOrderOfPasses) {
-                RenderPassNode &node = passes[passIdx];
+            for (auto &passIdx: optimizedOrderOfPasses) {
+                RenderPassNode &passNode = passes[passIdx];
+                for (auto &descInfo: passNode.descriptorLayoutInfos) {
+                    // Create a descriptor set layout
+                    uint32_t setIndex = descInfo.first;
+                    auto descriptorSetLayoutBuilder = DescriptorSetLayout::Builder(device);
+                    for (auto &binding: descInfo.second) {
+                        // No arrays yet
+                        ASSERT(binding.bindingNames.size() == 1,
+                               "Only one binding name per binding supported as of now!");
+                        ASSERT(resources.contains(binding.bindingNames.at(0)),
+                               "Binding name does not reference existing resource!");
 
+                        ResourceNode &resourceNode = resources[binding.bindingNames.at(0)];
 
+                        VkDescriptorType type = resourceNode.isBuffer()
+                                                    ? VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER
+                                                    : VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+
+                        descriptorSetLayoutBuilder.addBinding(binding.bindingIndex, type, binding.stageFlags,
+                                                              binding.bindingNames.size(), binding.bindingFlags);
+                    }
+
+                    auto descriptorSetLayout = descriptorSetLayoutBuilder.build();
+                    passNode.descriptors.emplace(setIndex, RenderPassNode::Descriptor{
+                                                     .layout = std::move(descriptorSetLayout), .setCache = {}
+                                                 });
+
+                    // Create descriptor set for each frame in flight
+                    passNode.descriptors.at(setIndex).setCache.resize(SwapChain::MAX_FRAMES_IN_FLIGHT);
+                    for (int frameInFlight = 0; frameInFlight < SwapChain::MAX_FRAMES_IN_FLIGHT; frameInFlight++) {
+                        auto &desc = passNode.descriptorLayoutInfos.at(setIndex);
+                        auto writer = DescriptorWriter(*passNode.descriptors[setIndex].layout, pool);
+                        VkDescriptorSet descriptorSet = VK_NULL_HANDLE;
+                        std::vector<VkDescriptorBufferInfo> bufferInfos;
+                        std::vector<VkDescriptorImageInfo> imageInfos;
+
+                        for (auto &binding: desc) {
+                            ResourceNode &resourceNode = resources[binding.bindingNames.at(0)];
+
+                            if (resourceNode.isBuffer()) {
+                                auto *buffer = rm.getResource<experimental::Buffer>(
+                                    resourceNode.resolve(rm, frameInFlight));
+                                bufferInfos.push_back(buffer->descriptorInfo());
+                                writer.writeBuffer(binding.bindingIndex, &bufferInfos.back());
+                            }
+
+                            if (resourceNode.isRenderingAttachment()) {
+                                const auto *image = rm.getResource<experimental::Image>(
+                                    resourceNode.resolve(rm, frameInFlight));
+                                VkSampler sampler = image->createAndGetSampler();
+                                passNode.samplers.push_back(sampler);
+                                imageInfos.push_back(image->getDescriptorImageInfo(sampler));
+                                writer.writeImage(binding.bindingIndex, &imageInfos.back());
+                            }
+                        }
+
+                        ASSERT(writer.build(descriptorSet), "Failed to build descriptor set!");
+                        passNode.descriptors.at(setIndex).setCache[frameInFlight] = descriptorSet;
+                    }
+                }
             }
         }
 
@@ -420,6 +544,16 @@ namespace hammock {
          */
         void applyPipelineBarriers(RenderPassNode &pass, PipelineBarrier::TransitionStage stage) {
             for (auto &access: pass.outputs) {
+                ASSERT(resources.find(access.resourceName) != resources.end(),
+                       "Could not find the output");
+
+                ResourceNode &resourceNode = resources[access.resourceName];
+                PipelineBarrier barrier(rm, fm, resourceNode, access, stage);
+                if (barrier.isNeeded()) {
+                    barrier.apply();
+                }
+            }
+            for (auto &access: pass.inputs) {
                 ASSERT(resources.find(access.resourceName) != resources.end(),
                        "Could not find the output");
 
@@ -512,7 +646,7 @@ namespace hammock {
                        "Could not find the input");
                 ResourceNode &resourceNode = resources[access.resourceName];
                 // TODO automatically find out next render pass using this resource and set final layout of the attachment to the requiredLayout to save one barrier
-                context.inputs.emplace(resourceNode.name, resourceNode);
+                context.inputs.emplace(resourceNode.name, &resources[access.resourceName]);
             }
 
             // fill context with input resources
@@ -520,7 +654,12 @@ namespace hammock {
                 ASSERT(resources.find(access.resourceName) != resources.end(),
                        "Could not find the output");
                 ResourceNode &resourceNode = resources[access.resourceName];
-                context.outputs.emplace(resourceNode.name, resourceNode);
+                context.outputs.emplace(resourceNode.name, &resources[access.resourceName]);
+            }
+
+            // fill context with descriptor sets
+            for (const auto &desc: pass.descriptors) {
+                context.descriptorSets.push_back(pass.resolveDescriptorSet(desc.first, fm.getFrameIndex()));
             }
 
             // Add the command buffer and frame index to the context
@@ -547,7 +686,9 @@ namespace hammock {
             renderingInfo.layerCount = 1;
             renderingInfo.colorAttachmentCount = colorAttachments.size();
             renderingInfo.pColorAttachments = colorAttachments.data();
-            renderingInfo.pDepthAttachment = depthStencilOptional.has_value() ? &depthStencilOptional.value() : VK_NULL_HANDLE;
+            renderingInfo.pDepthAttachment = depthStencilOptional.has_value()
+                                                 ? &depthStencilOptional.value()
+                                                 : VK_NULL_HANDLE;
             renderingInfo.pStencilAttachment = VK_NULL_HANDLE;
 
             // Start a dynamic rendering
@@ -556,9 +697,13 @@ namespace hammock {
             // Set viewport and scissors
             VkViewport viewport = Init::viewport(pass.viewport.X, pass.viewport.Y, pass.viewport.Z, pass.viewport.W);
             if (pass.viewportSize == ViewPortSize::SwapChainRelative) {
-                viewport = Init::viewport(pass.viewport.X * fm.getSwapChain()->getSwapChainExtent().width, pass.viewport.Y * fm.getSwapChain()->getSwapChainExtent().height, pass.viewport.Z, pass.viewport.W);
+                viewport = Init::viewport(pass.viewport.X * fm.getSwapChain()->getSwapChainExtent().width,
+                                          pass.viewport.Y * fm.getSwapChain()->getSwapChainExtent().height,
+                                          pass.viewport.Z, pass.viewport.W);
             }
-            VkRect2D scissor{{0, 0}, VkExtent2D{static_cast<uint32_t>(viewport.width), static_cast<uint32_t>(viewport.height)}};
+            VkRect2D scissor{
+                {0, 0}, VkExtent2D{static_cast<uint32_t>(viewport.width), static_cast<uint32_t>(viewport.height)}
+            };
             vkCmdSetViewport(fm.getCurrentCommandBuffer(), 0, 1, &viewport);
             vkCmdSetScissor(fm.getCurrentCommandBuffer(), 0, 1, &scissor);
         }
@@ -600,6 +745,7 @@ namespace hammock {
                     RenderPassContext passCtx = createRenderPassContext(pass);
 
                     // Dispatch the render pass callback
+                    ASSERT(pass.executeFunc, "Execute function is not set!");
                     pass.executeFunc(passCtx);
 
                     // End rendering

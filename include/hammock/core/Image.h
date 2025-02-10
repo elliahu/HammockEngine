@@ -24,7 +24,8 @@ namespace hammock {
             // Attachment
             VkClearValue m_clearValue = {};
 
-            Image(Device &device, uint64_t id, const std::string &name, const ImageDesc &desc) : Resource(
+        public:
+            Image(Device &device, uint64_t id, const std::string &name, const ImageDesc &desc) : experimental::Resource(
                 device, id, name) {
                 // Fromat and usage
                 m_format = desc.format;
@@ -61,7 +62,12 @@ namespace hammock {
                 }
             }
 
-        public:
+            ~Image() override {
+                if (isResident()) {
+                    Image::release();
+                }
+            }
+
             VkImageLayout getLayout() const { return m_layout; }
             VkImage getImage() const { return m_image; }
             VkImageView getView() const { return m_view; }
@@ -78,18 +84,44 @@ namespace hammock {
                 };
             }
 
+            [[nodiscard]] VkDescriptorImageInfo getDescriptorImageInfo(VkSampler sampler) const {
+                return {
+                    .sampler = sampler,
+                    .imageView = m_view,
+                    .imageLayout = m_layout,
+                };
+            }
+
             VkImageAspectFlags getAspectMask() const {
                 return isDepthStencilImage()
                            ? VK_IMAGE_ASPECT_DEPTH_BIT
                            : VK_IMAGE_ASPECT_COLOR_BIT;
             };
 
+            [[nodiscard]] VkSampler createAndGetSampler() const {
+                VkSampler sampler = VK_NULL_HANDLE;
+                VkSamplerCreateInfo samplerInfo = Init::samplerCreateInfo();
+                samplerInfo.magFilter = VK_FILTER_LINEAR;
+                samplerInfo.minFilter = VK_FILTER_LINEAR;
+                samplerInfo.mipmapMode = VK_SAMPLER_MIPMAP_MODE_LINEAR;
+                samplerInfo.addressModeU = VK_SAMPLER_ADDRESS_MODE_REPEAT;
+                samplerInfo.addressModeV = VK_SAMPLER_ADDRESS_MODE_REPEAT;
+                samplerInfo.addressModeW = VK_SAMPLER_ADDRESS_MODE_REPEAT;
+                samplerInfo.borderColor = VK_BORDER_COLOR_INT_OPAQUE_BLACK;
+                samplerInfo.minLod = 0.0f;
+                samplerInfo.maxLod = static_cast<float>(m_mips);
+
+                vkCreateSampler(device.device(), &samplerInfo, nullptr, &sampler);
+
+                return sampler;
+            }
+
             /**
              * Transitions to new layout. Transition is recorder to separate command buffer that is submitted after at the end of the call.
              * Might cause sync hazard. Do not call in frame.
              * @param newLayout New layout
              */
-            void queueTransitionImageLayout(VkImageLayout newLayout) {
+            void queueImageLayoutTransition(VkImageLayout newLayout) {
                 device.transitionImageLayout(m_image, m_layout, newLayout, m_layers, 0, m_mips, 0);
                 m_layout = newLayout;
             }
@@ -113,7 +145,8 @@ namespace hammock {
             /**
              * Creates the resource on device. This is called when ever this resource is requested and is not resident
              */
-            void load() override {
+            void create() override {
+                Logger::log(LOG_LEVEL_DEBUG, "Creating image %s\n", getName().c_str());
                 // Create the image
                 VkImageCreateInfo imageCreateInfo = Init::imageCreateInfo();
                 imageCreateInfo.imageType = m_type;
@@ -160,7 +193,8 @@ namespace hammock {
             /**
              * Clears the resource from device memory. This is called if the resource is being destroyed ot space is needed in device memory.
              */
-            void unload() override {
+            void release() override {
+                Logger::log(LOG_LEVEL_DEBUG, "Releasing image %s\n", getName().c_str());
                 if (m_image != VK_NULL_HANDLE) {
                     vmaDestroyImage(device.allocator(), m_image, m_allocation);
                 }
@@ -278,7 +312,7 @@ namespace hammock {
         };
 
         template<>
-        struct ResourceTypeTraits<Image> {
+       struct ResourceTypeTraits<Image> {
             static constexpr ResourceType type = ResourceType::Image;
         };
     }

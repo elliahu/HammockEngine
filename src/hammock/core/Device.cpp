@@ -457,6 +457,55 @@ namespace hammock {
                                  0, nullptr,
                                  0, nullptr,
                                  1, &barrier);
+        } else if (layoutOld == VK_IMAGE_LAYOUT_UNDEFINED && layoutNew ==
+                   VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL) {
+            // Transition for a color attachment:
+            // - No previous accesses.
+            // - Destination will be written as a color attachment.
+            barrier.srcAccessMask = 0;
+            barrier.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+            // The aspect mask is already set to VK_IMAGE_ASPECT_COLOR_BIT.
+            VkPipelineStageFlags sourceStage = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
+            VkPipelineStageFlags destinationStage = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+            vkCmdPipelineBarrier(commandBuffer,
+                                 sourceStage, destinationStage,
+                                 0,
+                                 0, nullptr,
+                                 0, nullptr,
+                                 1, &barrier);
+        } else if (layoutOld == VK_IMAGE_LAYOUT_UNDEFINED && layoutNew ==
+                   VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL) {
+            // Transition for a depth/stencil attachment:
+            // - No previous accesses.
+            // - Destination will be read and written as a depth/stencil attachment.
+            barrier.srcAccessMask = 0;
+            barrier.dstAccessMask = VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_READ_BIT |
+                                    VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
+            // Change the aspect mask to depth (and optionally stencil).
+            // If your format has a stencil component, you might OR in VK_IMAGE_ASPECT_STENCIL_BIT.
+            barrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_DEPTH_BIT;
+            VkPipelineStageFlags sourceStage = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
+            VkPipelineStageFlags destinationStage = VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT;
+            vkCmdPipelineBarrier(commandBuffer,
+                                 sourceStage, destinationStage,
+                                 0,
+                                 0, nullptr,
+                                 0, nullptr,
+                                 1, &barrier);
+        } else if (layoutOld == VK_IMAGE_LAYOUT_UNDEFINED && layoutNew ==
+                   VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL) {
+            barrier.srcAccessMask = 0;
+            barrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
+
+            VkPipelineStageFlags sourceStage = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
+            VkPipelineStageFlags destinationStage = VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
+
+            vkCmdPipelineBarrier(commandBuffer,
+                                 sourceStage, destinationStage,
+                                 0,
+                                 0, nullptr,
+                                 0, nullptr,
+                                 1, &barrier);
         } else if (layoutOld == VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL && layoutNew ==
                    VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL) {
             barrier.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;

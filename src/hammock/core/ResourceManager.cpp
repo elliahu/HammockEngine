@@ -5,7 +5,7 @@
 hammock::experimental::ResourceManager::~ResourceManager() {
     for (auto& resource : resources) {
         if (resource.second->isResident()) {
-            resource.second->unload();
+            resource.second->release();
         }
     }
     resources.clear();
@@ -16,7 +16,7 @@ void hammock::experimental::ResourceManager::releaseResource(uint64_t id) {
     if (it != resources.end()) {
         if (it->second->isResident()) {
             totalMemoryUsed -= it->second->getSize();
-            it->second->unload();
+            it->second->release();
         }
         resources.erase(it);
         resourceCache.erase(id);
@@ -51,7 +51,7 @@ void hammock::experimental::ResourceManager::evictResources(VkDeviceSize require
     for (const auto &entry: sortedCache) {
         auto *resource = resources[entry.first].get();
         if (resource->isResident()) {
-            resource->unload();
+            resource->release();
             freedMemory += resource->getSize();
             totalMemoryUsed -= resource->getSize();
 

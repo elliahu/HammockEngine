@@ -1,15 +1,15 @@
 #pragma once
 #include <functional>
 #include <hammock/core/CoreUtils.h>
-
+#include "hammock/core/Types.h"
 #include "hammock/core/Image.h"
 #include "hammock/core/Buffer.h"
 #include "hammock/core/Device.h"
 
 namespace hammock {
     namespace experimental {
-
         class ResourceManager;
+
         class ResourceFactory final {
             friend class ResourceManager;
 
@@ -17,18 +17,19 @@ namespace hammock {
             static std::unique_ptr<T> create(Device &device, uint64_t id, Args &&... args) {
                 return std::unique_ptr<T>(new T(device, id, std::forward<Args>(args)...));
             }
-
         };
-;
+
+
+
+
 
         // Resource Manager class
-        class ResourceManager {
+        class ResourceManager final {
         private:
-          	using ResourceMap = std::unordered_map<uint64_t, std::unique_ptr<Resource> >;
+            using ResourceMap = std::unordered_map<uint64_t, std::unique_ptr<Resource> >;
 
             Device &device;
             ResourceMap resources;
-            std::unordered_map<uint64_t, int32_t> frameDependencies;
 
             VkDeviceSize totalMemoryUsed;
             VkDeviceSize memoryBudget;
@@ -43,7 +44,6 @@ namespace hammock {
             std::unordered_map<uint64_t, CacheEntry> resourceCache;
 
         public:
-
             explicit ResourceManager(Device &device, VkDeviceSize memoryBudget = 6ULL * 1024 * 1024 * 1024)
             // 6GB default
                 : device(device), totalMemoryUsed(0), memoryBudget(memoryBudget), nextId(1) {
@@ -52,7 +52,7 @@ namespace hammock {
             ~ResourceManager();
 
 
-            template<int FrameIdx = -1, typename T,  typename... Args>
+            template<typename T, typename... Args>
             ResourceHandle createResource(Args &&... args) {
                 static_assert(ResourceTypeTraits<T>::type != ResourceType::Invalid,
                               "Resource type not registered in ResourceTypeTraits");
@@ -64,19 +64,13 @@ namespace hammock {
                     evictResources(resource->getSize());
                 }
 
-                if (!resource->isLazy()) {
-                    resource->load();
-                }
+                resource->create();
 
                 resources[id] = std::move(resource);
-                frameDependencies[id] = FrameIdx;
                 resourceCache[id] = {getCurrentTimestamp(), 0};
 
                 return ResourceHandle::create(ResourceTypeTraits<T>::type, id);
             }
-
-
-
 
             template<typename T>
             T *getResource(ResourceHandle handle) {
@@ -95,17 +89,79 @@ namespace hammock {
 
                     // Load if not resident
                     if (!resource->isResident()) {
-                        resource->load();
+                        resource->create();
                         totalMemoryUsed += resource->getSize();
                     }
                     return resource;
                 }
                 return nullptr;
+            }/**
+             * @deprecated Should use transfer queue instead
+             */
+            ResourceHandle createVertexBuffer(VkDeviceSize vertexSize, uint32_t vertexCount, void *data,
+                                              VkBufferUsageFlags usageFlags = 0) {
+                auto stagingBufferHandle = createResource<experimental::Buffer>("staging-vertex-buffer", BufferDesc{
+                    .instanceSize = vertexSize,
+                    .instanceCount = vertexCount,
+                    .usageFlags = VK_BUFFER_USAGE_TRANSFER_SRC_BIT ,
+                    .allocationFlags = VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT,
+                });
+
+                auto stagingBuffer = getResource<experimental::Buffer>(stagingBufferHandle);
+
+                stagingBuffer->map();
+                stagingBuffer->writeToBuffer(data);
+
+                auto vertexBufferHandle = createResource<experimental::Buffer>("vertex-buffer", BufferDesc{
+                   .instanceSize = vertexSize,
+                   .instanceCount = vertexCount,
+                   .usageFlags = VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT |  usageFlags,
+                   .allocationFlags = VMA_ALLOCATION_CREATE_DEDICATED_MEMORY_BIT,
+               });
+
+                auto vertexBuffer = getResource<experimental::Buffer>(vertexBufferHandle);
+
+                device.copyBuffer(stagingBuffer->getBuffer(), vertexBuffer->getBuffer(),
+                      vertexCount * vertexSize);
+                return vertexBufferHandle;
             }
 
 
+            /**
+             * @deprecated Should use transfer queue instead
+             */
+            ResourceHandle createIndexBuffer(VkDeviceSize indexSize, uint32_t indexCount, void *data,
+                                              VkBufferUsageFlags usageFlags = 0) {
+                auto stagingBufferHandle = createResource<experimental::Buffer>("staging-index-buffer", BufferDesc{
+                    .instanceSize = indexSize,
+                    .instanceCount = indexCount,
+                    .usageFlags = VK_BUFFER_USAGE_TRANSFER_SRC_BIT ,
+                    .allocationFlags = VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT,
+                });
+
+                auto stagingBuffer = getResource<experimental::Buffer>(stagingBufferHandle);
+
+                stagingBuffer->map();
+                stagingBuffer->writeToBuffer(data);
+
+                auto indexBufferHandle = createResource<experimental::Buffer>("vertex-buffer", BufferDesc{
+                   .instanceSize = indexSize,
+                   .instanceCount = indexCount,
+                   .usageFlags = VK_BUFFER_USAGE_INDEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT |  usageFlags,
+                   .allocationFlags = VMA_ALLOCATION_CREATE_DEDICATED_MEMORY_BIT,
+               });
+
+                auto indexBuffer = getResource<experimental::Buffer>(indexBufferHandle);
+
+                device.copyBuffer(stagingBuffer->getBuffer(), indexBuffer->getBuffer(),
+                      indexCount * indexSize);
+                return indexBufferHandle;
+            }
+
             // Helper to get resource type name
-            const char *getResourceTypeName(ResourceHandle handle) {
+            const
+
+            char *getResourceTypeName(ResourceHandle handle) {
                 return handle.getTypeName();
             }
 

@@ -1,4 +1,4 @@
-#pragma once
+#pragma once// TODO sampler info
 
 #include <vulkan/vulkan.h>
 #include <memory>

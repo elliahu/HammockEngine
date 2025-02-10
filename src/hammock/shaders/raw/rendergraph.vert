@@ -8,6 +8,7 @@ layout (location = 3) in vec4 tangent;
 
 layout (location = 0) out vec3 _position;
 layout (location = 1) out vec3 _normal;
+layout (location = 2) out vec2 _uv;
 
 layout (set = 0, binding = 0) uniform SceneUbo {
     mat4 mvp;
@@ -16,6 +17,7 @@ layout (set = 0, binding = 0) uniform SceneUbo {
 void main(){
     _position = position;
     _normal = normal;
+    _uv = uv;
 
     gl_Position = ubo.mvp * vec4(position, 1.0);
 }

@@ -15,17 +15,8 @@ namespace hammock {
             uint32_t m_instanceCount;
             VkDeviceSize m_instanceSize;
             VkBufferUsageFlags m_usageFlags;
-            VkMemoryPropertyFlags m_memoryPropertyFlags;
+            VmaAllocationCreateFlags m_memoryPropertyFlags;
 
-            Buffer(Device &device, uint64_t id, const std::string &name, const BufferDesc &desc) : Resource(
-                device, id, name) {
-                m_alignmentSize = getAlignment(desc.instanceSize, desc.minOffsetAlignment);
-                m_bufferSize = m_alignmentSize * desc.instanceCount;
-                m_instanceCount = desc.instanceCount;
-                m_instanceSize = desc.instanceSize;
-                m_usageFlags = desc.usageFlags;
-                m_memoryPropertyFlags = desc.memoryPropertyFlags;
-            }
 
             /**
                  * Returns the minimum instance size required to be compatible with devices minOffsetAlignment
@@ -44,27 +35,47 @@ namespace hammock {
             }
 
         public:
+            Buffer(Device &device, uint64_t id, const std::string &name, const BufferDesc &desc) : experimental::Resource(
+                device, id, name) {
+                m_alignmentSize = getAlignment(desc.instanceSize, desc.minOffsetAlignment);
+                m_bufferSize = m_alignmentSize * desc.instanceCount;
+                m_instanceCount = desc.instanceCount;
+                m_instanceSize = desc.instanceSize;
+                m_usageFlags = desc.usageFlags;
+                m_memoryPropertyFlags = desc.allocationFlags;
+            }
+
+            ~Buffer() override {
+                if (isResident()) {
+                    Buffer::release();
+                }
+            }
+
             /**
              * Creates the actual resource and loads it into memory
              */
-            void load() override {
+            void create() override {
+                Logger::log(LOG_LEVEL_DEBUG, "Creating buffer %s\n", getName().c_str());
                 VkBufferCreateInfo bufferInfo{};
                 bufferInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
-                bufferInfo.size = size;
+                bufferInfo.size = m_bufferSize;
                 bufferInfo.usage = m_usageFlags;
                 bufferInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
 
                 VmaAllocationCreateInfo allocInfo = {};
                 allocInfo.usage = VMA_MEMORY_USAGE_AUTO;
+                allocInfo.flags = m_memoryPropertyFlags;
 
-                vmaCreateBuffer(device.allocator(), &bufferInfo, &allocInfo, &m_buffer, &m_allocation, nullptr);
+                ASSERT(vmaCreateBuffer(device.allocator(), &bufferInfo, &allocInfo, &m_buffer, &m_allocation, nullptr) == VK_SUCCESS, "Could not create buffer!");
                 resident = true;
             }
 
             /**
              * Frees the resource
              */
-            void unload() override {
+            void release() override {
+                Logger::log(LOG_LEVEL_DEBUG, "Releasing buffer %s\n", getName().c_str());
+                unmap();
                 vmaDestroyBuffer(device.allocator(), m_buffer, m_allocation);
                 resident = false;
             }
