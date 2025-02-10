@@ -18,17 +18,22 @@ float linearizeDepth(float depth, float near, float far) {
     return (2.0 * near * far) / (far + near - depth * (far - near));
 }
 
-void main(){
-    float sceneDepth = linearizeDepth(texture(sceneDepthTex, uv).r, 0.1, 64.0);
-    float cloudDepth = linearizeDepth(texture(cloudViewSpaceDepthTex, uv).r, 0.1, 64.0);
-    vec4 sceneColor = texture(sceneColorTex, uv);
+void main() {
+    //    float sceneDepth = linearizeDepth(texture(sceneDepthTex, uv).r, 0.1, 64.0);
+    //    float cloudDepth = linearizeDepth(texture(cloudViewSpaceDepthTex, uv).r, 0.1, 64.0);
+    //    vec4 sceneColor = texture(sceneColorTex, uv);
+    //
+    //    // Cloud is visible
+    //    if(sceneDepth > cloudDepth){
+    //        vec4 cloudColor = texture(cloudColorTex, uv);
+    //        outColor = mixAlpha(cloudColor, sceneColor);
+    //    }
+    //    else{
+    //        outColor = sceneColor;
+    //    }
 
-    // Cloud is visible
-    if(sceneDepth > cloudDepth){
-        vec4 cloudColor = texture(cloudColorTex, uv);
-        outColor = mixAlpha(cloudColor, sceneColor);
-    }
-    else{
-        outColor = sceneColor;
-    }
+    vec4 sceneColor = texture(sceneColorTex, uv);
+    vec4 cloudColor = texture(cloudColorTex, uv);
+    outColor = mixAlpha(cloudColor, sceneColor);
+
 }

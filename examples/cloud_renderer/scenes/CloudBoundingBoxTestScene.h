@@ -62,7 +62,7 @@ private:
      * Order: 1
      */
     struct {
-        HmckVec2 resolution{0.5f, 0.5f}; // SwapChain relative, half resolution for better performance
+        HmckVec2 resolution{.75f, .75f}; // SwapChain relative, half resolution for better performance
         std::unique_ptr<Framebuffer> framebuffer;
         std::unique_ptr<GraphicsPipeline> pipeline;
         std::array<ResourceHandle<VkDescriptorSet>, SwapChain::MAX_FRAMES_IN_FLIGHT> descriptorSets;
@@ -93,10 +93,11 @@ private:
         HmckMat4 view;
         HmckMat4 proj;
         HmckVec4 cameraPosition;
-        HmckVec4 lightDir = {0.0f, 1.4f, 0.7f, 0.0f}; // W is padding
+        HmckVec4 lightDir = {-1.4f, 1.3f, 0.7f, -3.2f}; // W is padding
         HmckVec4 lightColor = {1.0f, 0.9f, 0.8f, 1.0f};
-        HmckVec4 baseSkyColor = {0.7f, 0.7f, 0.90, 1.0f};
-        HmckVec4 gradientSkyColor = {0.90f, 0.75f, 0.90f, 0.2f};
+        HmckVec4 baseSkyColor = {1.f, 1.f, 1.f, 1.0f};
+        HmckVec4 gradientSkyColor = {189.f / 255.f, 196.f / 255.f, 228.f / 255.f, 1.0f};
+        HmckVec4 groundColor = {0.f / 255.f, 29.f / 255.f, 58.f / 255.f, 1.0f};
         int width;
         int height;
         float sunFactor = 0.3;
@@ -115,8 +116,8 @@ private:
         float densityMultiplier = 6.f;
 
         // Raymarching
-        int numSteps = 100;     // max steps
-        int numLightSteps = 4;  // max light steps
+        int numSteps = 25;     // max steps
+        int numLightSteps = 6;  // max light steps
 
         float phaseG = -0.45;
     } cloudBuffer;

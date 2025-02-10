@@ -197,9 +197,9 @@ void CloudBoundingBoxTestScene::prepareRenderPasses() {
         .debugName = "Scene Pass",
         .device = device,
         .VS
-        {.byteCode = Filesystem::readFile(compiledShaderPath("lambert_forward.vert")),},
+        {.byteCode = Filesystem::readFile(compiledShaderPath("fullscreen.vert")),},
         .FS
-        {.byteCode = Filesystem::readFile(compiledShaderPath("lambert_forward.frag")),},
+        {.byteCode = Filesystem::readFile(compiledShaderPath("sky_gradient.frag")),},
         .descriptorSetLayouts = {
             deviceStorage.getDescriptorSetLayout(scenePass.descriptorSetLayout).getDescriptorSetLayout()
         },
@@ -211,6 +211,8 @@ void CloudBoundingBoxTestScene::prepareRenderPasses() {
             }
         },
         .graphicsState{
+            .depthTest = VK_FALSE,
+            .cullMode = VK_CULL_MODE_NONE,
             .blendAtaAttachmentStates = {
                 Init::pipelineColorBlendAttachmentState(0xf, VK_FALSE),
             },
@@ -402,8 +404,9 @@ void CloudBoundingBoxTestScene::draw() {
             scenePass.descriptorSets[frameIndex],
             0,
             nullptr);
-        vkCmdDrawIndexed(commandBuffer, geometry.indices.size(), 1, 0, 0,
-                         0);
+        // vkCmdDrawIndexed(commandBuffer, geometry.indices.size(), 1, 0, 0,
+        //                  0);
+        vkCmdDraw(commandBuffer, 3, 1, 0, 0);
         renderContext.endRenderPass(commandBuffer);
 
 
@@ -486,5 +489,8 @@ void CloudBoundingBoxTestScene::drawUi() {
     ImGui::DragFloat("Elevation", &elevation, 0.01f);
     ImGui::DragFloat3("LightDir", &cameraBuffer.lightDir.Elements[0], 0.1f);
     ImGui::ColorEdit4("LightColor", &cameraBuffer.lightColor.Elements[0]);
+    ImGui::ColorEdit4("Above horizon sky color", &cameraBuffer.baseSkyColor.Elements[0]);
+    ImGui::ColorEdit4("Horizon sky color", &cameraBuffer.gradientSkyColor.Elements[0]);
+    ImGui::ColorEdit4("Below horizon sky color", &cameraBuffer.groundColor.Elements[0]);
     ImGui::End();
 }

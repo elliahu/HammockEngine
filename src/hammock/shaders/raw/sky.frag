@@ -11,6 +11,7 @@ layout (set = 0, binding = 0) uniform CameraUBO {
     vec4 lightColor;
     vec4 baseSkyColor;
     vec4 gradientSkyColor;
+    vec4 groundColor;
     int width;
     int height;
     float sunFactor;
@@ -163,6 +164,10 @@ float lightmarch(vec3 position) {
     return totalLight;
 }
 
+float rand() {
+    return fract(sin(gl_FragCoord.x) * 43758.5453123);
+}
+
 
 void main() {
     vec3 rayOrigin = getRayOrigin();
@@ -198,7 +203,7 @@ void main() {
             float lightEnergy = lightmarch(rayPos);
             vec3 scatteredLight = lightEnergy * camera.lightColor.rgb;
 
-            accumulatedLight += scatteredLight * transmittance * densitySample;
+            accumulatedLight += scatteredLight * transmittance;
 
             // Compute alpha accumulation for blending
             alpha += (1.0 - alpha) * densitySample * stepSize;
@@ -210,6 +215,6 @@ void main() {
         outColor = vec4(finalColor, alpha);  // Alpha included for blending
     }
     else {
-        discard;
+        outColor = vec4(0.0,0.0,0.0,0.0);
     }
 }
