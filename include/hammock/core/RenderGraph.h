@@ -7,6 +7,7 @@
 #include <variant>
 #include <type_traits>
 #include <optional>
+#include <tiny_gltf.h>
 
 #include <hammock/core/Device.h>
 #include <hammock/core/CoreUtils.h>
@@ -120,6 +121,7 @@ namespace hammock {
         VkAttachmentLoadOp loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR; // Load op
         VkAttachmentStoreOp storeOp = VK_ATTACHMENT_STORE_OP_STORE; // Store op
         VkPipelineStageFlags stageFlags = VK_PIPELINE_STAGE_ALL_COMMANDS_BIT;
+        std::string samplerName; // only for images
     };
 
     enum RenderPassFlags : int32_t {
@@ -158,8 +160,6 @@ namespace hammock {
 
 
         std::unordered_map<uint32_t, Descriptor> descriptors;
-        // TODO samplers should be standalone resources
-        std::vector<VkSampler> samplers;
 
         std::vector<RenderPassNode *> dependencies;
 
@@ -185,10 +185,7 @@ namespace hammock {
             return *this;
         }
 
-        RenderPassNode &readModifyWrite(ResourceAccess access) {
-            // TODO
-            return *this;
-        }
+        // TODO ReadModifyWrite
 
         RenderPassNode &execute(ExecuteFunction exec) {
             executeFunc = exec;
@@ -299,6 +296,8 @@ namespace hammock {
         std::unordered_map<std::string, ResourceNode> resources;
         // Holds all the render passes
         std::vector<RenderPassNode> passes;
+        // Holds all the samplers
+        std::unordered_map<std::string, experimental::ResourceHandle> samplers;
 
         std::vector<RenderPassNode *> sortedPasses; // contains topologically sorted passes
         std::unordered_map<CommandQueueFamily, std::vector<SubmissionGroup> > groupsByQueue;
@@ -313,38 +312,34 @@ namespace hammock {
 
         ~RenderGraph() {
             Logger::log(LOG_LEVEL_DEBUG, "Releasing rendegraph\n");
-            // Render pass hold samplers for all attachments and these need to be released
-            for (auto &pass: passes) {
-                for (auto &sampler: pass.samplers) {
-                    vkDestroySampler(device.device(), sampler, nullptr);
-                }
-            }
             passes.clear();
             resources.clear();
 
             // Free command buffer and destroy sync objects
             for (auto &group: allGroups) {
                 if (group.group->queueFamily == CommandQueueFamily::Graphics) {
-                    vkFreeCommandBuffers(device.device(), device.getGraphicsCommandPool(), group.group->commandBuffers.size(), group.group->commandBuffers.data());
+                    vkFreeCommandBuffers(device.device(), device.getGraphicsCommandPool(),
+                                         group.group->commandBuffers.size(), group.group->commandBuffers.data());
                 }
 
                 if (group.group->queueFamily == CommandQueueFamily::Compute) {
-                    vkFreeCommandBuffers(device.device(), device.getComputeCommandPool(), group.group->commandBuffers.size(), group.group->commandBuffers.data());
+                    vkFreeCommandBuffers(device.device(), device.getComputeCommandPool(),
+                                         group.group->commandBuffers.size(), group.group->commandBuffers.data());
                 }
 
                 if (group.group->queueFamily == CommandQueueFamily::Transfer) {
-                    vkFreeCommandBuffers(device.device(), device.getTransferCommandPool(), group.group->commandBuffers.size(), group.group->commandBuffers.data());
+                    vkFreeCommandBuffers(device.device(), device.getTransferCommandPool(),
+                                         group.group->commandBuffers.size(), group.group->commandBuffers.data());
                 }
 
-                for (auto& signal: group.group->signalSemaphores) {
+                for (auto &signal: group.group->signalSemaphores) {
                     vkDestroySemaphore(device.device(), signal, nullptr);
                 }
 
-                for (auto& wait: group.group->waitSemaphores) {
+                for (auto &wait: group.group->waitSemaphores) {
                     vkDestroySemaphore(device.device(), wait, nullptr);
                 }
             }
-
         }
 
 
@@ -448,6 +443,20 @@ namespace hammock {
             resources[name] = std::move(node);
         }
 
+
+        /**
+         * Creates a sampler that can be used to sample attachments
+         * @param name Name of the sampler
+         * @param desc Optional description to customize sampler
+         */
+        void createSampler(const std::string &name, SamplerDesc desc = {}) {
+            ASSERT(!samplers.contains(name), "Sampler already exists!");
+            samplers.emplace(name, rm.createResource<experimental::Sampler>(name, desc));
+        }
+
+        void addSampler(const std::string &name, experimental::ResourceHandle handle) {
+            samplers.emplace(name, handle);
+        }
 
         /**
          *
@@ -840,8 +849,24 @@ namespace hammock {
                             if (resourceNode.isRenderingAttachment()) {
                                 const auto *image = rm.getResource<experimental::Image>(
                                     resourceNode.resolve(rm, frameInFlight));
-                                VkSampler sampler = image->createAndGetSampler();
-                                passNode.samplers.push_back(sampler);
+
+                                ASSERT(samplers.size() > 0,
+                                       "There are no samplers that can be used to sample the attachment. Did you forget to call createSampler() or addSampler()?")
+                                ;
+
+                                // Find the sampler that should be used
+                                auto result = std::find_if(passNode.inputs.begin(), passNode.inputs.end(), [=](ResourceAccess access) {
+                                    return access.resourceName == resourceNode.name;
+                                });
+                                ASSERT(result != passNode.inputs.end(), "WTF?");
+                                VkSampler sampler = VK_NULL_HANDLE;
+                                if (result->samplerName.empty()) {
+                                    // Use default sampler (the first one)
+                                    sampler = rm.getResource<experimental::Sampler>(samplers.begin()->second)->getSampler();
+                                }
+                                else {
+                                    sampler = rm.getResource<experimental::Sampler>(samplers.at(result->samplerName))->getSampler();
+                                }
                                 imageInfos.push_back(image->getDescriptorImageInfo(sampler));
                                 writer.writeImage(binding.bindingIndex, &imageInfos.back());
                             }

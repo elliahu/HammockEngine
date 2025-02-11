@@ -312,8 +312,88 @@ namespace hammock {
         };
 
         template<>
-       struct ResourceTypeTraits<Image> {
+        struct ResourceTypeTraits<Image> {
             static constexpr ResourceType type = ResourceType::Image;
+        };
+
+        class Sampler : public Resource {
+            VkSampler m_sampler = VK_NULL_HANDLE;
+            VkFilter magFilter;
+            VkFilter minFilter;
+            VkSamplerAddressMode addressModeU;
+            VkSamplerAddressMode addressModeV;
+            VkSamplerAddressMode addressModeW;
+            VkBool32 anisotropyEnable;
+            float maxAnisotropy;
+            VkBorderColor borderColor;
+            VkSamplerMipmapMode mipmapMode;
+            uint32_t mips;
+            float mipLodBias;
+
+        public:
+            Sampler(Device &device, uint64_t id, const std::string &name, const SamplerDesc &desc) : Resource(
+                device, id, name) {
+                magFilter = desc.magFilter;
+                minFilter = desc.minFilter;
+                addressModeU = desc.addressModeU;
+                addressModeV = desc.addressModeV;
+                addressModeW = desc.addressModeW;
+                anisotropyEnable = desc.anisotropyEnable;
+                borderColor = desc.borderColor;
+                mipmapMode = desc.mipmapMode;
+                mips = desc.mips;
+                mipLodBias = desc.mipLodBias;
+
+                // retrieve max anisotropy from physical device
+                maxAnisotropy = device.properties.limits.maxSamplerAnisotropy;
+            }
+
+            ~Sampler() {
+                if (resident) {
+                    Sampler::release();
+                }
+            }
+
+            void create() override {
+                Logger::log(LOG_LEVEL_DEBUG, "Creating sampler %s\n", getName().c_str());
+                VkSamplerCreateInfo samplerInfo{};
+                samplerInfo.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
+                samplerInfo.magFilter = magFilter;
+                samplerInfo.minFilter = minFilter;
+                samplerInfo.addressModeU = addressModeU;
+                samplerInfo.addressModeV = addressModeV;
+                samplerInfo.addressModeW = addressModeW;
+                samplerInfo.anisotropyEnable = anisotropyEnable;
+                samplerInfo.maxAnisotropy = maxAnisotropy;
+                samplerInfo.borderColor = borderColor;
+                samplerInfo.unnormalizedCoordinates = VK_FALSE;
+                samplerInfo.compareEnable = VK_FALSE;
+                samplerInfo.compareOp = VK_COMPARE_OP_ALWAYS;
+                samplerInfo.mipmapMode = mipmapMode;
+                samplerInfo.mipLodBias = mipLodBias;
+                samplerInfo.minLod = 0.0;
+                samplerInfo.maxLod = mips;
+
+                checkResult(vkCreateSampler(device.device(), &samplerInfo, nullptr, &m_sampler));
+                resident = true;
+            }
+
+            void release() override {
+                Logger::log(LOG_LEVEL_DEBUG, "Releasing sampler %s\n", getName().c_str());
+                if (m_sampler != VK_NULL_HANDLE) {
+                    vkDestroySampler(device.device(), m_sampler, nullptr);
+                }
+                resident = false;
+            }
+
+            [[nodiscard]] VkSampler getSampler() const {
+                return m_sampler;
+            }
+        };
+
+        template<>
+        struct ResourceTypeTraits<Sampler> {
+            static constexpr ResourceType type = ResourceType::Sampler;
         };
     }
 }

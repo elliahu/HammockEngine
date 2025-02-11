@@ -7,6 +7,7 @@
 
 namespace hammock {
 
+
     class ITexture {
     public:
 

@@ -9,6 +9,7 @@ namespace hammock {
         enum class ResourceType : uint32_t {
             Invalid = 0,
             Image,
+            Sampler,
             Buffer,
             MaxTypes
         };
@@ -126,12 +127,20 @@ namespace hammock {
         VkImageType imageType = VK_IMAGE_TYPE_2D;
         VkImageViewType imageViewType = VK_IMAGE_VIEW_TYPE_2D;
         VkClearValue clearValue = {};
-        bool createSampler = true;
-        VkFilter filter = VK_FILTER_LINEAR;
-        VkSamplerAddressMode addressMode = VK_SAMPLER_ADDRESS_MODE_REPEAT;
+
+    };
+
+    struct SamplerDesc {
+        VkFilter magFilter = VK_FILTER_LINEAR;
+        VkFilter minFilter = VK_FILTER_LINEAR;
+        VkSamplerAddressMode addressModeU = VK_SAMPLER_ADDRESS_MODE_REPEAT;
+        VkSamplerAddressMode addressModeV = VK_SAMPLER_ADDRESS_MODE_REPEAT;
+        VkSamplerAddressMode addressModeW = VK_SAMPLER_ADDRESS_MODE_REPEAT;
+        VkBool32 anisotropyEnable = VK_TRUE;
         VkBorderColor borderColor = VK_BORDER_COLOR_INT_OPAQUE_BLACK;
         VkSamplerMipmapMode mipmapMode = VK_SAMPLER_MIPMAP_MODE_LINEAR;
-        VkSampleCountFlagBits imageSampleCount = VK_SAMPLE_COUNT_1_BIT;
+        uint32_t mips = 1;
+        float mipLodBias = 0.0f;
     };
 
 

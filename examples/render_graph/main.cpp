@@ -59,10 +59,10 @@ int main() {
     std::unique_ptr<GraphicsPipeline> presentPipeline = nullptr;
 
     // Create the actual render graph
-    const auto graphicsQueueRenderGraph = std::make_unique<RenderGraph>(device, rm, renderContext, *descriptorPool);
-    graphicsQueueRenderGraph->addStaticResource<ResourceNode::Type::VertexBuffer>("vertex-buffer", vertexBuffer);
-    graphicsQueueRenderGraph->addStaticResource<ResourceNode::Type::IndexBuffer>("index-buffer", indexBuffer);
-    graphicsQueueRenderGraph->addResource<ResourceNode::Type::UniformBuffer, experimental::Buffer, BufferDesc>(
+    const auto renderGraph = std::make_unique<RenderGraph>(device, rm, renderContext, *descriptorPool);
+    renderGraph->addStaticResource<ResourceNode::Type::VertexBuffer>("vertex-buffer", vertexBuffer);
+    renderGraph->addStaticResource<ResourceNode::Type::IndexBuffer>("index-buffer", indexBuffer);
+    renderGraph->addResource<ResourceNode::Type::UniformBuffer, experimental::Buffer, BufferDesc>(
         "uniform-buffer", BufferDesc{
             .instanceSize = sizeof(UniformBuffer),
             .instanceCount = 1,
@@ -71,8 +71,8 @@ int main() {
             .allocationFlags =
             VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT
         });
-    graphicsQueueRenderGraph->addSwapChainImageResource<ResourceNode::Type::SwapChainColorAttachment>("swap-color-image");
-    graphicsQueueRenderGraph->addSwapChainDependentResource<ResourceNode::Type::ColorAttachment, experimental::Image, ImageDesc>(
+    renderGraph->addSwapChainImageResource<ResourceNode::Type::SwapChainColorAttachment>("swap-color-image");
+    renderGraph->addSwapChainDependentResource<ResourceNode::Type::ColorAttachment, experimental::Image, ImageDesc>(
         "half-res-image", [&](VkExtent2D swapchain)-> ImageDesc {
             return ImageDesc{
                 .width = swapchain.width,
@@ -84,9 +84,10 @@ int main() {
                 .imageViewType = VK_IMAGE_VIEW_TYPE_2D,
             };
         });
+    renderGraph->createSampler("sampler"); // this is our default sampler
 
 
-    auto halfResPass = graphicsQueueRenderGraph->addPass<CommandQueueFamily::Graphics>("half-res-pass")
+    auto halfResPass = renderGraph->addPass<CommandQueueFamily::Graphics>("half-res-pass")
             .read(ResourceAccess{
                 .resourceName = "vertex-buffer",
             })
@@ -110,7 +111,7 @@ int main() {
             });
 
 
-    auto presentPass = graphicsQueueRenderGraph->addPass<CommandQueueFamily::Graphics, RelativeViewPortSize::SwapChainRelative>("present-pass")
+    auto presentPass = renderGraph->addPass<CommandQueueFamily::Graphics, RelativeViewPortSize::SwapChainRelative>("present-pass")
             .read(ResourceAccess{
                 .resourceName = "uniform-buffer",
             })
@@ -155,7 +156,7 @@ int main() {
             });
 
 
-    graphicsQueueRenderGraph->build();
+    renderGraph->build();
 
     halfResPipeline = GraphicsPipeline::createGraphicsPipelinePtr({
         .debugName = "half-res-pipeline",
@@ -188,7 +189,7 @@ int main() {
         .FS
         {.byteCode = Filesystem::readFile(compiledShaderPath("rendergraph.frag")),},
         .descriptorSetLayouts = {
-            graphicsQueueRenderGraph->getDescriptorSetLayouts("present-pass")
+            renderGraph->getDescriptorSetLayouts("present-pass")
         },
         .pushConstantRanges{},
         .graphicsState{
@@ -208,7 +209,7 @@ int main() {
     while (!window.shouldClose()) {
         window.pollEvents();
 
-        graphicsQueueRenderGraph->execute();
+        renderGraph->execute();
     }
     device.waitIdle();
 }
