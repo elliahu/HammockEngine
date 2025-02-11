@@ -87,7 +87,7 @@ int main() {
     renderGraph->createSampler("sampler"); // this is our default sampler
 
 
-    auto halfResPass = renderGraph->addPass<CommandQueueFamily::Graphics>("half-res-pass")
+    renderGraph->addPass<CommandQueueFamily::Graphics>("half-res-pass")
             .read(ResourceAccess{
                 .resourceName = "vertex-buffer",
             })
@@ -99,19 +99,14 @@ int main() {
                 .requiredLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
             })
             .execute([&](RenderPassContext context)-> void {
-                VkDeviceSize offsets[] = {0};
-                VkBuffer buffers[] = {rm.getResource<experimental::Buffer>(vertexBuffer)->getBuffer()};
-                vkCmdBindVertexBuffers(context.commandBuffer, 0, 1, buffers, offsets);
-                vkCmdBindIndexBuffer(context.commandBuffer,
-                                     rm.getResource<experimental::Buffer>(indexBuffer)->getBuffer(), 0,
-                                     VK_INDEX_TYPE_UINT32);
-
+                context.bindVertexBuffers({"vertex-buffer"},{0});
+                context.bindIndexBuffer({"index-buffer"});
                 halfResPipeline->bind(context.commandBuffer);
                 vkCmdDraw(context.commandBuffer, 3, 1, 0, 0);
             });
 
 
-    auto presentPass = renderGraph->addPass<CommandQueueFamily::Graphics, RelativeViewPortSize::SwapChainRelative>("present-pass")
+    renderGraph->addPass<CommandQueueFamily::Graphics, RelativeViewPortSize::SwapChainRelative>("present-pass")
             .read(ResourceAccess{
                 .resourceName = "uniform-buffer",
             })
@@ -138,21 +133,20 @@ int main() {
                                                   Projection().upPosY());
                 ubo.mvp = projection * view;
 
-                auto uniformBufferNode = context.inputs["uniform-buffer"];
-                auto uniformBufferHandle = uniformBufferNode->resolve(rm, context.frameIndex);
-                auto unifromBuffer = rm.getResource<experimental::Buffer>(uniformBufferHandle);
-                unifromBuffer->writeToBuffer(&ubo);
+                context.get<experimental::Buffer>("uniform-buffer")->writeToBuffer(&ubo);
 
-                vkCmdBindDescriptorSets(
-                    context.commandBuffer,
-                    VK_PIPELINE_BIND_POINT_GRAPHICS,
-                    presentPipeline->graphicsPipelineLayout,
-                    0, 1,
-                    &context.descriptorSets[0],
-                    0,
-                    nullptr);
+                context.bindDescriptorSet(0, 0,presentPipeline->graphicsPipelineLayout, VK_PIPELINE_BIND_POINT_GRAPHICS);
 
                 vkCmdDrawIndexed(context.commandBuffer, geometry.indices.size(), 1, 0, 0, 0);
+            });
+
+    renderGraph->addPass<CommandQueueFamily::Graphics>("to-be-purged-pass")
+            .read(ResourceAccess{
+                .resourceName = "swap-color-image",
+                .requiredLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+                .loadOp = VK_ATTACHMENT_LOAD_OP_LOAD
+            })
+            .execute([&](RenderPassContext context)-> void {
             });
 
 
@@ -205,7 +199,7 @@ int main() {
         }
     });
 
-
+    device.waitIdle();
     while (!window.shouldClose()) {
         window.pollEvents();
 

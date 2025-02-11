@@ -103,12 +103,60 @@ namespace hammock {
      * Describes a render pass context. This data is passed into rendering callback, and it is only infor available for rendering
      */
     struct RenderPassContext {
+        experimental::ResourceManager &rm;
         VkCommandBuffer commandBuffer;
         uint32_t frameIndex;
         // TODO change this to resource handles
         std::unordered_map<std::string, ResourceNode *> inputs;
         std::unordered_map<std::string, ResourceNode *> outputs;
         std::vector<VkDescriptorSet> descriptorSets;
+
+        RenderPassContext(experimental::ResourceManager &rm, VkCommandBuffer commandBuffer,
+                          uint32_t frameIndex) : rm(rm), commandBuffer(commandBuffer), frameIndex(frameIndex) {
+        }
+
+        template<typename Type>
+        Type * get(const std::string &name) {
+            ASSERT(inputs.contains(name) || outputs.contains(name), "Cannot find buffer with name '" + name + "'");
+
+            if (inputs.contains(name)) {
+                auto uniformBufferNode = inputs[name];
+                auto uniformBufferHandle = uniformBufferNode->resolve(rm, frameIndex);
+                return rm.getResource<Type>(uniformBufferHandle);
+            }
+
+            if (outputs.contains(name)) {
+                auto uniformBufferNode = outputs[name];
+                auto uniformBufferHandle = uniformBufferNode->resolve(rm, frameIndex);
+                return rm.getResource<Type>(uniformBufferHandle);
+            }
+
+            throw std::runtime_error("Cannot find buffer with name '" + name + "'");
+        }
+
+        void bindVertexBuffers(const std::vector<std::string> &names,const std::vector<VkDeviceSize> &offsets) {
+            std::vector<VkBuffer> buffers;
+            for (const auto &name : names) {
+                buffers.push_back(get<experimental::Buffer>(name)->getBuffer());
+            }
+
+            vkCmdBindVertexBuffers(commandBuffer, 0, buffers.size(), buffers.data(), offsets.data());
+        }
+
+        void bindIndexBuffer(const std::string &name, VkIndexType indexType = VK_INDEX_TYPE_UINT32) {
+            vkCmdBindIndexBuffer(commandBuffer,get<experimental::Buffer>(name)->getBuffer(), 0,indexType);
+        }
+
+        void bindDescriptorSet(uint32_t set, uint32_t binding, VkPipelineLayout layout,VkPipelineBindPoint bindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS) {
+            vkCmdBindDescriptorSets(
+                    commandBuffer,
+                    bindPoint,
+                    layout,
+                    binding, 1,
+                    &descriptorSets[set],
+                    0,
+                    nullptr);
+        }
     };
 
     /**
@@ -268,6 +316,7 @@ namespace hammock {
      *  TODO support for conditional resource
      *  TODO support for swapchain dependent rendperPass
      *  TODO support for pipeline caching
+     *  TODO support for pushConstants
      */
     class RenderGraph {
         struct SubmissionGroup {
@@ -703,7 +752,7 @@ namespace hammock {
                 }
                 Logger::log(LOG_LEVEL_DEBUG, " } -> ");
             }
-            Logger::log(LOG_LEVEL_DEBUG, " \"present\"\n");
+            Logger::log(LOG_LEVEL_DEBUG, " PRESENT\n");
 
             VkSemaphoreCreateInfo semaphoreInfo = {};
             semaphoreInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
@@ -855,17 +904,19 @@ namespace hammock {
                                 ;
 
                                 // Find the sampler that should be used
-                                auto result = std::find_if(passNode.inputs.begin(), passNode.inputs.end(), [=](ResourceAccess access) {
-                                    return access.resourceName == resourceNode.name;
-                                });
+                                auto result = std::find_if(passNode.inputs.begin(), passNode.inputs.end(),
+                                                           [=](ResourceAccess access) {
+                                                               return access.resourceName == resourceNode.name;
+                                                           });
                                 ASSERT(result != passNode.inputs.end(), "WTF?");
                                 VkSampler sampler = VK_NULL_HANDLE;
                                 if (result->samplerName.empty()) {
                                     // Use default sampler (the first one)
-                                    sampler = rm.getResource<experimental::Sampler>(samplers.begin()->second)->getSampler();
-                                }
-                                else {
-                                    sampler = rm.getResource<experimental::Sampler>(samplers.at(result->samplerName))->getSampler();
+                                    sampler = rm.getResource<experimental::Sampler>(samplers.begin()->second)->
+                                            getSampler();
+                                } else {
+                                    sampler = rm.getResource<experimental::Sampler>(samplers.at(result->samplerName))->
+                                            getSampler();
                                 }
                                 imageInfos.push_back(image->getDescriptorImageInfo(sampler));
                                 writer.writeImage(binding.bindingIndex, &imageInfos.back());
@@ -977,7 +1028,7 @@ namespace hammock {
 
 
         RenderPassContext createRenderPassContext(RenderPassNode *pass, VkCommandBuffer commandBuffer) {
-            RenderPassContext context{};
+            RenderPassContext context{rm, commandBuffer, static_cast<uint32_t>(fm.getFrameIndex())};
 
             // Fill the context with input resources
             for (auto &access: pass->inputs) {
@@ -1000,10 +1051,6 @@ namespace hammock {
             for (const auto &desc: pass->descriptors) {
                 context.descriptorSets.push_back(pass->resolveDescriptorSet(desc.first, fm.getFrameIndex()));
             }
-
-            // Add the command buffer and frame index to the context
-            context.commandBuffer = commandBuffer;
-            context.frameIndex = fm.getFrameIndex();
 
             return context;
         }
