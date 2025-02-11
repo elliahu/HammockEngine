@@ -15,7 +15,7 @@ int main() {
     hammock::Window window{instance, "Render Graph", 1920, 1080};
     Device device{instance, window.getSurface()};
     DeviceStorage storage{device};
-    experimental::ResourceManager rm{device};
+    ResourceManager rm{device};
     // TODO decouple context and window
     FrameManager renderContext{window, device};
     std::unique_ptr<DescriptorPool> descriptorPool = DescriptorPool::Builder(device)
@@ -42,13 +42,13 @@ int main() {
     Geometry geometry{};
     Loader(geometry, device, storage).loadglTF(assetPath("models/Sphere/Sphere.glb"));
 
-    experimental::ResourceHandle vertexBuffer = rm.createVertexBuffer(
+    ResourceHandle vertexBuffer = rm.createVertexBuffer(
         sizeof(geometry.vertices[0]),
         static_cast<uint32_t>(geometry.vertices.size()),
         static_cast<void *>(geometry.vertices.data())
     );
 
-    experimental::ResourceHandle indexBuffer = rm.createIndexBuffer(
+    ResourceHandle indexBuffer = rm.createIndexBuffer(
         sizeof(geometry.indices[0]),
         static_cast<uint32_t>(geometry.indices.size()),
         static_cast<void *>(geometry.indices.data())
@@ -62,7 +62,7 @@ int main() {
     const auto renderGraph = std::make_unique<RenderGraph>(device, rm, renderContext, *descriptorPool);
     renderGraph->addStaticResource<ResourceNode::Type::VertexBuffer>("vertex-buffer", vertexBuffer);
     renderGraph->addStaticResource<ResourceNode::Type::IndexBuffer>("index-buffer", indexBuffer);
-    renderGraph->addResource<ResourceNode::Type::UniformBuffer, experimental::Buffer, BufferDesc>(
+    renderGraph->addResource<ResourceNode::Type::UniformBuffer, Buffer, BufferDesc>(
         "uniform-buffer", BufferDesc{
             .instanceSize = sizeof(UniformBuffer),
             .instanceCount = 1,
@@ -72,7 +72,7 @@ int main() {
             VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT
         });
     renderGraph->addSwapChainImageResource<ResourceNode::Type::SwapChainColorAttachment>("swap-color-image");
-    renderGraph->addSwapChainDependentResource<ResourceNode::Type::ColorAttachment, experimental::Image, ImageDesc>(
+    renderGraph->addSwapChainDependentResource<ResourceNode::Type::ColorAttachment, Image, ImageDesc>(
         "half-res-image", [&](VkExtent2D swapchain)-> ImageDesc {
             return ImageDesc{
                 .width = swapchain.width,
@@ -133,7 +133,7 @@ int main() {
                                                   Projection().upPosY());
                 ubo.mvp = projection * view;
 
-                context.get<experimental::Buffer>("uniform-buffer")->writeToBuffer(&ubo);
+                context.get<Buffer>("uniform-buffer")->writeToBuffer(&ubo);
 
                 context.bindDescriptorSet(0, 0,presentPipeline->graphicsPipelineLayout, VK_PIPELINE_BIND_POINT_GRAPHICS);
 

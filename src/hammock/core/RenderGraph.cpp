@@ -28,8 +28,8 @@ void hammock::PipelineBarrier::apply() const {
             return;
         }
 
-        const experimental::ResourceHandle handle = node.resolve(rm, renderContext.getFrameIndex());
-        auto * image = rm.getResource<experimental::Image>(handle);
+        const ResourceHandle handle = node.resolve(rm, renderContext.getFrameIndex());
+        auto * image = rm.getResource<Image>(handle);
 
         image->transitionLayout(commandBuffer, newLayout);
     }

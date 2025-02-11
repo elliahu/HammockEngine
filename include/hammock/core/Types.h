@@ -4,98 +4,96 @@
 #include "hammock/core/CoreUtils.h"
 
 namespace hammock {
-    namespace experimental {
-        // Define resource types enum
-        enum class ResourceType : uint32_t {
-            Invalid = 0,
-            Image,
-            Sampler,
-            Buffer,
-            MaxTypes
-        };
+    // Define resource types enum
+    enum class ResourceType : uint32_t {
+        Invalid = 0,
+        Image,
+        Sampler,
+        Buffer,
+        MaxTypes
+    };
 
-        // Handle type that stores both resource type and ID
-        class ResourceHandle {
-        private:
-            static constexpr uint64_t TYPE_SHIFT = 56;
-            static constexpr uint64_t INDEX_MASK = (1ULL << TYPE_SHIFT) - 1;
-            uint64_t packed_handle;
+    // Handle type that stores both resource type and ID
+    class ResourceHandle {
+    private:
+        static constexpr uint64_t TYPE_SHIFT = 56;
+        static constexpr uint64_t INDEX_MASK = (1ULL << TYPE_SHIFT) - 1;
+        uint64_t packed_handle;
 
-        public:
-            ResourceHandle() : packed_handle(0) {
+    public:
+        ResourceHandle() : packed_handle(0) {
+        }
+
+        // Allow implicit conversion from existing ResourceHandle(uint64_t) constructor
+        ResourceHandle(uint64_t id) : packed_handle(id & INDEX_MASK) {
+        }
+
+        static ResourceHandle create(ResourceType type, uint64_t resource_id) {
+            ResourceHandle handle;
+            handle.packed_handle = (static_cast<uint64_t>(type) << TYPE_SHIFT) | (resource_id & INDEX_MASK);
+            return handle;
+        }
+
+        ResourceType getType() const {
+            return static_cast<ResourceType>(packed_handle >> TYPE_SHIFT);
+        }
+
+        uint64_t getUid() const {
+            return packed_handle & INDEX_MASK;
+        }
+
+        bool isValid() const {
+            return packed_handle != 0 && getType() != ResourceType::Invalid;
+        }
+
+        bool operator==(const ResourceHandle &other) const {
+            return packed_handle == other.packed_handle;
+        }
+
+        bool operator!=(const ResourceHandle &other) const {
+            return packed_handle != other.packed_handle;
+        }
+
+        // TODO Helper for debugging
+        const char *getTypeName() const {
+            switch (getType()) {
+                default: return "Invalid";
             }
+        }
+    };
 
-            // Allow implicit conversion from existing ResourceHandle(uint64_t) constructor
-            ResourceHandle(uint64_t id) : packed_handle(id & INDEX_MASK) {
-            }
+    // Type mapping traits
+    template<typename T>
+    struct ResourceTypeTraits {
+        static constexpr ResourceType type = ResourceType::Invalid;
+    };
 
-            static ResourceHandle create(ResourceType type, uint64_t resource_id) {
-                ResourceHandle handle;
-                handle.packed_handle = (static_cast<uint64_t>(type) << TYPE_SHIFT) | (resource_id & INDEX_MASK);
-                return handle;
-            }
+    // Base resource class
+    class Resource : public NonCopyable {
+    protected:
+        Device &device;
+        uint64_t uid;
+        std::string debug_name;
+        VkDeviceSize size = 0;
+        bool resident; // Whether the resource is currently in GPU memory
 
-            ResourceType getType() const {
-                return static_cast<ResourceType>(packed_handle >> TYPE_SHIFT);
-            }
+        Resource(Device &device, uint64_t uid, const std::string &name)
+            : uid(uid), debug_name(name), resident(false), device(device) {
+        }
 
-            uint64_t getUid() const {
-                return packed_handle & INDEX_MASK;
-            }
+    public:
+        virtual ~Resource() = default;
 
-            bool isValid() const {
-                return packed_handle != 0 && getType() != ResourceType::Invalid;
-            }
+        virtual void create() = 0;
 
-            bool operator==(const ResourceHandle &other) const {
-                return packed_handle == other.packed_handle;
-            }
+        virtual void release() = 0;
 
-            bool operator!=(const ResourceHandle &other) const {
-                return packed_handle != other.packed_handle;
-            }
+        uint64_t getUid() const { return uid; }
+        const std::string &getName() const { return debug_name; }
+        bool isResident() const { return resident; }
+        VkDeviceSize getSize() const { return size; } // for now
+    };
 
-            // TODO Helper for debugging
-            const char *getTypeName() const {
-                switch (getType()) {
-                    default: return "Invalid";
-                }
-            }
-        };
-
-        // Type mapping traits
-        template<typename T>
-        struct ResourceTypeTraits {
-            static constexpr ResourceType type = ResourceType::Invalid;
-        };
-
-        // Base resource class
-        class Resource : public NonCopyable {
-
-        protected:
-            Device &device;
-            uint64_t uid;
-            std::string debug_name;
-            VkDeviceSize size = 0;
-            bool resident; // Whether the resource is currently in GPU memory
-
-            Resource(Device &device, uint64_t uid, const std::string &name)
-                : uid(uid), debug_name(name), resident(false), device(device) {
-            }
-
-        public:
-            virtual ~Resource() = default;
-
-            virtual void create() = 0;
-
-            virtual void release() = 0;
-
-            uint64_t getUid() const { return uid; }
-            const std::string &getName() const { return debug_name; }
-            bool isResident() const { return resident; }
-            VkDeviceSize getSize() const { return size; } // for now
-        };
-    }
 
     /**
     * Describes general buffer
@@ -127,7 +125,6 @@ namespace hammock {
         VkImageType imageType = VK_IMAGE_TYPE_2D;
         VkImageViewType imageViewType = VK_IMAGE_VIEW_TYPE_2D;
         VkClearValue clearValue = {};
-
     };
 
     struct SamplerDesc {

@@ -19,7 +19,7 @@
 
 
 namespace hammock {
-    typedef std::function<experimental::ResourceHandle(experimental::ResourceManager &, uint32_t frameIndex)>
+    typedef std::function<ResourceHandle(ResourceManager &, uint32_t frameIndex)>
     ResourceResolver;
 
     /**
@@ -51,7 +51,7 @@ namespace hammock {
         ResourceResolver resolver;
 
         // cache to store handles to avoid constant recreation
-        std::vector<experimental::ResourceHandle> cachedHandles;
+        std::vector<ResourceHandle> cachedHandles;
 
         // Needs recreation
         bool isDirty = true;
@@ -62,7 +62,7 @@ namespace hammock {
          * @param frameIndex Frame index of the resource
          * @return Returns resolved handle
          */
-        experimental::ResourceHandle resolve(experimental::ResourceManager &rm, uint32_t frameIndex) {
+        ResourceHandle resolve(ResourceManager &rm, uint32_t frameIndex) {
             if (isDirty || cachedHandles.empty()) {
                 cachedHandles.resize(SwapChain::MAX_FRAMES_IN_FLIGHT);
                 isDirty = false;
@@ -103,7 +103,7 @@ namespace hammock {
      * Describes a render pass context. This data is passed into rendering callback, and it is only infor available for rendering
      */
     struct RenderPassContext {
-        experimental::ResourceManager &rm;
+        ResourceManager &rm;
         VkCommandBuffer commandBuffer;
         uint32_t frameIndex;
         // TODO change this to resource handles
@@ -111,7 +111,7 @@ namespace hammock {
         std::unordered_map<std::string, ResourceNode *> outputs;
         std::vector<VkDescriptorSet> descriptorSets;
 
-        RenderPassContext(experimental::ResourceManager &rm, VkCommandBuffer commandBuffer,
+        RenderPassContext(ResourceManager &rm, VkCommandBuffer commandBuffer,
                           uint32_t frameIndex) : rm(rm), commandBuffer(commandBuffer), frameIndex(frameIndex) {
         }
 
@@ -137,14 +137,14 @@ namespace hammock {
         void bindVertexBuffers(const std::vector<std::string> &names,const std::vector<VkDeviceSize> &offsets) {
             std::vector<VkBuffer> buffers;
             for (const auto &name : names) {
-                buffers.push_back(get<experimental::Buffer>(name)->getBuffer());
+                buffers.push_back(get<Buffer>(name)->getBuffer());
             }
 
             vkCmdBindVertexBuffers(commandBuffer, 0, buffers.size(), buffers.data(), offsets.data());
         }
 
         void bindIndexBuffer(const std::string &name, VkIndexType indexType = VK_INDEX_TYPE_UINT32) {
-            vkCmdBindIndexBuffer(commandBuffer,get<experimental::Buffer>(name)->getBuffer(), 0,indexType);
+            vkCmdBindIndexBuffer(commandBuffer,get<Buffer>(name)->getBuffer(), 0,indexType);
         }
 
         void bindDescriptorSet(uint32_t set, uint32_t binding, VkPipelineLayout layout,VkPipelineBindPoint bindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS) {
@@ -258,7 +258,7 @@ namespace hammock {
             FinalLayout
         };
 
-        explicit PipelineBarrier(experimental::ResourceManager &rm, FrameManager &renderContext,
+        explicit PipelineBarrier(ResourceManager &rm, FrameManager &renderContext,
                                  VkCommandBuffer commandBuffer, ResourceNode &node,
                                  ResourceAccess &access,
                                  TransitionStage transitionStage) : rm(rm), renderContext(renderContext),
@@ -275,8 +275,8 @@ namespace hammock {
                 if (node.isSwapChainAttachment()) {
                     return true;
                 }
-                experimental::ResourceHandle handle = node.resolve(rm, renderContext.getFrameIndex());
-                experimental::Image *attachment = rm.getResource<experimental::Image>(handle);
+                ResourceHandle handle = node.resolve(rm, renderContext.getFrameIndex());
+                Image *attachment = rm.getResource<Image>(handle);
 
                 if (transitionStage == TransitionStage::RequiredLayout) {
                     return attachment->getLayout() != access.requiredLayout;
@@ -299,7 +299,7 @@ namespace hammock {
         void apply() const;
 
     private:
-        experimental::ResourceManager &rm;
+        ResourceManager &rm;
         FrameManager &renderContext;
         ResourceNode &node;
         ResourceAccess &access;
@@ -339,14 +339,14 @@ namespace hammock {
         Device &device;
         // Rendering context
         FrameManager &fm;
-        experimental::ResourceManager &rm;
+        ResourceManager &rm;
         DescriptorPool &pool;
         // Holds all the resources
         std::unordered_map<std::string, ResourceNode> resources;
         // Holds all the render passes
         std::vector<RenderPassNode> passes;
         // Holds all the samplers
-        std::unordered_map<std::string, experimental::ResourceHandle> samplers;
+        std::unordered_map<std::string, ResourceHandle> samplers;
 
         std::vector<RenderPassNode *> sortedPasses; // contains topologically sorted passes
         std::unordered_map<CommandQueueFamily, std::vector<SubmissionGroup> > groupsByQueue;
@@ -354,7 +354,7 @@ namespace hammock {
         std::vector<GroupWithGlobalIndex> allGroups; // all groups in execution order
 
     public:
-        RenderGraph(Device &device, experimental::ResourceManager &rm,
+        RenderGraph(Device &device, ResourceManager &rm,
                     FrameManager &fm, DescriptorPool &pool): device(device), rm(rm), fm(fm), pool(pool) {
             Logger::log(LOG_LEVEL_DEBUG, "Creating rendegraph\n");
         }
@@ -405,7 +405,7 @@ namespace hammock {
             ResourceNode node;
             node.type = Type;
             node.name = name;
-            node.resolver = [name, desc](experimental::ResourceManager &rm, uint32_t frameIndex) {
+            node.resolver = [name, desc](ResourceManager &rm, uint32_t frameIndex) {
                 return rm.createResource<ResourceType>(name, desc);
             };
             resources[name] = std::move(node);
@@ -418,11 +418,11 @@ namespace hammock {
          * @param handle Handle of the actuall resource
          */
         template<ResourceNode::Type Type>
-        void addStaticResource(const std::string &name, experimental::ResourceHandle handle) {
+        void addStaticResource(const std::string &name, ResourceHandle handle) {
             ResourceNode node;
             node.type = Type;
             node.name = name;
-            node.resolver = [handle](experimental::ResourceManager &rm, uint32_t frameIndex) {
+            node.resolver = [handle](ResourceManager &rm, uint32_t frameIndex) {
                 return handle;
             };
             resources[name] = std::move(node);
@@ -443,7 +443,7 @@ namespace hammock {
             ResourceNode node;
             node.type = Type;
             node.name = name;
-            node.resolver = [this,name, modifier](experimental::ResourceManager &rm, uint32_t frameIndex) {
+            node.resolver = [this,name, modifier](ResourceManager &rm, uint32_t frameIndex) {
                 VkExtent2D swapChainExtent = fm.getSwapChain()->getSwapChainExtent();
                 ASSERT(modifier, "Modifier is null!");
                 DescriptionType depDesc = modifier(swapChainExtent);
@@ -463,11 +463,11 @@ namespace hammock {
          */
         template<ResourceNode::Type Type, typename ResourceType, typename DescriptionType>
         void addDependentResource(const std::string &name, const std::string &dependency,
-                                  std::function<DescriptionType(experimental::ResourceHandle)> modifier) {
+                                  std::function<DescriptionType(ResourceHandle)> modifier) {
             ResourceNode node;
             node.type = Type;
             node.name = name;
-            node.resolver = [this, name, dependency,modifier](experimental::ResourceManager &rm, uint32_t frameIndex) {
+            node.resolver = [this, name, dependency,modifier](ResourceManager &rm, uint32_t frameIndex) {
                 auto depHandle = resources.at(dependency).resolve(rm, frameIndex);
                 ASSERT(modifier, "Modifier is null!");
                 auto newDesc = modifier(depHandle);
@@ -500,10 +500,10 @@ namespace hammock {
          */
         void createSampler(const std::string &name, SamplerDesc desc = {}) {
             ASSERT(!samplers.contains(name), "Sampler already exists!");
-            samplers.emplace(name, rm.createResource<experimental::Sampler>(name, desc));
+            samplers.emplace(name, rm.createResource<Sampler>(name, desc));
         }
 
-        void addSampler(const std::string &name, experimental::ResourceHandle handle) {
+        void addSampler(const std::string &name, ResourceHandle handle) {
             samplers.emplace(name, handle);
         }
 
@@ -555,12 +555,12 @@ namespace hammock {
                     ResourceNode &resource = resources[input.resourceName];
                     for (int frameIndex = 0; frameIndex < SwapChain::MAX_FRAMES_IN_FLIGHT; frameIndex++) {
                         if (resource.isRenderingAttachment()) {
-                            experimental::Image *image = rm.getResource<experimental::Image>(
+                            Image *image = rm.getResource<Image>(
                                 resource.resolve(rm, frameIndex));
                             image->queueImageLayoutTransition(VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
                         }
                         if (resource.type == ResourceNode::Type::UniformBuffer) {
-                            experimental::Buffer *buffer = rm.getResource<experimental::Buffer>(
+                            Buffer *buffer = rm.getResource<Buffer>(
                                 resource.resolve(rm, frameIndex));
                             buffer->map();
                         }
@@ -889,14 +889,14 @@ namespace hammock {
                             ResourceNode &resourceNode = resources[binding.bindingNames.at(0)];
 
                             if (resourceNode.isBuffer()) {
-                                auto *buffer = rm.getResource<experimental::Buffer>(
+                                auto *buffer = rm.getResource<Buffer>(
                                     resourceNode.resolve(rm, frameInFlight));
                                 bufferInfos.push_back(buffer->descriptorInfo());
                                 writer.writeBuffer(binding.bindingIndex, &bufferInfos.back());
                             }
 
                             if (resourceNode.isRenderingAttachment()) {
-                                const auto *image = rm.getResource<experimental::Image>(
+                                const auto *image = rm.getResource<Image>(
                                     resourceNode.resolve(rm, frameInFlight));
 
                                 ASSERT(samplers.size() > 0,
@@ -912,10 +912,10 @@ namespace hammock {
                                 VkSampler sampler = VK_NULL_HANDLE;
                                 if (result->samplerName.empty()) {
                                     // Use default sampler (the first one)
-                                    sampler = rm.getResource<experimental::Sampler>(samplers.begin()->second)->
+                                    sampler = rm.getResource<Sampler>(samplers.begin()->second)->
                                             getSampler();
                                 } else {
-                                    sampler = rm.getResource<experimental::Sampler>(samplers.at(result->samplerName))->
+                                    sampler = rm.getResource<Sampler>(samplers.at(result->samplerName))->
                                             getSampler();
                                 }
                                 imageInfos.push_back(image->getDescriptorImageInfo(sampler));
@@ -980,8 +980,8 @@ namespace hammock {
                     colorAttachments.push_back(attachmentInfo);
                 } else if (node.isColorAttachment()) {
                     ASSERT(node.resolver, "Resolver is nullptr!");
-                    experimental::ResourceHandle handle = node.resolve(rm, fm.getFrameIndex());
-                    experimental::Image *image = rm.getResource<experimental::Image>(handle);
+                    ResourceHandle handle = node.resolve(rm, fm.getFrameIndex());
+                    Image *image = rm.getResource<Image>(handle);
                     VkRenderingAttachmentInfo attachmentInfo = image->getRenderingAttachmentInfo();
                     attachmentInfo.loadOp = access.loadOp;
                     attachmentInfo.storeOp = access.storeOp;
@@ -1014,8 +1014,8 @@ namespace hammock {
 
                 if (node.isDepthAttachment()) {
                     ASSERT(node.resolver, "Resolver is nullptr!");
-                    experimental::ResourceHandle handle = node.resolve(rm, fm.getFrameIndex());
-                    experimental::Image *image = rm.getResource<experimental::Image>(handle);
+                    ResourceHandle handle = node.resolve(rm, fm.getFrameIndex());
+                    Image *image = rm.getResource<Image>(handle);
                     VkRenderingAttachmentInfo attachmentInfo = image->getRenderingAttachmentInfo();
                     attachmentInfo.loadOp = access.loadOp;
                     attachmentInfo.storeOp = access.storeOp;
