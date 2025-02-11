@@ -48,7 +48,7 @@ int main(int argc, char *argv[])
     int32_t w, h, c;
     hammock::ScopedMemory environmentData = hammock::ScopedMemory(hammock::Filesystem::readImage(hdrFilename, w, h, c, hammock::Filesystem::ImageFormat::R32G32B32A32_SFLOAT));
     const uint32_t mipLevels = hammock::getNumberOfMipLevels(w, h);
-    hammock::ResourceHandle<hammock::Texture2D> environmentMap = resources.createTexture2D({.buffer = environmentData.get(),
+    hammock::DeviceStorageResourceHandle<hammock::Texture2D> environmentMap = resources.createTexture2D({.buffer = environmentData.get(),
                                                                                       .instanceSize = sizeof(float),
                                                                                       .width = static_cast<uint32_t>(w),
                                                                                       .height = static_cast<uint32_t>(h),
@@ -58,9 +58,9 @@ int main(int argc, char *argv[])
                                                                                           .filter = VK_FILTER_LINEAR,
                                                                                           .addressMode = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE,
                                                                                           .maxLod = static_cast<float>(mipLevels)}});
-    hammock::ResourceHandle<hammock::Texture2D> prefilteredMap = generator.generatePrefilteredMap(device, environmentMap, resources);
-    hammock::ResourceHandle<hammock::Texture2D> irradianceMap = generator.generateIrradianceMap(device, environmentMap, resources, VK_FORMAT_R32G32B32A32_SFLOAT, deltaPhi, deltaTheta);
-    hammock::ResourceHandle<hammock::Texture2D> brdfLUT = generator.generateBRDFLookUpTable(device, resources, 512, VK_FORMAT_R32G32_SFLOAT);
+    hammock::DeviceStorageResourceHandle<hammock::Texture2D> prefilteredMap = generator.generatePrefilteredMap(device, environmentMap, resources);
+    hammock::DeviceStorageResourceHandle<hammock::Texture2D> irradianceMap = generator.generateIrradianceMap(device, environmentMap, resources, VK_FORMAT_R32G32B32A32_SFLOAT, deltaPhi, deltaTheta);
+    hammock::DeviceStorageResourceHandle<hammock::Texture2D> brdfLUT = generator.generateBRDFLookUpTable(device, resources, 512, VK_FORMAT_R32G32_SFLOAT);
 
     // Irradiance map
     {
