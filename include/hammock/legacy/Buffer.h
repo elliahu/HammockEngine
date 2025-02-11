@@ -3,7 +3,8 @@
 #include "hammock/core/Device.h"
 
 namespace hammock {
-    class Buffer {
+
+    class [[deprecated]] Buffer {
     public:
         Buffer(
             Device &device,

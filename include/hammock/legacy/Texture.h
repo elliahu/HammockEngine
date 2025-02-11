@@ -8,7 +8,8 @@
 namespace hammock {
 
 
-    class ITexture {
+
+    class [[deprecated]] ITexture {
     public:
 
         // Recommended:

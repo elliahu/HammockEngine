@@ -3,16 +3,16 @@
 #include <memory>
 #include <vector>
 
-#include <hammock/resources/Buffer.h>
+#include <hammock/legacy/Buffer.h>
 #include <hammock/resources/Descriptors.h>
-#include <hammock/resources/Texture.h>
+#include <hammock/legacy/Texture.h>
 
 namespace hammock {
 
     typedef int32_t id_t;
 
     template<typename ResourceType>
-    class ResourceHandle {
+    class [[deprecated]] ResourceHandle {
     public:
 
         explicit ResourceHandle(id_t id = -1) : id_(id) {
@@ -35,7 +35,7 @@ namespace hammock {
         id_t id_;
     };
 
-    class DeviceStorage {
+    class [[deprecated]] DeviceStorage {
     public:
         static const uint32_t INVALID_HANDLE;
 

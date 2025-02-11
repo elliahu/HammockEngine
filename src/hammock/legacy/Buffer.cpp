@@ -5,7 +5,7 @@
  * https://github.com/SaschaWillems/Vulkan/blob/master/base/VulkanBuffer.h
  */
 
-#include "hammock/resources/Buffer.h"
+#include "hammock/legacy/Buffer.h"
 
 // std
 #include <cassert>

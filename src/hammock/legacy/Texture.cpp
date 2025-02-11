@@ -1,11 +1,11 @@
-#include "hammock/resources/Texture.h"
+#include "hammock/legacy/Texture.h"
 
 #include <format>
 #include <stb_image.h>
 #include <string.h>
 
-#include "hammock/resources/Buffer.h"
-#include "hammock/core/CoreUtils.h"
+#include "hammock/legacy/Buffer.h"
+#include "../../../include/hammock/core/CoreUtils.h"
 
 
 hammock::ITexture::~ITexture() {
