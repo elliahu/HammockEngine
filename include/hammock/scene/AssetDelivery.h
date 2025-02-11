@@ -8,7 +8,8 @@
 #include "tiny_obj_loader.h"
 #include <algorithm>
 #include <functional>
-
+#include "hammock/core/Types.h"
+#include "hammock/core/ResourceManager.h"
 
 namespace hammock {
     namespace gltf = tinygltf;
@@ -16,10 +17,10 @@ namespace hammock {
     struct Loader {
         Geometry &state;
         Device &device;
-        DeviceStorage &deviceStorage;
+        ResourceManager &rm;
 
-        explicit Loader(Geometry &state, Device &device, DeviceStorage &storage): state(state), device{device},
-                                                                               deviceStorage{storage} {
+        explicit Loader(Geometry &state, Device &device, ResourceManager &rm): state(state), device{device},
+                                                                               rm{rm} {
         }
 
         Loader &loadglTF(const std::string &filename) {
@@ -96,7 +97,7 @@ namespace hammock {
             };
 
             struct gImage {
-                DeviceStorageResourceHandle<Texture2D> textureHandle;
+                ResourceHandle textureHandle;
                 std::string name;
             };
 
@@ -121,24 +122,48 @@ namespace hammock {
                 // We convert RGB-only images to RGBA, as most devices don't support RGB-formats in Vulkan
                 if (glTFImage.component == 3) {
                     throw std::runtime_error("3-component images not supported");
-                } else {
-                    buffer = &glTFImage.image[0];
                 }
 
-                // Load texture from image buffer
-                DeviceStorageResourceHandle<Texture2D> imageHandle = deviceStorage.createTexture2D({
-                    .buffer = static_cast<const void *>(buffer),
-                    .instanceSize = sizeof(unsigned char),
-                    .width = static_cast<uint32_t>(glTFImage.width),
-                    .height = static_cast<uint32_t>(glTFImage.height),
-                    .channels = 4,
-                    .format = VK_FORMAT_R8G8B8A8_UNORM,
-                    .samplerInfo = {
-                        .maxLod = static_cast<float>(getNumberOfMipLevels(
-                            static_cast<uint32_t>(glTFImage.width), static_cast<uint32_t>(glTFImage.height))),
-                    }
-                });
+                buffer = &glTFImage.image[0];
+
+                ResourceHandle imageHandle = rm.createResource<Image>(glTFImage.name, ImageDesc{
+                                                                          .width = static_cast<uint32_t>(glTFImage.
+                                                                              width),
+                                                                          .height = static_cast<uint32_t>(glTFImage.
+                                                                              height),
+                                                                          .channels = 4,
+                                                                          .mips = getNumberOfMipLevels(
+                                                                              static_cast<uint32_t>(glTFImage.width),
+                                                                              static_cast<uint32_t>(glTFImage.height)),
+                                                                          .format = VK_FORMAT_R8G8B8A8_UNORM,
+                                                                          .usage = VK_IMAGE_USAGE_TRANSFER_DST_BIT |
+                                                                              VK_IMAGE_USAGE_SAMPLED_BIT,
+                                                                          .imageType = VK_IMAGE_TYPE_2D,
+                                                                          .imageViewType = VK_IMAGE_VIEW_TYPE_2D,
+                                                                      });
+
+                Image *image = rm.getResource<Image>(imageHandle);
+                image->queueImageLayoutTransition(VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
+
                 images.push_back(gImage{imageHandle, glTFImage.name});
+
+                ResourceHandle stagingBufferHandle = rm.createResource<Buffer>(
+                    "staging-buffer-for-gltf-image" + glTFImage.name, BufferDesc{
+                        .instanceSize = sizeof(unsigned char),
+                        .instanceCount = static_cast<uint32_t>(glTFImage.width * glTFImage.height * 4),
+                        .usageFlags = VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
+                        .allocationFlags = VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT
+                    });
+                Buffer *stagingBuffer = rm.getResource<Buffer>(stagingBufferHandle);
+                stagingBuffer->map();
+                stagingBuffer->writeToBuffer(buffer);
+
+                device.copyBufferToImage(stagingBuffer->getBuffer(), image->getImage(),
+                                         static_cast<uint32_t>(glTFImage.width),
+                                         static_cast<uint32_t>(glTFImage.height), 1, 0, 1);
+
+                image->queueImageLayoutTransition(VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+
             }
 
             // load textures
@@ -236,7 +261,8 @@ namespace hammock {
                 if (inputNode.rotation.size() == 4) {
                     // TODO handle rotation
                     HmckQuat quat{
-                        static_cast<float>(inputNode.rotation[0]), static_cast<float>(inputNode.rotation[1]),static_cast<float>(inputNode.rotation[2]), static_cast<float>(inputNode.rotation[3]),
+                        static_cast<float>(inputNode.rotation[0]), static_cast<float>(inputNode.rotation[1]),
+                        static_cast<float>(inputNode.rotation[2]), static_cast<float>(inputNode.rotation[3]),
                     };
                 }
                 if (inputNode.scale.size() == 3) {
@@ -418,22 +444,23 @@ namespace hammock {
                         const auto indexOffset = static_cast<int32_t>(state.textures.size());
 
                         int32_t baseColorTextureIndex = -1;
-                        if(material.albedoTexture > -1) {
+                        if (material.albedoTexture > -1) {
                             baseColorTextureIndex = textures[material.albedoTexture].imageIndex + indexOffset;
                         }
 
                         int32_t normalTextureIndex = -1;
-                        if(material.normalTexture > -1) {
+                        if (material.normalTexture > -1) {
                             normalTextureIndex = textures[material.normalTexture].imageIndex + indexOffset;
                         }
 
                         int32_t metallicRoughnessTextureIndex = -1;
-                        if(material.metallicRoughnessTexture > -1) {
-                            metallicRoughnessTextureIndex = textures[material.metallicRoughnessTexture].imageIndex + indexOffset;
+                        if (material.metallicRoughnessTexture > -1) {
+                            metallicRoughnessTextureIndex =
+                                    textures[material.metallicRoughnessTexture].imageIndex + indexOffset;
                         }
 
                         int32_t occlusionTextureIndex = -1;
-                        if(material.occlusionTexture > -1) {
+                        if (material.occlusionTexture > -1) {
                             occlusionTextureIndex = textures[material.occlusionTexture].imageIndex + indexOffset;
                         }
 

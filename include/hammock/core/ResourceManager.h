@@ -97,13 +97,13 @@ namespace hammock {
         ResourceHandle createVertexBuffer(VkDeviceSize vertexSize, uint32_t vertexCount, void *data,
                                           VkBufferUsageFlags usageFlags = 0) {
             auto stagingBufferHandle = createResource<Buffer>("staging-vertex-buffer", BufferDesc{
-                                                                                .instanceSize = vertexSize,
-                                                                                .instanceCount = vertexCount,
-                                                                                .usageFlags =
-                                                                                VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
-                                                                                .allocationFlags =
-                                                                                VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT,
-                                                                            });
+                                                                  .instanceSize = vertexSize,
+                                                                  .instanceCount = vertexCount,
+                                                                  .usageFlags =
+                                                                  VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
+                                                                  .allocationFlags =
+                                                                  VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT,
+                                                              });
 
             auto stagingBuffer = getResource<Buffer>(stagingBufferHandle);
 
@@ -111,15 +111,15 @@ namespace hammock {
             stagingBuffer->writeToBuffer(data);
 
             auto vertexBufferHandle = createResource<Buffer>("vertex-buffer", BufferDesc{
-                                                                               .instanceSize = vertexSize,
-                                                                               .instanceCount = vertexCount,
-                                                                               .usageFlags =
-                                                                               VK_BUFFER_USAGE_VERTEX_BUFFER_BIT |
-                                                                               VK_BUFFER_USAGE_TRANSFER_DST_BIT |
-                                                                               usageFlags,
-                                                                               .allocationFlags =
-                                                                               VMA_ALLOCATION_CREATE_DEDICATED_MEMORY_BIT,
-                                                                           });
+                                                                 .instanceSize = vertexSize,
+                                                                 .instanceCount = vertexCount,
+                                                                 .usageFlags =
+                                                                 VK_BUFFER_USAGE_VERTEX_BUFFER_BIT |
+                                                                 VK_BUFFER_USAGE_TRANSFER_DST_BIT |
+                                                                 usageFlags,
+                                                                 .allocationFlags =
+                                                                 VMA_ALLOCATION_CREATE_DEDICATED_MEMORY_BIT,
+                                                             });
 
             auto vertexBuffer = getResource<Buffer>(vertexBufferHandle);
 
@@ -135,13 +135,13 @@ namespace hammock {
         ResourceHandle createIndexBuffer(VkDeviceSize indexSize, uint32_t indexCount, void *data,
                                          VkBufferUsageFlags usageFlags = 0) {
             auto stagingBufferHandle = createResource<Buffer>("staging-index-buffer", BufferDesc{
-                                                                                .instanceSize = indexSize,
-                                                                                .instanceCount = indexCount,
-                                                                                .usageFlags =
-                                                                                VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
-                                                                                .allocationFlags =
-                                                                                VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT,
-                                                                            });
+                                                                  .instanceSize = indexSize,
+                                                                  .instanceCount = indexCount,
+                                                                  .usageFlags =
+                                                                  VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
+                                                                  .allocationFlags =
+                                                                  VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT,
+                                                              });
 
             auto stagingBuffer = getResource<Buffer>(stagingBufferHandle);
 
@@ -149,15 +149,15 @@ namespace hammock {
             stagingBuffer->writeToBuffer(data);
 
             auto indexBufferHandle = createResource<Buffer>("vertex-buffer", BufferDesc{
-                                                                              .instanceSize = indexSize,
-                                                                              .instanceCount = indexCount,
-                                                                              .usageFlags =
-                                                                              VK_BUFFER_USAGE_INDEX_BUFFER_BIT |
-                                                                              VK_BUFFER_USAGE_TRANSFER_DST_BIT |
-                                                                              usageFlags,
-                                                                              .allocationFlags =
-                                                                              VMA_ALLOCATION_CREATE_DEDICATED_MEMORY_BIT,
-                                                                          });
+                                                                .instanceSize = indexSize,
+                                                                .instanceCount = indexCount,
+                                                                .usageFlags =
+                                                                VK_BUFFER_USAGE_INDEX_BUFFER_BIT |
+                                                                VK_BUFFER_USAGE_TRANSFER_DST_BIT |
+                                                                usageFlags,
+                                                                .allocationFlags =
+                                                                VMA_ALLOCATION_CREATE_DEDICATED_MEMORY_BIT,
+                                                            });
 
             auto indexBuffer = getResource<Buffer>(indexBufferHandle);
 

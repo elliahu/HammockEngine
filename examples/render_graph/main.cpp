@@ -14,7 +14,6 @@ int main() {
     VulkanInstance instance{};
     hammock::Window window{instance, "Render Graph", 1920, 1080};
     Device device{instance, window.getSurface()};
-    DeviceStorage storage{device};
     ResourceManager rm{device};
     // TODO decouple context and window
     FrameManager renderContext{window, device};
@@ -40,7 +39,7 @@ int main() {
 
     // Load geometry
     Geometry geometry{};
-    Loader(geometry, device, storage).loadglTF(assetPath("models/Sphere/Sphere.glb"));
+    Loader(geometry, device, rm).loadglTF(assetPath("models/Sphere/Sphere.glb"));
 
     ResourceHandle vertexBuffer = rm.createVertexBuffer(
         sizeof(geometry.vertices[0]),
