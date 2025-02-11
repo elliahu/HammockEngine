@@ -3,7 +3,7 @@
 #include <vector>
 #include <hammock/core/HandmadeMath.h>
 
-#include "hammock/core/DeviceStorage.h"
+#include "hammock/legacy/DeviceStorage.h"
 #include "hammock/scene/Vertex.h"
 
 namespace hammock {
@@ -36,7 +36,7 @@ namespace hammock {
         std::vector<MeshInstance> renderMeshes;
         std::vector<Vertex> vertices;
         std::vector<uint32_t> indices;
-        std::vector<ResourceHandle<Texture2D>> textures;
+        std::vector<DeviceStorageResourceHandle<Texture2D>> textures;
 
     };
 }

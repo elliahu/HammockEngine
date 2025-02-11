@@ -96,7 +96,7 @@ namespace hammock {
             };
 
             struct gImage {
-                ResourceHandle<Texture2D> textureHandle;
+                DeviceStorageResourceHandle<Texture2D> textureHandle;
                 std::string name;
             };
 
@@ -126,7 +126,7 @@ namespace hammock {
                 }
 
                 // Load texture from image buffer
-                ResourceHandle<Texture2D> imageHandle = deviceStorage.createTexture2D({
+                DeviceStorageResourceHandle<Texture2D> imageHandle = deviceStorage.createTexture2D({
                     .buffer = static_cast<const void *>(buffer),
                     .instanceSize = sizeof(unsigned char),
                     .width = static_cast<uint32_t>(glTFImage.width),

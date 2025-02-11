@@ -9,7 +9,7 @@ namespace hammock {
 
 
 
-    class [[deprecated]] ITexture {
+    class [[deprecated("Image should be used")]] ITexture {
     public:
 
         // Recommended:
@@ -39,7 +39,7 @@ namespace hammock {
     };
 
 
-    class Texture2D final: public ITexture{
+    class [[deprecated("Image should be used")]] Texture2D final: public ITexture{
     public:
 
         Texture2D(Device &device)
@@ -67,7 +67,7 @@ namespace hammock {
         void generateMipMaps(const Device &device, uint32_t mipLevels) const;
     };
 
-    class TextureCubeMap : public ITexture {
+    class [[deprecated("Image should be used")]] TextureCubeMap : public ITexture {
     public:
         // TODO implement loadFromBuffer
 
@@ -81,7 +81,7 @@ namespace hammock {
         void createSampler(const Device &device, VkFilter filter = VK_FILTER_LINEAR);
     };
 
-    class Texture3D final: public ITexture {
+    class [[deprecated("Image should be used")]] Texture3D final: public ITexture {
     public:
 
         Texture3D(Device &device)

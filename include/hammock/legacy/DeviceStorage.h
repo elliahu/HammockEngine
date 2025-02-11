@@ -12,10 +12,10 @@ namespace hammock {
     typedef int32_t id_t;
 
     template<typename ResourceType>
-    class [[deprecated]] ResourceHandle {
+    class [[deprecated("DeviceStorageResourceHandle should be used")]] DeviceStorageResourceHandle {
     public:
 
-        explicit ResourceHandle(id_t id = -1) : id_(id) {
+        explicit DeviceStorageResourceHandle(id_t id = -1) : id_(id) {
         }
 
 
@@ -27,15 +27,15 @@ namespace hammock {
         void invalidate() { id_ = -1; }
 
 
-        bool operator==(const ResourceHandle &other) const { return id_ == other.id_; }
+        bool operator==(const DeviceStorageResourceHandle &other) const { return id_ == other.id_; }
 
-        bool operator!=(const ResourceHandle &other) const { return id_ != other.id_; }
+        bool operator!=(const DeviceStorageResourceHandle &other) const { return id_ != other.id_; }
 
     private:
         id_t id_;
     };
 
-    class [[deprecated]] DeviceStorage {
+    class [[deprecated("ResourceManager should be used")]] DeviceStorage {
     public:
         static const uint32_t INVALID_HANDLE;
 
@@ -50,7 +50,7 @@ namespace hammock {
             bool map = true;
         };
 
-        [[nodiscard]] ResourceHandle<Buffer> createBuffer(BufferCreateInfo createInfo);
+        [[nodiscard]] DeviceStorageResourceHandle<LegacyBuffer> createBuffer(BufferCreateInfo createInfo);
 
         struct VertexBufferCreateInfo {
             VkDeviceSize vertexSize;
@@ -59,7 +59,7 @@ namespace hammock {
             VkBufferUsageFlags usageFlags = 0;
         };
 
-        [[nodiscard]] ResourceHandle<Buffer> createVertexBuffer(const VertexBufferCreateInfo &createInfo);
+        [[nodiscard]] DeviceStorageResourceHandle<LegacyBuffer> createVertexBuffer(const VertexBufferCreateInfo &createInfo);
 
         struct IndexBufferCreateInfo {
             VkDeviceSize indexSize;
@@ -68,7 +68,7 @@ namespace hammock {
             VkBufferUsageFlags usageFlags = 0;
         };
 
-        [[nodiscard]] ResourceHandle<Buffer> createIndexBuffer(const IndexBufferCreateInfo &createInfo);
+        [[nodiscard]] DeviceStorageResourceHandle<LegacyBuffer> createIndexBuffer(const IndexBufferCreateInfo &createInfo);
 
         struct DescriptorSetLayoutCreateInfo {
             struct DescriptorSetLayoutBindingCreateInfo {
@@ -82,11 +82,11 @@ namespace hammock {
             std::vector<DescriptorSetLayoutBindingCreateInfo> bindings;
         };
 
-        [[nodiscard]] ResourceHandle<DescriptorSetLayout> createDescriptorSetLayout(
+        [[nodiscard]] DeviceStorageResourceHandle<DescriptorSetLayout> createDescriptorSetLayout(
             const DescriptorSetLayoutCreateInfo &createInfo);
 
         struct DescriptorSetCreateInfo {
-            ResourceHandle<DescriptorSetLayout> descriptorSetLayout;
+            DeviceStorageResourceHandle<DescriptorSetLayout> descriptorSetLayout;
 
             struct DescriptorSetWriteBufferInfo {
                 uint32_t binding;
@@ -120,9 +120,9 @@ namespace hammock {
             std::vector<DescriptorSetWriteAccelerationStructureInfo> accelerationStructureWrites;
         };
 
-        [[nodiscard]] ResourceHandle<VkDescriptorSet> createDescriptorSet(const DescriptorSetCreateInfo &createInfo);
+        [[nodiscard]] DeviceStorageResourceHandle<VkDescriptorSet> createDescriptorSet(const DescriptorSetCreateInfo &createInfo);
 
-        ResourceHandle<Texture2D> createEmptyTexture2D();
+        DeviceStorageResourceHandle<Texture2D> createEmptyTexture2D();
 
         struct Texture2DCreateSamplerInfo {
             bool createSampler = true;
@@ -148,7 +148,7 @@ namespace hammock {
 
         // Creates a 2D texture from buffer
         // Set createInfo.samplerInfo.maxLod > 1 to automatically generate mip maps
-        [[nodiscard]] ResourceHandle<Texture2D> createTexture2D(const Texture2DCreateFromBufferInfo &createInfo);
+        [[nodiscard]] DeviceStorageResourceHandle<Texture2D> createTexture2D(const Texture2DCreateFromBufferInfo &createInfo);
 
         struct Texture3DCreateSamplerInfo {
             bool createSampler = true;
@@ -168,23 +168,23 @@ namespace hammock {
             Texture3DCreateSamplerInfo samplerInfo{};
         };
 
-        [[nodiscard]] ResourceHandle<Texture3D> createTexture3D(const Texture3DCreateFromBufferInfo &createInfo);
+        [[nodiscard]] DeviceStorageResourceHandle<Texture3D> createTexture3D(const Texture3DCreateFromBufferInfo &createInfo);
 
-        DescriptorSetLayout &getDescriptorSetLayout(ResourceHandle<DescriptorSetLayout> handle);
+        DescriptorSetLayout &getDescriptorSetLayout(DeviceStorageResourceHandle<DescriptorSetLayout> handle);
 
-        VkDescriptorSet getDescriptorSet(ResourceHandle<VkDescriptorSet> handle);
+        VkDescriptorSet getDescriptorSet(DeviceStorageResourceHandle<VkDescriptorSet> handle);
 
-        std::unique_ptr<Buffer> &getBuffer(ResourceHandle<Buffer> handle);
+        std::unique_ptr<LegacyBuffer> &getBuffer(DeviceStorageResourceHandle<LegacyBuffer> handle);
 
-        std::unique_ptr<Texture2D> &getTexture2D(ResourceHandle<Texture2D> handle);
+        std::unique_ptr<Texture2D> &getTexture2D(DeviceStorageResourceHandle<Texture2D> handle);
 
-        VkDescriptorImageInfo getTexture2DDescriptorImageInfo(ResourceHandle<Texture2D> handle);
+        VkDescriptorImageInfo getTexture2DDescriptorImageInfo(DeviceStorageResourceHandle<Texture2D> handle);
 
-        VkDescriptorImageInfo getTextureCubeMapDescriptorImageInfo(ResourceHandle<TextureCubeMap> handle);
+        VkDescriptorImageInfo getTextureCubeMapDescriptorImageInfo(DeviceStorageResourceHandle<TextureCubeMap> handle);
 
-        std::unique_ptr<Texture3D> &getTexture3D(ResourceHandle<Texture3D> handle);
+        std::unique_ptr<Texture3D> &getTexture3D(DeviceStorageResourceHandle<Texture3D> handle);
 
-        VkDescriptorImageInfo getTexture3DDescriptorImageInfo(ResourceHandle<Texture3D> handle);
+        VkDescriptorImageInfo getTexture3DDescriptorImageInfo(DeviceStorageResourceHandle<Texture3D> handle);
 
         void bindDescriptorSet(
             VkCommandBuffer commandBuffer,
@@ -192,28 +192,28 @@ namespace hammock {
             VkPipelineLayout pipelineLayout,
             uint32_t firstSet,
             uint32_t descriptorCount,
-            ResourceHandle<VkDescriptorSet> descriptorSet,
+            DeviceStorageResourceHandle<VkDescriptorSet> descriptorSet,
             uint32_t dynamicOffsetCount,
             const uint32_t *pDynamicOffsets);
 
-        void bindVertexBuffer(ResourceHandle<Buffer> vertexBuffer, ResourceHandle<Buffer> indexBuffer, VkCommandBuffer commandBuffer,
+        void bindVertexBuffer(DeviceStorageResourceHandle<LegacyBuffer> vertexBuffer, DeviceStorageResourceHandle<LegacyBuffer> indexBuffer, VkCommandBuffer commandBuffer,
                               VkIndexType indexType = VK_INDEX_TYPE_UINT32);
 
-        void bindVertexBuffer(ResourceHandle<Buffer> handle, VkCommandBuffer commandBuffer);
+        void bindVertexBuffer(DeviceStorageResourceHandle<LegacyBuffer> handle, VkCommandBuffer commandBuffer);
 
-        void bindIndexBuffer(ResourceHandle<Buffer> handle, VkCommandBuffer commandBuffer,
+        void bindIndexBuffer(DeviceStorageResourceHandle<LegacyBuffer> handle, VkCommandBuffer commandBuffer,
                              VkIndexType indexType = VK_INDEX_TYPE_UINT32);
 
-        void destroyBuffer(ResourceHandle<Buffer> handle);
+        void destroyBuffer(DeviceStorageResourceHandle<LegacyBuffer> handle);
 
-        void destroyDescriptorSetLayout(ResourceHandle<DescriptorSetLayout> handle);
+        void destroyDescriptorSetLayout(DeviceStorageResourceHandle<DescriptorSetLayout> handle);
 
-        void destroyTexture2D(ResourceHandle<Texture2D> handle);
+        void destroyTexture2D(DeviceStorageResourceHandle<Texture2D> handle);
 
 
-        void destroyTexture3D(ResourceHandle<Texture3D> handle);
+        void destroyTexture3D(DeviceStorageResourceHandle<Texture3D> handle);
 
-        void copyBuffer(ResourceHandle<Buffer> from, ResourceHandle<Buffer> to);
+        void copyBuffer(DeviceStorageResourceHandle<LegacyBuffer> from, DeviceStorageResourceHandle<LegacyBuffer> to);
 
         VkDescriptorPool getDescriptorPool() {return descriptorPool->descriptorPool;}
 
@@ -221,7 +221,7 @@ namespace hammock {
         Device &device;
         std::unique_ptr<DescriptorPool> descriptorPool;
 
-        std::unordered_map<id_t, std::unique_ptr<Buffer> > buffers;
+        std::unordered_map<id_t, std::unique_ptr<LegacyBuffer> > buffers;
         std::unordered_map<id_t, VkDescriptorSet> descriptorSets;
         std::unordered_map<id_t, std::unique_ptr<DescriptorSetLayout> >
         descriptorSetLayouts;

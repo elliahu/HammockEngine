@@ -4,9 +4,9 @@
 
 namespace hammock {
 
-    class [[deprecated]] Buffer {
+    class [[deprecated("Buffer should be used")]] LegacyBuffer {
     public:
-        Buffer(
+        LegacyBuffer(
             Device &device,
             VkDeviceSize instanceSize,
             uint32_t instanceCount,
@@ -14,11 +14,11 @@ namespace hammock {
             VkMemoryPropertyFlags memoryPropertyFlags,
             VkDeviceSize minOffsetAlignment = 1);
 
-        ~Buffer();
+        ~LegacyBuffer();
 
-        Buffer(const Buffer &) = delete;
+        LegacyBuffer(const LegacyBuffer &) = delete;
 
-        Buffer &operator=(const Buffer &) = delete;
+        LegacyBuffer &operator=(const LegacyBuffer &) = delete;
 
         VkResult map(VkDeviceSize size = VK_WHOLE_SIZE, VkDeviceSize offset = 0);
 

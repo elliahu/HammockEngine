@@ -7,12 +7,12 @@
 #include "hammock/core/Shader.h"
 #include "hammock/utils/Filesystem.h"
 
-hammock:: ResourceHandle<hammock::Texture2D> hammock::Generator::generatePrefilteredMap(Device &device,  ResourceHandle<Texture2D> environmentMap, DeviceStorage &resources, VkFormat format) {
+hammock:: DeviceStorageResourceHandle<hammock::Texture2D> hammock::Generator::generatePrefilteredMap(Device &device,  DeviceStorageResourceHandle<Texture2D> environmentMap, DeviceStorage &resources, VkFormat format) {
     auto tStart = std::chrono::high_resolution_clock::now();
     uint32_t width = resources.getTexture2D(environmentMap)->width;
     uint32_t height = resources.getTexture2D(environmentMap)->height;
     std::unique_ptr<GraphicsPipeline> pipeline{};
-    ResourceHandle<Texture2D> prefilteredMap = resources.createEmptyTexture2D();
+    DeviceStorageResourceHandle<Texture2D> prefilteredMap = resources.createEmptyTexture2D();
     const uint32_t mipLevels = getNumberOfMipLevels(width, height);
 
     // Image
@@ -348,13 +348,13 @@ hammock:: ResourceHandle<hammock::Texture2D> hammock::Generator::generatePrefilt
     return prefilteredMap;
 }
 
-hammock::ResourceHandle<hammock::Texture2D> hammock::Generator::generatePrefilteredMapWithStaticRoughness(Device &device, ResourceHandle<Texture2D> environmentMap, DeviceStorage &resources,
+hammock::DeviceStorageResourceHandle<hammock::Texture2D> hammock::Generator::generatePrefilteredMapWithStaticRoughness(Device &device, DeviceStorageResourceHandle<Texture2D> environmentMap, DeviceStorage &resources,
                                                                      VkFormat format) {
     auto tStart = std::chrono::high_resolution_clock::now();
     uint32_t width = resources.getTexture2D(environmentMap)->width;
     uint32_t height = resources.getTexture2D(environmentMap)->height;
     std::unique_ptr<GraphicsPipeline> pipeline{};
-    ResourceHandle<Texture2D> prefilteredMap = resources.createEmptyTexture2D();
+    DeviceStorageResourceHandle<Texture2D> prefilteredMap = resources.createEmptyTexture2D();
 
     // image, view, sampler
     VkImageCreateInfo imageCI = Init::imageCreateInfo();
@@ -558,13 +558,13 @@ hammock::ResourceHandle<hammock::Texture2D> hammock::Generator::generatePrefilte
     return prefilteredMap;
 }
 
-hammock::ResourceHandle<hammock::Texture2D> hammock::Generator::generateIrradianceMap(Device &device, ResourceHandle<Texture2D> environmentMap, DeviceStorage &resources, VkFormat format,
+hammock::DeviceStorageResourceHandle<hammock::Texture2D> hammock::Generator::generateIrradianceMap(Device &device, DeviceStorageResourceHandle<Texture2D> environmentMap, DeviceStorage &resources, VkFormat format,
                                                  float _deltaPhi, float _deltaTheta) {
     auto tStart = std::chrono::high_resolution_clock::now();
     uint32_t width = resources.getTexture2D(environmentMap)->width;
     uint32_t height = resources.getTexture2D(environmentMap)->height;
     std::unique_ptr<GraphicsPipeline> pipeline{};
-    ResourceHandle<Texture2D> irradianceMap = resources.createEmptyTexture2D();
+    DeviceStorageResourceHandle<Texture2D> irradianceMap = resources.createEmptyTexture2D();
 
     // image, view, sampler
     VkImageCreateInfo imageCI = Init::imageCreateInfo();
@@ -771,10 +771,10 @@ hammock::ResourceHandle<hammock::Texture2D> hammock::Generator::generateIrradian
     return irradianceMap;
 }
 
-hammock::ResourceHandle<hammock::Texture2D> hammock::Generator::generateBRDFLookUpTable(Device &device, DeviceStorage &resources, uint32_t dim, VkFormat format) {
+hammock::DeviceStorageResourceHandle<hammock::Texture2D> hammock::Generator::generateBRDFLookUpTable(Device &device, DeviceStorage &resources, uint32_t dim, VkFormat format) {
     auto tStart = std::chrono::high_resolution_clock::now();
     std::unique_ptr<GraphicsPipeline> brdfLUTPipeline{};
-    ResourceHandle<Texture2D> brdfLookUpTable = resources.createEmptyTexture2D();
+    DeviceStorageResourceHandle<Texture2D> brdfLookUpTable = resources.createEmptyTexture2D();
 
     // image, view, sampler
     VkImageCreateInfo imageCI = Init::imageCreateInfo();

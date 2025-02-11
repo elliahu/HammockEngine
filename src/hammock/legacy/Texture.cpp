@@ -56,7 +56,7 @@ void hammock::TextureCubeMap::loadFromFiles(const std::vector<std::string> &file
 
     device.createImageWithInfo(imageCreateInfo, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, image, memory);
 
-    Buffer stagingBuffer
+    LegacyBuffer stagingBuffer
     {
         device,
         sizeof(pixels[0][0]),
@@ -148,7 +148,7 @@ void hammock::Texture2D::loadFromBuffer(const void *buffer, const uint32_t insta
     this->height = height;
     const uint32_t bufferSize = width * height * channels;
 
-    Buffer stagingBuffer
+    LegacyBuffer stagingBuffer
     {
         device,
         instanceSize,
@@ -396,7 +396,7 @@ void hammock::Texture3D::loadFromBuffer(Device &device, const void *buffer, VkDe
     checkResult(vkBindImageMemory(device.device(), this->image, this->memory, 0));
 
     // Create a host-visible staging buffer that contains the raw image data
-    Buffer stagingBuffer{
+    LegacyBuffer stagingBuffer{
         device,
         instanceSize, // Size of each element (4 bytes for float)
         static_cast<uint32_t>(totalSize),  // Total size including padding
