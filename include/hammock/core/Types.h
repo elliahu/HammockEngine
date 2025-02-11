@@ -107,13 +107,6 @@ namespace hammock {
         VkDeviceSize minOffsetAlignment;
     };
 
-    /**
-    * Reference to Vulkan buffer.
-    */
-    struct BufferResourceRef {
-        VkBuffer buffer;
-        VmaAllocation allocation;
-    };
 
     /**
      * Describes the base for the relative size
@@ -141,24 +134,16 @@ namespace hammock {
         VkSampleCountFlagBits imageSampleCount = VK_SAMPLE_COUNT_1_BIT;
     };
 
-    /**
-     * Reference to Vulkan image.
-     */
-    struct ImageResourceRef {
-        VkImage image;
-        VkImageView view;
-        VkSampler sampler;
-        VmaAllocation allocation;
-        VkImageLayout currentLayout;
-        VkClearValue clearValue = {0.0f, 0.0f, 0.2f, 1.0f};
+
+    enum class CommandQueueFamily {
+        Graphics, Compute, Transfer
     };
 
-
     /**
-     * Resource reference. It can hold a reference to image, or buffer.
-     */
-    struct ResourceRef {
-        // Variant to hold either buffer or image resource
-        std::variant<BufferResourceRef, ImageResourceRef> resource;
+    * Describes relative size of a viewport
+    */
+    enum class RelativeViewPortSize {
+        SwapChainRelative,
+        Fixed,
     };
 }

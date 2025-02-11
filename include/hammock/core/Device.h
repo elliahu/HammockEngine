@@ -49,7 +49,9 @@ namespace hammock {
 
         Device &operator=(Device &&) = delete;
 
-        [[nodiscard]] VkCommandPool getCommandPool() const { return commandPool; }
+        [[nodiscard]] VkCommandPool getGraphicsCommandPool() const { return graphicsCommandPool; }
+        [[nodiscard]] VkCommandPool getTransferCommandPool() const { return transferCommandPool; }
+        [[nodiscard]] VkCommandPool getComputeCommandPool() const { return computeCommandPool; }
         [[nodiscard]] VkDevice device() const { return device_; }
         [[nodiscard]] VmaAllocator allocator() const { return allocator_; }
         [[nodiscard]] VkInstance getInstance() const { return instance.getInstance(); }
@@ -118,7 +120,7 @@ namespace hammock {
 
         void createLogicalDevice();
 
-        void createCommandPool();
+        void createCommandPools();
 
         void createMemoryAllocator();
 
@@ -134,7 +136,9 @@ namespace hammock {
 
         VulkanInstance &instance;
         VkPhysicalDevice physicalDevice = VK_NULL_HANDLE;
-        VkCommandPool commandPool;
+        VkCommandPool graphicsCommandPool;
+        VkCommandPool transferCommandPool;
+        VkCommandPool computeCommandPool;
 
         VkDevice device_;
         VkSurfaceKHR surface_;

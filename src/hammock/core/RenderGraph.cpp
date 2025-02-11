@@ -22,8 +22,8 @@ void hammock::PipelineBarrier::apply() const {
 
 
             transitionImageLayout(
-                renderContext.getCurrentCommandBuffer(),
-                node.isDepthAttachment() ? renderContext.getSwapChain()->getDepthImage(renderContext.getImageIndex()) : renderContext.getSwapChain()->getImage(renderContext.getImageIndex()),
+                commandBuffer,
+                node.isDepthAttachment() ? renderContext.getSwapChain()->getDepthImage(renderContext.getSwapChainImageIndex()) : renderContext.getSwapChain()->getImage(renderContext.getSwapChainImageIndex()),
                 VK_IMAGE_LAYOUT_UNDEFINED, newLayout, subresourceRange);
             return;
         }
@@ -31,7 +31,7 @@ void hammock::PipelineBarrier::apply() const {
         const experimental::ResourceHandle handle = node.resolve(rm, renderContext.getFrameIndex());
         auto * image = rm.getResource<experimental::Image>(handle);
 
-        image->transitionLayout(renderContext.getCurrentCommandBuffer(), newLayout);
+        image->transitionLayout(commandBuffer, newLayout);
     }
     else if (node.isBuffer()) {
         // TODO support for buffer transition

@@ -138,7 +138,7 @@ VkCommandBuffer hammock::UserInterface::beginSingleTimeCommands() const {
     VkCommandBufferAllocateInfo allocInfo{};
     allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
     allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
-    allocInfo.commandPool = device.getCommandPool();
+    allocInfo.commandPool = device.getGraphicsCommandPool();
     allocInfo.commandBufferCount = 1;
 
     VkCommandBuffer commandBuffer;
@@ -164,7 +164,7 @@ void hammock::UserInterface::endSingleTimeCommands(const VkCommandBuffer command
     vkQueueSubmit(device.graphicsQueue(), 1, &submitInfo, VK_NULL_HANDLE);
     vkQueueWaitIdle(device.graphicsQueue());
 
-    vkFreeCommandBuffers(device.device(), device.getCommandPool(), 1, &commandBuffer);
+    vkFreeCommandBuffers(device.device(), device.getGraphicsCommandPool(), 1, &commandBuffer);
 }
 
 void hammock::UserInterface::beginWindow(const char *title, bool *open, ImGuiWindowFlags flags) {

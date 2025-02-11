@@ -122,24 +122,10 @@ namespace hammock {
         VkPipelineStageFlags stageFlags = VK_PIPELINE_STAGE_ALL_COMMANDS_BIT;
     };
 
-    /**
-     * Describes type of a render pass
-     */
-    enum class RenderPassType {
-        // Represents a pass that draws into some image
-        Graphics,
-        // Represents a compute pass
-        Compute,
-        // Represents a transfer pass - data is moved from one location to another (eg. host -> device or device -> host)
-        Transfer
-    };
-
-    /**
-     * Describes relative size of a viewport
-     */
-    enum class RelativeViewPortSize {
-        SwapChainRelative,
-        Fixed,
+    enum RenderPassFlags : int32_t {
+        RENDER_PASS_FLAGS_NONE = 0,
+        RENDER_PASS_FLAGS_SWAPCHAIN_WRITE = 1 << 0,
+        RENDER_PASS_FLAGS_CONTRIBUTING = 1 << 1,
     };
 
     /**
@@ -160,7 +146,8 @@ namespace hammock {
             VkDescriptorBindingFlags bindingFlags = 0;
         };
 
-        RenderPassType type; // Type of the pass
+        CommandQueueFamily type; // Type of the pass
+        int32_t flags = 0;
         RelativeViewPortSize viewportSize; // Size of viewport
 
         std::string name; // Name of the pass for debug purposes and lookup
@@ -173,6 +160,8 @@ namespace hammock {
         std::unordered_map<uint32_t, Descriptor> descriptors;
         // TODO samplers should be standalone resources
         std::vector<VkSampler> samplers;
+
+        std::vector<RenderPassNode *> dependencies;
 
 
         // callback for rendering
@@ -224,9 +213,11 @@ namespace hammock {
             FinalLayout
         };
 
-        explicit PipelineBarrier(experimental::ResourceManager &rm, FrameManager &renderContext, ResourceNode &node,
+        explicit PipelineBarrier(experimental::ResourceManager &rm, FrameManager &renderContext,
+                                 VkCommandBuffer commandBuffer, ResourceNode &node,
                                  ResourceAccess &access,
-                                 TransitionStage transitionStage) : rm(rm), renderContext(renderContext), node(node),
+                                 TransitionStage transitionStage) : rm(rm), renderContext(renderContext),
+                                                                    commandBuffer(commandBuffer), node(node),
                                                                     access(access), transitionStage(transitionStage) {
         }
 
@@ -268,6 +259,7 @@ namespace hammock {
         ResourceNode &node;
         ResourceAccess &access;
         TransitionStage transitionStage;
+        VkCommandBuffer commandBuffer;
     };
 
     /**
@@ -281,6 +273,22 @@ namespace hammock {
      *  TODO support for pipeline caching
      */
     class RenderGraph {
+        struct SubmissionGroup {
+            CommandQueueFamily queueFamily;
+            std::vector<RenderPassNode *> renderPassNodes;
+            std::vector<VkSemaphore> waitSemaphores; // one semaphore per frame in flight
+            std::vector<VkSemaphore> signalSemaphores; // one semaphore per frame in flight
+            VkPipelineStageFlags waitStage;
+            std::vector<VkCommandBuffer> commandBuffers; // one command buffer per frame in flight
+            size_t globalStartIndex = 0; // The global sorted order index of the first pass in this group.
+        };
+
+        // This structure pairs a SubmissionGroup pointer with its global start index.
+        struct GroupWithGlobalIndex {
+            SubmissionGroup *group;
+            size_t globalStartIndex;
+        };
+
         // Vulkan device
         Device &device;
         // Rendering context
@@ -291,10 +299,11 @@ namespace hammock {
         std::unordered_map<std::string, ResourceNode> resources;
         // Holds all the render passes
         std::vector<RenderPassNode> passes;
-        // Array of indexes into list of passes. Order is optimized by the optimizer.
-        std::vector<uint32_t> optimizedOrderOfPasses;
 
-        bool rebuildDescriptors = true;
+        std::vector<RenderPassNode *> sortedPasses; // contains topologically sorted passes
+        std::unordered_map<CommandQueueFamily, std::vector<SubmissionGroup> > groupsByQueue;
+        // submission groups by queue family
+        std::vector<GroupWithGlobalIndex> allGroups; // all groups in execution order
 
     public:
         RenderGraph(Device &device, experimental::ResourceManager &rm,
@@ -312,6 +321,30 @@ namespace hammock {
             }
             passes.clear();
             resources.clear();
+
+            // Free command buffer and destroy sync objects
+            for (auto &group: allGroups) {
+                if (group.group->queueFamily == CommandQueueFamily::Graphics) {
+                    vkFreeCommandBuffers(device.device(), device.getGraphicsCommandPool(), group.group->commandBuffers.size(), group.group->commandBuffers.data());
+                }
+
+                if (group.group->queueFamily == CommandQueueFamily::Compute) {
+                    vkFreeCommandBuffers(device.device(), device.getComputeCommandPool(), group.group->commandBuffers.size(), group.group->commandBuffers.data());
+                }
+
+                if (group.group->queueFamily == CommandQueueFamily::Transfer) {
+                    vkFreeCommandBuffers(device.device(), device.getTransferCommandPool(), group.group->commandBuffers.size(), group.group->commandBuffers.data());
+                }
+
+                for (auto& signal: group.group->signalSemaphores) {
+                    vkDestroySemaphore(device.device(), signal, nullptr);
+                }
+
+                for (auto& wait: group.group->waitSemaphores) {
+                    vkDestroySemaphore(device.device(), wait, nullptr);
+                }
+            }
+
         }
 
 
@@ -418,7 +451,7 @@ namespace hammock {
 
         /**
          *
-         * @tparam Type Type of the Pass (Graphics, Transfer, Compute)
+         * @tparam QueueFamily Type of the Pass (Graphics, Transfer, Compute)
          * @tparam ViewPortSize ViewPortSize class (SwapChainRelative, Fixed)
          * @tparam ViewPortWidth ViewPort width multiplier (if Fixed, then absolute width)
          * @tparam ViewPortHeight ViewPort height multiplier (if Fixed, then absolute height)
@@ -427,13 +460,14 @@ namespace hammock {
          * @param name Name of the render pass
          * @return Returns reference to the RenderPassNode node that can be used to set additional parameters. See RenderPassNode definition.
          */
-        template<RenderPassType Type, RelativeViewPortSize ViewPortSize = RelativeViewPortSize::SwapChainRelative, float
+        template<CommandQueueFamily QueueFamily, RelativeViewPortSize ViewPortSize =
+                    RelativeViewPortSize::SwapChainRelative, float
             ViewPortWidth = 1.0f, float ViewPortHeight = 1.0f
             , float ViewPortDepthMin = 0.f, float ViewPortDepthMax = 1.f>
         RenderPassNode &addPass(const std::string &name) {
             RenderPassNode node;
             node.name = name;
-            node.type = Type;
+            node.type = QueueFamily;
             node.viewportSize = ViewPortSize;
             node.viewport = HmckVec4{ViewPortWidth, ViewPortHeight, ViewPortDepthMin, ViewPortDepthMax};
             passes.push_back(node);
@@ -457,19 +491,7 @@ namespace hammock {
             return layouts;
         }
 
-        /**
-         * Compiles the render graph - analyzes dependencies and makes optimization
-         */
-        void build() {
-            // TODO right now, wea re making no optimizations and assume that rendering goes in order of render pass submission
-
-            // To be replaced when above task is implemented
-            for (int i = 0; i < passes.size(); i++) {
-                optimizedOrderOfPasses.push_back(i);
-            }
-
-
-            // Transition all input images to required layouts and map all uniform buffers
+        void prepareResources() {
             for (auto &pass: passes) {
                 for (auto &input: pass.inputs) {
                     ResourceNode &resource = resources[input.resourceName];
@@ -487,9 +509,277 @@ namespace hammock {
                     }
                 }
             }
+        }
 
+        void purgeNonContributingPasses() {
+            size_t originalSize = passes.size();
+            // Identify swapchain writers and initialize queue
+            std::queue<size_t> worklist;
+            for (int i = 0; i < passes.size(); i++) {
+                for (auto &write: passes[i].outputs) {
+                    ResourceNode &resource = resources[write.resourceName];
+                    if (resource.isSwapChainAttachment()) {
+                        passes[i].flags |= RENDER_PASS_FLAGS_SWAPCHAIN_WRITE;
+                        passes[i].flags |= RENDER_PASS_FLAGS_CONTRIBUTING;
+                        worklist.push(i);
+                    }
+                }
+            }
 
-            // Next, we need to build the descriptor layouts for each pass
+            // Traverse upwards marking contributing passes
+            while (!worklist.empty()) {
+                size_t passIndex = worklist.front();
+                worklist.pop();
+
+                const auto &pass = passes[passIndex];
+
+                // Iterate over the inputs of this pass
+                for (const auto &input: pass.inputs) {
+                    auto it = resources.find(input.resourceName);
+                    if (it != resources.end()) {
+                        // Find the passes that write to this resource
+                        for (int i = 0; i < passes.size(); i++) {
+                            for (auto &write: passes[i].outputs) {
+                                if (write.resourceName == input.resourceName) {
+                                    ResourceNode &resource = resources[write.resourceName];
+                                    if (!(passes[i].flags & RENDER_PASS_FLAGS_CONTRIBUTING)) {
+                                        passes[i].flags |= RENDER_PASS_FLAGS_CONTRIBUTING;
+                                        worklist.push(i);
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+            // Remove non-contributing passes
+            std::erase_if(passes, [](const RenderPassNode &pass) {
+                return !(pass.flags & RENDER_PASS_FLAGS_CONTRIBUTING);
+            });
+
+            Logger::log(LOG_LEVEL_DEBUG, "Purged %d non-contributing passes\n", originalSize - passes.size());
+        }
+
+        void detectDependencies() {
+            // for each pass
+            for (int passIdx = 0; passIdx < passes.size(); passIdx++) {
+                // for each input of the current pass
+                for (auto &input: passes[passIdx].inputs) {
+                    // find which passes write to the input
+                    for (int i = 0; i < passes.size(); i++) {
+                        for (auto &write: passes[i].outputs) {
+                            if (write.resourceName == input.resourceName) {
+                                passes[passIdx].dependencies.push_back(&passes[i]);
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        void topologicallySortPasses() {
+            // Clear existing sorted passes
+            sortedPasses.clear();
+
+            // First pass: Add Graphics passes
+            for (int passIdx = 0; passIdx < passes.size(); passIdx++) {
+                RenderPassNode &passNode = passes[passIdx];
+                if (passNode.type == CommandQueueFamily::Graphics) {
+                    sortedPasses.push_back(&passNode);
+                }
+            }
+
+            // Second pass: Add Compute passes
+            for (int passIdx = 0; passIdx < passes.size(); passIdx++) {
+                RenderPassNode &passNode = passes[passIdx];
+                if (passNode.type == CommandQueueFamily::Compute) {
+                    sortedPasses.push_back(&passNode);
+                }
+            }
+
+            // Third pass: Add Transfer passes
+            for (int passIdx = 0; passIdx < passes.size(); passIdx++) {
+                RenderPassNode &passNode = passes[passIdx];
+                if (passNode.type == CommandQueueFamily::Transfer) {
+                    sortedPasses.push_back(&passNode);
+                }
+            }
+            Logger::log(LOG_LEVEL_DEBUG, "Topological order: ");
+            for (int i = 0; i < sortedPasses.size(); i++) {
+                Logger::log(LOG_LEVEL_DEBUG, " \"%s\" -> ", sortedPasses[i]->name.c_str());
+            }
+            Logger::log(LOG_LEVEL_DEBUG, " PRESENT\n");
+        }
+
+        bool needsNewGroup(const SubmissionGroup &currentGroup,
+                           RenderPassNode *newPass,
+                           size_t globalIndex) {
+            // For the very first pass (globalIndex==0), no group exists yet so no need to split.
+            if (globalIndex == 0)
+                return false;
+
+            // Rule 1: Check if the immediately preceding pass in global order is of a different queue.
+            // If so, newPass is not contiguous with the previous work on the same queue.
+            if (sortedPasses[globalIndex - 1]->type != newPass->type)
+                return true;
+
+            // Rule 2: Check if newPass depends on any pass that is NOT in the current submission group.
+            // (This would signal that newPass is waiting on work that was separated by an inter-queue dependency.)
+            for (RenderPassNode *dep: newPass->dependencies) {
+                // If a dependency is not found among the passes already recorded in the current group,
+                // then we require a new submission group.
+                if (std::find(currentGroup.renderPassNodes.begin(),
+                              currentGroup.renderPassNodes.end(),
+                              dep) == currentGroup.renderPassNodes.end()) {
+                    return true;
+                }
+            }
+
+            // Otherwise, the candidate pass can be merged into the current group.
+            return false;
+        }
+
+        void groupPassesBySubmissionGroup() {
+            // Iterate through the global sorted list.
+            for (size_t i = 0; i < sortedPasses.size(); ++i) {
+                RenderPassNode *pass = sortedPasses[i];
+                CommandQueueFamily qf = pass->type;
+
+                // Create an initial group for this queue family if needed.
+                if (groupsByQueue[qf].empty()) {
+                    SubmissionGroup newGroup;
+                    newGroup.queueFamily = qf;
+                    newGroup.globalStartIndex = i; // first pass in this group.
+                    groupsByQueue[qf].push_back(newGroup);
+                } else {
+                    // Get the last submission group for this queue family.
+                    SubmissionGroup &currentGroup = groupsByQueue[qf].back();
+                    if (needsNewGroup(currentGroup, pass, i)) {
+                        SubmissionGroup newGroup;
+                        newGroup.queueFamily = qf;
+                        newGroup.globalStartIndex = i;
+                        groupsByQueue[qf].push_back(newGroup);
+                    }
+                }
+
+                // Add the current pass to the latest submission group for its queue.
+                groupsByQueue[qf].back().renderPassNodes.push_back(pass);
+            }
+        }
+
+        void executionOrderSortPasses() {
+            for (auto &queueFamily: groupsByQueue) {
+                for (auto &group: queueFamily.second) {
+                    // Gather all submission groups (from all queue families) into a single vector.
+                    for (auto &kv: groupsByQueue) {
+                        for (auto &group: kv.second) {
+                            allGroups.push_back({&group, group.globalStartIndex});
+                        }
+                    }
+                }
+
+                // Sort the groups by the global start index so that they follow the topological order.
+                std::sort(allGroups.begin(), allGroups.end(),
+                          [](const GroupWithGlobalIndex &a, const GroupWithGlobalIndex &b) {
+                              return a.globalStartIndex < b.globalStartIndex;
+                          });
+            }
+
+            Logger::log(LOG_LEVEL_DEBUG, "Execution order: ");
+            for (int i = 0; i < allGroups.size(); i++) {
+                Logger::log(LOG_LEVEL_DEBUG, " EXECUTION_GROUP{ ");
+                for (int j = 0; j < allGroups[i].group->renderPassNodes.size(); j++) {
+                    Logger::log(LOG_LEVEL_DEBUG, " \"%s\" -> ", allGroups[i].group->renderPassNodes[j]->name.c_str());
+                }
+                Logger::log(LOG_LEVEL_DEBUG, " } -> ");
+            }
+            Logger::log(LOG_LEVEL_DEBUG, " \"present\"\n");
+
+            VkSemaphoreCreateInfo semaphoreInfo = {};
+            semaphoreInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
+
+            // Iterate over the groups in order of execution
+            for (const auto &groupWithIndex: allGroups) {
+                SubmissionGroup *group = groupWithIndex.group;
+
+                group->commandBuffers.resize(SwapChain::MAX_FRAMES_IN_FLIGHT);
+                group->waitSemaphores.resize(SwapChain::MAX_FRAMES_IN_FLIGHT);
+                group->signalSemaphores.resize(SwapChain::MAX_FRAMES_IN_FLIGHT);
+
+                for (int frameIdx = 0; frameIdx < SwapChain::MAX_FRAMES_IN_FLIGHT; frameIdx++) {
+                    // First, create a command buffer for the group
+                    // conservative approach for wait stage
+                    group->waitStage = VK_PIPELINE_STAGE_ALL_COMMANDS_BIT;
+
+                    // Allocate the command buffers
+                    if (group->queueFamily == CommandQueueFamily::Graphics) {
+                        group->commandBuffers[frameIdx] = fm.createCommandBuffer<CommandQueueFamily::Graphics>();
+                    }
+
+                    if (group->queueFamily == CommandQueueFamily::Compute) {
+                        group->commandBuffers[frameIdx] = fm.createCommandBuffer<CommandQueueFamily::Compute>();
+                    }
+
+                    if (group->queueFamily == CommandQueueFamily::Transfer) {
+                        group->commandBuffers[frameIdx] = fm.createCommandBuffer<CommandQueueFamily::Transfer>();
+                    }
+
+                    // If this is a first and only group, we don!t create any semaphores
+                    if (group->globalStartIndex == 0 && allGroups.size() == 1) {
+                        continue;
+                    }
+
+                    // If this is the first group, we only create a signal semaphore
+                    if (group->globalStartIndex == 0) {
+                        ASSERT(
+                            vkCreateSemaphore(device.device(), &semaphoreInfo, nullptr, &group->signalSemaphores[
+                                frameIdx]) == VK_SUCCESS, "Could not create semaphore");
+                        continue;
+                    }
+
+                    // If this is the last group, we only create wait semaphore
+                    if (group->globalStartIndex == allGroups.size() - 1) {
+                        ASSERT(
+                            vkCreateSemaphore(device.device(), &semaphoreInfo, nullptr, &group->waitSemaphores[frameIdx]
+                            ) == VK_SUCCESS, "Could not create semaphore");
+                        continue;
+                    }
+
+                    // Else we create both wait and signal semaphores
+                    ASSERT(
+                        vkCreateSemaphore(device.device(), &semaphoreInfo, nullptr, &group->waitSemaphores[frameIdx]) ==
+                        VK_SUCCESS, "Could not create semaphore");
+                    ASSERT(
+                        vkCreateSemaphore(device.device(), &semaphoreInfo, nullptr, &group->signalSemaphores[frameIdx])
+                        == VK_SUCCESS, "Could not create semaphore");
+                }
+            }
+        }
+
+        /**
+         * Compiles the render graph - analyzes dependencies and makes optimization
+         */
+        void build() {
+            // First we purge passes that do not contribute to the final image
+            purgeNonContributingPasses();
+
+            // Topologically sort the passes
+            topologicallySortPasses();
+
+            // Detect and fill dependencies between passes
+            detectDependencies();
+
+            // Group passes into submission groups
+            groupPassesBySubmissionGroup();
+
+            // Sort passes in optimal execution order
+            executionOrderSortPasses();
+
+            // Transition all input images to required layouts and map all uniform buffers
+            prepareResources();
+
+            // Finally we need to build the descriptor layouts for each pass
             buildDescriptors();
         }
 
@@ -499,9 +789,8 @@ namespace hammock {
          * TODO cache the descriptor layouts
          */
         void buildDescriptors() {
-            ASSERT(!optimizedOrderOfPasses.empty(), "Optimized Order of Passes is empty!");
             // Create descriptors
-            for (auto &passIdx: optimizedOrderOfPasses) {
+            for (int passIdx = 0; passIdx < passes.size(); passIdx++) {
                 RenderPassNode &passNode = passes[passIdx];
                 for (auto &descInfo: passNode.descriptorLayoutInfos) {
                     // Create a descriptor set layout
@@ -570,23 +859,24 @@ namespace hammock {
          * @param pass Render pass
          * @param stage Stage of the barrier
          */
-        void applyPipelineBarriers(RenderPassNode &pass, PipelineBarrier::TransitionStage stage) {
-            for (auto &access: pass.outputs) {
+        void applyPipelineBarriers(RenderPassNode *pass, VkCommandBuffer commandBuffer,
+                                   PipelineBarrier::TransitionStage stage) {
+            for (auto &access: pass->outputs) {
                 ASSERT(resources.find(access.resourceName) != resources.end(),
                        "Could not find the output");
 
                 ResourceNode &resourceNode = resources[access.resourceName];
-                PipelineBarrier barrier(rm, fm, resourceNode, access, stage);
+                PipelineBarrier barrier(rm, fm, commandBuffer, resourceNode, access, stage);
                 if (barrier.isNeeded()) {
                     barrier.apply();
                 }
             }
-            for (auto &access: pass.inputs) {
+            for (auto &access: pass->inputs) {
                 ASSERT(resources.find(access.resourceName) != resources.end(),
                        "Could not find the output");
 
                 ResourceNode &resourceNode = resources[access.resourceName];
-                PipelineBarrier barrier(rm, fm, resourceNode, access, stage);
+                PipelineBarrier barrier(rm, fm, commandBuffer, resourceNode, access, stage);
                 if (barrier.isNeeded()) {
                     barrier.apply();
                 }
@@ -598,15 +888,15 @@ namespace hammock {
          * @param pass Render pass
          * @return Returns list of render passes color attachments
          */
-        std::vector<VkRenderingAttachmentInfo> collectColorAttachmentInfos(RenderPassNode &pass) {
+        std::vector<VkRenderingAttachmentInfo> collectColorAttachmentInfos(RenderPassNode *pass) {
             std::vector<VkRenderingAttachmentInfo> colorAttachments;
-            for (auto &access: pass.outputs) {
+            for (auto &access: pass->outputs) {
                 ResourceNode &node = resources[access.resourceName];
                 if (node.isSwapChainAttachment() && node.isColorAttachment()) {
                     VkRenderingAttachmentInfo attachmentInfo{};
                     attachmentInfo.sType = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO;
                     attachmentInfo.imageView = fm.getSwapChain()->
-                            getImageView(fm.getImageIndex());
+                            getImageView(fm.getSwapChainImageIndex());
                     attachmentInfo.imageLayout = access.requiredLayout;
                     attachmentInfo.clearValue = {};
                     attachmentInfo.loadOp = access.loadOp;
@@ -631,14 +921,14 @@ namespace hammock {
          * @param pass Render pass
          * @return Returns VkRenderingAttachmentInfo of depth attachment from a pass
          */
-        std::optional<VkRenderingAttachmentInfo> collectDepthStencilAttachmentInfo(RenderPassNode &pass) {
-            for (auto &access: pass.outputs) {
+        std::optional<VkRenderingAttachmentInfo> collectDepthStencilAttachmentInfo(RenderPassNode *pass) {
+            for (auto &access: pass->outputs) {
                 ResourceNode &node = resources[access.resourceName];
                 if (node.isSwapChainAttachment() && node.isDepthAttachment()) {
                     VkRenderingAttachmentInfo attachmentInfo{};
                     attachmentInfo.sType = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO;
                     attachmentInfo.imageView = fm.getSwapChain()->
-                            getDepthImageView(fm.getImageIndex());
+                            getDepthImageView(fm.getSwapChainImageIndex());
                     attachmentInfo.imageLayout = access.requiredLayout;
                     attachmentInfo.clearValue = {};
                     attachmentInfo.loadOp = access.loadOp;
@@ -660,16 +950,12 @@ namespace hammock {
             return std::nullopt;
         }
 
-        /**
-         * Creates context for the givem renderpass
-         * @param pass Render pass
-         * @return Returns RenderPassContext for the given renderpass
-         */
-        RenderPassContext createRenderPassContext(RenderPassNode &pass) {
+
+        RenderPassContext createRenderPassContext(RenderPassNode *pass, VkCommandBuffer commandBuffer) {
             RenderPassContext context{};
 
             // Fill the context with input resources
-            for (auto &access: pass.inputs) {
+            for (auto &access: pass->inputs) {
                 ASSERT(resources.find(access.resourceName) != resources.end(),
                        "Could not find the input");
                 ResourceNode &resourceNode = resources[access.resourceName];
@@ -678,7 +964,7 @@ namespace hammock {
             }
 
             // fill context with input resources
-            for (auto &access: pass.outputs) {
+            for (auto &access: pass->outputs) {
                 ASSERT(resources.find(access.resourceName) != resources.end(),
                        "Could not find the output");
                 ResourceNode &resourceNode = resources[access.resourceName];
@@ -686,12 +972,12 @@ namespace hammock {
             }
 
             // fill context with descriptor sets
-            for (const auto &desc: pass.descriptors) {
-                context.descriptorSets.push_back(pass.resolveDescriptorSet(desc.first, fm.getFrameIndex()));
+            for (const auto &desc: pass->descriptors) {
+                context.descriptorSets.push_back(pass->resolveDescriptorSet(desc.first, fm.getFrameIndex()));
             }
 
             // Add the command buffer and frame index to the context
-            context.commandBuffer = fm.getCurrentCommandBuffer();
+            context.commandBuffer = commandBuffer;
             context.frameIndex = fm.getFrameIndex();
 
             return context;
@@ -701,7 +987,7 @@ namespace hammock {
          * Begins the rendering using the dynamic rendering extension
          * @param pass Current Render pass
          */
-        void beginRendering(RenderPassNode &pass) {
+        void beginRendering(RenderPassNode *pass, VkCommandBuffer commandBuffer) {
             // Collect attachments
             std::vector<VkRenderingAttachmentInfo> colorAttachments = collectColorAttachmentInfos(pass);
             auto depthStencilOptional = collectDepthStencilAttachmentInfo(pass);
@@ -720,27 +1006,44 @@ namespace hammock {
             renderingInfo.pStencilAttachment = VK_NULL_HANDLE;
 
             // Start a dynamic rendering
-            vkCmdBeginRendering(fm.getCurrentCommandBuffer(), &renderingInfo);
+            vkCmdBeginRendering(commandBuffer, &renderingInfo);
 
             // Set viewport and scissors
-            VkViewport viewport = Init::viewport(pass.viewport.X, pass.viewport.Y, pass.viewport.Z, pass.viewport.W);
-            if (pass.viewportSize == RelativeViewPortSize::SwapChainRelative) {
-                viewport = Init::viewport(pass.viewport.X * fm.getSwapChain()->getSwapChainExtent().width,
-                                          pass.viewport.Y * fm.getSwapChain()->getSwapChainExtent().height,
-                                          pass.viewport.Z, pass.viewport.W);
+            VkViewport viewport = Init::viewport(pass->viewport.X, pass->viewport.Y, pass->viewport.Z,
+                                                 pass->viewport.W);
+            if (pass->viewportSize == RelativeViewPortSize::SwapChainRelative) {
+                viewport = Init::viewport(pass->viewport.X * fm.getSwapChain()->getSwapChainExtent().width,
+                                          pass->viewport.Y * fm.getSwapChain()->getSwapChainExtent().height,
+                                          pass->viewport.Z, pass->viewport.W);
             }
             VkRect2D scissor{
                 {0, 0}, VkExtent2D{static_cast<uint32_t>(viewport.width), static_cast<uint32_t>(viewport.height)}
             };
-            vkCmdSetViewport(fm.getCurrentCommandBuffer(), 0, 1, &viewport);
-            vkCmdSetScissor(fm.getCurrentCommandBuffer(), 0, 1, &scissor);
+            vkCmdSetViewport(commandBuffer, 0, 1, &viewport);
+            vkCmdSetScissor(commandBuffer, 0, 1, &scissor);
         }
 
         /**
          * Ends the rendering for current renderpass
          */
-        void endRendering() {
-            vkCmdEndRendering(fm.getCurrentCommandBuffer());
+        void endRendering(VkCommandBuffer commandBuffer) {
+            vkCmdEndRendering(commandBuffer);
+        }
+
+        void recordRenderPass(RenderPassNode *pass, VkCommandBuffer commandBuffer) {
+            if (pass->type == CommandQueueFamily::Graphics) {
+                beginRendering(pass, commandBuffer);
+            }
+            // Create context
+            RenderPassContext renderPassContext = createRenderPassContext(pass, commandBuffer);
+
+            // Dispatch the render pass callback
+            ASSERT(pass->executeFunc, "Execute function is not set!");
+            pass->executeFunc(renderPassContext);
+
+            if (pass->type == CommandQueueFamily::Graphics) {
+                endRendering(commandBuffer);
+            }
         }
 
 
@@ -748,42 +1051,54 @@ namespace hammock {
          * Executes the graph and makes necessary barrier transitions.
          */
         void execute() {
-            ASSERT(optimizedOrderOfPasses.size() == passes.size(),
-                   "RenderPass queue sizes don't match. This should not happen.");
+            // Begin frame
+            if (fm.beginFrame()) {
+                // Iterate over the groups in order of execution
+                for (const auto &groupWithIndex: allGroups) {
+                    SubmissionGroup *group = groupWithIndex.group;
+                    VkCommandBuffer commandBuffer = group->commandBuffers[fm.getFrameIndex()];
 
-            // Begin frame by creating master command buffer
-            if (VkCommandBuffer cmd = fm.beginFrame()) {
-                // Loop over passes in the optimized order
-                for (const auto &passIndex: optimizedOrderOfPasses) {
-                    ASSERT(
-                        std::find(optimizedOrderOfPasses.begin(),optimizedOrderOfPasses.end(), passIndex) !=
-                        optimizedOrderOfPasses.end(),
-                        "Could not find the pass based of index. This should not happen")
-                    ;
-                    // Render pass node and its context
-                    RenderPassNode &pass = passes[passIndex];
+                    // Begin command buffer for the group
+                    fm.beginCommandBuffer(commandBuffer);
 
-                    // Apply required barriers
-                    applyPipelineBarriers(pass, PipelineBarrier::TransitionStage::RequiredLayout);
+                    // Exectue all passes from the group
+                    for (auto &pass: group->renderPassNodes) {
+                        // Apply required barriers
+                        applyPipelineBarriers(pass, commandBuffer, PipelineBarrier::TransitionStage::RequiredLayout);
 
-                    // Begin rendering
-                    beginRendering(pass);
+                        recordRenderPass(pass, commandBuffer);
+                        // post rendering barrier
+                        applyPipelineBarriers(pass, commandBuffer, PipelineBarrier::TransitionStage::FinalLayout);
+                    }
 
-                    // Create render passs context
-                    RenderPassContext passCtx = createRenderPassContext(pass);
+                    // Submit command buffer
+                    // If this is the last group, we submit the command buffer for present
+                    if (group->globalStartIndex == allGroups.size() - 1) {
+                        fm.submitPresentCommandBuffer(commandBuffer);
+                        continue;
+                    }
 
-                    // Dispatch the render pass callback
-                    ASSERT(pass.executeFunc, "Execute function is not set!");
-                    pass.executeFunc(passCtx);
+                    // If not, we submit command buffer to corresponding queue
 
-                    // End rendering
-                    endRendering();
+                    if (group->queueFamily == CommandQueueFamily::Graphics) {
+                        fm.submitCommandBuffer<CommandQueueFamily::Graphics>(
+                            commandBuffer, {group->waitSemaphores[fm.getFrameIndex()]},
+                            {group->signalSemaphores[fm.getFrameIndex()]}, group->waitStage);
+                    }
 
-                    // post rendering barrier
-                    applyPipelineBarriers(pass, PipelineBarrier::TransitionStage::FinalLayout);
+                    if (group->queueFamily == CommandQueueFamily::Compute) {
+                        fm.submitCommandBuffer<CommandQueueFamily::Compute>(
+                            commandBuffer, {group->waitSemaphores[fm.getFrameIndex()]},
+                            {group->signalSemaphores[fm.getFrameIndex()]}, group->waitStage);
+                    }
+
+                    if (group->queueFamily == CommandQueueFamily::Transfer) {
+                        fm.submitCommandBuffer<CommandQueueFamily::Transfer>(
+                            commandBuffer, {group->waitSemaphores[fm.getFrameIndex()]},
+                            {group->signalSemaphores[fm.getFrameIndex()]}, group->waitStage);
+                    }
                 }
 
-                // End work on the current frame and submit the command buffer
                 fm.endFrame();
             }
         }

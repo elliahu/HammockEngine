@@ -86,7 +86,7 @@ int main() {
         });
 
 
-    auto halfResPass = graphicsQueueRenderGraph->addPass<RenderPassType::Graphics>("half-res-pass")
+    auto halfResPass = graphicsQueueRenderGraph->addPass<CommandQueueFamily::Graphics>("half-res-pass")
             .read(ResourceAccess{
                 .resourceName = "vertex-buffer",
             })
@@ -110,7 +110,7 @@ int main() {
             });
 
 
-    auto presentPass = graphicsQueueRenderGraph->addPass<RenderPassType::Graphics, RelativeViewPortSize::SwapChainRelative>("present-pass")
+    auto presentPass = graphicsQueueRenderGraph->addPass<CommandQueueFamily::Graphics, RelativeViewPortSize::SwapChainRelative>("present-pass")
             .read(ResourceAccess{
                 .resourceName = "uniform-buffer",
             })

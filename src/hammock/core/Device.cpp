@@ -11,13 +11,15 @@ namespace hammock {
     Device::Device(VulkanInstance &instance, VkSurfaceKHR surface) : instance{instance}, surface_{surface} {
         pickPhysicalDevice();
         createLogicalDevice();
-        createCommandPool();
+        createCommandPools();
         createMemoryAllocator();
     }
 
     Device::~Device() {
         vmaDestroyAllocator(allocator_);
-        vkDestroyCommandPool(device_, commandPool, nullptr);
+        vkDestroyCommandPool(device_, graphicsCommandPool, nullptr);
+        vkDestroyCommandPool(device_, transferCommandPool, nullptr);
+        vkDestroyCommandPool(device_, computeCommandPool, nullptr);
         vkDestroyDevice(device_, nullptr);
     }
 
@@ -52,7 +54,10 @@ namespace hammock {
             physicalDevice);
 
         std::vector<VkDeviceQueueCreateInfo> queueCreateInfos;
-        std::set<uint32_t> uniqueQueueFamilies = {queFamilyIndices.graphicsFamily, queFamilyIndices.presentFamily};
+        std::set<uint32_t> uniqueQueueFamilies = {
+            queFamilyIndices.graphicsFamily, queFamilyIndices.presentFamily, queFamilyIndices.transferFamily,
+            queFamilyIndices.computeFamily
+        };
 
         float queuePriority = 1.0f;
         for (uint32_t queueFamily: uniqueQueueFamilies) {
@@ -118,7 +123,7 @@ namespace hammock {
         vkGetDeviceQueue(device_, queFamilyIndices.computeFamily, 0, &computeQueue_);
     }
 
-    void Device::createCommandPool() {
+    void Device::createCommandPools() {
         auto queFamilyIndices =
                 findPhysicalQueueFamilies();
 
@@ -128,8 +133,21 @@ namespace hammock {
         poolInfo.flags =
                 VK_COMMAND_POOL_CREATE_TRANSIENT_BIT | VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
 
-        if (vkCreateCommandPool(device_, &poolInfo, nullptr, &commandPool) != VK_SUCCESS) {
-            throw std::runtime_error("failed to create command pool!");
+        if (vkCreateCommandPool(device_, &poolInfo, nullptr, &graphicsCommandPool) != VK_SUCCESS) {
+            throw std::runtime_error("failed to create graphics command pool!");
+        }
+
+        poolInfo.queueFamilyIndex = queFamilyIndices.transferFamily;
+        poolInfo.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
+
+        if (vkCreateCommandPool(device_, &poolInfo, nullptr, &transferCommandPool) != VK_SUCCESS) {
+            throw std::runtime_error("failed to create transfer command pool!");
+        }
+
+        poolInfo.queueFamilyIndex = queFamilyIndices.computeFamily;
+
+        if (vkCreateCommandPool(device_, &poolInfo, nullptr, &computeCommandPool) != VK_SUCCESS) {
+            throw std::runtime_error("failed to create compute command pool!");
         }
     }
 
@@ -353,7 +371,7 @@ namespace hammock {
         VkCommandBufferAllocateInfo allocInfo{};
         allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
         allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
-        allocInfo.commandPool = commandPool;
+        allocInfo.commandPool = graphicsCommandPool;
         allocInfo.commandBufferCount = 1;
 
         VkCommandBuffer commandBuffer;
@@ -378,7 +396,7 @@ namespace hammock {
         vkQueueSubmit(graphicsQueue_, 1, &submitInfo, VK_NULL_HANDLE);
         vkQueueWaitIdle(graphicsQueue_);
 
-        vkFreeCommandBuffers(device_, commandPool, 1, &commandBuffer);
+        vkFreeCommandBuffers(device_, graphicsCommandPool, 1, &commandBuffer);
     }
 
     void Device::copyBuffer(const VkBuffer srcBuffer, const VkBuffer dstBuffer, const VkDeviceSize size) const {
