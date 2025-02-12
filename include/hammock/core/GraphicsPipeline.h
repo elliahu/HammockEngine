@@ -29,12 +29,13 @@ namespace hammock {
             Device &device;
 
             struct ShaderModuleInfo {
-                const std::vector<char> &byteCode;
+                const std::vector<char> &byteCode{};
                 std::string entryFunc = "main";
             };
 
-            ShaderModuleInfo VS;
-            ShaderModuleInfo FS;
+            ShaderModuleInfo vertexShader{};
+            ShaderModuleInfo fragmentShader{};
+            ShaderModuleInfo computeShader{};
 
             std::vector<VkDescriptorSetLayout> descriptorSetLayouts;
             std::vector<VkPushConstantRange> pushConstantRanges;
@@ -74,7 +75,7 @@ namespace hammock {
 
         static std::unique_ptr<GraphicsPipeline> createGraphicsPipelinePtr(GraphicsPipelineCreateInfo createInfo);
 
-        void bind(VkCommandBuffer commandBuffer);
+        void bind(VkCommandBuffer commandBuffer, VkPipelineBindPoint pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS);
 
         ~GraphicsPipeline();
 
@@ -93,5 +94,6 @@ namespace hammock {
         VkPipeline graphicsPipeline;
         VkShaderModule vertShaderModule;
         VkShaderModule fragShaderModule;
+        VkShaderModule computeShaderModule;
     };
 }

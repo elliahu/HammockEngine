@@ -194,12 +194,12 @@ hammock:: DeviceStorageResourceHandle<hammock::Texture2D> hammock::Generator::ge
     pipeline = GraphicsPipeline::createGraphicsPipelinePtr({
         .debugName = "PrefilteredMap_generation",
         .device = device,
-        .VS{
+        .vertexShader{
             .byteCode = hammock::Filesystem::readFile(
                 Shader::getCompiledShaderPath("fullscreen_headless.vert.spv").string()),
             .entryFunc = "main"
         },
-        .FS{
+        .fragmentShader{
             .byteCode = hammock::Filesystem::readFile(
                 Shader::getCompiledShaderPath("generate_prefilteredmap.frag.spv").string()),
             .entryFunc = "main"
@@ -478,12 +478,12 @@ hammock::DeviceStorageResourceHandle<hammock::Texture2D> hammock::Generator::gen
     pipeline = GraphicsPipeline::createGraphicsPipelinePtr({
         .debugName = "PrefilteredMap_generation",
         .device = device,
-        .VS{
+        .vertexShader{
             .byteCode = hammock::Filesystem::readFile(
                 Shader::getCompiledShaderPath("fullscreen_headless.vert.spv").string()),
             .entryFunc = "main"
         },
-        .FS{
+        .fragmentShader{
             .byteCode = hammock::Filesystem::readFile(
                 Shader::getCompiledShaderPath("generate_prefilteredmap.frag.spv").string()),
             .entryFunc = "main"
@@ -683,12 +683,12 @@ hammock::DeviceStorageResourceHandle<hammock::Texture2D> hammock::Generator::gen
     pipeline = GraphicsPipeline::createGraphicsPipelinePtr({
         .debugName = "IrradianceMap_generation",
         .device = device,
-        .VS{
+        .vertexShader{
             .byteCode = hammock::Filesystem::readFile(
                 Shader::getCompiledShaderPath("fullscreen_headless.vert.spv").string()),
             .entryFunc = "main"
         },
-        .FS{
+        .fragmentShader{
             .byteCode = hammock::Filesystem::readFile(
                 Shader::getCompiledShaderPath("generate_irradiancemap.frag.spv").string()),
             .entryFunc = "main"
@@ -885,12 +885,12 @@ hammock::DeviceStorageResourceHandle<hammock::Texture2D> hammock::Generator::gen
     brdfLUTPipeline = GraphicsPipeline::createGraphicsPipelinePtr({
         .debugName = "BRDFLUT_generation",
         .device = device,
-        .VS{
+        .vertexShader{
             .byteCode = hammock::Filesystem::readFile(
                 Shader::getCompiledShaderPath("fullscreen_headless.vert.spv").string()),
             .entryFunc = "main"
         },
-        .FS{
+        .fragmentShader{
             .byteCode = hammock::Filesystem::readFile(Shader::getCompiledShaderPath("generate_brdflut.frag.spv").string()),
             .entryFunc = "main"
         },

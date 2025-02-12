@@ -8,6 +8,7 @@
 #include <type_traits>
 #include <optional>
 #include <tiny_gltf.h>
+#include <unordered_set>
 
 #include <hammock/core/Device.h>
 #include <hammock/core/CoreUtils.h>
@@ -32,12 +33,7 @@ namespace hammock {
             IndexBuffer,
             StorageBuffer,
             PushConstantData,
-            Image2D,
-            Image3D,
-            ImageCubeMap,
-            Image2DArray,
-            Image3DArray,
-            ImageCubeMapArray,
+            StorageImage,
             SwapChainColorAttachment,
             SwapChainDepthStencilAttachment,
             ColorAttachment,
@@ -73,6 +69,26 @@ namespace hammock {
             }
 
             return cachedHandles[frameIndex];
+        }
+
+        VkDescriptorType getDescriptorType() const {
+            switch (type) {
+                case Type::UniformBuffer:
+                    return VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+                case Type::StorageBuffer:
+                    return VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+                case Type::StorageImage:
+                    return VK_DESCRIPTOR_TYPE_STORAGE_IMAGE;
+                case Type::SwapChainColorAttachment:
+                    return VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+                case Type::SwapChainDepthStencilAttachment:
+                    return VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+                case Type::ColorAttachment:
+                    return VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+                case Type::DepthStencilAttachment:
+                    return VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+            }
+            return VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
         }
 
 
@@ -116,7 +132,7 @@ namespace hammock {
         }
 
         template<typename Type>
-        Type * get(const std::string &name) {
+        Type *get(const std::string &name) {
             ASSERT(inputs.contains(name) || outputs.contains(name), "Cannot find buffer with name '" + name + "'");
 
             if (inputs.contains(name)) {
@@ -134,9 +150,9 @@ namespace hammock {
             throw std::runtime_error("Cannot find buffer with name '" + name + "'");
         }
 
-        void bindVertexBuffers(const std::vector<std::string> &names,const std::vector<VkDeviceSize> &offsets) {
+        void bindVertexBuffers(const std::vector<std::string> &names, const std::vector<VkDeviceSize> &offsets) {
             std::vector<VkBuffer> buffers;
-            for (const auto &name : names) {
+            for (const auto &name: names) {
                 buffers.push_back(get<Buffer>(name)->getBuffer());
             }
 
@@ -144,18 +160,19 @@ namespace hammock {
         }
 
         void bindIndexBuffer(const std::string &name, VkIndexType indexType = VK_INDEX_TYPE_UINT32) {
-            vkCmdBindIndexBuffer(commandBuffer,get<Buffer>(name)->getBuffer(), 0,indexType);
+            vkCmdBindIndexBuffer(commandBuffer, get<Buffer>(name)->getBuffer(), 0, indexType);
         }
 
-        void bindDescriptorSet(uint32_t set, uint32_t binding, VkPipelineLayout layout,VkPipelineBindPoint bindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS) {
+        void bindDescriptorSet(uint32_t set, uint32_t binding, VkPipelineLayout layout,
+                               VkPipelineBindPoint bindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS) {
             vkCmdBindDescriptorSets(
-                    commandBuffer,
-                    bindPoint,
-                    layout,
-                    binding, 1,
-                    &descriptorSets[set],
-                    0,
-                    nullptr);
+                commandBuffer,
+                bindPoint,
+                layout,
+                binding, 1,
+                &descriptorSets[set],
+                0,
+                nullptr);
         }
     };
 
@@ -175,8 +192,9 @@ namespace hammock {
 
     enum RenderPassFlags : int32_t {
         RENDER_PASS_FLAGS_NONE = 0,
-        RENDER_PASS_FLAGS_SWAPCHAIN_WRITE = 1 << 0,
+        RENDER_PASS_FLAGS_SWAPCHAIN_WRITE = 1 << 0, // This render pass writes directly to swapchain image
         RENDER_PASS_FLAGS_CONTRIBUTING = 1 << 1,
+        // this render pass contributes to the final image (directly or indirectly)
     };
 
     /**
@@ -277,7 +295,7 @@ namespace hammock {
          *  Checks if resource needs barrier transition given its access
          * @return true if resource needs barrier transition, else false
          */
-        bool isNeeded(){
+        bool isNeeded() {
             if (node.isRenderingAttachment()) {
                 if (node.isSwapChainAttachment()) {
                     return true;
@@ -287,18 +305,17 @@ namespace hammock {
 
                 // check for layout change
                 if (transitionStage == TransitionStage::RequiredLayout) {
-                    layoutChangeNeeded =  attachment->getLayout() != access.requiredLayout;
+                    layoutChangeNeeded = attachment->getLayout() != access.requiredLayout;
                 }
                 if (transitionStage == TransitionStage::FinalLayout) {
-                    layoutChangeNeeded =  attachment->getLayout() != access.finalLayout && access.finalLayout !=
-                           VK_IMAGE_LAYOUT_UNDEFINED;
+                    layoutChangeNeeded = attachment->getLayout() != access.finalLayout && access.finalLayout !=
+                                         VK_IMAGE_LAYOUT_UNDEFINED;
                 }
 
                 // check for ownership transfer
                 ownerTransferNeeded = attachment->getQueueFamily() != access.queueFamily;
 
                 return layoutChangeNeeded || ownerTransferNeeded;
-
             }
             if (node.isBuffer()) {
                 // TODO support for buffer transition
@@ -311,7 +328,6 @@ namespace hammock {
          * Applies pre-render pipeline barrier transition
          */
         void apply() const;
-
 
     private:
         ResourceManager &rm;
@@ -367,7 +383,7 @@ namespace hammock {
         // Holds all the samplers
         std::unordered_map<std::string, ResourceHandle> samplers;
 
-        std::vector<RenderPassNode *> sortedPasses; // contains topologically sorted passes
+        std::vector<RenderPassNode *> topologicallySortedPasses; // contains topologically sorted passes
         std::unordered_map<CommandQueueFamily, std::vector<SubmissionGroup> > groupsByQueue;
         // submission groups by queue family
         std::vector<GroupWithGlobalIndex> allGroups; // all groups in execution order
@@ -656,35 +672,58 @@ namespace hammock {
         }
 
         void topologicallySortPasses() {
-            // Clear existing sorted passes
-            sortedPasses.clear();
+            // Clear the sorted list.
+            topologicallySortedPasses.clear();
 
-            // First pass: Add Graphics passes
-            for (int passIdx = 0; passIdx < passes.size(); passIdx++) {
-                RenderPassNode &passNode = passes[passIdx];
-                if (passNode.type == CommandQueueFamily::Graphics) {
-                    sortedPasses.push_back(&passNode);
+            // Map each pass to its in-degree (number of incoming dependencies).
+            std::unordered_map<std::string, int> inDegree;
+            for (auto &node: passes) {
+                inDegree[node.name] = 0;
+            }
+
+            // For each node, for each dependency it has, increment its in-degree.
+            // (If node A depends on B then B must run before A, so A’s in-degree increases.)
+            for (auto &node: passes) {
+                for (auto dep: node.dependencies) {
+                    inDegree[node.name]++;
                 }
             }
 
-            // Second pass: Add Compute passes
-            for (int passIdx = 0; passIdx < passes.size(); passIdx++) {
-                RenderPassNode &passNode = passes[passIdx];
-                if (passNode.type == CommandQueueFamily::Compute) {
-                    sortedPasses.push_back(&passNode);
+            // Use a set to mark nodes that have been processed.
+            std::unordered_set<std::string> processed;
+
+            // We repeatedly scan the passes in their original order,
+            // picking those with in-degree zero (i.e. all dependencies satisfied).
+            bool foundNodeInPass = true;
+            while (processed.size() < passes.size() && foundNodeInPass) {
+                foundNodeInPass = false;
+                // Iterate over passes in original order.
+                for (auto &node: passes) {
+                    // If this node has not been processed and has in-degree zero, process it.
+                    if (processed.find(node.name) == processed.end() && inDegree[node.name] == 0) {
+                        topologicallySortedPasses.push_back(&node);
+                        processed.insert(node.name);
+                        foundNodeInPass = true;
+                        // "Remove" this node: for every other node, if it depends on the current node, decrement its in-degree.
+                        for (auto &other: passes) {
+                            // Check if 'other' depends on 'node'
+                            for (auto *dep: other.dependencies) {
+                                if (dep->name == node.name) {
+                                    inDegree[other.name]--;
+                                }
+                            }
+                        }
+                    }
                 }
             }
 
-            // Third pass: Add Transfer passes
-            for (int passIdx = 0; passIdx < passes.size(); passIdx++) {
-                RenderPassNode &passNode = passes[passIdx];
-                if (passNode.type == CommandQueueFamily::Transfer) {
-                    sortedPasses.push_back(&passNode);
-                }
-            }
+            // If we haven't processed all nodes, there is a cycle.
+            ASSERT(processed.size() == passes.size(), "This graf is NOT ACYCLIC! This should not happen!");
+
+            // Log the resulting order.
             Logger::log(LOG_LEVEL_DEBUG, "Topological order: ");
-            for (int i = 0; i < sortedPasses.size(); i++) {
-                Logger::log(LOG_LEVEL_DEBUG, " \"%s\" -> ", sortedPasses[i]->name.c_str());
+            for (size_t i = 0; i < topologicallySortedPasses.size(); i++) {
+                Logger::log(LOG_LEVEL_DEBUG, " \"%s\" -> ", topologicallySortedPasses[i]->name.c_str());
             }
             Logger::log(LOG_LEVEL_DEBUG, " PRESENT\n");
         }
@@ -698,7 +737,7 @@ namespace hammock {
 
             // Rule 1: Check if the immediately preceding pass in global order is of a different queue.
             // If so, newPass is not contiguous with the previous work on the same queue.
-            if (sortedPasses[globalIndex - 1]->type != newPass->type)
+            if (topologicallySortedPasses[globalIndex - 1]->type != newPass->type)
                 return true;
 
             // Rule 2: Check if newPass depends on any pass that is NOT in the current submission group.
@@ -719,8 +758,8 @@ namespace hammock {
 
         void groupPassesBySubmissionGroup() {
             // Iterate through the global sorted list.
-            for (size_t i = 0; i < sortedPasses.size(); ++i) {
-                RenderPassNode *pass = sortedPasses[i];
+            for (size_t i = 0; i < topologicallySortedPasses.size(); ++i) {
+                RenderPassNode *pass = topologicallySortedPasses[i];
                 CommandQueueFamily qf = pass->type;
 
                 // Create an initial group for this queue family if needed.
@@ -745,23 +784,19 @@ namespace hammock {
             }
         }
 
-        void executionOrderSortPasses() {
-            for (auto &queueFamily: groupsByQueue) {
-                for (auto &group: queueFamily.second) {
-                    // Gather all submission groups (from all queue families) into a single vector.
-                    for (auto &kv: groupsByQueue) {
-                        for (auto &group: kv.second) {
-                            allGroups.push_back({&group, group.globalStartIndex});
-                        }
-                    }
+        void sortPassesByExecutionOrder() {
+            for (auto &kv: groupsByQueue) {
+                for (auto &group: kv.second) {
+                    allGroups.push_back({&group, group.globalStartIndex});
                 }
-
-                // Sort the groups by the global start index so that they follow the topological order.
-                std::sort(allGroups.begin(), allGroups.end(),
-                          [](const GroupWithGlobalIndex &a, const GroupWithGlobalIndex &b) {
-                              return a.globalStartIndex < b.globalStartIndex;
-                          });
             }
+
+            // Sort the groups by the global start index so that they follow the topological order.
+            std::sort(allGroups.begin(), allGroups.end(),
+                      [](const GroupWithGlobalIndex &a, const GroupWithGlobalIndex &b) {
+                          return a.globalStartIndex < b.globalStartIndex;
+                      });
+
 
             Logger::log(LOG_LEVEL_DEBUG, "Execution order: ");
             for (int i = 0; i < allGroups.size(); i++) {
@@ -841,17 +876,17 @@ namespace hammock {
             // First we purge passes that do not contribute to the final image
             purgeNonContributingPasses();
 
-            // Topologically sort the passes
-            topologicallySortPasses();
-
             // Detect and fill dependencies between passes
             detectDependencies();
+
+            // Topologically sort the passes
+            topologicallySortPasses();
 
             // Group passes into submission groups
             groupPassesBySubmissionGroup();
 
             // Sort passes in optimal execution order
-            executionOrderSortPasses();
+            sortPassesByExecutionOrder();
 
             // Transition all input images to required layouts and map all uniform buffers
             prepareResources();
@@ -864,6 +899,7 @@ namespace hammock {
         /**
          * Creates all descriptor layouts and sets. One set per frame in flight is created. One layout per set is created
          * TODO cache the descriptor layouts
+         * TODO descriptor arrays
          */
         void buildDescriptors() {
             // Create descriptors
@@ -882,10 +918,7 @@ namespace hammock {
 
                         ResourceNode &resourceNode = resources[binding.bindingNames.at(0)];
 
-                        VkDescriptorType type = resourceNode.isBuffer()
-                                                    ? VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER
-                                                    : VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-
+                        VkDescriptorType type = resourceNode.getDescriptorType();
                         descriptorSetLayoutBuilder.addBinding(binding.bindingIndex, type, binding.stageFlags,
                                                               binding.bindingNames.size(), binding.bindingFlags);
                     }
@@ -1137,8 +1170,9 @@ namespace hammock {
             }
         }
 
-        void releaseGroupResources(SubmissionGroup * group, VkCommandBuffer commandBuffer, CommandQueueFamily releaseToFamily) {
-            for (auto& pass : group->renderPassNodes) {
+        void releaseGroupResources(SubmissionGroup *group, VkCommandBuffer commandBuffer,
+                                   CommandQueueFamily releaseToFamily) {
+            for (auto &pass: group->renderPassNodes) {
                 for (auto &resource: pass->inputs) {
                     resource.queueFamily = releaseToFamily;
                 }
@@ -1157,7 +1191,6 @@ namespace hammock {
         void execute() {
             // Begin frame
             if (fm.beginFrame()) {
-
                 // Track command queue families
                 CommandQueueFamily previousFamily = CommandQueueFamily::Ignored;
 
@@ -1172,13 +1205,15 @@ namespace hammock {
                     // Exectue all passes from the group
                     for (int i = 0; i < group->renderPassNodes.size(); i++) {
                         // Pre pass barriers
-                        applyPipelineBarriers(group->renderPassNodes[i], commandBuffer, PipelineBarrier::TransitionStage::RequiredLayout);
+                        applyPipelineBarriers(group->renderPassNodes[i], commandBuffer,
+                                              PipelineBarrier::TransitionStage::RequiredLayout);
 
                         // Record the render pass to the command buffer
                         recordRenderPass(group->renderPassNodes[i], commandBuffer);
 
                         // post pass barrier
-                        applyPipelineBarriers(group->renderPassNodes[i], commandBuffer, PipelineBarrier::TransitionStage::FinalLayout);
+                        applyPipelineBarriers(group->renderPassNodes[i], commandBuffer,
+                                              PipelineBarrier::TransitionStage::FinalLayout);
                     }
 
                     // release resources owned by the group queue

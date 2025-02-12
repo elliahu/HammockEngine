@@ -9,8 +9,8 @@ std::unique_ptr<hammock::GraphicsPipeline> hammock::GraphicsPipeline::createGrap
     return std::make_unique<GraphicsPipeline>(createInfo);
 }
 
-void hammock::GraphicsPipeline::bind(VkCommandBuffer commandBuffer) {
-    vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, graphicsPipeline);
+void hammock::GraphicsPipeline::bind(VkCommandBuffer commandBuffer, VkPipelineBindPoint pipelineBindPoint) {
+    vkCmdBindPipeline(commandBuffer, pipelineBindPoint, graphicsPipeline);
 }
 
 hammock::GraphicsPipeline::~GraphicsPipeline() {
@@ -54,24 +54,40 @@ hammock::GraphicsPipeline::GraphicsPipeline(hammock::GraphicsPipeline::GraphicsP
             static_cast<uint32_t>(configInfo.dynamicStateEnables.size());
     configInfo.dynamicStateInfo.flags = 0;
 
-    createShaderModule(createInfo.VS.byteCode, &vertShaderModule);
-    createShaderModule(createInfo.FS.byteCode, &fragShaderModule);
+    std::vector<VkPipelineShaderStageCreateInfo> shaderStages;
 
-    VkPipelineShaderStageCreateInfo shaderStages[2];
-    shaderStages[0].sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
-    shaderStages[0].stage = VK_SHADER_STAGE_VERTEX_BIT;
-    shaderStages[0].module = vertShaderModule;
-    shaderStages[0].pName = createInfo.VS.entryFunc.c_str();
-    shaderStages[0].flags = 0;
-    shaderStages[0].pNext = nullptr;
-    shaderStages[0].pSpecializationInfo = nullptr;
-    shaderStages[1].sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
-    shaderStages[1].stage = VK_SHADER_STAGE_FRAGMENT_BIT;
-    shaderStages[1].module = fragShaderModule;
-    shaderStages[1].pName = createInfo.FS.entryFunc.c_str();
-    shaderStages[1].flags = 0;
-    shaderStages[1].pNext = nullptr;
-    shaderStages[1].pSpecializationInfo = nullptr;
+    if (createInfo.computeShader.byteCode.size() > 0) {
+        createShaderModule(createInfo.computeShader.byteCode, &computeShaderModule);
+        VkPipelineShaderStageCreateInfo shaderStageInfo{};
+        shaderStageInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
+        shaderStageInfo.stage = VK_SHADER_STAGE_VERTEX_BIT;
+        shaderStageInfo.module = vertShaderModule;
+        shaderStageInfo.pName = createInfo.vertexShader.entryFunc.c_str();
+        shaderStageInfo.flags = 0;
+        shaderStageInfo.pNext = nullptr;
+        shaderStageInfo.pSpecializationInfo = nullptr;
+        shaderStages.push_back(shaderStageInfo);
+    }
+    else {
+        createShaderModule(createInfo.vertexShader.byteCode, &vertShaderModule);
+        createShaderModule(createInfo.fragmentShader.byteCode, &fragShaderModule);
+        shaderStages.resize(2);
+        shaderStages[0].sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
+        shaderStages[0].stage = VK_SHADER_STAGE_VERTEX_BIT;
+        shaderStages[0].module = vertShaderModule;
+        shaderStages[0].pName = createInfo.vertexShader.entryFunc.c_str();
+        shaderStages[0].flags = 0;
+        shaderStages[0].pNext = nullptr;
+        shaderStages[0].pSpecializationInfo = nullptr;
+        shaderStages[1].sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
+        shaderStages[1].stage = VK_SHADER_STAGE_FRAGMENT_BIT;
+        shaderStages[1].module = fragShaderModule;
+        shaderStages[1].pName = createInfo.fragmentShader.entryFunc.c_str();
+        shaderStages[1].flags = 0;
+        shaderStages[1].pNext = nullptr;
+        shaderStages[1].pSpecializationInfo = nullptr;
+    }
+
 
     auto &bindingDescriptions = createInfo.graphicsState.vertexBufferBindings.vertexBindingDescriptions;
     auto &attributeDescriptions = createInfo.graphicsState.vertexBufferBindings.vertexAttributeDescriptions;
@@ -85,8 +101,8 @@ hammock::GraphicsPipeline::GraphicsPipeline(hammock::GraphicsPipeline::GraphicsP
 
     VkGraphicsPipelineCreateInfo pipelineInfo{};
     pipelineInfo.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
-    pipelineInfo.stageCount = 2;
-    pipelineInfo.pStages = shaderStages;
+    pipelineInfo.stageCount = shaderStages.size();
+    pipelineInfo.pStages = shaderStages.data();
     pipelineInfo.pVertexInputState = &vertexInputInfo;
     pipelineInfo.pInputAssemblyState = &configInfo.inputAssemblyInfo;
     pipelineInfo.pViewportState = &configInfo.viewportInfo;

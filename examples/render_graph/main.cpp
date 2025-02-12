@@ -34,35 +34,113 @@ int main() {
             .build();
 
     struct UniformBuffer {
-        HmckMat4 mvp;
-    } ubo;
+        HmckVec3 lightPosition;
+        float aspectRatio;
+        HmckVec4 fogColor = {0.f, 0.f, 0.f, 0.f};
 
-    // Load geometry
-    Geometry geometry{};
-    Loader(geometry, device, rm).loadglTF(assetPath("models/Sphere/Sphere.glb"));
+        struct {
+            HmckVec3 pos = {0.0f, 0.0f, 4.0f};
+            HmckVec3 lookat = {0.0f, 0.5f, 0.0f};
+            float fov = 10.0f;
+        } camera;
 
-    ResourceHandle vertexBuffer = rm.createVertexBuffer(
-        sizeof(geometry.vertices[0]),
-        static_cast<uint32_t>(geometry.vertices.size()),
-        static_cast<void *>(geometry.vertices.data())
-    );
+        HmckMat4 padding;
+    } uniformData;
 
-    ResourceHandle indexBuffer = rm.createIndexBuffer(
-        sizeof(geometry.indices[0]),
-        static_cast<uint32_t>(geometry.indices.size()),
-        static_cast<void *>(geometry.indices.data())
-    );
+    enum class SceneObjectType { Sphere = 0, Plane = 1 };
+
+    union SceneObjectProperty {
+        HmckVec4 positionAndRadius;
+        HmckVec4 normalAndDistance;
+    };
+
+    struct SceneObject {
+        SceneObjectProperty objectProperties;
+        HmckVec3 diffuse;
+        float specular{1.0f};
+        uint32_t id{0};
+        uint32_t objectType{0};
+        // Due to alignment rules we need to pad to make the element align at 16-bytes
+        HmckVec2 _pad;
+    };
+
+    uint32_t currentId = 0;
+
+    std::vector<SceneObject> sceneObjects{};
+
+    // Add some spheres to the scene
+    //std::vector<Sphere> spheres;
+    // Lambda to simplify object creation
+    auto addSphere = [&sceneObjects, &currentId](HmckVec3 pos, float radius, HmckVec3 diffuse, float specular) {
+        SceneObject sphere{};
+        sphere.id = currentId++;
+        sphere.objectProperties.positionAndRadius = HmckVec4{pos, radius};
+        sphere.diffuse = diffuse;
+        sphere.specular = specular;
+        sphere.objectType = (uint32_t) SceneObjectType::Sphere;
+        sceneObjects.push_back(sphere);
+    };
+
+    auto addPlane = [&sceneObjects, &currentId](HmckVec3 normal, float distance, HmckVec3 diffuse, float specular) {
+        SceneObject plane{};
+        plane.id = currentId++;
+        plane.objectProperties.normalAndDistance = HmckVec4{normal, distance};
+        plane.diffuse = diffuse;
+        plane.specular = specular;
+        plane.objectType = (uint32_t) SceneObjectType::Plane;
+        sceneObjects.push_back(plane);
+    };
+
+    addSphere({1.75f, -0.5f, 0.0f}, 1.0f, {0.0f, 1.0f, 0.0f}, 32.0f);
+    addSphere({0.0f, 1.0f, -0.5f}, 1.0f, {0.65f, 0.77f, 0.97f}, 32.0f);
+    addSphere({-1.75f, -0.75f, -0.5f}, 1.25f, {0.9f, 0.76f, 0.46f}, 32.0f);
+
+    const float roomDim = 4.0f;
+    addPlane({0.0f, 1.0f, 0.0f}, roomDim, {1.0f, 1.0f, 1.0f}, 32.0f);
+    addPlane({0.0f, -1.0f, 0.0f}, roomDim, {1.0f, 1.0f, 1.0f}, 32.0f);
+    addPlane({0.0f, 0.0f, 1.0f}, roomDim, {1.0f, 1.0f, 1.0f}, 32.0f);
+    addPlane({0.0f, 0.0f, -1.0f}, roomDim, {.0f, .0f, .0f}, 32.0f);
+    addPlane({-1.0f, 0.0f, 0.0f}, roomDim, {1.0f, 0.0f, 0.0f}, 32.0f);
+    addPlane({1.0f, 0.0f, 0.0f}, roomDim, {0.0f, 1.0f, 0.0f}, 32.0f);
+
+
+    VkDeviceSize storageBufferSize = sceneObjects.size() * sizeof(SceneObject);
+
+    ResourceHandle stagingBuffer = rm.createResource<Buffer>("staging-buffer", BufferDesc{
+                                                                 .instanceSize = sizeof(SceneObject),
+                                                                 .instanceCount = static_cast<uint32_t>(sceneObjects.
+                                                                     size()),
+                                                                 .usageFlags =
+                                                                 VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
+                                                                 .allocationFlags =
+                                                                 VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT,
+                                                                 // CPU & GPU
+                                                                 .sharingMode = VK_SHARING_MODE_CONCURRENT,
+                                                             });
+    rm.getResource<Buffer>(stagingBuffer)->map();
+    rm.getResource<Buffer>(stagingBuffer)->writeToBuffer(sceneObjects.data());
+    ResourceHandle storageBuffer = rm.createResource<Buffer>("compute-storage-buffer", BufferDesc{
+                                                                 .instanceSize = sizeof(SceneObject),
+                                                                 .instanceCount = static_cast<uint32_t>(sceneObjects.
+                                                                     size()),
+                                                                 .usageFlags =
+                                                                 VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT,
+                                                                 .allocationFlags =
+                                                                 VMA_ALLOCATION_CREATE_DEDICATED_MEMORY_BIT, // GPU only
+                                                                 .sharingMode = VK_SHARING_MODE_CONCURRENT,
+                                                             });
+    device.copyBuffer(rm.getResource<Buffer>(stagingBuffer)->getBuffer(),
+                      rm.getResource<Buffer>(storageBuffer)->getBuffer(), storageBufferSize);
+
 
     // Forward declare pipelines
-    std::unique_ptr<GraphicsPipeline> halfResPipeline = nullptr;
+    std::unique_ptr<GraphicsPipeline> computePipeline = nullptr;
     std::unique_ptr<GraphicsPipeline> presentPipeline = nullptr;
 
     // Create the actual render graph
     const auto renderGraph = std::make_unique<RenderGraph>(device, rm, renderContext, *descriptorPool);
-    renderGraph->addStaticResource<ResourceNode::Type::VertexBuffer>("vertex-buffer", vertexBuffer);
-    renderGraph->addStaticResource<ResourceNode::Type::IndexBuffer>("index-buffer", indexBuffer);
     renderGraph->addResource<ResourceNode::Type::UniformBuffer, Buffer, BufferDesc>(
-        "uniform-buffer", BufferDesc{
+        "compute-uniform-buffer", BufferDesc{
             .instanceSize = sizeof(UniformBuffer),
             .instanceCount = 1,
             .usageFlags =
@@ -71,53 +149,55 @@ int main() {
             VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT,
             .sharingMode = VK_SHARING_MODE_CONCURRENT,
         });
+    renderGraph->addStaticResource<ResourceNode::Type::StorageBuffer>("compute-storage-buffer", storageBuffer);
+    renderGraph->addResource<ResourceNode::Type::StorageImage, Image, ImageDesc>(
+        "compute-storage-image", ImageDesc{
+            .width = static_cast<uint32_t>(window.width),
+            .height = static_cast<uint32_t>(window.height),
+            .channels = 4,
+            .format = VK_FORMAT_R8G8B8A8_UNORM,
+            .usage = VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_STORAGE_BIT,
+            .imageType = VK_IMAGE_TYPE_2D,
+            .imageViewType = VK_IMAGE_VIEW_TYPE_2D,
+            .sharingMode = VK_SHARING_MODE_CONCURRENT
+        }
+    );
+    renderGraph->createSampler("default-sampler");
     renderGraph->addSwapChainImageResource<ResourceNode::Type::SwapChainColorAttachment>("swap-color-image");
-    renderGraph->addSwapChainDependentResource<ResourceNode::Type::ColorAttachment, Image, ImageDesc>(
-        "half-res-image", [&](VkExtent2D swapchain)-> ImageDesc {
-            return ImageDesc{
-                .width = swapchain.width,
-                .height = swapchain.height,
-                .channels = 4,
-                .format = VK_FORMAT_B8G8R8A8_UNORM,
-                .usage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,
-                .imageType = VK_IMAGE_TYPE_2D,
-                .imageViewType = VK_IMAGE_VIEW_TYPE_2D,
-            };
-        });
-    renderGraph->createSampler("sampler"); // this is our default sampler
 
 
-    renderGraph->addPass<CommandQueueFamily::Graphics>("half-res-pass")
+    renderGraph->addPass<CommandQueueFamily::Compute>("compute-pass")
             .read(ResourceAccess{
-                .resourceName = "vertex-buffer",
+                .resourceName = "compute-uniform-buffer",
             })
             .read(ResourceAccess{
-                .resourceName = "index-buffer",
+                .resourceName = "compute-storage-buffer",
             })
+            .descriptor(0, {
+                            {0, {"compute-storage-image"}, VK_SHADER_STAGE_COMPUTE_BIT},
+                            {1, {"compute-uniform-buffer"}, VK_SHADER_STAGE_COMPUTE_BIT},
+                            {2, {"compute-storage-buffer"}, VK_SHADER_STAGE_COMPUTE_BIT}
+                        })
             .write(ResourceAccess{
-                .resourceName = "half-res-image",
-                .requiredLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+                .resourceName = "compute-storage-image",
+                .requiredLayout = VK_IMAGE_LAYOUT_GENERAL,
             })
             .execute([&](RenderPassContext context)-> void {
-                context.bindVertexBuffers({"vertex-buffer"},{0});
-                context.bindIndexBuffer({"index-buffer"});
-                halfResPipeline->bind(context.commandBuffer);
-                vkCmdDraw(context.commandBuffer, 3, 1, 0, 0);
+                computePipeline->bind(context.commandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE);
+                context.bindDescriptorSet(0, 0, computePipeline->graphicsPipelineLayout,
+                                          VK_PIPELINE_BIND_POINT_COMPUTE);
+                // TODO
             });
 
 
     renderGraph->addPass<CommandQueueFamily::Graphics, RelativeViewPortSize::SwapChainRelative>("present-pass")
             .read(ResourceAccess{
-                .resourceName = "uniform-buffer",
-            })
-            .read(ResourceAccess{
-                .resourceName = "half-res-image",
-                .requiredLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+                .resourceName = "compute-storage-image",
+                .requiredLayout = VK_IMAGE_LAYOUT_GENERAL,
                 .loadOp = VK_ATTACHMENT_LOAD_OP_LOAD
             })
             .descriptor(0, {
-                            {0, {"uniform-buffer"}, VK_SHADER_STAGE_ALL_GRAPHICS},
-                            {1, {"half-res-image"}, VK_SHADER_STAGE_ALL_GRAPHICS}
+                            {0, {"compute-storage-image"}, VK_SHADER_STAGE_FRAGMENT_BIT},
                         })
             .write(ResourceAccess{
                 .resourceName = "swap-color-image",
@@ -125,39 +205,20 @@ int main() {
                 .finalLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR,
             })
             .execute([&](RenderPassContext context)-> void {
-                presentPipeline->bind(context.commandBuffer);
-
-                // Update buffer data
-                HmckMat4 projection = Projection().perspective(45.f, renderContext.getAspectRatio(), 0.1f, 100.f);
-                HmckMat4 view = Projection().view(HmckVec3{0.f, 0.f, 6.0f}, HmckVec3{0.f, 0.f, 0.f},
-                                                  Projection().upPosY());
-                ubo.mvp = projection * view;
-
-                context.get<Buffer>("uniform-buffer")->writeToBuffer(&ubo);
-
-                context.bindDescriptorSet(0, 0,presentPipeline->graphicsPipelineLayout, VK_PIPELINE_BIND_POINT_GRAPHICS);
-
-                vkCmdDrawIndexed(context.commandBuffer, geometry.indices.size(), 1, 0, 0, 0);
+                presentPipeline->bind(context.commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS);
+                context.bindDescriptorSet(0, 0, presentPipeline->graphicsPipelineLayout,
+                                          VK_PIPELINE_BIND_POINT_GRAPHICS);
+                // TODO
             });
-
-    renderGraph->addPass<CommandQueueFamily::Graphics>("to-be-purged-pass")
-            .read(ResourceAccess{
-                .resourceName = "swap-color-image",
-                .requiredLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
-                .loadOp = VK_ATTACHMENT_LOAD_OP_LOAD
-            })
-            .execute([&](RenderPassContext context)-> void {
-            });
-
 
     renderGraph->build();
 
-    halfResPipeline = GraphicsPipeline::createGraphicsPipelinePtr({
+    computePipeline = GraphicsPipeline::createGraphicsPipelinePtr({
         .debugName = "half-res-pipeline",
         .device = device,
-        .VS
+        .vertexShader
         {.byteCode = Filesystem::readFile(compiledShaderPath("fullscreen.vert")),},
-        .FS
+        .fragmentShader
         {.byteCode = Filesystem::readFile(compiledShaderPath("fullscreen.frag")),},
         .descriptorSetLayouts = {},
         .pushConstantRanges{},
@@ -178,9 +239,9 @@ int main() {
     presentPipeline = GraphicsPipeline::createGraphicsPipelinePtr({
         .debugName = "present-pipeline",
         .device = device,
-        .VS
+        .vertexShader
         {.byteCode = Filesystem::readFile(compiledShaderPath("rendergraph.vert")),},
-        .FS
+        .fragmentShader
         {.byteCode = Filesystem::readFile(compiledShaderPath("rendergraph.frag")),},
         .descriptorSetLayouts = {
             renderGraph->getDescriptorSetLayouts("present-pass")
@@ -198,6 +259,7 @@ int main() {
             .colorAttachmentFormats = {renderContext.getSwapChain()->getSwapChainImageFormat()},
         }
     });
+
 
     device.waitIdle();
     while (!window.shouldClose()) {
