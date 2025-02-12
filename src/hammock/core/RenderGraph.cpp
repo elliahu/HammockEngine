@@ -9,7 +9,7 @@ void hammock::PipelineBarrier::apply() const {
             newLayout = access.finalLayout;
         }
 
-        if (node.isSwapChainAttachment()) {
+        if (node.isSwapChainImage()) {
             VkImageSubresourceRange subresourceRange = {};
             subresourceRange.aspectMask = node.isDepthAttachment()
                     ? VK_IMAGE_ASPECT_DEPTH_BIT
@@ -24,7 +24,7 @@ void hammock::PipelineBarrier::apply() const {
 
             transitionImageLayout(
                 commandBuffer,
-                node.isDepthAttachment() ? renderContext.getSwapChain()->getDepthImage(renderContext.getSwapChainImageIndex()) : renderContext.getSwapChain()->getImage(renderContext.getSwapChainImageIndex()),
+                 renderContext.getSwapChain()->getImage(renderContext.getSwapChainImageIndex()),
                 VK_IMAGE_LAYOUT_UNDEFINED, newLayout, subresourceRange);
             return;
         }

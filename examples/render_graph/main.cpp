@@ -35,6 +35,7 @@ int main() {
 
 
 
+
     struct UniformBuffer {
         HmckVec3 lightPosition = {1.0f, 1.0f, 1.0f};
         float aspectRatio;
@@ -169,7 +170,7 @@ int main() {
         }
     );
     renderGraph->createSampler("default-sampler");
-    renderGraph->addSwapChainImageResource<ResourceNode::Type::SwapChainColorAttachment>("swap-color-image");
+    renderGraph->addSwapChainImageResource("swap-color-image");
 
 
     renderGraph->addPass<CommandQueueFamily::Compute>("compute-pass")
@@ -217,6 +218,16 @@ int main() {
                                           VK_PIPELINE_BIND_POINT_GRAPHICS);
                 vkCmdDraw(context.commandBuffer, 3, 1, 0, 0);
             });
+
+    // renderGraph->addPass<CommandQueueFamily::Graphics, RelativeViewPortSize::SwapChainRelative>("user-interface-pass")
+    //         .write(ResourceAccess{
+    //             .resourceName = "swap-color-image",
+    //             .requiredLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+    //             .finalLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR,
+    //         })
+    //         .execute([&](RenderPassContext context)-> void {
+    //
+    //         });
 
     renderGraph->build();
 

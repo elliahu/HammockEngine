@@ -34,8 +34,7 @@ namespace hammock {
             StorageBuffer,
             PushConstantData,
             StorageImage,
-            SwapChainColorAttachment,
-            SwapChainDepthStencilAttachment,
+            SwapChainImage,
             ColorAttachment,
             DepthStencilAttachment,
         } type;
@@ -79,20 +78,19 @@ namespace hammock {
 
         bool isImage() const {
             return type == Type::ColorAttachment || type == Type::DepthStencilAttachment || type ==
-                   Type::SwapChainColorAttachment || type == Type::SwapChainDepthStencilAttachment || type ==
-                   Type::StorageImage;
+                   Type::SwapChainImage ||  type == Type::StorageImage;
         }
 
         bool isColorAttachment() const {
-            return type == Type::ColorAttachment || type == Type::SwapChainColorAttachment;
+            return type == Type::ColorAttachment || type == Type::SwapChainImage;
         }
 
         bool isDepthAttachment() const {
-            return type == Type::DepthStencilAttachment || type == Type::SwapChainDepthStencilAttachment;
+            return type == Type::DepthStencilAttachment;
         }
 
-        bool isSwapChainAttachment() const {
-            return type == Type::SwapChainColorAttachment || type == Type::SwapChainDepthStencilAttachment;
+        bool isSwapChainImage() const {
+            return type == Type::SwapChainImage;
         }
     };
 
@@ -279,7 +277,7 @@ namespace hammock {
          */
         bool isNeeded() {
             if (node.isImage()) {
-                if (node.isSwapChainAttachment()) {
+                if (node.isSwapChainImage()) {
                     return true;
                 }
                 ResourceHandle handle = node.resolve(rm, renderContext.getFrameIndex());
@@ -503,13 +501,10 @@ namespace hammock {
          * @tparam Type Type of the SwapChain attachment (SwapChainColorAttachment or SwapChainDepthStencilAttachment)
          * @param name Name of the resource
          */
-        template<ResourceNode::Type Type, typename = std::enable_if_t<
-            Type == ResourceNode::Type::SwapChainColorAttachment || Type ==
-            ResourceNode::Type::SwapChainDepthStencilAttachment> >
         void addSwapChainImageResource(const std::string &name) {
             ResourceNode node;
             node.name = name;
-            node.type = Type;
+            node.type = ResourceNode::Type::SwapChainImage;
             node.resolver = nullptr;
             resources[name] = std::move(node);
         }
@@ -602,7 +597,7 @@ namespace hammock {
             for (int i = 0; i < passes.size(); i++) {
                 for (auto &write: passes[i].outputs) {
                     ResourceNode &resource = resources[write.resourceName];
-                    if (resource.isSwapChainAttachment()) {
+                    if (resource.isSwapChainImage()) {
                         passes[i].flags |= RENDER_PASS_FLAGS_SWAPCHAIN_WRITE;
                         passes[i].flags |= RENDER_PASS_FLAGS_CONTRIBUTING;
                         worklist.push(i);
@@ -1034,7 +1029,7 @@ namespace hammock {
             std::vector<VkRenderingAttachmentInfo> colorAttachments;
             for (auto &access: pass->outputs) {
                 ResourceNode &node = resources[access.resourceName];
-                if (node.isSwapChainAttachment() && node.isColorAttachment()) {
+                if (node.isSwapChainImage() && node.isColorAttachment()) {
                     VkRenderingAttachmentInfo attachmentInfo{};
                     attachmentInfo.sType = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO;
                     attachmentInfo.imageView = fm.getSwapChain()->
@@ -1066,18 +1061,6 @@ namespace hammock {
         std::optional<VkRenderingAttachmentInfo> collectDepthStencilAttachmentInfo(RenderPassNode *pass) {
             for (auto &access: pass->outputs) {
                 ResourceNode &node = resources[access.resourceName];
-                if (node.isSwapChainAttachment() && node.isDepthAttachment()) {
-                    VkRenderingAttachmentInfo attachmentInfo{};
-                    attachmentInfo.sType = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO;
-                    attachmentInfo.imageView = fm.getSwapChain()->
-                            getDepthImageView(fm.getSwapChainImageIndex());
-                    attachmentInfo.imageLayout = access.requiredLayout;
-                    attachmentInfo.clearValue = {};
-                    attachmentInfo.loadOp = access.loadOp;
-                    attachmentInfo.storeOp = access.storeOp;
-                    return attachmentInfo;
-                }
-
                 if (node.isDepthAttachment()) {
                     ASSERT(node.resolver, "Resolver is nullptr!");
                     ResourceHandle handle = node.resolve(rm, fm.getFrameIndex());
