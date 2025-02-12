@@ -77,7 +77,7 @@ namespace hammock {
     }
 
     VkResult SwapChain::submitCommandBuffers(
-        const VkCommandBuffer *buffers, const uint32_t *imageIndex) {
+        const VkCommandBuffer *buffers, const uint32_t *imageIndex, VkSemaphore waitForSemaphore) {
         if (imagesInFlight[*imageIndex] != VK_NULL_HANDLE) {
             vkWaitForFences(device.device(), 1, &imagesInFlight[*imageIndex], VK_TRUE, UINT64_MAX);
         }
@@ -86,10 +86,15 @@ namespace hammock {
         VkSubmitInfo submitInfo = {};
         submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
 
-        const VkSemaphore waitSemaphores[] = {imageAvailableSemaphores[currentFrame]};
-        constexpr VkPipelineStageFlags waitStages[] = {VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT};
-        submitInfo.waitSemaphoreCount = 1;
-        submitInfo.pWaitSemaphores = waitSemaphores;
+
+        std::vector<VkSemaphore> waitSemaphores{};
+        waitSemaphores.push_back(imageAvailableSemaphores[currentFrame]);
+        if (waitForSemaphore != VK_NULL_HANDLE) {
+            waitSemaphores.push_back(waitForSemaphore);
+        }
+        constexpr VkPipelineStageFlags waitStages[] = {VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT};
+        submitInfo.waitSemaphoreCount = waitSemaphores.size();
+        submitInfo.pWaitSemaphores = waitSemaphores.data();
         submitInfo.pWaitDstStageMask = waitStages;
 
         submitInfo.commandBufferCount = 1;

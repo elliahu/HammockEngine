@@ -113,7 +113,7 @@ namespace hammock {
             }
         }
 
-        void submitPresentCommandBuffer(VkCommandBuffer commandBuffer);
+        void submitPresentCommandBuffer(VkCommandBuffer commandBuffer, VkSemaphore wait);
 
         bool beginFrame();
 

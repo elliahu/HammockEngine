@@ -191,7 +191,7 @@ hammock:: DeviceStorageResourceHandle<hammock::Texture2D> hammock::Generator::ge
         uint32_t numSamples = 32u;
     } pushBlock;
 
-    pipeline = GraphicsPipeline::createGraphicsPipelinePtr({
+    pipeline = GraphicsPipeline::create({
         .debugName = "PrefilteredMap_generation",
         .device = device,
         .vertexShader{
@@ -268,11 +268,11 @@ hammock:: DeviceStorageResourceHandle<hammock::Texture2D> hammock::Generator::ge
         vkCmdBeginRenderPass(cmdBuf, &renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
 
 
-        vkCmdPushConstants(cmdBuf, pipeline->graphicsPipelineLayout,
+        vkCmdPushConstants(cmdBuf, pipeline->pipelineLayout,
                            VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(PushBlock), &pushBlock);
 
         pipeline->bind(cmdBuf);
-        vkCmdBindDescriptorSets(cmdBuf, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline->graphicsPipelineLayout, 0, 1,
+        vkCmdBindDescriptorSets(cmdBuf, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline->pipelineLayout, 0, 1,
                                 &descriptorset, 0, NULL);
 
         vkCmdDraw(cmdBuf, 3, 1, 0, 0);
@@ -475,7 +475,7 @@ hammock::DeviceStorageResourceHandle<hammock::Texture2D> hammock::Generator::gen
         unsigned int numSamples = 32u;
     } push;
 
-    pipeline = GraphicsPipeline::createGraphicsPipelinePtr({
+    pipeline = GraphicsPipeline::create({
         .debugName = "PrefilteredMap_generation",
         .device = device,
         .vertexShader{
@@ -535,9 +535,9 @@ hammock::DeviceStorageResourceHandle<hammock::Texture2D> hammock::Generator::gen
     vkCmdSetViewport(commandBuffer, 0, 1, &viewport);
     vkCmdSetScissor(commandBuffer, 0, 1, &scissor);
     pipeline->bind(commandBuffer);
-    vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline->graphicsPipelineLayout, 0, 1,
+    vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline->pipelineLayout, 0, 1,
                             &descriptorset, 0, nullptr);
-    vkCmdPushConstants(commandBuffer, pipeline->graphicsPipelineLayout, VK_SHADER_STAGE_FRAGMENT_BIT, 0,
+    vkCmdPushConstants(commandBuffer, pipeline->pipelineLayout, VK_SHADER_STAGE_FRAGMENT_BIT, 0,
                        sizeof(PushBlock), &push);
     vkCmdDraw(commandBuffer, 3, 1, 0, 0);
     vkCmdEndRenderPass(commandBuffer);
@@ -680,7 +680,7 @@ hammock::DeviceStorageResourceHandle<hammock::Texture2D> hammock::Generator::gen
                                                                        descriptor);
     vkUpdateDescriptorSets(device.device(), 1, &writeDescriptorSet, 0, nullptr);
 
-    pipeline = GraphicsPipeline::createGraphicsPipelinePtr({
+    pipeline = GraphicsPipeline::create({
         .debugName = "IrradianceMap_generation",
         .device = device,
         .vertexShader{
@@ -740,7 +740,7 @@ hammock::DeviceStorageResourceHandle<hammock::Texture2D> hammock::Generator::gen
     vkCmdSetViewport(commandBuffer, 0, 1, &viewport);
     vkCmdSetScissor(commandBuffer, 0, 1, &scissor);
     pipeline->bind(commandBuffer);
-    vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline->graphicsPipelineLayout, 0, 1,
+    vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline->pipelineLayout, 0, 1,
                             &descriptorset, 0, nullptr);
     struct PushBlock {
         // Sampling deltas
@@ -750,7 +750,7 @@ hammock::DeviceStorageResourceHandle<hammock::Texture2D> hammock::Generator::gen
                 .deltaPhi = (2.0f * static_cast<float>(M_PI)) / _deltaPhi,
                 .deltaTheta = (0.5f * static_cast<float>(M_PI)) / _deltaTheta
             };
-    vkCmdPushConstants(commandBuffer, pipeline->graphicsPipelineLayout, VK_SHADER_STAGE_FRAGMENT_BIT, 0,
+    vkCmdPushConstants(commandBuffer, pipeline->pipelineLayout, VK_SHADER_STAGE_FRAGMENT_BIT, 0,
                        2 * sizeof(float), &pushBlock);
     vkCmdDraw(commandBuffer, 3, 1, 0, 0);
     vkCmdEndRenderPass(commandBuffer);
@@ -882,7 +882,7 @@ hammock::DeviceStorageResourceHandle<hammock::Texture2D> hammock::Generator::gen
     VkDescriptorSetAllocateInfo allocInfo = Init::descriptorSetAllocateInfo(descriptorpool, &descriptorsetlayout, 1);
     checkResult(vkAllocateDescriptorSets(device.device(), &allocInfo, &descriptorset));
 
-    brdfLUTPipeline = GraphicsPipeline::createGraphicsPipelinePtr({
+    brdfLUTPipeline = GraphicsPipeline::create({
         .debugName = "BRDFLUT_generation",
         .device = device,
         .vertexShader{

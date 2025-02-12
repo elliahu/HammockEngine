@@ -521,6 +521,20 @@ namespace hammock {
                                  0, nullptr,
                                  1, &barrier);
         } else if (layoutOld == VK_IMAGE_LAYOUT_UNDEFINED && layoutNew ==
+                   VK_IMAGE_LAYOUT_GENERAL) {
+            barrier.srcAccessMask = 0;
+            barrier.dstAccessMask =  VK_ACCESS_SHADER_READ_BIT | VK_ACCESS_SHADER_WRITE_BIT;
+
+            VkPipelineStageFlags sourceStage = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
+            VkPipelineStageFlags destinationStage = VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT;
+
+            vkCmdPipelineBarrier(commandBuffer,
+                                 sourceStage, destinationStage,
+                                 0,
+                                 0, nullptr,
+                                 0, nullptr,
+                                 1, &barrier);
+        } else if (layoutOld == VK_IMAGE_LAYOUT_UNDEFINED && layoutNew ==
                    VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL) {
             // Transition for a color attachment:
             // - No previous accesses.

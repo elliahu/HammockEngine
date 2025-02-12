@@ -35,7 +35,6 @@ namespace hammock {
 
             ShaderModuleInfo vertexShader{};
             ShaderModuleInfo fragmentShader{};
-            ShaderModuleInfo computeShader{};
 
             std::vector<VkDescriptorSetLayout> descriptorSetLayouts;
             std::vector<VkPushConstantRange> pushConstantRanges;
@@ -71,21 +70,19 @@ namespace hammock {
     public:
         GraphicsPipeline(GraphicsPipelineCreateInfo &createInfo);
 
-        static GraphicsPipeline createGraphicsPipeline(GraphicsPipelineCreateInfo createInfo);
-
-        static std::unique_ptr<GraphicsPipeline> createGraphicsPipelinePtr(GraphicsPipelineCreateInfo createInfo);
-
-        void bind(VkCommandBuffer commandBuffer, VkPipelineBindPoint pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS);
+        GraphicsPipeline(const GraphicsPipeline &) = delete;
+        GraphicsPipeline &operator =(const GraphicsPipeline &) = delete;
 
         ~GraphicsPipeline();
 
-        GraphicsPipeline(const GraphicsPipeline &) = delete;
+        static std::unique_ptr<GraphicsPipeline> create(GraphicsPipelineCreateInfo createInfo);
 
-        GraphicsPipeline &operator =(const GraphicsPipeline &) = delete;
+        void bind(VkCommandBuffer commandBuffer, VkPipelineBindPoint pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS);
 
-        VkPipelineLayout graphicsPipelineLayout;
+        VkPipelineLayout pipelineLayout;
 
     private:
+
         static void defaultRenderPipelineConfig(GraphicsPipelineConfig &configInfo);
 
         void createShaderModule(const std::vector<char> &code, VkShaderModule *shaderModule) const;
@@ -94,6 +91,5 @@ namespace hammock {
         VkPipeline graphicsPipeline;
         VkShaderModule vertShaderModule;
         VkShaderModule fragShaderModule;
-        VkShaderModule computeShaderModule;
     };
 }

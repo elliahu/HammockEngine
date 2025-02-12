@@ -1,7 +1,7 @@
 #include "hammock/core/RenderGraph.h"
 
 void hammock::PipelineBarrier::apply() const {
-    if (node.isRenderingAttachment()) {
+    if (node.isImage()) {
         VkImageLayout newLayout = VK_IMAGE_LAYOUT_UNDEFINED;
         if (transitionStage == TransitionStage::RequiredLayout) {
             newLayout = access.requiredLayout;

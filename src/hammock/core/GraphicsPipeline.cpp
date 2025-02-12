@@ -1,10 +1,6 @@
 #include "hammock/core/GraphicsPipeline.h"
 
-hammock::GraphicsPipeline hammock::GraphicsPipeline::createGraphicsPipeline(GraphicsPipelineCreateInfo createInfo) {
-    return hammock::GraphicsPipeline(createInfo);
-}
-
-std::unique_ptr<hammock::GraphicsPipeline> hammock::GraphicsPipeline::createGraphicsPipelinePtr(
+std::unique_ptr<hammock::GraphicsPipeline> hammock::GraphicsPipeline::create(
     GraphicsPipelineCreateInfo createInfo) {
     return std::make_unique<GraphicsPipeline>(createInfo);
 }
@@ -16,7 +12,7 @@ void hammock::GraphicsPipeline::bind(VkCommandBuffer commandBuffer, VkPipelineBi
 hammock::GraphicsPipeline::~GraphicsPipeline() {
     vkDestroyShaderModule(device.device(), vertShaderModule, nullptr);
     vkDestroyShaderModule(device.device(), fragShaderModule, nullptr);
-    vkDestroyPipelineLayout(device.device(), graphicsPipelineLayout, nullptr);
+    vkDestroyPipelineLayout(device.device(), pipelineLayout, nullptr);
     vkDestroyPipeline(device.device(), graphicsPipeline, nullptr);
 }
 
@@ -30,7 +26,7 @@ hammock::GraphicsPipeline::GraphicsPipeline(hammock::GraphicsPipeline::GraphicsP
     pipelineLayoutInfo.pushConstantRangeCount = static_cast<uint32_t>(createInfo.pushConstantRanges.size());
     pipelineLayoutInfo.pPushConstantRanges = createInfo.pushConstantRanges.data();
 
-    if (vkCreatePipelineLayout(createInfo.device.device(), &pipelineLayoutInfo, nullptr, &graphicsPipelineLayout) !=
+    if (vkCreatePipelineLayout(createInfo.device.device(), &pipelineLayoutInfo, nullptr, &pipelineLayout) !=
         VK_SUCCESS) {
         throw std::runtime_error("failed to create pipeline layout");
     }
@@ -55,38 +51,26 @@ hammock::GraphicsPipeline::GraphicsPipeline(hammock::GraphicsPipeline::GraphicsP
     configInfo.dynamicStateInfo.flags = 0;
 
     std::vector<VkPipelineShaderStageCreateInfo> shaderStages;
+    shaderStages.resize(2);
 
-    if (createInfo.computeShader.byteCode.size() > 0) {
-        createShaderModule(createInfo.computeShader.byteCode, &computeShaderModule);
-        VkPipelineShaderStageCreateInfo shaderStageInfo{};
-        shaderStageInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
-        shaderStageInfo.stage = VK_SHADER_STAGE_VERTEX_BIT;
-        shaderStageInfo.module = vertShaderModule;
-        shaderStageInfo.pName = createInfo.vertexShader.entryFunc.c_str();
-        shaderStageInfo.flags = 0;
-        shaderStageInfo.pNext = nullptr;
-        shaderStageInfo.pSpecializationInfo = nullptr;
-        shaderStages.push_back(shaderStageInfo);
-    }
-    else {
-        createShaderModule(createInfo.vertexShader.byteCode, &vertShaderModule);
-        createShaderModule(createInfo.fragmentShader.byteCode, &fragShaderModule);
-        shaderStages.resize(2);
-        shaderStages[0].sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
-        shaderStages[0].stage = VK_SHADER_STAGE_VERTEX_BIT;
-        shaderStages[0].module = vertShaderModule;
-        shaderStages[0].pName = createInfo.vertexShader.entryFunc.c_str();
-        shaderStages[0].flags = 0;
-        shaderStages[0].pNext = nullptr;
-        shaderStages[0].pSpecializationInfo = nullptr;
-        shaderStages[1].sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
-        shaderStages[1].stage = VK_SHADER_STAGE_FRAGMENT_BIT;
-        shaderStages[1].module = fragShaderModule;
-        shaderStages[1].pName = createInfo.fragmentShader.entryFunc.c_str();
-        shaderStages[1].flags = 0;
-        shaderStages[1].pNext = nullptr;
-        shaderStages[1].pSpecializationInfo = nullptr;
-    }
+
+    createShaderModule(createInfo.vertexShader.byteCode, &vertShaderModule);
+    createShaderModule(createInfo.fragmentShader.byteCode, &fragShaderModule);
+    shaderStages.resize(2);
+    shaderStages[0].sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
+    shaderStages[0].stage = VK_SHADER_STAGE_VERTEX_BIT;
+    shaderStages[0].module = vertShaderModule;
+    shaderStages[0].pName = createInfo.vertexShader.entryFunc.c_str();
+    shaderStages[0].flags = 0;
+    shaderStages[0].pNext = nullptr;
+    shaderStages[0].pSpecializationInfo = nullptr;
+    shaderStages[1].sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
+    shaderStages[1].stage = VK_SHADER_STAGE_FRAGMENT_BIT;
+    shaderStages[1].module = fragShaderModule;
+    shaderStages[1].pName = createInfo.fragmentShader.entryFunc.c_str();
+    shaderStages[1].flags = 0;
+    shaderStages[1].pNext = nullptr;
+    shaderStages[1].pSpecializationInfo = nullptr;
 
 
     auto &bindingDescriptions = createInfo.graphicsState.vertexBufferBindings.vertexBindingDescriptions;
@@ -112,7 +96,7 @@ hammock::GraphicsPipeline::GraphicsPipeline(hammock::GraphicsPipeline::GraphicsP
     pipelineInfo.pDepthStencilState = &configInfo.depthStencilInfo;
     pipelineInfo.pDynamicState = &configInfo.dynamicStateInfo;
 
-    pipelineInfo.layout = graphicsPipelineLayout;
+    pipelineInfo.layout = pipelineLayout;
     pipelineInfo.renderPass = createInfo.renderPass;
     pipelineInfo.subpass = 0;
 
@@ -121,11 +105,15 @@ hammock::GraphicsPipeline::GraphicsPipeline(hammock::GraphicsPipeline::GraphicsP
 
     if (createInfo.dynamicRendering.enabled) {
         // Attachment information for dynamic rendering
-        VkPipelineRenderingCreateInfoKHR pipelineDynamicrenderingCreateInfo{ VK_STRUCTURE_TYPE_PIPELINE_RENDERING_CREATE_INFO_KHR };
+        VkPipelineRenderingCreateInfoKHR pipelineDynamicrenderingCreateInfo{
+            VK_STRUCTURE_TYPE_PIPELINE_RENDERING_CREATE_INFO_KHR
+        };
         pipelineDynamicrenderingCreateInfo.colorAttachmentCount = createInfo.dynamicRendering.colorAttachmentCount;
-        pipelineDynamicrenderingCreateInfo.pColorAttachmentFormats = createInfo.dynamicRendering.colorAttachmentFormats.data();
+        pipelineDynamicrenderingCreateInfo.pColorAttachmentFormats = createInfo.dynamicRendering.colorAttachmentFormats.
+                data();
         pipelineDynamicrenderingCreateInfo.depthAttachmentFormat = createInfo.dynamicRendering.depthAttachmentFormat;
-        pipelineDynamicrenderingCreateInfo.stencilAttachmentFormat = createInfo.dynamicRendering.stencilAttachmentFormat;
+        pipelineDynamicrenderingCreateInfo.stencilAttachmentFormat = createInfo.dynamicRendering.
+                stencilAttachmentFormat;
         pipelineInfo.pNext = &pipelineDynamicrenderingCreateInfo;
     }
 

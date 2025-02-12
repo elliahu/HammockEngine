@@ -6,6 +6,7 @@
 #include "Buffer.h"
 #include "Framebuffer.h"
 #include "GraphicsPipeline.h"
+#include "ComputePipeline.h"
 #include "Raytracing.h"
 #include "FrameManager.h"
 #include "Shader.h"

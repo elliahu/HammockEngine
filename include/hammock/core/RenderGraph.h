@@ -71,35 +71,16 @@ namespace hammock {
             return cachedHandles[frameIndex];
         }
 
-        VkDescriptorType getDescriptorType() const {
-            switch (type) {
-                case Type::UniformBuffer:
-                    return VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-                case Type::StorageBuffer:
-                    return VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
-                case Type::StorageImage:
-                    return VK_DESCRIPTOR_TYPE_STORAGE_IMAGE;
-                case Type::SwapChainColorAttachment:
-                    return VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-                case Type::SwapChainDepthStencilAttachment:
-                    return VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-                case Type::ColorAttachment:
-                    return VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-                case Type::DepthStencilAttachment:
-                    return VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-            }
-            return VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-        }
-
 
         bool isBuffer() const {
             return type == Type::UniformBuffer || type == Type::VertexBuffer || type == Type::IndexBuffer || type ==
                    Type::StorageBuffer;
         }
 
-        bool isRenderingAttachment() const {
+        bool isImage() const {
             return type == Type::ColorAttachment || type == Type::DepthStencilAttachment || type ==
-                   Type::SwapChainColorAttachment || type == Type::SwapChainDepthStencilAttachment;
+                   Type::SwapChainColorAttachment || type == Type::SwapChainDepthStencilAttachment || type ==
+                   Type::StorageImage;
         }
 
         bool isColorAttachment() const {
@@ -211,6 +192,7 @@ namespace hammock {
         struct DescriptorBinding {
             uint32_t bindingIndex;
             std::vector<std::string> bindingNames;
+            VkDescriptorType descriptorType;
             VkShaderStageFlags stageFlags;
             VkDescriptorBindingFlags bindingFlags = 0;
         };
@@ -296,7 +278,7 @@ namespace hammock {
          * @return true if resource needs barrier transition, else false
          */
         bool isNeeded() {
-            if (node.isRenderingAttachment()) {
+            if (node.isImage()) {
                 if (node.isSwapChainAttachment()) {
                     return true;
                 }
@@ -359,6 +341,7 @@ namespace hammock {
             std::vector<RenderPassNode *> renderPassNodes;
             std::vector<VkSemaphore> waitSemaphores; // one semaphore per frame in flight
             std::vector<VkSemaphore> signalSemaphores; // one semaphore per frame in flight
+            std::vector<VkFence> fences; // one fence for each command buffer
             VkPipelineStageFlags waitStage;
             std::vector<VkCommandBuffer> commandBuffers; // one command buffer per frame in flight
             size_t globalStartIndex = 0; // The global sorted order index of the first pass in this group.
@@ -422,6 +405,10 @@ namespace hammock {
 
                 for (auto &wait: group.group->waitSemaphores) {
                     vkDestroySemaphore(device.device(), wait, nullptr);
+                }
+
+                for (auto& fence: group.group->fences) {
+                    vkDestroyFence(device.device(), fence, nullptr);
                 }
             }
         }
@@ -589,10 +576,14 @@ namespace hammock {
                 for (auto &input: pass.inputs) {
                     ResourceNode &resource = resources[input.resourceName];
                     for (int frameIndex = 0; frameIndex < SwapChain::MAX_FRAMES_IN_FLIGHT; frameIndex++) {
-                        if (resource.isRenderingAttachment()) {
+                        if (resource.isImage()) {
                             Image *image = rm.getResource<Image>(
                                 resource.resolve(rm, frameIndex));
-                            image->queueImageLayoutTransition(VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+                            if (resource.type == ResourceNode::Type::StorageImage) {
+                                image->queueImageLayoutTransition(VK_IMAGE_LAYOUT_GENERAL);
+                            } else {
+                                image->queueImageLayoutTransition(VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+                            }
                         }
                         if (resource.type == ResourceNode::Type::UniformBuffer) {
                             Buffer *buffer = rm.getResource<Buffer>(
@@ -811,13 +802,20 @@ namespace hammock {
             VkSemaphoreCreateInfo semaphoreInfo = {};
             semaphoreInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
 
+            VkFenceCreateInfo fenceInfo = {};
+            fenceInfo.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
+            fenceInfo.flags = VK_FENCE_CREATE_SIGNALED_BIT;
+
             // Iterate over the groups in order of execution
             for (const auto &groupWithIndex: allGroups) {
                 SubmissionGroup *group = groupWithIndex.group;
 
+
                 group->commandBuffers.resize(SwapChain::MAX_FRAMES_IN_FLIGHT);
-                group->waitSemaphores.resize(SwapChain::MAX_FRAMES_IN_FLIGHT);
                 group->signalSemaphores.resize(SwapChain::MAX_FRAMES_IN_FLIGHT);
+                group->waitSemaphores.resize(SwapChain::MAX_FRAMES_IN_FLIGHT);
+                group->fences.resize(SwapChain::MAX_FRAMES_IN_FLIGHT);
+
 
                 for (int frameIdx = 0; frameIdx < SwapChain::MAX_FRAMES_IN_FLIGHT; frameIdx++) {
                     // First, create a command buffer for the group
@@ -836,6 +834,10 @@ namespace hammock {
                     if (group->queueFamily == CommandQueueFamily::Transfer) {
                         group->commandBuffers[frameIdx] = fm.createCommandBuffer<CommandQueueFamily::Transfer>();
                     }
+
+                    // Create fence for each command buffer
+                    ASSERT(vkCreateFence(device.device(), &fenceInfo, nullptr, &group->fences[frameIdx]) == VK_SUCCESS,
+                           "Could not create fences");
 
                     // If this is a first and only group, we don!t create any semaphores
                     if (group->globalStartIndex == 0 && allGroups.size() == 1) {
@@ -918,8 +920,8 @@ namespace hammock {
 
                         ResourceNode &resourceNode = resources[binding.bindingNames.at(0)];
 
-                        VkDescriptorType type = resourceNode.getDescriptorType();
-                        descriptorSetLayoutBuilder.addBinding(binding.bindingIndex, type, binding.stageFlags,
+                        descriptorSetLayoutBuilder.addBinding(binding.bindingIndex, binding.descriptorType,
+                                                              binding.stageFlags,
                                                               binding.bindingNames.size(), binding.bindingFlags);
                     }
 
@@ -934,8 +936,8 @@ namespace hammock {
                         auto &desc = passNode.descriptorLayoutInfos.at(setIndex);
                         auto writer = DescriptorWriter(*passNode.descriptors[setIndex].layout, pool);
                         VkDescriptorSet descriptorSet = VK_NULL_HANDLE;
-                        std::vector<VkDescriptorBufferInfo> bufferInfos;
-                        std::vector<VkDescriptorImageInfo> imageInfos;
+                        std::unordered_map<uint32_t, VkDescriptorBufferInfo> bufferInfos;
+                        std::unordered_map<uint32_t, VkDescriptorImageInfo> imageInfos;
 
                         for (auto &binding: desc) {
                             ResourceNode &resourceNode = resources[binding.bindingNames.at(0)];
@@ -943,11 +945,10 @@ namespace hammock {
                             if (resourceNode.isBuffer()) {
                                 auto *buffer = rm.getResource<Buffer>(
                                     resourceNode.resolve(rm, frameInFlight));
-                                bufferInfos.push_back(buffer->descriptorInfo());
-                                writer.writeBuffer(binding.bindingIndex, &bufferInfos.back());
+                                bufferInfos.emplace(binding.bindingIndex, buffer->descriptorInfo());
                             }
 
-                            if (resourceNode.isRenderingAttachment()) {
+                            if (resourceNode.isImage()) {
                                 const auto *image = rm.getResource<Image>(
                                     resourceNode.resolve(rm, frameInFlight));
 
@@ -957,10 +958,17 @@ namespace hammock {
 
                                 // Find the sampler that should be used
                                 auto result = std::find_if(passNode.inputs.begin(), passNode.inputs.end(),
-                                                           [=](ResourceAccess access) {
+                                                           [&](ResourceAccess access) {
                                                                return access.resourceName == resourceNode.name;
                                                            });
-                                ASSERT(result != passNode.inputs.end(), "WTF?");
+                                if (result == passNode.inputs.end()) {
+                                    result = std::find_if(passNode.outputs.begin(), passNode.outputs.end(),
+                                                          [&](ResourceAccess access) {
+                                                              return access.resourceName == resourceNode.name;
+                                                          });
+                                    ASSERT(result != passNode.outputs.end(), "WTF?");
+                                }
+
                                 VkSampler sampler = VK_NULL_HANDLE;
                                 if (result->samplerName.empty()) {
                                     // Use default sampler (the first one)
@@ -970,9 +978,15 @@ namespace hammock {
                                     sampler = rm.getResource<Sampler>(samplers.at(result->samplerName))->
                                             getSampler();
                                 }
-                                imageInfos.push_back(image->getDescriptorImageInfo(sampler));
-                                writer.writeImage(binding.bindingIndex, &imageInfos.back());
+                                imageInfos.emplace(binding.bindingIndex, image->getDescriptorImageInfo(sampler));
                             }
+                        }
+
+                        for (auto &bufferInfo: bufferInfos) {
+                            writer.writeBuffer(bufferInfo.first, &bufferInfo.second);
+                        }
+                        for (auto &imageInfo: imageInfos) {
+                            writer.writeImage(imageInfo.first, &imageInfo.second);
                         }
 
                         ASSERT(writer.build(descriptorSet), "Failed to build descriptor set!");
@@ -1191,6 +1205,7 @@ namespace hammock {
         void execute() {
             // Begin frame
             if (fm.beginFrame()) {
+                uint32_t frameIdx = fm.getFrameIndex();
                 // Track command queue families
                 CommandQueueFamily previousFamily = CommandQueueFamily::Ignored;
 
@@ -1221,29 +1236,53 @@ namespace hammock {
                     previousFamily = group->queueFamily;
 
                     // Submit command buffer
-                    // If this is the last group, we submit the command buffer for present
+                    // 3. Handle submission synchronization
                     if (group->globalStartIndex == allGroups.size() - 1) {
-                        fm.submitPresentCommandBuffer(commandBuffer);
-                        continue;
-                    }
+                        // Last group - let SwapChain handle presentation sync
+                        VkSemaphore waitSemaphore = VK_NULL_HANDLE;
+                        if (group->globalStartIndex != 0) {
+                            waitSemaphore = allGroups[group->globalStartIndex - 1].group->signalSemaphores[frameIdx];
+                        }
+                        fm.submitPresentCommandBuffer(commandBuffer, waitSemaphore);
+                    } else {
+                        // Other groups - handle inter-group sync
+                        std::vector<VkSemaphore> waitSemaphores{};
+                        std::vector<VkSemaphore> signalSemaphores{};
 
-                    // If not, we submit command buffer to corresponding queue
-                    if (group->queueFamily == CommandQueueFamily::Graphics) {
-                        fm.submitCommandBuffer<CommandQueueFamily::Graphics>(
-                            commandBuffer, {group->waitSemaphores[fm.getFrameIndex()]},
-                            {group->signalSemaphores[fm.getFrameIndex()]}, group->waitStage);
-                    }
 
-                    if (group->queueFamily == CommandQueueFamily::Compute) {
-                        fm.submitCommandBuffer<CommandQueueFamily::Compute>(
-                            commandBuffer, {group->waitSemaphores[fm.getFrameIndex()]},
-                            {group->signalSemaphores[fm.getFrameIndex()]}, group->waitStage);
-                    }
+                        // Wait on the previous group's signal semaphore
+                        if (group->globalStartIndex > 0) {
+                            auto prevGroup = allGroups[group->globalStartIndex - 1].group;
+                            if (prevGroup->signalSemaphores[frameIdx] != VK_NULL_HANDLE) {
+                                waitSemaphores.push_back(prevGroup->signalSemaphores[frameIdx]);
+                            }
+                        }
 
-                    if (group->queueFamily == CommandQueueFamily::Transfer) {
-                        fm.submitCommandBuffer<CommandQueueFamily::Transfer>(
-                            commandBuffer, {group->waitSemaphores[fm.getFrameIndex()]},
-                            {group->signalSemaphores[fm.getFrameIndex()]}, group->waitStage);
+                        // Signal to the next group
+                        if (group->globalStartIndex < allGroups.size() - 1) {
+                            if (group->signalSemaphores[frameIdx] != VK_NULL_HANDLE) {
+                                signalSemaphores.push_back(group->signalSemaphores[frameIdx]);
+                            }
+                        }
+
+                        // Submit to appropriate queue
+                        switch (group->queueFamily) {
+                            case CommandQueueFamily::Graphics:
+                                fm.submitCommandBuffer<CommandQueueFamily::Graphics>(
+                                    commandBuffer, waitSemaphores, signalSemaphores,
+                                    group->waitStage);
+                                break;
+                            case CommandQueueFamily::Compute:
+                                fm.submitCommandBuffer<CommandQueueFamily::Compute>(
+                                    commandBuffer, waitSemaphores, signalSemaphores,
+                                    group->waitStage);
+                                break;
+                            case CommandQueueFamily::Transfer:
+                                fm.submitCommandBuffer<CommandQueueFamily::Transfer>(
+                                    commandBuffer, waitSemaphores, signalSemaphores,
+                                    group->waitStage);
+                                break;
+                        }
                     }
                 }
 

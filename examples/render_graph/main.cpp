@@ -16,7 +16,7 @@ int main() {
     Device device{instance, window.getSurface()};
     ResourceManager rm{device};
     // TODO decouple context and window
-    FrameManager renderContext{window, device};
+    FrameManager fm{window, device};
     std::unique_ptr<DescriptorPool> descriptorPool = DescriptorPool::Builder(device)
             .setMaxSets(20000)
             .setPoolFlags(VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT)
@@ -33,8 +33,10 @@ int main() {
             .addPoolSize(VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT, 10000)
             .build();
 
+
+
     struct UniformBuffer {
-        HmckVec3 lightPosition;
+        HmckVec3 lightPosition = {1.0f, 1.0f, 1.0f};
         float aspectRatio;
         HmckVec4 fogColor = {0.f, 0.f, 0.f, 0.f};
 
@@ -46,6 +48,7 @@ int main() {
 
         HmckMat4 padding;
     } uniformData;
+    uniformData.aspectRatio = fm.getAspectRatio();
 
     enum class SceneObjectType { Sphere = 0, Plane = 1 };
 
@@ -124,21 +127,23 @@ int main() {
                                                                  .instanceCount = static_cast<uint32_t>(sceneObjects.
                                                                      size()),
                                                                  .usageFlags =
-                                                                 VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT,
+                                                                 VK_BUFFER_USAGE_STORAGE_BUFFER_BIT |
+                                                                 VK_BUFFER_USAGE_TRANSFER_DST_BIT,
                                                                  .allocationFlags =
                                                                  VMA_ALLOCATION_CREATE_DEDICATED_MEMORY_BIT, // GPU only
                                                                  .sharingMode = VK_SHARING_MODE_CONCURRENT,
                                                              });
     device.copyBuffer(rm.getResource<Buffer>(stagingBuffer)->getBuffer(),
                       rm.getResource<Buffer>(storageBuffer)->getBuffer(), storageBufferSize);
+    rm.releaseResource(stagingBuffer.getUid());
 
 
     // Forward declare pipelines
-    std::unique_ptr<GraphicsPipeline> computePipeline = nullptr;
+    std::unique_ptr<ComputePipeline> computePipeline = nullptr;
     std::unique_ptr<GraphicsPipeline> presentPipeline = nullptr;
 
     // Create the actual render graph
-    const auto renderGraph = std::make_unique<RenderGraph>(device, rm, renderContext, *descriptorPool);
+    const auto renderGraph = std::make_unique<RenderGraph>(device, rm, fm, *descriptorPool);
     renderGraph->addResource<ResourceNode::Type::UniformBuffer, Buffer, BufferDesc>(
         "compute-uniform-buffer", BufferDesc{
             .instanceSize = sizeof(UniformBuffer),
@@ -149,7 +154,8 @@ int main() {
             VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT,
             .sharingMode = VK_SHARING_MODE_CONCURRENT,
         });
-    renderGraph->addStaticResource<ResourceNode::Type::StorageBuffer>("compute-storage-buffer", storageBuffer);
+    renderGraph->addStaticResource<ResourceNode::Type::StorageBuffer>(
+        "compute-storage-buffer", storageBuffer);
     renderGraph->addResource<ResourceNode::Type::StorageImage, Image, ImageDesc>(
         "compute-storage-image", ImageDesc{
             .width = static_cast<uint32_t>(window.width),
@@ -174,9 +180,9 @@ int main() {
                 .resourceName = "compute-storage-buffer",
             })
             .descriptor(0, {
-                            {0, {"compute-storage-image"}, VK_SHADER_STAGE_COMPUTE_BIT},
-                            {1, {"compute-uniform-buffer"}, VK_SHADER_STAGE_COMPUTE_BIT},
-                            {2, {"compute-storage-buffer"}, VK_SHADER_STAGE_COMPUTE_BIT}
+                            {0, {"compute-storage-image"},VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, VK_SHADER_STAGE_COMPUTE_BIT},
+                            {1, {"compute-uniform-buffer"},VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_COMPUTE_BIT},
+                            {2, {"compute-storage-buffer"},VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_SHADER_STAGE_COMPUTE_BIT}
                         })
             .write(ResourceAccess{
                 .resourceName = "compute-storage-image",
@@ -184,9 +190,10 @@ int main() {
             })
             .execute([&](RenderPassContext context)-> void {
                 computePipeline->bind(context.commandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE);
-                context.bindDescriptorSet(0, 0, computePipeline->graphicsPipelineLayout,
+                context.bindDescriptorSet(0, 0, computePipeline->pipelineLayout,
                                           VK_PIPELINE_BIND_POINT_COMPUTE);
-                // TODO
+                context.get<Buffer>("compute-uniform-buffer")->writeToBuffer(&uniformData);
+                vkCmdDispatch(context.commandBuffer, window.width / 16, window.height / 16, 1);
             });
 
 
@@ -197,7 +204,7 @@ int main() {
                 .loadOp = VK_ATTACHMENT_LOAD_OP_LOAD
             })
             .descriptor(0, {
-                            {0, {"compute-storage-image"}, VK_SHADER_STAGE_FRAGMENT_BIT},
+                            {0, {"compute-storage-image"},VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT},
                         })
             .write(ResourceAccess{
                 .resourceName = "swap-color-image",
@@ -206,57 +213,38 @@ int main() {
             })
             .execute([&](RenderPassContext context)-> void {
                 presentPipeline->bind(context.commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS);
-                context.bindDescriptorSet(0, 0, presentPipeline->graphicsPipelineLayout,
+                context.bindDescriptorSet(0, 0, presentPipeline->pipelineLayout,
                                           VK_PIPELINE_BIND_POINT_GRAPHICS);
-                // TODO
+                vkCmdDraw(context.commandBuffer, 3, 1, 0, 0);
             });
 
     renderGraph->build();
 
-    computePipeline = GraphicsPipeline::createGraphicsPipelinePtr({
-        .debugName = "half-res-pipeline",
+    computePipeline = ComputePipeline::create({
+        .debugName = "compute-pipeline",
         .device = device,
-        .vertexShader
-        {.byteCode = Filesystem::readFile(compiledShaderPath("fullscreen.vert")),},
-        .fragmentShader
-        {.byteCode = Filesystem::readFile(compiledShaderPath("fullscreen.frag")),},
-        .descriptorSetLayouts = {},
-        .pushConstantRanges{},
-        .graphicsState{
-            .cullMode = VK_CULL_MODE_NONE,
-            .vertexBufferBindings{
-                .vertexBindingDescriptions = Vertex::vertexInputBindingDescriptions(),
-                .vertexAttributeDescriptions = Vertex::vertexInputAttributeDescriptions()
-            }
-        },
-        .dynamicRendering = {
-            .enabled = true,
-            .colorAttachmentCount = 1,
-            .colorAttachmentFormats = {renderContext.getSwapChain()->getSwapChainImageFormat()},
-        }
+        .computeShader{.byteCode = Filesystem::readFile(compiledShaderPath("raytrace.comp")),},
+        .descriptorSetLayouts = {renderGraph->getDescriptorSetLayouts("compute-pass")},
+        .pushConstantRanges{}
     });
 
-    presentPipeline = GraphicsPipeline::createGraphicsPipelinePtr({
+    presentPipeline = GraphicsPipeline::create({
         .debugName = "present-pipeline",
         .device = device,
         .vertexShader
-        {.byteCode = Filesystem::readFile(compiledShaderPath("rendergraph.vert")),},
+        {.byteCode = Filesystem::readFile(compiledShaderPath("fullscreen_headless.vert")),},
         .fragmentShader
-        {.byteCode = Filesystem::readFile(compiledShaderPath("rendergraph.frag")),},
-        .descriptorSetLayouts = {
-            renderGraph->getDescriptorSetLayouts("present-pass")
-        },
+        {.byteCode = Filesystem::readFile(compiledShaderPath("texture.frag")),},
+        .descriptorSetLayouts = {renderGraph->getDescriptorSetLayouts("present-pass")},
         .pushConstantRanges{},
         .graphicsState{
-            .vertexBufferBindings{
-                .vertexBindingDescriptions = Vertex::vertexInputBindingDescriptions(),
-                .vertexAttributeDescriptions = Vertex::vertexInputAttributeDescriptions()
-            }
+            .cullMode = VK_CULL_MODE_NONE,
+            .vertexBufferBindings{}
         },
         .dynamicRendering = {
             .enabled = true,
             .colorAttachmentCount = 1,
-            .colorAttachmentFormats = {renderContext.getSwapChain()->getSwapChainImageFormat()},
+            .colorAttachmentFormats = {fm.getSwapChain()->getSwapChainImageFormat()},
         }
     });
 
