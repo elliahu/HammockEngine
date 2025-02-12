@@ -70,10 +70,6 @@ namespace hammock {
 
     VkResult SwapChain::submitCommandBuffers(
         const VkCommandBuffer *buffers, const uint32_t *imageIndex, VkSemaphore waitForSemaphore) {
-        if (imagesInFlight[*imageIndex] != VK_NULL_HANDLE) {
-            vkWaitForFences(device.device(), 1, &imagesInFlight[*imageIndex], VK_TRUE, UINT64_MAX);
-        }
-        imagesInFlight[*imageIndex] = inFlightFences[currentFrame];
 
         VkSubmitInfo submitInfo = {};
         submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
@@ -205,7 +201,6 @@ namespace hammock {
         imageAvailableSemaphores.resize(MAX_FRAMES_IN_FLIGHT);
         renderFinishedSemaphores.resize(MAX_FRAMES_IN_FLIGHT);
         inFlightFences.resize(MAX_FRAMES_IN_FLIGHT);
-        imagesInFlight.resize(imageCount(), VK_NULL_HANDLE);
 
         VkSemaphoreCreateInfo semaphoreInfo = {};
         semaphoreInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
@@ -242,7 +237,6 @@ namespace hammock {
         // available present modes
         // https://registry.khronos.org/vulkan/specs/1.3-extensions/man/html/VkPresentModeKHR.html
         for (const auto &availablePresentMode: availablePresentModes) {
-            //break; // for now, to fall back to V-Sync for testing
             // Top option - Mailbox
             // Lowers imput latency but GPU is 100% saturated = high power consumption
             // not good for mobile
