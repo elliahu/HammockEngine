@@ -29,7 +29,6 @@ namespace hammock {
         [[nodiscard]] VkImageView getImageView(const int index) const { return swapChainImageViews[index]; }
         [[nodiscard]] size_t imageCount() const { return swapChainImages.size(); }
         [[nodiscard]] VkFormat getSwapChainImageFormat() const { return swapChainImageFormat; }
-        [[nodiscard]] VkFormat getSwapChainDepthFormat() const { return swapChainDepthFormat; }
         [[nodiscard]] VkExtent2D getSwapChainExtent() const { return swapChainExtent; }
         [[nodiscard]] uint32_t width() const { return swapChainExtent.width; }
         [[nodiscard]] uint32_t height() const { return swapChainExtent.height; }
@@ -45,8 +44,7 @@ namespace hammock {
         VkResult submitCommandBuffers(const VkCommandBuffer *buffers, const uint32_t *imageIndex, VkSemaphore waitForSemaphore);
 
         [[nodiscard]] bool compareSwapFormats(const SwapChain &swapChain) const {
-            return swapChain.swapChainDepthFormat == swapChainDepthFormat &&
-                   swapChain.swapChainImageFormat == swapChainImageFormat;
+            return swapChain.swapChainImageFormat == swapChainImageFormat;
         }
 
     private:
@@ -69,7 +67,6 @@ namespace hammock {
         VkExtent2D chooseSwapExtent(const VkSurfaceCapabilitiesKHR &capabilities) const;
 
         VkFormat swapChainImageFormat;
-        VkFormat swapChainDepthFormat;
         VkExtent2D swapChainExtent;
 
 

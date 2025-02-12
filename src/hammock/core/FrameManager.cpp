@@ -25,7 +25,7 @@ void hammock::FrameManager::recreateSwapChain() {
         swapChain = std::make_unique<SwapChain>(device, extent, oldSwapChain);
 
         if (!oldSwapChain->compareSwapFormats(*swapChain.get())) {
-            throw std::runtime_error("Swapchain image (or detph) format has changed");
+            throw std::runtime_error("SwapChain image format has changed");
         }
     }
 }
