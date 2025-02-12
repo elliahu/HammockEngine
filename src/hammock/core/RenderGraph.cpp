@@ -20,6 +20,7 @@ void hammock::PipelineBarrier::apply() const {
             subresourceRange.layerCount = 1;
 
 
+            // Swapchain attachment will probably never change queue family  so we leave it ignored
 
             transitionImageLayout(
                 commandBuffer,
@@ -27,11 +28,14 @@ void hammock::PipelineBarrier::apply() const {
                 VK_IMAGE_LAYOUT_UNDEFINED, newLayout, subresourceRange);
             return;
         }
-
         const ResourceHandle handle = node.resolve(rm, renderContext.getFrameIndex());
         auto * image = rm.getResource<Image>(handle);
 
-        image->transitionLayout(commandBuffer, newLayout);
+        if (!layoutChangeNeeded) {
+            newLayout = image->getLayout();
+        }
+
+        image->transition(commandBuffer, newLayout, access.queueFamily);
     }
     else if (node.isBuffer()) {
         // TODO support for buffer transition

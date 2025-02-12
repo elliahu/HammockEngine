@@ -58,9 +58,12 @@ namespace hammock {
         [[nodiscard]] VkPhysicalDevice getPhysicalDevice() const { return physicalDevice; }
         [[nodiscard]] VkSurfaceKHR surface() const { return surface_; }
         [[nodiscard]] VkQueue graphicsQueue() const { return graphicsQueue_; }
+        [[nodiscard]] uint32_t getGraphicsQueueFamilyIndex() const { return graphicsQueueFamilyIndex_; }
         [[nodiscard]] VkQueue presentQueue() const { return presentQueue_; }
         [[nodiscard]] VkQueue computeQueue() const { return computeQueue_; }
+        [[nodiscard]] uint32_t getComputeQueueFamilyIndex() const { return computeQueueFamilyIndex_; }
         [[nodiscard]] VkQueue transferQueue() const { return transferQueue_; }
+        [[nodiscard]] uint32_t getTransferQueueFamilyIndex() const { return transferQueueFamilyIndex_; }
 
         [[nodiscard]] SwapChainSupportDetails getSwapChainSupport() const {
             return querySwapChainSupport(physicalDevice);
@@ -68,7 +71,7 @@ namespace hammock {
 
         uint32_t findMemoryType(uint32_t typeFilter, VkMemoryPropertyFlags properties) const;
 
-        [[nodiscard]] QueueFamilyIndices findPhysicalQueueFamilies() const { return findQueueFamilies(physicalDevice); }
+        [[nodiscard]] QueueFamilyIndices findPhysicalQueueFamilies() { return findQueueFamilies(physicalDevice); }
 
         VkFormat findSupportedFormat(
             const std::vector<VkFormat> &candidates, VkImageTiling tiling, VkFormatFeatureFlags features) const;
@@ -127,7 +130,7 @@ namespace hammock {
         // helper functions
         bool isDeviceSuitable(VkPhysicalDevice device);
 
-        QueueFamilyIndices findQueueFamilies(VkPhysicalDevice device) const;
+        QueueFamilyIndices findQueueFamilies(VkPhysicalDevice device);
 
 
         bool checkDeviceExtensionSupport(VkPhysicalDevice device) const;
@@ -143,9 +146,12 @@ namespace hammock {
         VkDevice device_;
         VkSurfaceKHR surface_;
         VkQueue graphicsQueue_;
+        uint32_t graphicsQueueFamilyIndex_;
         VkQueue presentQueue_;
         VkQueue transferQueue_;
+        uint32_t transferQueueFamilyIndex_;
         VkQueue computeQueue_;
+        uint32_t computeQueueFamilyIndex_;
 
         VmaAllocator allocator_;
 

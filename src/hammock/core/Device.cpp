@@ -206,7 +206,7 @@ namespace hammock {
         return requiredExtensions.empty();
     }
 
-    QueueFamilyIndices Device::findQueueFamilies(const VkPhysicalDevice device) const {
+    QueueFamilyIndices Device::findQueueFamilies(const VkPhysicalDevice device) {
         QueueFamilyIndices indices;
 
         uint32_t queueFamilyCount = 0;
@@ -222,6 +222,7 @@ namespace hammock {
                 if (queueFamily.queueFlags & VK_QUEUE_GRAPHICS_BIT) {
                     indices.graphicsFamily = i;
                     indices.graphicsFamilyHasValue = true;
+                    graphicsQueueFamilyIndex_ = i;
                 }
 
                 // Present queue
@@ -237,6 +238,7 @@ namespace hammock {
                     !(queueFamily.queueFlags & VK_QUEUE_GRAPHICS_BIT)) {
                     indices.computeFamily = i;
                     indices.computeFamilyHasValue = true;
+                    computeQueueFamilyIndex_ = i;
                 }
 
                 // Transfer queue (preferably separate from graphics and compute)
@@ -245,6 +247,7 @@ namespace hammock {
                     !(queueFamily.queueFlags & VK_QUEUE_COMPUTE_BIT)) {
                     indices.transferFamily = i;
                     indices.transferFamilyHasValue = true;
+                    transferQueueFamilyIndex_ = i;
                 }
             }
 
@@ -257,6 +260,7 @@ namespace hammock {
                 if (queueFamilies[i].queueFlags & VK_QUEUE_COMPUTE_BIT) {
                     indices.computeFamily = i;
                     indices.computeFamilyHasValue = true;
+                    computeQueueFamilyIndex_ = i;
                     break;
                 }
             }
@@ -267,6 +271,7 @@ namespace hammock {
                 if (queueFamilies[i].queueFlags & VK_QUEUE_TRANSFER_BIT) {
                     indices.transferFamily = i;
                     indices.transferFamilyHasValue = true;
+                    transferQueueFamilyIndex_ = i;
                     break;
                 }
             }

@@ -244,13 +244,17 @@ namespace hammock {
         VkImageLayout newImageLayout,
         VkImageSubresourceRange subresourceRange,
         VkPipelineStageFlags srcStageMask = VK_PIPELINE_STAGE_ALL_COMMANDS_BIT,
-        VkPipelineStageFlags dstStageMask = VK_PIPELINE_STAGE_ALL_COMMANDS_BIT) {
+        VkPipelineStageFlags dstStageMask = VK_PIPELINE_STAGE_ALL_COMMANDS_BIT,
+        uint32_t srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
+        uint32_t dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED) {
         // Create an image barrier object
         VkImageMemoryBarrier imageMemoryBarrier = Init::imageMemoryBarrier();
         imageMemoryBarrier.oldLayout = oldImageLayout;
         imageMemoryBarrier.newLayout = newImageLayout;
         imageMemoryBarrier.image = image;
         imageMemoryBarrier.subresourceRange = subresourceRange;
+        imageMemoryBarrier.srcQueueFamilyIndex = srcQueueFamilyIndex;
+        imageMemoryBarrier.dstQueueFamilyIndex = dstQueueFamilyIndex;
 
         // Source layouts (old)
         // Source access mask controls actions that have to be finished on the old layout

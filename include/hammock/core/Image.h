@@ -23,6 +23,9 @@ namespace hammock {
         // Attachment
         VkClearValue m_clearValue = {};
 
+        CommandQueueFamily m_queueFamily;
+        VkSharingMode m_sharingMode;
+
     public:
         Image(Device &device, uint64_t id, const std::string &name, const ImageDesc &desc) : Resource(
             device, id, name) {
@@ -44,6 +47,9 @@ namespace hammock {
 
             // attachment
             m_clearValue = desc.clearValue;
+
+            m_queueFamily = desc.queueFamily;
+            m_sharingMode = desc.sharingMode;
 
             // Check for support
             VkFormatProperties formatProperties;
@@ -67,12 +73,13 @@ namespace hammock {
             }
         }
 
-        VkImageLayout getLayout() const { return m_layout; }
-        VkImage getImage() const { return m_image; }
-        VkImageView getView() const { return m_view; }
-        VkFormat getFormat() const { return m_format; }
-        uint32_t getMipLevel() const { return m_mips; }
-        uint32_t getLayerLevel() const { return m_layers; }
+        [[nodiscard]] VkImageLayout getLayout() const { return m_layout; }
+        [[nodiscard]] VkImage getImage() const { return m_image; }
+        [[nodiscard]] VkImageView getView() const { return m_view; }
+        [[nodiscard]] VkFormat getFormat() const { return m_format; }
+        [[nodiscard]] uint32_t getMipLevel() const { return m_mips; }
+        [[nodiscard]] uint32_t getLayerLevel() const { return m_layers; }
+        [[nodiscard]] CommandQueueFamily getQueueFamily() const { return m_queueFamily; }
 
         [[nodiscard]] VkRenderingAttachmentInfo getRenderingAttachmentInfo() const {
             return {
@@ -130,14 +137,50 @@ namespace hammock {
          * @param cmd Command buffer
          * @param newLayout New layout
          */
-        void transitionLayout(VkCommandBuffer cmd, VkImageLayout newLayout) {
+        void transition(VkCommandBuffer cmd, VkImageLayout newLayout,
+                        CommandQueueFamily newQueueFamily = CommandQueueFamily::Ignored) {
             VkImageSubresourceRange subresourceRange = {};
             subresourceRange.aspectMask = getAspectMask();
             subresourceRange.baseMipLevel = 0;
             subresourceRange.levelCount = m_mips;
             subresourceRange.baseArrayLayer = 0;
             subresourceRange.layerCount = m_layers;
-            transitionImageLayout(cmd, m_image, m_layout, newLayout, subresourceRange);
+
+            uint32_t oldFamily = VK_QUEUE_FAMILY_IGNORED;
+            uint32_t newFamily = VK_QUEUE_FAMILY_IGNORED;
+
+            if (newQueueFamily == CommandQueueFamily::Graphics) {
+                newFamily = device.getGraphicsQueueFamilyIndex();
+            }
+
+            if (newQueueFamily == CommandQueueFamily::Compute) {
+                newFamily = device.getComputeQueueFamilyIndex();
+            }
+
+            if (newQueueFamily == CommandQueueFamily::Transfer) {
+                newFamily = device.getTransferQueueFamilyIndex();
+            }
+
+            if (m_queueFamily == CommandQueueFamily::Graphics) {
+                oldFamily = device.getGraphicsQueueFamilyIndex();
+            }
+
+            if (m_queueFamily == CommandQueueFamily::Compute) {
+                oldFamily = device.getComputeQueueFamilyIndex();
+            }
+
+            if (m_queueFamily == CommandQueueFamily::Transfer) {
+                oldFamily = device.getTransferQueueFamilyIndex();
+            }
+
+            transitionImageLayout(cmd, m_image, m_layout, newLayout, subresourceRange,
+                                  VK_PIPELINE_STAGE_ALL_COMMANDS_BIT, VK_PIPELINE_STAGE_ALL_COMMANDS_BIT, oldFamily,
+                                  newFamily);
+
+            if (newFamily != VK_QUEUE_FAMILY_IGNORED) {
+                m_queueFamily = newQueueFamily;
+            }
+
             m_layout = newLayout;
         }
 

@@ -16,6 +16,9 @@ namespace hammock {
         VkBufferUsageFlags m_usageFlags;
         VmaAllocationCreateFlags m_memoryPropertyFlags;
 
+        CommandQueueFamily m_queueFamily;
+        VkSharingMode m_sharingMode;
+
 
         /**
              * Returns the minimum instance size required to be compatible with devices minOffsetAlignment
@@ -42,6 +45,8 @@ namespace hammock {
             m_instanceSize = desc.instanceSize;
             m_usageFlags = desc.usageFlags;
             m_memoryPropertyFlags = desc.allocationFlags;
+            m_queueFamily = desc.queueFamily;
+            m_sharingMode = desc.sharingMode;
         }
 
         ~Buffer() override {
@@ -89,6 +94,7 @@ namespace hammock {
         [[nodiscard]] VkBufferUsageFlags getUsageFlags() const { return m_usageFlags; }
         [[nodiscard]] VkMemoryPropertyFlags getMemoryPropertyFlags() const { return m_memoryPropertyFlags; }
         [[nodiscard]] VkDeviceSize getBufferSize() const { return m_bufferSize; }
+        [[nodiscard]] CommandQueueFamily getQueueFamily() const {return m_queueFamily;}
 
         /**
         * Map a memory range of this buffer. If successful, mapped points to the specified buffer range.

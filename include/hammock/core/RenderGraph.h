@@ -170,6 +170,7 @@ namespace hammock {
         VkAttachmentStoreOp storeOp = VK_ATTACHMENT_STORE_OP_STORE; // Store op
         VkPipelineStageFlags stageFlags = VK_PIPELINE_STAGE_ALL_COMMANDS_BIT;
         std::string samplerName; // only for images
+        CommandQueueFamily queueFamily = CommandQueueFamily::Ignored;
     };
 
     enum RenderPassFlags : int32_t {
@@ -221,14 +222,20 @@ namespace hammock {
             return descriptor.setCache[frameIndex];
         }
 
+        void updateQueueFamilyOwnership(ResourceAccess &access) const {
+            access.queueFamily = type;
+        }
+
 
         // builder methods
         RenderPassNode &read(ResourceAccess access) {
+            //updateQueueFamilyOwnership(access);
             inputs.emplace_back(access);
             return *this;
         }
 
         RenderPassNode &write(ResourceAccess access) {
+            //updateQueueFamilyOwnership(access);
             outputs.emplace_back(access);
             return *this;
         }
@@ -255,7 +262,7 @@ namespace hammock {
     public:
         enum class TransitionStage {
             RequiredLayout,
-            FinalLayout
+            FinalLayout,
         };
 
         explicit PipelineBarrier(ResourceManager &rm, FrameManager &renderContext,
@@ -270,7 +277,7 @@ namespace hammock {
          *  Checks if resource needs barrier transition given its access
          * @return true if resource needs barrier transition, else false
          */
-        bool isNeeded() const {
+        bool isNeeded(){
             if (node.isRenderingAttachment()) {
                 if (node.isSwapChainAttachment()) {
                     return true;
@@ -278,25 +285,33 @@ namespace hammock {
                 ResourceHandle handle = node.resolve(rm, renderContext.getFrameIndex());
                 Image *attachment = rm.getResource<Image>(handle);
 
+                // check for layout change
                 if (transitionStage == TransitionStage::RequiredLayout) {
-                    return attachment->getLayout() != access.requiredLayout;
+                    layoutChangeNeeded =  attachment->getLayout() != access.requiredLayout;
                 }
                 if (transitionStage == TransitionStage::FinalLayout) {
-                    return attachment->getLayout() != access.finalLayout && access.finalLayout !=
+                    layoutChangeNeeded =  attachment->getLayout() != access.finalLayout && access.finalLayout !=
                            VK_IMAGE_LAYOUT_UNDEFINED;
                 }
-                return false;
+
+                // check for ownership transfer
+                ownerTransferNeeded = attachment->getQueueFamily() != access.queueFamily;
+
+                return layoutChangeNeeded || ownerTransferNeeded;
+
             }
             if (node.isBuffer()) {
                 // TODO support for buffer transition
+                return false;
             }
-            return false;
+            ASSERT(false, "Why am I here ??");
         }
 
         /**
          * Applies pre-render pipeline barrier transition
          */
         void apply() const;
+
 
     private:
         ResourceManager &rm;
@@ -305,6 +320,8 @@ namespace hammock {
         ResourceAccess &access;
         TransitionStage transitionStage;
         VkCommandBuffer commandBuffer;
+        bool layoutChangeNeeded = false;
+        bool ownerTransferNeeded = false;
     };
 
     /**
@@ -312,11 +329,13 @@ namespace hammock {
      * It consists of resource nodes and render pass nodes. Render pass node can be dependent on some resources and
      * can itself create resources that other passes may depend on. RenderGraph analyzes these dependencies, makes adjustments when possible,
      * makes necessary transitions between resource states. These transitions are done just in time as well as resource allocation.
-     *  TODO support for Read Modify Write - render pass writes and reads from the same resource
-     *  TODO support for conditional resource
-     *  TODO support for swapchain dependent rendperPass
-     *  TODO support for pipeline caching
-     *  TODO support for pushConstants
+     *  TODO HOT rework pipeline barrier recording - currently just in time - should be forward declared along with command queue family resource acquisition and release
+     *  TODO HOT support for fences for GPU-CPU sync declared by user - this way (when declaring the graph) user can select at which point the CPU would be blocked to wait for the fence
+     *  TODO FUTURE support for Read Modify Write - render pass writes and reads from the same resource
+     *  TODO FUTURE support for conditional resource
+     *  TODO FUTURE support for swapchain dependent rendperPass
+     *  TODO FUTURE support for pipeline caching
+     *  TODO FUTURE support for pushConstants
      */
     class RenderGraph {
         struct SubmissionGroup {
@@ -1118,6 +1137,19 @@ namespace hammock {
             }
         }
 
+        void releaseGroupResources(SubmissionGroup * group, VkCommandBuffer commandBuffer, CommandQueueFamily releaseToFamily) {
+            for (auto& pass : group->renderPassNodes) {
+                for (auto &resource: pass->inputs) {
+                    resource.queueFamily = releaseToFamily;
+                }
+                for (auto &resource: pass->outputs) {
+                    resource.queueFamily = releaseToFamily;
+                }
+
+                applyPipelineBarriers(pass, commandBuffer, PipelineBarrier::TransitionStage::FinalLayout);
+            }
+        }
+
 
         /**
          * Executes the graph and makes necessary barrier transitions.
@@ -1125,6 +1157,10 @@ namespace hammock {
         void execute() {
             // Begin frame
             if (fm.beginFrame()) {
+
+                // Track command queue families
+                CommandQueueFamily previousFamily = CommandQueueFamily::Ignored;
+
                 // Iterate over the groups in order of execution
                 for (const auto &groupWithIndex: allGroups) {
                     SubmissionGroup *group = groupWithIndex.group;
@@ -1134,14 +1170,20 @@ namespace hammock {
                     fm.beginCommandBuffer(commandBuffer);
 
                     // Exectue all passes from the group
-                    for (auto &pass: group->renderPassNodes) {
-                        // Apply required barriers
-                        applyPipelineBarriers(pass, commandBuffer, PipelineBarrier::TransitionStage::RequiredLayout);
+                    for (int i = 0; i < group->renderPassNodes.size(); i++) {
+                        // Pre pass barriers
+                        applyPipelineBarriers(group->renderPassNodes[i], commandBuffer, PipelineBarrier::TransitionStage::RequiredLayout);
 
-                        recordRenderPass(pass, commandBuffer);
-                        // post rendering barrier
-                        applyPipelineBarriers(pass, commandBuffer, PipelineBarrier::TransitionStage::FinalLayout);
+                        // Record the render pass to the command buffer
+                        recordRenderPass(group->renderPassNodes[i], commandBuffer);
+
+                        // post pass barrier
+                        applyPipelineBarriers(group->renderPassNodes[i], commandBuffer, PipelineBarrier::TransitionStage::FinalLayout);
                     }
+
+                    // release resources owned by the group queue
+                    //releaseGroupResources(group, commandBuffer, previousFamily);
+                    previousFamily = group->queueFamily;
 
                     // Submit command buffer
                     // If this is the last group, we submit the command buffer for present
@@ -1151,7 +1193,6 @@ namespace hammock {
                     }
 
                     // If not, we submit command buffer to corresponding queue
-
                     if (group->queueFamily == CommandQueueFamily::Graphics) {
                         fm.submitCommandBuffer<CommandQueueFamily::Graphics>(
                             commandBuffer, {group->waitSemaphores[fm.getFrameIndex()]},

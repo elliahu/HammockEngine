@@ -96,23 +96,35 @@ namespace hammock {
 
 
     /**
-    * Describes general buffer
+     * Describes the base for the relative size
+     */
+    enum class RelativeSize {
+        SwapChainRelative,
+        FrameBufferRelative,
+    };
+
+    enum class CommandQueueFamily {
+        Ignored, Graphics, Compute, Transfer
+    };
+
+    /**
+    * Describes relative size of a viewport
     */
+    enum class RelativeViewPortSize {
+        SwapChainRelative,
+        Fixed,
+    };
+    /**
+      * Describes general buffer
+      */
     struct BufferDesc {
         VkDeviceSize instanceSize;
         uint32_t instanceCount;
         VkBufferUsageFlags usageFlags;
         VmaAllocationCreateFlags allocationFlags;
         VkDeviceSize minOffsetAlignment;
-    };
-
-
-    /**
-     * Describes the base for the relative size
-     */
-    enum class RelativeSize {
-        SwapChainRelative,
-        FrameBufferRelative,
+        CommandQueueFamily queueFamily = CommandQueueFamily::Ignored;
+        VkSharingMode sharingMode = VK_SHARING_MODE_EXCLUSIVE;
     };
 
     /**
@@ -125,6 +137,8 @@ namespace hammock {
         VkImageType imageType = VK_IMAGE_TYPE_2D;
         VkImageViewType imageViewType = VK_IMAGE_VIEW_TYPE_2D;
         VkClearValue clearValue = {};
+        CommandQueueFamily queueFamily = CommandQueueFamily::Ignored;
+        VkSharingMode sharingMode = VK_SHARING_MODE_EXCLUSIVE;
     };
 
     struct SamplerDesc {
@@ -138,18 +152,5 @@ namespace hammock {
         VkSamplerMipmapMode mipmapMode = VK_SAMPLER_MIPMAP_MODE_LINEAR;
         uint32_t mips = 1;
         float mipLodBias = 0.0f;
-    };
-
-
-    enum class CommandQueueFamily {
-        Graphics, Compute, Transfer
-    };
-
-    /**
-    * Describes relative size of a viewport
-    */
-    enum class RelativeViewPortSize {
-        SwapChainRelative,
-        Fixed,
     };
 }

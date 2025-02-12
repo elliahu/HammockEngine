@@ -68,7 +68,8 @@ int main() {
             .usageFlags =
             VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
             .allocationFlags =
-            VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT
+            VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT,
+            .sharingMode = VK_SHARING_MODE_CONCURRENT,
         });
     renderGraph->addSwapChainImageResource<ResourceNode::Type::SwapChainColorAttachment>("swap-color-image");
     renderGraph->addSwapChainDependentResource<ResourceNode::Type::ColorAttachment, Image, ImageDesc>(
