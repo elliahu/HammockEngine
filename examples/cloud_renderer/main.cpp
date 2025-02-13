@@ -1,7 +1,9 @@
 #include <iostream>
 #include <cstdint>
-
 #include <hammock/hammock.h>
+
+#include "scenes/SkyScene.h"
+
 using namespace hammock;
 
 int main(int argc, char * argv[]) {
@@ -18,13 +20,14 @@ int main(int argc, char * argv[]) {
 
     const auto width = parser.get<int32_t>("width");
     const auto height = parser.get<int32_t>("height");
-    auto scene = parser.get<std::string>("scene");
+    auto selectedScene = parser.get<std::string>("scene");
 
-    if (scene == "medium") {
+    if (selectedScene == "medium") {
 
     }
-    else if (scene == "clouds") {
-
+    else if (selectedScene == "clouds") {
+        SkyScene skyScene{"Sky rendering demo", static_cast<uint32_t>(width), static_cast<uint32_t>(height)};
+        skyScene.render();
     }
     else {
         Logger::log(LOG_LEVEL_ERROR, "Invalid scene option");

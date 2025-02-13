@@ -1,7 +1,9 @@
 # Add the executable
 add_executable(cloud_renderer
         main.cpp
-        IScene.h
+        scenes/IScene.h
+        scenes/SkyScene.cpp
+        scenes/SkyScene.h
 )
 
 # Link the engine library
