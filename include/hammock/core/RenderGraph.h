@@ -210,6 +210,8 @@ namespace hammock {
 
         std::vector<RenderPassNode *> dependencies;
 
+        bool autoBeginRendering = true;
+
 
         // callback for rendering
         ExecuteFunction executeFunc = nullptr;
@@ -237,6 +239,12 @@ namespace hammock {
             outputs.emplace_back(access);
             return *this;
         }
+
+        RenderPassNode &autoBeginRenderingDisabled() {
+            autoBeginRendering = false;
+            return *this;
+        }
+
 
         // TODO ReadModifyWrite
 
@@ -1152,7 +1160,7 @@ namespace hammock {
         }
 
         void recordRenderPass(RenderPassNode *pass, VkCommandBuffer commandBuffer) {
-            if (pass->type == CommandQueueFamily::Graphics) {
+            if (pass->type == CommandQueueFamily::Graphics && pass->autoBeginRendering) {
                 beginRendering(pass, commandBuffer);
             }
             // Create context
@@ -1162,7 +1170,7 @@ namespace hammock {
             ASSERT(pass->executeFunc, "Execute function is not set!");
             pass->executeFunc(renderPassContext);
 
-            if (pass->type == CommandQueueFamily::Graphics) {
+            if (pass->type == CommandQueueFamily::Graphics && pass->autoBeginRendering) {
                 endRendering(commandBuffer);
             }
         }

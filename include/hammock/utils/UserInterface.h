@@ -16,11 +16,11 @@ namespace hammock {
         ~UserInterface();
 
         // Ui rendering
-        static void beginUserInterface();
+        void beginUserInterface();
 
-        static void endUserInterface(VkCommandBuffer commandBuffer);
+        void endUserInterface(VkCommandBuffer commandBuffer);
 
-        static void showDemoWindow() { ImGui::ShowDemoWindow(); }
+        void showDemoWindow() { ImGui::ShowDemoWindow(); }
 
         void showDebugStats(const HmckMat4 &inverseView, float frameTime);
 
@@ -40,14 +40,14 @@ namespace hammock {
 
         void endSingleTimeCommands(VkCommandBuffer commandBuffer) const;
 
-        static void beginWindow(const char *title, bool *open = (bool *) 0, ImGuiWindowFlags flags = 0);
+        void beginWindow(const char *title, bool *open = (bool *) 0, ImGuiWindowFlags flags = 0);
 
-        static void endWindow();
+        void endWindow();
 
 
         Device &device;
         Window &window;
-        VkRenderPass renderPass;
         VkDescriptorPool imguiPool;
+        VkRenderPass renderPass;
     };
 }

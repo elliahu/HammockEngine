@@ -14,6 +14,7 @@ namespace hammock {
     class SwapChain {
     public:
         static constexpr int MAX_FRAMES_IN_FLIGHT = 2;
+        static constexpr bool CREATE_SWAPCHAIN_RENDERPASS = true;
 
         SwapChain(Device &deviceRef, VkExtent2D windowExtent);
 
@@ -32,7 +33,8 @@ namespace hammock {
         [[nodiscard]] VkExtent2D getSwapChainExtent() const { return swapChainExtent; }
         [[nodiscard]] uint32_t width() const { return swapChainExtent.width; }
         [[nodiscard]] uint32_t height() const { return swapChainExtent.height; }
-
+        [[nodiscard]] VkRenderPass getRenderPass() const { return renderPass; }
+        [[nodiscard]] VkFramebuffer getFramebuffer(uint32_t index) const { return swapChainFramebuffers[index]; }
         [[nodiscard]] float extentAspectRatio() const {
             return static_cast<float>(swapChainExtent.width) / static_cast<float>(swapChainExtent.height);
         }
@@ -54,6 +56,9 @@ namespace hammock {
 
         void createImageViews();
 
+        void createRenderPass();
+
+        void createFramebuffers();
 
         void createSyncObjects();
 
@@ -68,6 +73,9 @@ namespace hammock {
 
         VkFormat swapChainImageFormat;
         VkExtent2D swapChainExtent;
+
+        std::vector<VkFramebuffer> swapChainFramebuffers;
+        VkRenderPass renderPass;
 
 
         std::vector<VkImage> swapChainImages;

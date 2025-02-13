@@ -6,8 +6,8 @@
 #include <string>
 
 
-hammock::UserInterface::UserInterface(Device &device, const VkRenderPass renderPass,VkDescriptorPool descriptorPool, Window &window) : device{device},
-    window{window}, renderPass{renderPass}, imguiPool{descriptorPool} {
+hammock::UserInterface::UserInterface(Device &device,VkRenderPass renderPass, VkDescriptorPool descriptorPool, Window &window) : device{device}, renderPass(renderPass),
+    window{window},  imguiPool{descriptorPool} {
     init();
     setupStyle();
 }

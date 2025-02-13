@@ -32,7 +32,7 @@ int main() {
             .addPoolSize(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER_DYNAMIC, 10000)
             .addPoolSize(VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT, 10000)
             .build();
-
+    UserInterface ui{device, fm.getSwapChain()->getRenderPass() , descriptorPool->descriptorPool, window};
 
 
 
@@ -219,15 +219,33 @@ int main() {
                 vkCmdDraw(context.commandBuffer, 3, 1, 0, 0);
             });
 
-    // renderGraph->addPass<CommandQueueFamily::Graphics, RelativeViewPortSize::SwapChainRelative>("user-interface-pass")
-    //         .write(ResourceAccess{
-    //             .resourceName = "swap-color-image",
-    //             .requiredLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
-    //             .finalLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR,
-    //         })
-    //         .execute([&](RenderPassContext context)-> void {
-    //
-    //         });
+    renderGraph->addPass<CommandQueueFamily::Graphics, RelativeViewPortSize::SwapChainRelative>("user-interface-pass")
+            .autoBeginRenderingDisabled() // ui uses custom render pass
+            .write(ResourceAccess{
+                .resourceName = "swap-color-image",
+                .requiredLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+                .finalLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR,
+            })
+            .execute([&](RenderPassContext context)-> void {
+                VkRenderPassBeginInfo renderPassInfo{};
+                renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
+                renderPassInfo.renderPass = fm.getSwapChain()->getRenderPass();
+                renderPassInfo.framebuffer = fm.getSwapChain()->getFramebuffer(fm.getSwapChainImageIndex());
+                renderPassInfo.renderArea.offset = {0, 0};
+                renderPassInfo.renderArea.extent = fm.getSwapChain()->getSwapChainExtent();
+                // Define a clear color (e.g., black with full alpha)
+                VkClearValue clearColor = {.color = {{0.0f, 0.0f, 0.0f, 1.0f}}};
+                renderPassInfo.clearValueCount = 1;
+                renderPassInfo.pClearValues = &clearColor;
+
+                // Begin the render pass
+                vkCmdBeginRenderPass(context.commandBuffer, &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
+
+                ui.beginUserInterface();
+                ui.endUserInterface(context.commandBuffer);
+
+                vkCmdEndRenderPass(context.commandBuffer);
+            });
 
     renderGraph->build();
 
