@@ -9,8 +9,8 @@
 #define SURFER_PLATFORM_X11
 #endif
 #include <VulkanSurfer.h>
-
 #include "hammock/core/VulkanInstance.h"
+#include "hammock/core/HandmadeMath.h"
 
 namespace hammock
 {
@@ -34,6 +34,9 @@ namespace hammock
         bool wasWindowResized() const { return framebufferResized; }
         void resetWindowResizedFlag() { framebufferResized = false; }
 
+        bool isKeyDown(Surfer::KeyCode keyCode);
+        HmckVec2 getMousePosition() const;
+
 
         bool shouldClose() const;
         void pollEvents();
@@ -43,7 +46,7 @@ namespace hammock
         int width;
         int height;
         bool framebufferResized = false;
-        bool _shouldClose = false;
         std::string windowName;
+        std::unordered_map<Surfer::KeyCode, bool> keysDown;
     };
 }
