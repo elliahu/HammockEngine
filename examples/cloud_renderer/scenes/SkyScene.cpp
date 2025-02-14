@@ -60,8 +60,8 @@ void SkyScene::buildRenderGraph() {
     // Storage image that the compute pass outputs to and that is then read in the composition pass
     renderGraph->addResource<ResourceNode::Type::StorageImage, Image, ImageDesc>(
         "compute-storage-image", ImageDesc{
-            .width = static_cast<uint32_t>(window.width),
-            .height = static_cast<uint32_t>(window.height),
+            .width = window.getExtent().width,
+            .height = window.getExtent().height,
             .channels = 4,
             .format = VK_FORMAT_R8G8B8A8_UNORM,
             .usage = VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_STORAGE_BIT,
@@ -142,7 +142,7 @@ void SkyScene::buildRenderGraph() {
                 .requiredLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
                 .finalLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR,
             })
-            .execute([&](RenderPassContext context)-> void {
+            .execute([this](RenderPassContext context)-> void {
                 VkRenderPassBeginInfo renderPassInfo{};
                 renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
                 renderPassInfo.renderPass = fm.getSwapChain()->getRenderPass();
@@ -158,9 +158,9 @@ void SkyScene::buildRenderGraph() {
                 vkCmdBeginRenderPass(context.commandBuffer, &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
 
                 // Draw the UI
-                ui->beginUserInterface();
-                ui->showDemoWindow();
-                ui->endUserInterface(context.commandBuffer);
+                ui.get()->beginUserInterface();
+                ui.get()->showDemoWindow();
+                ui.get()->endUserInterface(context.commandBuffer);
 
                 // End the render pass
                 vkCmdEndRenderPass(context.commandBuffer);

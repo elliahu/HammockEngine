@@ -159,8 +159,8 @@ int main() {
         "compute-storage-buffer", storageBuffer);
     renderGraph->addResource<ResourceNode::Type::StorageImage, Image, ImageDesc>(
         "compute-storage-image", ImageDesc{
-            .width = static_cast<uint32_t>(window.width),
-            .height = static_cast<uint32_t>(window.height),
+            .width = window.getExtent().width,
+            .height = window.getExtent().height,
             .channels = 4,
             .format = VK_FORMAT_R8G8B8A8_UNORM,
             .usage = VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_STORAGE_BIT,
@@ -194,7 +194,7 @@ int main() {
                 context.bindDescriptorSet(0, 0, computePipeline->pipelineLayout,
                                           VK_PIPELINE_BIND_POINT_COMPUTE);
                 context.get<Buffer>("compute-uniform-buffer")->writeToBuffer(&uniformData);
-                vkCmdDispatch(context.commandBuffer, window.width / 16, window.height / 16, 1);
+                vkCmdDispatch(context.commandBuffer, window.getExtent().width / 16, window.getExtent().height / 16, 1);
             });
 
 
@@ -242,8 +242,8 @@ int main() {
                 vkCmdBeginRenderPass(context.commandBuffer, &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
 
                 ui.beginUserInterface();
+                ui.showDemoWindow();
                 ui.endUserInterface(context.commandBuffer);
-
                 vkCmdEndRenderPass(context.commandBuffer);
             });
 

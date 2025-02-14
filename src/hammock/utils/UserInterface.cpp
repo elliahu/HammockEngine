@@ -6,8 +6,9 @@
 #include <string>
 
 
-hammock::UserInterface::UserInterface(Device &device,VkRenderPass renderPass, VkDescriptorPool descriptorPool, Window &window) : device{device}, renderPass(renderPass),
-    window{window},  imguiPool{descriptorPool} {
+hammock::UserInterface::UserInterface(Device &device, VkRenderPass renderPass, VkDescriptorPool descriptorPool,
+                                      Window &window) : device{device}, renderPass(renderPass),
+                                                        window{window}, imguiPool{descriptorPool} {
     init();
     setupStyle();
 }
@@ -18,6 +19,9 @@ hammock::UserInterface::~UserInterface() {
 }
 
 void hammock::UserInterface::beginUserInterface() {
+    // Handle UI forwarding from windowing system
+    forwardWindowEvents();
+
     ImGui_ImplVulkan_NewFrame();
     ImGui::NewFrame();
 }
@@ -43,7 +47,7 @@ void hammock::UserInterface::showDebugStats(const HmckMat4 &inverseView, float f
     else
         ImGui::Text("Mouse Position: <invalid or hidden>");
     ImGui::Text("Window resolution: (%d x %d)", window.getExtent().width, window.getExtent().height);
-    ImGui::Text("Application average %.3f ms/frame (%.1f FPS)", frameTime * 1000.f,  1.0f / frameTime );
+    ImGui::Text("Application average %.3f ms/frame (%.1f FPS)", frameTime * 1000.f, 1.0f / frameTime);
     ImGui::End();
 }
 
@@ -81,6 +85,20 @@ void hammock::UserInterface::init() {
     ImGui_ImplVulkan_CreateFontsTexture();
 }
 
+void hammock::UserInterface::forwardWindowEvents() {
+    if (ImGui::GetCurrentContext()) {
+        auto &io = ImGui::GetIO();
+
+        io.AddMousePosEvent(window.getMousePosition().X, window.getMousePosition().Y);
+        io.AddMouseButtonEvent(ImGuiMouseButton_Left, window.isKeyDown(Surfer::KeyCode::MouseLeft));
+        io.AddMouseButtonEvent(ImGuiMouseButton_Right, window.isKeyDown(Surfer::KeyCode::MouseRight));
+
+        for (int i = 0; i < 26; i++) {
+            io.AddKeyEvent(static_cast<ImGuiKey>(ImGuiKey_A + i), window.isKeyDown((Surfer::KeyCode) i));
+        }
+    }
+}
+
 void hammock::UserInterface::setupStyle() {
     ImGuiStyle &style = ImGui::GetStyle();
     // Setup ImGUI style
@@ -102,8 +120,8 @@ void hammock::UserInterface::setupStyle() {
     style.FramePadding = {3.0f, 5.0f};
     style.ItemSpacing = {6.0f, 6.0f};
     style.ItemInnerSpacing = {6.0f, 6.0f};
-    style.ScrollbarSize = 8.0f;
     style.GrabMinSize = 10.0f;
+    style.ScrollbarSize = 10.f;
 
     // align
     style.WindowTitleAlign = {.5f, .5f};
@@ -132,6 +150,8 @@ void hammock::UserInterface::setupStyle() {
     style.Colors[ImGuiCol_Button] = ImVec4(80 / 255.0f, 80 / 255.0f, 80 / 255.0f, 170 / 255.0f);
     style.Colors[ImGuiCol_ButtonHovered] = ImVec4(241 / 255.0f, 135 / 255.0f, 1 / 255.0f, 255 / 255.0f);
     style.Colors[ImGuiCol_ButtonActive] = ImVec4(241 / 255.0f, 135 / 255.0f, 1 / 255.0f, 255 / 255.0f);
+
+
 }
 
 VkCommandBuffer hammock::UserInterface::beginSingleTimeCommands() const {

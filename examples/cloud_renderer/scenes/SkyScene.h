@@ -28,7 +28,6 @@ class SkyScene final : public IScene {
         std::unique_ptr<GraphicsPipeline> pipeline;
     } composition;
 
-    std::unique_ptr<UserInterface> ui;
 
 public:
     SkyScene(const std::string &name, const uint32_t width, const uint32_t height)

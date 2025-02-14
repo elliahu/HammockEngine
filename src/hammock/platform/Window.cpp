@@ -1,5 +1,5 @@
 #include "hammock/platform/Window.h"
-
+#include <imgui.h>
 #include <iostream>
 
 hammock::Window::Window(VulkanInstance &instance, const std::string &_windowName, int windowWidth,
@@ -34,7 +34,27 @@ hammock::Window::Window(VulkanInstance &instance, const std::string &_windowName
     });
 
     window->registerFocusCallback([this](bool focused) {
+        inFocus = focused;
     });
+
+#ifdef __linux__
+    window->registerNativeKeyPressCallback([this](KeySym key) {
+
+    });
+
+    window->registerNativeKeyReleaseCallback([this](KeySym key) {
+
+   });
+#endif
+#ifdef _WIN32
+    window->registerNativeKeyPressCallback([this](WPARAM wParam) {
+
+    });
+
+    window->registerNativeKeyReleaseCallback([this](WPARAM wParam) {
+
+   });
+#endif
 }
 
 hammock::Window::~Window()

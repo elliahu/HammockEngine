@@ -35,17 +35,18 @@ namespace hammock
         void resetWindowResizedFlag() { framebufferResized = false; }
 
         bool isKeyDown(Surfer::KeyCode keyCode);
+        bool isInFocus() const {return inFocus;}
         HmckVec2 getMousePosition() const;
-
 
         bool shouldClose() const;
         void pollEvents();
-
+    private:
         Surfer::Window * window;
         VulkanInstance &instance;
         int width;
         int height;
         bool framebufferResized = false;
+        bool inFocus = true;
         std::string windowName;
         std::unordered_map<Surfer::KeyCode, bool> keysDown;
     };
