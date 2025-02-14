@@ -7,15 +7,26 @@ class SkyScene final : public IScene {
     static constexpr uint32_t groupsX = (1920 + WORKGROUP_SIZE_X - 1) / WORKGROUP_SIZE_X;
     static constexpr uint32_t groupsY = (1080 + WORKGROUP_SIZE_Y - 1) / WORKGROUP_SIZE_Y;
 
-    // Storage buffer data that remains static during execution
-    struct StorageBufferData {
-        HmckVec4 color {1.0f,1.0f,0.0f,1.0f};
-    } storageBufferData;
-
     // Uniform data updated every frame
     struct UniformBufferData {
-        HmckVec4 cameraPosition;
+        struct Camera {
+            HmckMat4 inverseView; // 64 bytes
+            HmckVec4 position{0.0f, 638.8f, 0.0f}; // 16 bytes
+            HmckVec2 viewport; // 8 bytes
+        } camera{};
+
+        struct Sun {
+            HmckVec4 direction{0.0f,1.0f, 0.0f, 0.0f}; // 16 bytes
+            HmckVec4 color{1.0f, 1.0f, 1.0f, 1.0f}; // 16 bytes
+        } sun{}; // Total 128 bytes (multiple of 16) no padding needed
     } uniformBufferData;
+
+    // Storage buffer data that remains static during execution
+    struct StorageBufferData {
+        float surfaceRadius = 637.8f; // 4 bytes
+        float atmosphereRadius = 800.8f; // 4 bytes
+    } storageBufferData;
+
 
     // Compute pass resources
     struct {
@@ -45,6 +56,9 @@ public:
 
     // Builds pipelines for each pass
     void buildPipelines();
+3
+    // This gets called every frame and updates the data that is then passed to the uniform buffer
+    void updateUniformBuffer();
 
     // Render loop
     void render() override;

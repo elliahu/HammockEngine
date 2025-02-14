@@ -210,11 +210,20 @@ void SkyScene::buildPipelines() {
     });
 }
 
+void SkyScene::updateUniformBuffer() {
+    // Create inverse view matrix
+    HmckVec4 eye = uniformBufferData.camera.position;
+    HmckVec4 target = eye + HmckVec4{0.0f, 0.0f, 1.0f, 0.0f};
+    HmckMat4 view = Projection().view(eye.XYZ, target.XYZ, Projection().upPosY());
+    uniformBufferData.camera.inverseView = HmckInvGeneral(view);
+}
+
 
 void SkyScene::render() {
     while (!window.shouldClose()) {
         window.pollEvents();
         // Execute the render graph
+        updateUniformBuffer();
         renderGraph->execute();
     }
     // Wait for queues to finish before deallocating resources
