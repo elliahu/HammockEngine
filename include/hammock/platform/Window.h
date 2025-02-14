@@ -38,6 +38,13 @@ namespace hammock
         bool isInFocus() const {return inFocus;}
         HmckVec2 getMousePosition() const;
 
+        void listenKeyPress(std::function<void(Surfer::KeyCode)> callback) {
+            keyPressCallbacks.push_back(callback);
+        }
+        void listenKeyRelease(std::function<void(Surfer::KeyCode)> callback) {
+            keyReleaseCallbacks.push_back(callback);
+        }
+
         bool shouldClose() const;
         void pollEvents();
     private:
@@ -49,5 +56,8 @@ namespace hammock
         bool inFocus = true;
         std::string windowName;
         std::unordered_map<Surfer::KeyCode, bool> keysDown;
+
+        std::vector<std::function<void(Surfer::KeyCode)>> keyPressCallbacks;
+        std::vector<std::function<void(Surfer::KeyCode)>> keyReleaseCallbacks;
     };
 }

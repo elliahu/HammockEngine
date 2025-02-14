@@ -40,6 +40,14 @@ namespace hammock {
         }
         swapChainImageViews.clear();
 
+        if (CREATE_SWAPCHAIN_RENDERPASS) {
+            vkDestroyRenderPass(device.device(), renderPass, nullptr);
+
+            for (const auto framebuffer: swapChainFramebuffers) {
+                vkDestroyFramebuffer(device.device(), framebuffer, nullptr);
+            }
+        }
+
         if (swapChain != nullptr) {
             vkDestroySwapchainKHR(device.device(), swapChain, nullptr);
             swapChain = nullptr;

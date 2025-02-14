@@ -8,10 +8,16 @@ hammock::Window::Window(VulkanInstance &instance, const std::string &_windowName
 
     window->registerKeyPressCallback([this](Surfer::KeyCode key) {
         keysDown[key] = true;
+        for (auto &callback: keyPressCallbacks) {
+            callback(key);
+        }
     });
 
     window->registerKeyReleaseCallback([this](Surfer::KeyCode key) {
         keysDown[key] = false;
+        for (auto &callback: keyReleaseCallbacks) {
+            callback(key);
+        }
     });
 
     window->registerMouseMotionCallback([this](unsigned int x, unsigned int y) {

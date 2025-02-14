@@ -11,6 +11,145 @@ hammock::UserInterface::UserInterface(Device &device, VkRenderPass renderPass, V
                                                         window{window}, imguiPool{descriptorPool} {
     init();
     setupStyle();
+
+    window.listenKeyPress([this](Surfer::KeyCode key) {
+        if (ImGui::GetCurrentContext()) {
+            auto &io = ImGui::GetIO();
+            if ((int) key >= 0 && (int) key <= 25) {
+                io.AddInputCharacter('a' + (int) key);
+            }
+            switch (key) {
+                case Surfer::KeyCode::Num0: {
+                    io.AddKeyEvent(ImGuiKey_0, true);
+                }
+                case Surfer::KeyCode::Num1: {
+                    io.AddKeyEvent(ImGuiKey_1, true);
+                }
+                case Surfer::KeyCode::Num2: {
+                    io.AddKeyEvent(ImGuiKey_2, true);
+                }
+                case Surfer::KeyCode::Num3: {
+                    io.AddKeyEvent(ImGuiKey_3, true);
+                }
+                case Surfer::KeyCode::Num4: {
+                    io.AddKeyEvent(ImGuiKey_4, true);
+                }
+                case Surfer::KeyCode::Num5: {
+                    io.AddKeyEvent(ImGuiKey_5, true);
+                }
+                case Surfer::KeyCode::Num6: {
+                    io.AddKeyEvent(ImGuiKey_6, true);
+                }
+                case Surfer::KeyCode::Num7: {
+                    io.AddKeyEvent(ImGuiKey_7, true);
+                }
+                case Surfer::KeyCode::Num8: {
+                    io.AddKeyEvent(ImGuiKey_8, true);
+                }
+                case Surfer::KeyCode::Num9: {
+                    io.AddKeyEvent(ImGuiKey_9, true);
+                }
+                case Surfer::KeyCode::Numpad0: {
+                    io.AddKeyEvent(ImGuiKey_Keypad0, true);
+                }
+                case Surfer::KeyCode::Numpad1: {
+                    io.AddKeyEvent(ImGuiKey_Keypad1, true);
+                }
+                case Surfer::KeyCode::Numpad2: {
+                    io.AddKeyEvent(ImGuiKey_Keypad2, true);
+                }
+                case Surfer::KeyCode::Numpad3: {
+                    io.AddKeyEvent(ImGuiKey_Keypad3, true);
+                }
+                case Surfer::KeyCode::Numpad4: {
+                    io.AddKeyEvent(ImGuiKey_Keypad4, true);
+                }
+                case Surfer::KeyCode::Numpad5: {
+                    io.AddKeyEvent(ImGuiKey_Keypad5, true);
+                }
+                case Surfer::KeyCode::Numpad6: {
+                    io.AddKeyEvent(ImGuiKey_Keypad6, true);
+                }
+                case Surfer::KeyCode::Numpad7: {
+                    io.AddKeyEvent(ImGuiKey_Keypad7, true);
+                }
+                case Surfer::KeyCode::Numpad8: {
+                    io.AddKeyEvent(ImGuiKey_Keypad8, true);
+                }
+                case Surfer::KeyCode::Numpad9: {
+                    io.AddKeyEvent(ImGuiKey_Keypad9, true);
+                }
+            }
+        }
+    });
+
+    window.listenKeyRelease([this](Surfer::KeyCode key) {
+        if (ImGui::GetCurrentContext()) {
+            auto &io = ImGui::GetIO();
+           switch (key) {
+                case Surfer::KeyCode::Num0: {
+                    io.AddKeyEvent(ImGuiKey_0, false);
+                }
+                case Surfer::KeyCode::Num1: {
+                    io.AddKeyEvent(ImGuiKey_1, false);
+                }
+                case Surfer::KeyCode::Num2: {
+                    io.AddKeyEvent(ImGuiKey_2, false);
+                }
+                case Surfer::KeyCode::Num3: {
+                    io.AddKeyEvent(ImGuiKey_3, false);
+                }
+                case Surfer::KeyCode::Num4: {
+                    io.AddKeyEvent(ImGuiKey_4, false);
+                }
+                case Surfer::KeyCode::Num5: {
+                    io.AddKeyEvent(ImGuiKey_5, false);
+                }
+                case Surfer::KeyCode::Num6: {
+                    io.AddKeyEvent(ImGuiKey_6, false);
+                }
+                case Surfer::KeyCode::Num7: {
+                    io.AddKeyEvent(ImGuiKey_7, false);
+                }
+                case Surfer::KeyCode::Num8: {
+                    io.AddKeyEvent(ImGuiKey_8, false);
+                }
+                case Surfer::KeyCode::Num9: {
+                    io.AddKeyEvent(ImGuiKey_9, false);
+                }
+                case Surfer::KeyCode::Numpad0: {
+                    io.AddKeyEvent(ImGuiKey_Keypad0, false);
+                }
+                case Surfer::KeyCode::Numpad1: {
+                    io.AddKeyEvent(ImGuiKey_Keypad1, false);
+                }
+                case Surfer::KeyCode::Numpad2: {
+                    io.AddKeyEvent(ImGuiKey_Keypad2, false);
+                }
+                case Surfer::KeyCode::Numpad3: {
+                    io.AddKeyEvent(ImGuiKey_Keypad3, false);
+                }
+                case Surfer::KeyCode::Numpad4: {
+                    io.AddKeyEvent(ImGuiKey_Keypad4, false);
+                }
+                case Surfer::KeyCode::Numpad5: {
+                    io.AddKeyEvent(ImGuiKey_Keypad5, false);
+                }
+                case Surfer::KeyCode::Numpad6: {
+                    io.AddKeyEvent(ImGuiKey_Keypad6, false);
+                }
+                case Surfer::KeyCode::Numpad7: {
+                    io.AddKeyEvent(ImGuiKey_Keypad7, false);
+                }
+                case Surfer::KeyCode::Numpad8: {
+                    io.AddKeyEvent(ImGuiKey_Keypad8, false);
+                }
+                case Surfer::KeyCode::Numpad9: {
+                    io.AddKeyEvent(ImGuiKey_Keypad9, false);
+                }
+            }
+        }
+    });
 }
 
 hammock::UserInterface::~UserInterface() {
@@ -92,10 +231,6 @@ void hammock::UserInterface::forwardWindowEvents() {
         io.AddMousePosEvent(window.getMousePosition().X, window.getMousePosition().Y);
         io.AddMouseButtonEvent(ImGuiMouseButton_Left, window.isKeyDown(Surfer::KeyCode::MouseLeft));
         io.AddMouseButtonEvent(ImGuiMouseButton_Right, window.isKeyDown(Surfer::KeyCode::MouseRight));
-
-        for (int i = 0; i < 26; i++) {
-            io.AddKeyEvent(static_cast<ImGuiKey>(ImGuiKey_A + i), window.isKeyDown((Surfer::KeyCode) i));
-        }
     }
 }
 
@@ -150,8 +285,6 @@ void hammock::UserInterface::setupStyle() {
     style.Colors[ImGuiCol_Button] = ImVec4(80 / 255.0f, 80 / 255.0f, 80 / 255.0f, 170 / 255.0f);
     style.Colors[ImGuiCol_ButtonHovered] = ImVec4(241 / 255.0f, 135 / 255.0f, 1 / 255.0f, 255 / 255.0f);
     style.Colors[ImGuiCol_ButtonActive] = ImVec4(241 / 255.0f, 135 / 255.0f, 1 / 255.0f, 255 / 255.0f);
-
-
 }
 
 VkCommandBuffer hammock::UserInterface::beginSingleTimeCommands() const {
