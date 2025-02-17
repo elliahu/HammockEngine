@@ -40,7 +40,7 @@ def show_noise_params(noise_type, channel):
         }
     elif noise_type in ["Perlin-Worley"]:
          return {
-            'num_points': st.sidebar.slider(f"Number of Points ({channel})", 1, 100, 20, key=f"points_{channel}"),
+            'num_points': st.sidebar.slider(f"Number of Points ({channel})", 1, 1000, 50, key=f"points_{channel}"),
             'distance_func': st.sidebar.selectbox(f"Distance Function ({channel})", ['Euclidean', 'Manhattan', 'Chebyshev'], key=f"dist_{channel}"),
             'combination': st.sidebar.selectbox(f"Combination Method ({channel})", ['Nearest', 'Second Nearest', 'Difference'], key=f"comb_{channel}"),
             'scale': st.sidebar.slider(f"Scale ({channel})", 1.0, 100.0, 30.0, step=1.0, key=f"scale_{channel}"),
@@ -50,7 +50,7 @@ def show_noise_params(noise_type, channel):
         }
     elif noise_type == "Worley":
         return {
-            'num_points': st.sidebar.slider(f"Number of Points ({channel})", 1, 100, 20, key=f"points_{channel}"),
+            'num_points': st.sidebar.slider(f"Number of Points ({channel})", 1, 1000, 50, key=f"points_{channel}"),
             'distance_func': st.sidebar.selectbox(f"Distance Function ({channel})", ['Euclidean', 'Manhattan', 'Chebyshev'], key=f"dist_{channel}"),
             'combination': st.sidebar.selectbox(f"Combination Method ({channel})", ['Nearest', 'Second Nearest', 'Difference'], key=f"comb_{channel}")
         }
@@ -113,46 +113,52 @@ def generate_perlin_3d(params):
 def generate_worley_2d(params):
     np.random.seed(seed)
     num_points = params.get('num_points', 20)
-    # Generate points in [0, size) range
     points = np.random.rand(num_points, 2) * size
-    world = np.zeros((size, size))
     
-    distance_funcs = {
-        'Euclidean': lambda p1, p2: distance.euclidean(p1, p2),
-        'Manhattan': lambda p1, p2: distance.cityblock(p1, p2),
-        'Chebyshev': lambda p1, p2: distance.chebyshev(p1, p2)
-    }
+    # Create coordinate grids
+    x_coords, y_coords = np.meshgrid(np.arange(size), np.arange(size))
+    coords = np.stack([x_coords, y_coords], axis=-1)
     
-    dist_func = distance_funcs[params.get('distance_func', 'Euclidean')]
-    combination = params.get('combination', 'Nearest')
+    # Initialize distances array for all periodic copies
+    min_distances = np.full((size, size), np.inf)
+    second_min_distances = np.full((size, size), np.inf)
     
-    # Helper function for periodic distance calculation
-    def periodic_distance(p1, p2):
-        dx = np.abs(p1[0] - p2[0])
-        dy = np.abs(p1[1] - p2[1])
-        # Use minimum of direct and wrapped distance
-        dx = min(dx, size - dx)
-        dy = min(dy, size - dy)
-        return dist_func((dx, dy), (0, 0))
-    
-    for y in range(size):
-        for x in range(size):
-            # Calculate distances including wrapped points
-            distances = []
-            for point in points:
-                # Consider the original point and its 8 periodic copies
-                for ox in [-size, 0, size]:
-                    for oy in [-size, 0, size]:
-                        wrapped_point = (point[0] + ox, point[1] + oy)
-                        distances.append(periodic_distance((x, y), wrapped_point))
+    # Process periodic copies efficiently
+    for ox in [-size, 0, size]:
+        for oy in [-size, 0, size]:
+            # Shift points
+            shifted_points = points + np.array([ox, oy])
             
-            distances.sort()
-            if combination == 'Nearest':
-                world[y, x] = 1 - distances[0] / size
-            elif combination == 'Second Nearest':
-                world[y, x] = 1 - distances[1] / size
-            else:  # Difference
-                world[y, x] = 1 - (distances[1] - distances[0]) / size
+            # Calculate distances using broadcasting
+            if params.get('distance_func') == 'Manhattan':
+                distances = np.abs(coords[:, :, np.newaxis] - shifted_points).sum(axis=-1)
+            elif params.get('distance_func') == 'Chebyshev':
+                distances = np.max(np.abs(coords[:, :, np.newaxis] - shifted_points), axis=-1)
+            else:  # Euclidean
+                distances = np.sqrt(((coords[:, :, np.newaxis] - shifted_points) ** 2).sum(axis=-1))
+            
+            # Update min and second min distances
+            prev_min = min_distances.copy()
+            min_distances = np.minimum(min_distances, np.min(distances, axis=-1))
+            mask = min_distances < prev_min
+            second_min_distances[mask] = prev_min[mask]
+            second_min_distances[~mask] = np.minimum(
+                second_min_distances[~mask],
+                np.partition(distances[~mask], 1, axis=-1)[..., 1]
+            )
+    
+    # Normalize distances
+    min_distances /= size
+    second_min_distances /= size
+    
+    # Apply combination method
+    combination = params.get('combination', 'Nearest')
+    if combination == 'Nearest':
+        world = 1 - min_distances
+    elif combination == 'Second Nearest':
+        world = 1 - second_min_distances
+    else:  # Difference
+        world = 1 - (second_min_distances - min_distances)
     
     return (world - world.min()) / (world.max() - world.min())
 
@@ -160,45 +166,46 @@ def generate_worley_3d(params):
     np.random.seed(seed)
     num_points = params.get('num_points', 20)
     points = np.random.rand(num_points, 3) * size
-    world = np.zeros((size, size, size))
     
-    distance_funcs = {
-        'Euclidean': lambda p1, p2: distance.euclidean(p1, p2),
-        'Manhattan': lambda p1, p2: distance.cityblock(p1, p2),
-        'Chebyshev': lambda p1, p2: distance.chebyshev(p1, p2)
-    }
+    # Create 3D coordinate grids
+    x_coords, y_coords, z_coords = np.meshgrid(np.arange(size), np.arange(size), np.arange(size))
+    coords = np.stack([x_coords, y_coords, z_coords], axis=-1)
     
-    dist_func = distance_funcs[params.get('distance_func', 'Euclidean')]
-    combination = params.get('combination', 'Nearest')
+    min_distances = np.full((size, size, size), np.inf)
+    second_min_distances = np.full((size, size, size), np.inf)
     
-    def periodic_distance_3d(p1, p2):
-        dx = np.abs(p1[0] - p2[0])
-        dy = np.abs(p1[1] - p2[1])
-        dz = np.abs(p1[2] - p2[2])
-        dx = min(dx, size - dx)
-        dy = min(dy, size - dy)
-        dz = min(dz, size - dz)
-        return dist_func((dx, dy, dz), (0, 0, 0))
-    
-    for z in range(size):
-        for y in range(size):
-            for x in range(size):
-                distances = []
-                for point in points:
-                    # Consider periodic copies in 3D
-                    for ox in [-size, 0, size]:
-                        for oy in [-size, 0, size]:
-                            for oz in [-size, 0, size]:
-                                wrapped_point = (point[0] + ox, point[1] + oy, point[2] + oz)
-                                distances.append(periodic_distance_3d((x, y, z), wrapped_point))
+    # Process periodic copies efficiently
+    for ox in [-size, 0, size]:
+        for oy in [-size, 0, size]:
+            for oz in [-size, 0, size]:
+                shifted_points = points + np.array([ox, oy, oz])
                 
-                distances.sort()
-                if combination == 'Nearest':
-                    world[z, y, x] = 1 - distances[0] / size
-                elif combination == 'Second Nearest':
-                    world[z, y, x] = 1 - distances[1] / size
-                else:  # Difference
-                    world[z, y, x] = 1 - (distances[1] - distances[0]) / size
+                if params.get('distance_func') == 'Manhattan':
+                    distances = np.abs(coords[:, :, :, np.newaxis] - shifted_points).sum(axis=-1)
+                elif params.get('distance_func') == 'Chebyshev':
+                    distances = np.max(np.abs(coords[:, :, :, np.newaxis] - shifted_points), axis=-1)
+                else:  # Euclidean
+                    distances = np.sqrt(((coords[:, :, :, np.newaxis] - shifted_points) ** 2).sum(axis=-1))
+                
+                prev_min = min_distances.copy()
+                min_distances = np.minimum(min_distances, np.min(distances, axis=-1))
+                mask = min_distances < prev_min
+                second_min_distances[mask] = prev_min[mask]
+                second_min_distances[~mask] = np.minimum(
+                    second_min_distances[~mask],
+                    np.partition(distances[~mask], 1, axis=-1)[..., 1]
+                )
+    
+    min_distances /= size
+    second_min_distances /= size
+    
+    combination = params.get('combination', 'Nearest')
+    if combination == 'Nearest':
+        world = 1 - min_distances
+    elif combination == 'Second Nearest':
+        world = 1 - second_min_distances
+    else:  # Difference
+        world = 1 - (second_min_distances - min_distances)
     
     return (world - world.min()) / (world.max() - world.min())
 
@@ -215,8 +222,10 @@ def generate_curl_3d(params):
     return (curl_noise - curl_noise.min()) / (curl_noise.max() - curl_noise.min())
 
 def generate_perlin_worley_2d(params):
+    # Generate both noises in parallel
     perlin = generate_perlin_2d(params)
     worley = generate_worley_2d(params)
+    # Blend using vectorized operations
     return (perlin + worley) / 2
 
 def generate_perlin_worley_3d(params):

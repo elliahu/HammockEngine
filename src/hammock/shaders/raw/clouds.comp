@@ -217,9 +217,6 @@ void main() {
             vec2 cloudmapUv = getCloudUV(rayPosition, planetCenter);
             vec4 cloudMapSample = sampleCloudmap(cloudmapUv);
 
-            if(cloudMapSample.a == 1.0){
-                break;
-            }
 
             float baseDensitySample = 0.1 * stepSize;
             totalDensity = beer(baseDensitySample + totalDensity, 1);
