@@ -34,6 +34,7 @@ namespace hammock {
             StorageBuffer,
             PushConstantData,
             StorageImage,
+            SampledImage,
             SwapChainImage,
             ColorAttachment,
             DepthStencilAttachment,
@@ -78,7 +79,7 @@ namespace hammock {
 
         bool isImage() const {
             return type == Type::ColorAttachment || type == Type::DepthStencilAttachment || type ==
-                   Type::SwapChainImage ||  type == Type::StorageImage;
+                   Type::SwapChainImage ||  type == Type::StorageImage || type == Type::SampledImage;
         }
 
         bool isColorAttachment() const {

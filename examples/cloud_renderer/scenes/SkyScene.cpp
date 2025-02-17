@@ -3,7 +3,7 @@
 void SkyScene::init() {
     // For fast reads in the compute stage, storage buffer has GPU only memory
     // Data needs to be staged -> moved to GPU/CPU visible memory and then transferred to GPU only memory
-    ResourceHandle stagingBufferHandle = rm.createResource<Buffer>(
+    ResourceHandle stagingStorageBufferHandle = rm.createResource<Buffer>(
         "staging-storage-buffer",
         BufferDesc{
             .instanceSize = sizeof(StorageBufferData),
@@ -13,8 +13,8 @@ void SkyScene::init() {
         });
 
     // Map the buffer and write the data
-    rm.getResource<Buffer>(stagingBufferHandle)->map();
-    rm.getResource<Buffer>(stagingBufferHandle)->writeToBuffer(&storageBufferData);
+    rm.getResource<Buffer>(stagingStorageBufferHandle)->map();
+    rm.getResource<Buffer>(stagingStorageBufferHandle)->writeToBuffer(&storageBufferData);
 
     // Create the actual GPU only storage buffer
     compute.storageBuffer = rm.createResource<Buffer>(
@@ -31,9 +31,51 @@ void SkyScene::init() {
         });
 
     // Transfer the data between buffer and release the staging buffer
-    device.copyBuffer(rm.getResource<Buffer>(stagingBufferHandle)->getBuffer(),
+    device.copyBuffer(rm.getResource<Buffer>(stagingStorageBufferHandle)->getBuffer(),
                       rm.getResource<Buffer>(compute.storageBuffer)->getBuffer(), sizeof(StorageBufferData));
-    rm.releaseResource(stagingBufferHandle.getUid());
+    rm.releaseResource(stagingStorageBufferHandle.getUid());
+
+    //Load the cloud map into host RAM
+    int w, h, c;
+    ScopedMemory cloudMapHostMemory(Filesystem::readImage(assetPath("noise/cloudmap.png"), w, h, c));
+
+    // Create host visible staging buffer on device
+    ResourceHandle cloudMapStagingBuffer = rm.createResource<Buffer>(
+        "cloudmap-staging-buffer",
+        BufferDesc{
+            .instanceSize = sizeof(float),
+            .instanceCount = static_cast<uint32_t>(w * h * c),
+            .usageFlags = VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
+            .allocationFlags = VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT,
+        }
+    );
+
+    // Write the data into the staging buffer
+    rm.getResource<Buffer>(cloudMapStagingBuffer)->map();
+    rm.getResource<Buffer>(cloudMapStagingBuffer)->writeToBuffer(cloudMapHostMemory.get());
+
+    // Create image resource
+    compute.cloudMap = rm.createResource<Image>(
+        "cloudmap-image",
+        ImageDesc{
+            .width = static_cast<uint32_t>(w),
+            .height = static_cast<uint32_t>(h),
+            .channels = static_cast<uint32_t>(c),
+            .format = VK_FORMAT_R32G32B32A32_SFLOAT,
+            .usage = VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,
+            .imageType = VK_IMAGE_TYPE_2D,
+            .imageViewType = VK_IMAGE_VIEW_TYPE_2D,
+        }
+    );
+
+    // Copy the data from buffer into the image
+    rm.getResource<Image>(compute.cloudMap)->queueImageLayoutTransition(VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
+    rm.getResource<Image>(compute.cloudMap)->queueCopyFromBuffer(rm.getResource<Buffer>(cloudMapStagingBuffer)->getBuffer());
+    // Image will be transitioned into SHADER_READ_ONLY_OPTIMAL by the render graph automatically
+
+    // Release the staging buffer
+    rm.releaseResource(cloudMapStagingBuffer.getUid());
+
 
     // Other resource are managed by the render graph
     buildRenderGraph();
@@ -56,6 +98,9 @@ void SkyScene::buildRenderGraph() {
 
     // The storage buffer created earlier
     renderGraph->addStaticResource<ResourceNode::Type::StorageBuffer>("compute-storage-buffer", compute.storageBuffer);
+
+    // Cloud map
+    renderGraph->addStaticResource<ResourceNode::Type::SampledImage>("compute-cloudmap", compute.cloudMap);
 
     // Storage image that the compute pass outputs to and that is then read in the composition pass
     renderGraph->addResource<ResourceNode::Type::StorageImage, Image, ImageDesc>(
@@ -86,10 +131,15 @@ void SkyScene::buildRenderGraph() {
             .read(ResourceAccess{
                 .resourceName = "compute-storage-buffer",
             })
+            .read(ResourceAccess{
+                .resourceName = "compute-cloudmap",
+                .requiredLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+            })
             .descriptor(0, {
                             {0, {"compute-storage-image"}, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, VK_SHADER_STAGE_COMPUTE_BIT},
                             {1, {"compute-uniform-buffer"}, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_COMPUTE_BIT},
-                            {2, {"compute-storage-buffer"}, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_SHADER_STAGE_COMPUTE_BIT}
+                            {2, {"compute-storage-buffer"}, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_SHADER_STAGE_COMPUTE_BIT},
+                            {3, {"compute-cloudmap"}, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_COMPUTE_BIT},
                         })
             .write(ResourceAccess{
                 .resourceName = "compute-storage-image",
@@ -160,6 +210,21 @@ void SkyScene::buildRenderGraph() {
                 // Draw the UI
                 ui.get()->beginUserInterface();
                 ui.get()->showDemoWindow();
+
+                ImGui::Begin("Cloud Property editor", (bool *) false, ImGuiWindowFlags_AlwaysAutoResize);
+
+                ImGui::End();
+
+                ImGui::Begin("Camera property editor", (bool *) false, ImGuiWindowFlags_AlwaysAutoResize);
+                ImGui::Text("%.1f FPS ", 1.0f / frameTime);
+                ImGui::Text("Frametime: %.2f ms", frameTime * 1000.0f);
+                ImGui::DragFloat("Radius (distance from the planet center)", &radius, 0.1f, storageBufferData.surfaceRadius);
+                ImGui::DragFloat("Elevation (horizontal inclination)", &elevation);
+                ImGui::DragFloat("Azimuth (vertical inclination)", &azimuth);
+                ImGui::DragFloat("Yaw", &yaw, 0.01f);
+                ImGui::DragFloat("Pitch", &pitch, 0.01f);
+                ImGui::End();
+
                 ui.get()->endUserInterface(context.commandBuffer);
 
                 // End the render pass
@@ -175,12 +240,12 @@ void SkyScene::buildRenderGraph() {
 void SkyScene::buildPipelines() {
     // Compute pipeline is not very complicated
     compute.pipeline = ComputePipeline::create({
-       .debugName = "compute-pipeline",
-       .device = device,
-       .computeShader{.byteCode = Filesystem::readFile(compiledShaderPath("clouds.comp")),},
-       .descriptorSetLayouts = {renderGraph->getDescriptorSetLayouts("compute-pass")},
-       .pushConstantRanges{} // We do not use push constants
-   });
+        .debugName = "compute-pipeline",
+        .device = device,
+        .computeShader{.byteCode = Filesystem::readFile(compiledShaderPath("clouds.comp")),},
+        .descriptorSetLayouts = {renderGraph->getDescriptorSetLayouts("compute-pass")},
+        .pushConstantRanges{} // We do not use push constants
+    });
 
     // Composition pass
     composition.pipeline = GraphicsPipeline::create({
@@ -201,7 +266,7 @@ void SkyScene::buildPipelines() {
             .vertexBufferBindings{}
         },
         .dynamicRendering = {
-            // Render graph requires by default dynmic rendering
+            // Render graph requires by default dynamic rendering
             .enabled = true,
             .colorAttachmentCount = 1,
             // We draw to the swapchain image
@@ -210,20 +275,64 @@ void SkyScene::buildPipelines() {
     });
 }
 
-void SkyScene::updateUniformBuffer() {
+void SkyScene::update() {
+    // Spherical coords
+    HmckVec3 cameraPosition = {
+        radius * cos(elevation) * cos(azimuth), // X
+        radius * sin(elevation), // Y
+        radius * cos(elevation) * sin(azimuth) // Z
+    };
+
+    // Compute the up vector as the normalized vector from the origin to the camera.
+    const HmckVec3 up = HmckNorm(cameraPosition);
+
+    HmckVec3 worldNorth = {0.0f, 0.0f, -1.0f};
+    HmckVec3 baseForward = worldNorth - HmckDot(worldNorth, up) * up;
+    if (HmckLen(baseForward) < 1e-5f) {
+        // Fallback if camera is near the north/south pole.
+        baseForward = {1.0f, 0.0f, 0.0f};
+    }
+    baseForward = HmckNorm(baseForward);
+
+    // Compute the right vector (tangent to the sphere surface).
+    HmckVec3 right = HmckNorm(HmckCross(up, baseForward));
+
+    // Compute the final view direction.
+    // When pitch == 0, the direction lies entirely in the tangent plane:
+    //       cos(yaw)*baseForward + sin(yaw)*right.
+    // A non-zero pitch tilts the view by adding a component along up.
+    HmckVec3 finalDirection = HmckNorm(
+        cos(pitch) * (cos(yaw) * baseForward + sin(yaw) * right)
+        + sin(pitch) * up
+    );
+
+    // The target is where the camera is looking: its position plus the view direction.
+    HmckVec3 target = cameraPosition + finalDirection;
+
+
     // Create inverse view matrix
-    HmckVec4 eye = uniformBufferData.camera.position;
-    HmckVec4 target = eye + HmckVec4{0.0f, 0.0f, 1.0f, 0.0f};
-    HmckMat4 view = Projection().view(eye.XYZ, target.XYZ, Projection().upPosY());
+    const HmckMat4 view = Projection().view(cameraPosition, target, up);
+
+    uniformBufferData.camera.position = HmckVec4{cameraPosition, 0.0f};
     uniformBufferData.camera.inverseView = HmckInvGeneral(view);
 }
 
 
 void SkyScene::render() {
+    auto currentTime = std::chrono::high_resolution_clock::now();
     while (!window.shouldClose()) {
+        // Timing
+        auto newTime = std::chrono::high_resolution_clock::now();
+        frameTime = std::chrono::duration<float, std::chrono::seconds::period>(newTime - currentTime).count();
+        currentTime = newTime;
+
+        // Poll for events
         window.pollEvents();
+
+        // Update the data for the frame
+        update();
+
         // Execute the render graph
-        updateUniformBuffer();
         renderGraph->execute();
     }
     // Wait for queues to finish before deallocating resources

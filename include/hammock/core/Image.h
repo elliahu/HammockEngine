@@ -128,6 +128,7 @@ namespace hammock {
          * @param newLayout New layout
          */
         void queueImageLayoutTransition(VkImageLayout newLayout) {
+            if (newLayout == m_layout) {return;}
             device.transitionImageLayout(m_image, m_layout, newLayout, m_layers, 0, m_mips, 0);
             m_layout = newLayout;
         }
@@ -182,6 +183,21 @@ namespace hammock {
             }
 
             m_layout = newLayout;
+        }
+
+        /**
+         * Copy data from buffer into this image
+         * @param buffer Buffer to copy from
+         */
+        void queueCopyFromBuffer(VkBuffer buffer) {
+            device.copyBufferToImage(
+                buffer,
+                m_image,
+                m_width,
+                m_height,
+                m_layers,
+                0, m_depth
+            );
         }
 
         /**

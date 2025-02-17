@@ -5,9 +5,8 @@ layout (binding = 0, rgba8) uniform writeonly image2D storageImage;
 
 // Camera type
 struct Camera {
-    vec4 invView; // Inverse view matrix
+    mat4 invView; // Inverse view matrix
     vec4 position; // Camera position in world space
-    vec2 viewport; // Viewport dimensins
 };
 
 struct Sun {
@@ -25,8 +24,52 @@ layout (std140, binding = 2) buffer Scene
 {
     float surfaceRadius;
     float atmosphereRadius;
+    float cloudsMinHeight;
+    float cloudsMaxHeight;
 } storageBuffer;
 
+layout (binding = 3) uniform sampler2D cloudMapSampler;
+
+
+#define PI 3.14159265359
+
+const int MIN_STEPS = 64;
+const int MAX_STEPS = 128;
+const float TILING_ANGLE = radians(30.0); // Define tiling angle in degrees
+
+vec3 getRayOrigin() {
+    return ubo.camera.position.xyz;
+}
+
+vec3 getRayDirection() {
+    // Compute the UV coordinates
+    ivec2 dim = imageSize(storageImage);
+    vec2 uv = vec2(gl_GlobalInvocationID.xy) / dim;
+
+    // Convert uv to normalized device coordinates (range -1 to 1)
+    vec2 ndc = uv * 2.0 - 1.0;
+
+    // Assume a field-of-view (FOV) of 45 degrees
+    float fov = radians(45.0);
+    float aspect = float(dim.x) / float(dim.y);
+    float scale = tan(fov * 0.5);
+
+    // Compute the ray direction in camera (view) space.
+    // Here we assume the camera looks down the -Z axis.
+    vec3 rayDirView = normalize(vec3(ndc.x * aspect * scale, ndc.y * scale, -1.0));
+
+    // Transform the view-space ray direction into world space using the camera's inverse view matrix.
+    // We use a 0.0 for the w component so that only rotation (and possibly scaling) is applied.
+    vec3 rayDirection = normalize((ubo.camera.invView * vec4(rayDirView, 0.0)).xyz);
+
+    return rayDirection;
+}
+
+vec4 sampleCloudmap(vec2 uv){
+    return texture(cloudMapSampler, uv);
+}
+
+// Intersection function for sphere
 vec2 raySphereDst(vec3 ro, vec3 rd, vec3 center, float radius) {
     vec3 oc = ro - center;
     float b = dot(oc, rd);
@@ -53,9 +96,145 @@ vec2 raySphereDst(vec3 ro, vec3 rd, vec3 center, float radius) {
     return vec2(t0, t1 - t0);
 }
 
-void main() {
-    ivec2 dim = imageSize(storageImage);
-    vec2 uv = vec2(gl_GlobalInvocationID.xy) / dim;
+// Intersection function fro troposphere (the layer of atmosphere where clouds appear)
+vec2 rayTroposphereDst(vec3 ro, vec3 rd, vec3 center, float innerRadius, float outerRadius) {
+    // Intersect the ray with the outer sphere (atmosphere top).
+    vec2 outer = raySphereDst(ro, rd, center, outerRadius);
+    // If there is no intersection with the outer sphere, the ray misses the atmosphere.
+    if (outer.y == 0.0)
+    return vec2(0.0, 0.0);
 
-    imageStore(storageImage, ivec2(gl_GlobalInvocationID.xy), vec4(uv, 0.0, 1.0));
+    // Intersect the ray with the inner sphere (planet surface).
+    vec2 inner = raySphereDst(ro, rd, center, innerRadius);
+    // If the ray does not hit the inner sphere, then the full outer chord lies in the atmosphere.
+    if (inner.y == 0.0)
+    return outer;
+
+    // Compute the entry and exit distances for both spheres.
+    float tOuter0 = outer.x;
+    float tOuter1 = outer.x + outer.y;
+    float tInner0 = inner.x;
+    float tInner1 = inner.x + inner.y;
+
+    // The atmospheric layer is the region between the outer sphere and the inner sphere.
+    // There are two main cases:
+
+    // Case 1: The ray enters the atmosphere and then hits the inner sphere.
+    // (e.g. the ray starts outside and then crosses into the planet's atmosphere before hitting the surface)
+    if (tOuter0 < tInner0) {
+        // If the first inner hit is behind the ray origin, then the ray must be inside the inner sphere.
+        if (tInner0 < 0.0)
+        // Return the chord from when the ray exits the inner sphere until it leaves the outer sphere.
+        return vec2(tInner1, tOuter1 - tInner1);
+        else
+        // Otherwise, the atmospheric segment is from the outer sphere entry until the inner sphere entry.
+        return vec2(tOuter0, tInner0 - tOuter0);
+    }
+    // Case 2: The ray starts inside the inner sphere.
+    // Then the atmosphere is only encountered after the ray exits the inner sphere.
+    else {
+        return vec2(tInner1, tOuter1 - tInner1);
+    }
+}
+
+// remaps from one range to another
+float remap(float value, float inMin, float inMax, float outMin, float outMax) {
+    return outMin + (value - inMin) * (outMax - outMin) / (inMax - inMin);
+}
+
+// number of steps based on the intersection length
+// shortest (directly up) r_out - r_in
+// longest (tanglentially) 2.0 * sqrt(r_out*r_out - r_in*r_in)
+int computeRaymarchSteps(float chordLength, float minChord, float maxChord, int minSteps, int maxSteps) {
+    // Normalize the chord length between 0 and 1.
+    float t = clamp((chordLength - minChord) / (maxChord - minChord), 0.0, 1.0);
+    // Interpolate between minSteps and maxSteps.
+    return int(mix(float(minSteps), float(maxSteps), t));
+}
+
+// Beers law
+float beer(float dst, float ext){
+    return exp(-dst * ext);
+}
+
+// Converts a point in space into corresponding spherical coords give a sphere center
+vec2 toSpherical(vec3 position, vec3 center){
+    vec3 localPos = normalize(position - center); // Normalize to get direction
+    float azimuth = atan(localPos.z, localPos.x); // Longitude
+    float elevation = asin(localPos.y); // Latitude
+    return vec2(azimuth, elevation);
+}
+
+// Maps a point in troposphere into uv coord
+vec2 getCloudUV(vec3 P, vec3 center) {
+    vec3 localPos = normalize(P - center);
+    float azimuth = atan(localPos.z, localPos.x);
+    float elevation = asin(localPos.y);
+
+    // Apply tiling by dividing azimuth & elevation by TILING_ANGLE
+    float u = (azimuth / TILING_ANGLE) * 0.5; // Scaling factor
+    float v = (elevation / TILING_ANGLE); // Scaling factor
+
+    // Wrap values to [0,1] to ensure tiling
+    u = fract(u);
+    v = fract(v);
+
+    return vec2(u, v);
+}
+
+
+void main() {
+    // Ray origin and direction
+    vec3 rayOrigin = getRayOrigin();
+    vec3 rayDirection = getRayDirection();
+
+    // Planet
+    vec3 planetCenter = vec3(0.0);
+    float r_in = storageBuffer.surfaceRadius + storageBuffer.cloudsMinHeight;
+    float r_out = storageBuffer.surfaceRadius + storageBuffer.cloudsMaxHeight;
+
+    // Final color
+    vec4 outColor = vec4(0.0);
+
+    // Cast a ray and calculate intersection with troposphere
+    vec2 intersection = rayTroposphereDst(rayOrigin, rayDirection, planetCenter, r_in, r_out);
+    float dstToClouds = intersection.x;
+    float dstInClouds = intersection.y;
+
+    if (dstInClouds > 0.0) {
+        // We hit the troposphere
+        int numberOfSteps = computeRaymarchSteps(dstInClouds, r_out - r_in, 2.0 * sqrt(r_out*r_out - r_in*r_in), MIN_STEPS, MAX_STEPS);
+        float stepSize = dstInClouds / numberOfSteps;
+
+        // Accumulated values
+        float totalDensity = 0.0;
+        float alpha = 0.0;
+
+        // raymarch
+        for(int step = 0; step < numberOfSteps; step++){
+            vec3 rayPosition = rayOrigin + rayDirection * (dstToClouds + step * stepSize);
+
+            vec2 cloudmapUv = getCloudUV(rayPosition, planetCenter);
+            vec4 cloudMapSample = sampleCloudmap(cloudmapUv);
+
+            if(cloudMapSample.a == 1.0){
+                break;
+            }
+
+            float baseDensitySample = 0.1 * stepSize;
+            totalDensity = beer(baseDensitySample + totalDensity, 1);
+
+            // Compute alpha accumulation for blending
+            alpha += (1.0 - alpha) * baseDensitySample * stepSize;
+        }
+
+        outColor = vec4(vec3(totalDensity), alpha);
+
+    }
+    else {
+        // We should bot be here unless we are in the space and not looking at earth
+        outColor = vec4(1.0,0.0,0.0,1.0);
+    }
+
+    imageStore(storageImage, ivec2(gl_GlobalInvocationID.xy), outColor);
 }
