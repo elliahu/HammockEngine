@@ -4,6 +4,8 @@ add_executable(cloud_renderer
         scenes/IScene.h
         scenes/SkyScene.cpp
         scenes/SkyScene.h
+        scenes/NoiseEditor.cpp
+        scenes/NoiseEditor.h
 )
 
 # Link the engine library

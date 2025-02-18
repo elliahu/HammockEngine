@@ -233,6 +233,10 @@ namespace hammock {
         VkResult invalidateIndex(int index) const {
             return invalidate(m_alignmentSize, index * m_alignmentSize);
         }
+
+        void copy(VkBuffer src, VkDeviceSize size = VK_WHOLE_SIZE) const {
+            device.copyBuffer(src, m_buffer, size);
+        }
     };
 
     template<>

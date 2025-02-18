@@ -170,7 +170,7 @@ void SkyScene::buildRenderGraph() {
             .write(ResourceAccess{
                 .resourceName = "swap-color-image",
                 .requiredLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
-                .finalLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR,
+                .finalLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR, // TODO remove this
             })
             .execute([&](RenderPassContext context)-> void {
                 // The composition pass is straight forward
@@ -178,7 +178,7 @@ void SkyScene::buildRenderGraph() {
                 context.bindDescriptorSet(0, 0, composition.pipeline->pipelineLayout,
                                           VK_PIPELINE_BIND_POINT_GRAPHICS);
 
-                // Oven though there is no vertex buffer, this call is safe as it does not actually read the vertices in the shader
+                // Even though there is no vertex buffer, this call is safe as it does not actually read the vertices in the shader
                 // This only triggers fullscreen effect in ver shader that runs fragment shader for each pixel of the screen
                 vkCmdDraw(context.commandBuffer, 3, 1, 0, 0);
             });

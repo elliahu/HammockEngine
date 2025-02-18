@@ -7,6 +7,7 @@ import time
 import threading
 from scipy.spatial import Voronoi, distance
 from PIL import Image
+from itertools import product
 
 # Move control elements to sidebar
 st.sidebar.title("🌥️ Cloud Noise Editor")
@@ -166,39 +167,60 @@ def generate_worley_3d(params):
     np.random.seed(seed)
     num_points = params.get('num_points', 20)
     points = np.random.rand(num_points, 3) * size
-    
-    # Create 3D coordinate grids
-    x_coords, y_coords, z_coords = np.meshgrid(np.arange(size), np.arange(size), np.arange(size))
-    coords = np.stack([x_coords, y_coords, z_coords], axis=-1)
-    
+
+    # Create coordinate grids more efficiently
+    coords = np.stack(np.meshgrid(
+        np.arange(size),
+        np.arange(size),
+        np.arange(size),
+        indexing='ij'
+    ), axis=-1)
+
+    # Pre-compute distance function
+    if params.get('distance_func') == 'Manhattan':
+        dist_func = lambda x: np.abs(x).sum(axis=-1)
+    elif params.get('distance_func') == 'Chebyshev':
+        dist_func = lambda x: np.max(np.abs(x), axis=-1)
+    else:  # Euclidean
+        dist_func = lambda x: np.sqrt((x * x).sum(axis=-1))
+
+    # Initialize with nearest neighbor search for periodic boundaries
     min_distances = np.full((size, size, size), np.inf)
-    second_min_distances = np.full((size, size, size), np.inf)
+    if params.get('combination') in ['Second Nearest', 'Difference']:
+        second_min_distances = np.full((size, size, size), np.inf)
+
+    # Process only necessary periodic copies
+    shifts = np.array(list(product([-size, 0, size], repeat=3)))
     
-    # Process periodic copies efficiently
-    for ox in [-size, 0, size]:
-        for oy in [-size, 0, size]:
-            for oz in [-size, 0, size]:
-                shifted_points = points + np.array([ox, oy, oz])
-                
-                if params.get('distance_func') == 'Manhattan':
-                    distances = np.abs(coords[:, :, :, np.newaxis] - shifted_points).sum(axis=-1)
-                elif params.get('distance_func') == 'Chebyshev':
-                    distances = np.max(np.abs(coords[:, :, :, np.newaxis] - shifted_points), axis=-1)
-                else:  # Euclidean
-                    distances = np.sqrt(((coords[:, :, :, np.newaxis] - shifted_points) ** 2).sum(axis=-1))
-                
-                prev_min = min_distances.copy()
-                min_distances = np.minimum(min_distances, np.min(distances, axis=-1))
-                mask = min_distances < prev_min
-                second_min_distances[mask] = prev_min[mask]
-                second_min_distances[~mask] = np.minimum(
-                    second_min_distances[~mask],
-                    np.partition(distances[~mask], 1, axis=-1)[..., 1]
+    # Batch process all shifts
+    for shift in shifts:
+        shifted_points = points + shift
+        diff = coords[:, :, :, np.newaxis] - shifted_points
+        distances = dist_func(diff)
+        
+        # Update distances more efficiently
+        new_mins = np.min(distances, axis=-1)
+        if params.get('combination') in ['Second Nearest', 'Difference']:
+            mask = new_mins < min_distances
+            second_min_distances[mask] = min_distances[mask]
+            min_distances = np.minimum(min_distances, new_mins)
+            # Update second minimum only where needed
+            needs_second = ~mask
+            if needs_second.any():
+                partitioned = np.partition(distances[needs_second], 1, axis=-1)
+                second_min_distances[needs_second] = np.minimum(
+                    second_min_distances[needs_second],
+                    partitioned[..., 1]
                 )
-    
+        else:
+            min_distances = np.minimum(min_distances, new_mins)
+
+    # Normalize distances
     min_distances /= size
-    second_min_distances /= size
-    
+    if params.get('combination') in ['Second Nearest', 'Difference']:
+        second_min_distances /= size
+
+    # Apply combination method
     combination = params.get('combination', 'Nearest')
     if combination == 'Nearest':
         world = 1 - min_distances
@@ -206,7 +228,7 @@ def generate_worley_3d(params):
         world = 1 - second_min_distances
     else:  # Difference
         world = 1 - (second_min_distances - min_distances)
-    
+
     return (world - world.min()) / (world.max() - world.min())
 
 def generate_curl_2d(params):

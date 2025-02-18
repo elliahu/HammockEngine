@@ -1,0 +1,75 @@
+#version 450
+#define MAX_POINTS 200
+
+layout (local_size_x = 8, local_size_y = 8, local_size_z = 8) in;
+
+layout (binding = 0, rgba32f) uniform writeonly image3D storageImage;
+
+layout (std140, binding = 1) buffer Data
+{
+    vec4 points[MAX_POINTS * MAX_POINTS * MAX_POINTS];
+} data;
+
+layout (push_constant) uniform PushConstants {
+    vec4 cellSize;
+    vec4 gridSize;
+} consts;
+
+// Helper function to get the cell index from 3D coordinates with wrapping
+int getCellIndex(ivec3 cell) {
+    // Wrap coordinates
+    cell.x = (cell.x + int(consts.gridSize.x)) % int(consts.gridSize.x);
+    cell.y = (cell.y + int(consts.gridSize.y)) % int(consts.gridSize.y);
+    cell.z = (cell.z + int(consts.gridSize.z)) % int(consts.gridSize.z);
+
+    return cell.x * int(consts.gridSize.y * consts.gridSize.z) +
+    cell.y * int(consts.gridSize.z) +
+    cell.z;
+}
+
+// Helper function to compute wrapped distance for seamless tiling
+float wrappedDistance(vec3 p1, vec3 p2) {
+    vec3 diff = abs(p1 - p2);
+    diff = min(diff, 1.0 - diff); // Wrap around edges
+    return length(diff);
+}
+
+void main() {
+    ivec3 pos = ivec3(gl_GlobalInvocationID.xyz);
+    ivec3 texSize = imageSize(storageImage);
+
+    if (pos.x >= texSize.x || pos.y >= texSize.y || pos.z >= texSize.z) {
+        return;
+    }
+
+    // Convert position to world space (0 to 1)
+    vec3 worldPos = vec3(pos) / vec3(texSize);
+
+    // Compute current cell
+    ivec3 cell = ivec3(floor(worldPos / consts.cellSize.xyz));
+
+    float minDist = 10000.0;
+
+    // Loop through current cell and adjacent cells
+    for (int x = -1; x <= 1; x++) {
+        for (int y = -1; y <= 1; y++) {
+            for (int z = -1; z <= 1; z++) {
+                ivec3 neighborCell = cell + ivec3(x, y, z);
+
+                // Get the feature point in this cell (wrapping is handled in getCellIndex)
+                int index = getCellIndex(neighborCell);
+                vec3 featurePoint = data.points[index].xyz;
+
+                // Compute wrapped distance to feature point
+                float dist = wrappedDistance(worldPos, featurePoint);
+                minDist = min(minDist, dist);
+            }
+        }
+    }
+
+    // Invert and normalize the distance
+    float normalizedDist = 1.0 - clamp(minDist * 3.0, 0.0, 1.0);
+
+    // Store the result
+    imageStore(storageImage, pos, vec4(normalizedDist, normalizedDist, normalizedDist, 1.0));
+}
