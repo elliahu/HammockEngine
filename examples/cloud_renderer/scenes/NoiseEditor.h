@@ -27,20 +27,19 @@ class NoiseEditor final : public IScene {
 
 
     struct GraphicsPushData {
-        HmckVec4 displayChannels{1.f, 1.f, 1.f, 1.f};
+        int channel = 0;
         float slice{0.f};
         float scale{1.0};
     } graphicsPushData;
 
     struct ComputePushData {
-        HmckVec4 cellSizeR;
-        HmckVec4 gridSizeR;
-        HmckVec4 cellSizeG;
-        HmckVec4 gridSizeG;
-        HmckVec4 cellSizeB;
-        HmckVec4 gridSizeB;
-        HmckVec4 cellSizeA;
-        HmckVec4 gridSizeA;
+        HmckVec4 cellSize;
+        HmckVec4 gridSize;
+        int numOctaves = 3;
+        float persistence = 0.5f;
+        float lacunarity = 1.5f;
+        float fallOff = 4.0f;
+        int channel = 0;
     } computePushData;
 
 

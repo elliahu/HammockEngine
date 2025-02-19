@@ -7,7 +7,7 @@ layout (location = 0) in vec2 inUV;
 layout (location = 0) out vec4 outFragColor;
 
 layout (push_constant) uniform PushConstants {
-    vec4 displayChannels;
+    int channel;
     float slice;
     float scale;
 } push;
@@ -17,30 +17,16 @@ void main()
 {
     vec4 color = texture(samplerColor, vec3(inUV.s, 1.0 - inUV.t, push.slice) * push.scale);
 
-    if(push.displayChannels.x > 0.0){
-        outFragColor.x = color.x;
+    if(push.channel == 0){
+        outFragColor = vec4(vec3(color.r), 1.0);
     }
-    else{
-        outFragColor.x = 0.0;
+    if(push.channel == 1){
+        outFragColor = vec4(vec3(color.g), 1.0);
     }
-    if(push.displayChannels.y > 0.0){
-        outFragColor.y = color.y;
+    if(push.channel == 2){
+        outFragColor = vec4(vec3(color.b), 1.0);
     }
-    else{
-        outFragColor.y = 0.0;
-    }
-
-    if(push.displayChannels.z > 0.0){
-        outFragColor.z = color.z;
-    }
-    else{
-        outFragColor.z = 0.0;
-    }
-
-    if(push.displayChannels.w > 0.0){
-        outFragColor.w = color.w;
-    }
-    else{
-        outFragColor.w = 1.0;
+    if(push.channel == 2){
+        outFragColor = vec4(vec3(color.a), 1.0);
     }
 }

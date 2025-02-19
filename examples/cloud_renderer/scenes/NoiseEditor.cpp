@@ -101,8 +101,8 @@ void NoiseEditor::buildRenderGraph() {
                                           VK_PIPELINE_BIND_POINT_COMPUTE);
 
                 HmckVec3 gridSize{static_cast<float>(gridSizeX), static_cast<float>(gridSizeY), static_cast<float>(gridSizeZ)};
-                computePushData.cellSizeR = HmckVec4{HmckVec3{1.0f, 1.0f, 1.0f} / gridSize, 0.0f};
-                computePushData.gridSizeR = HmckVec4{gridSize, 0.f};
+                computePushData.cellSize = HmckVec4{HmckVec3{1.0f, 1.0f, 1.0f} / gridSize, 0.0f};
+                computePushData.gridSize = HmckVec4{gridSize, 0.f};
 
                 vkCmdPushConstants(context.commandBuffer, computePipeline->pipelineLayout, VK_SHADER_STAGE_COMPUTE_BIT, 0,
                                    sizeof(ComputePushData), &computePushData);
@@ -174,12 +174,33 @@ void NoiseEditor::buildRenderGraph() {
                     }
                     ImGui::SliderFloat("Z-slice", &graphicsPushData.slice, 0.0f, 1.0f);
                     ImGui::SliderFloat("scale", &graphicsPushData.scale, 1.0f, 10.f);
-                    ImGui::SliderFloat3("Display channels", &graphicsPushData.displayChannels.Elements[0], 0.0f, 1.0f, "%.0f");
                 }
 
                 ImGui::SetNextItemOpen(true);
                 if (ImGui::CollapsingHeader("Noise settings")) {
-                    ImGui::SetNextItemOpen(true);
+
+                    int prevChannel = computePushData.channel;
+                    const char* items[] = { "Red", "Green", "Blue", "Alpha" };
+                    static int item_selected_idx = 0;
+                    const char* combo_preview_value = items[item_selected_idx];
+                    if (ImGui::BeginCombo("Channel", combo_preview_value))
+                    {
+                        for (int n = 0; n < IM_ARRAYSIZE(items); n++)
+                        {
+                            const bool is_selected = (item_selected_idx == n);
+                            if (ImGui::Selectable(items[n], is_selected))
+                                item_selected_idx = n;
+
+                            // Set the initial focus when opening the combo (scrolling + keyboard navigation focus)
+                            if (is_selected)
+                                ImGui::SetItemDefaultFocus();
+                        }
+                        ImGui::EndCombo();
+                    }
+                    computePushData.channel = item_selected_idx;
+                    graphicsPushData.channel = item_selected_idx;
+                    valuesChanged = (prevChannel != computePushData.channel) | valuesChanged;
+
 
                     int32_t prevSeed = seed;
                     ImGui::SliderInt("Seed", &seed, 0, 1000);
@@ -190,6 +211,22 @@ void NoiseEditor::buildRenderGraph() {
                     ImGui::SliderInt("Number of cells Y", &gridSizeY, 1.0f, maxGridSize.Y);
                     ImGui::SliderInt("Number of cells Z", &gridSizeZ, 1.0f, maxGridSize.Z);
                     valuesChanged = (prevGridSize != HmckVec3{static_cast<float>(gridSizeX), static_cast<float>(gridSizeY), static_cast<float>(gridSizeZ)}) | valuesChanged ;
+
+                    int prevNumOctaves = computePushData.numOctaves;
+                    ImGui::SliderInt("Octaves", &computePushData.numOctaves, 1, 5);
+                    valuesChanged = (prevNumOctaves != computePushData.numOctaves) | valuesChanged ;
+
+                    float prevPersistance = computePushData.persistence;
+                    ImGui::SliderFloat("Persistance", &computePushData.persistence, 0.f, 1.f);
+                    valuesChanged = (prevPersistance != computePushData.persistence) | valuesChanged ;
+
+                    float prevLucanarity = computePushData.lacunarity;
+                    ImGui::SliderFloat("Lacunarity", &computePushData.lacunarity, 1.f, 5.f);
+                    valuesChanged = (prevLucanarity != computePushData.lacunarity) | valuesChanged ;
+
+                    float prevFallOff = computePushData.fallOff;
+                    ImGui::SliderFloat("Contrast (fall off)", &computePushData.fallOff, 1.0f, 10.0f);
+                    valuesChanged = (prevFallOff != computePushData.fallOff) | valuesChanged ;
                 }
 
 
