@@ -1,13 +1,15 @@
 #include "NoiseEditor.h"
 
-ResourceHandle NoiseEditor::generateWorleyPointsBuffer() {
+ResourceHandle NoiseEditor::generateWorleyPointsBuffer(int gridSizeX, int gridSizeY, int gridSizeZ) {
     std::mt19937 gen{static_cast<uint32_t>(seed)};
     std::uniform_real_distribution<float> uniformRealDist{0.0f, 1.0f};
 
     const size_t bufferSize = static_cast<size_t>(gridSizeX * gridSizeY * gridSizeZ);
     std::vector<HmckVec4> points{};
     points.resize(bufferSize);
-    HmckVec3 cellSize = HmckVec3{1.0f, 1.0f, 1.0f} / HmckVec3{static_cast<float>(gridSizeX), static_cast<float>(gridSizeY), static_cast<float>(gridSizeZ)};
+    HmckVec3 cellSize = HmckVec3{1.0f, 1.0f, 1.0f} / HmckVec3{
+                            static_cast<float>(gridSizeX), static_cast<float>(gridSizeY), static_cast<float>(gridSizeZ)
+                        };
 
     for (int x = 0; x < gridSizeX; x++) {
         for (int y = 0; y < gridSizeY; y++) {
@@ -40,6 +42,11 @@ ResourceHandle NoiseEditor::generateWorleyPointsBuffer() {
 }
 
 void NoiseEditor::init() {
+    computePushData[0] = {};
+    computePushData[1] = {};
+    computePushData[2] = {};
+    computePushData[3] = {};
+
     pointsBuffer = rm.createResource<Buffer>(
         "worley-points-buffer",
         BufferDesc{
@@ -51,9 +58,20 @@ void NoiseEditor::init() {
         }
     );
 
-    auto stagingBuffer = generateWorleyPointsBuffer();
-    rm.getResource<Buffer>(pointsBuffer)->copy(rm.getResource<Buffer>(stagingBuffer)->getBuffer(),
-                                               sizeof(HmckVec4) * gridSizeX * gridSizeY * gridSizeZ);
+    auto stagingBuffer = generateWorleyPointsBuffer(10, 10, 10);
+    rm.getResource<Buffer>(pointsBuffer)->queuCopyFromBuffer(rm.getResource<Buffer>(stagingBuffer)->getBuffer(),
+                                                             sizeof(HmckVec4) * 10 * 10 * 10);
+
+    // Read-back buffer
+    exportBufferHandle = rm.createResource<Buffer>(
+        "export-buffer",
+        BufferDesc{
+            .instanceSize = sizeof(float),
+            .instanceCount = texDepth * texWidth * texHeight * 4,
+            .usageFlags = VK_BUFFER_USAGE_TRANSFER_DST_BIT,
+            .allocationFlags = VMA_ALLOCATION_CREATE_HOST_ACCESS_RANDOM_BIT,
+        }
+    );
 
     buildRenderGraph();
     buildPipelines();
@@ -75,7 +93,7 @@ void NoiseEditor::buildRenderGraph() {
             .usage = VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_STORAGE_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,
             .imageType = VK_IMAGE_TYPE_3D,
             .imageViewType = VK_IMAGE_VIEW_TYPE_3D,
-            .sharingMode = VK_SHARING_MODE_CONCURRENT
+            .sharingMode = VK_SHARING_MODE_EXCLUSIVE
         }
     );
 
@@ -100,12 +118,15 @@ void NoiseEditor::buildRenderGraph() {
                 context.bindDescriptorSet(0, 0, computePipeline->pipelineLayout,
                                           VK_PIPELINE_BIND_POINT_COMPUTE);
 
-                HmckVec3 gridSize{static_cast<float>(gridSizeX), static_cast<float>(gridSizeY), static_cast<float>(gridSizeZ)};
-                computePushData.cellSize = HmckVec4{HmckVec3{1.0f, 1.0f, 1.0f} / gridSize, 0.0f};
-                computePushData.gridSize = HmckVec4{gridSize, 0.f};
+                HmckVec3 gridSize{
+                    computePushData[selectedChannel].gridSize.X, computePushData[selectedChannel].gridSize.Y,
+                    computePushData[selectedChannel].gridSize.Z
+                };
+                computePushData[selectedChannel].cellSize = HmckVec4{HmckVec3{1.0f, 1.0f, 1.0f} / gridSize, 0.0f};
+                computePushData[selectedChannel].gridSize = HmckVec4{gridSize, 0.f};
 
                 vkCmdPushConstants(context.commandBuffer, computePipeline->pipelineLayout, VK_SHADER_STAGE_COMPUTE_BIT, 0,
-                                   sizeof(ComputePushData), &computePushData);
+                                   sizeof(ComputePushData), &computePushData[selectedChannel]);
 
                 int groupsX = texWidth / 8;
                 int groupsY = texHeight / 8;
@@ -143,12 +164,27 @@ void NoiseEditor::buildRenderGraph() {
 
     renderGraph->addPass<CommandQueueFamily::Graphics, RelativeViewPortSize::SwapChainRelative>("user-interface-pass")
             .autoBeginRenderingDisabled()
+            .read(ResourceAccess{
+                .resourceName = "noise-texture",
+                .requiredLayout = VK_IMAGE_LAYOUT_GENERAL,
+                .finalLayout = VK_IMAGE_LAYOUT_GENERAL
+            })
             .write(ResourceAccess{
                 .resourceName = "swap-color-image",
                 .requiredLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
                 .finalLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR,
             })
             .execute([this](RenderPassContext context) {
+                if (transferRequested) {
+                    Buffer *buffer = rm.getResource<Buffer>(exportBufferHandle);
+                    Image *image = context.get<Image>("noise-texture");
+                    image->transition(context.commandBuffer, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL);
+                    buffer->copyFromImage(context.commandBuffer, image->getImage(), image->getExtent());
+                    image->transition(context.commandBuffer, VK_IMAGE_LAYOUT_GENERAL);
+                    transferRequested = false;
+                    transferQueued = true;
+                }
+
                 VkRenderPassBeginInfo renderPassInfo{};
                 renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
                 renderPassInfo.renderPass = fm.getSwapChain()->getRenderPass();
@@ -162,6 +198,7 @@ void NoiseEditor::buildRenderGraph() {
 
                 // Begin the render pass
                 vkCmdBeginRenderPass(context.commandBuffer, &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
+
 
                 ui->beginUserInterface();
                 ImGui::Begin("Noise editor", (bool *) false, ImGuiWindowFlags_AlwaysAutoResize);
@@ -178,18 +215,14 @@ void NoiseEditor::buildRenderGraph() {
 
                 ImGui::SetNextItemOpen(true);
                 if (ImGui::CollapsingHeader("Noise settings")) {
-
-                    int prevChannel = computePushData.channel;
-                    const char* items[] = { "Red", "Green", "Blue", "Alpha" };
-                    static int item_selected_idx = 0;
-                    const char* combo_preview_value = items[item_selected_idx];
-                    if (ImGui::BeginCombo("Channel", combo_preview_value))
-                    {
-                        for (int n = 0; n < IM_ARRAYSIZE(items); n++)
-                        {
-                            const bool is_selected = (item_selected_idx == n);
+                    int prevChannel = selectedChannel;
+                    const char *items[] = {"Red", "Green", "Blue", "Alpha"};
+                    const char *combo_preview_value = items[selectedChannel];
+                    if (ImGui::BeginCombo("Channel", combo_preview_value)) {
+                        for (int n = 0; n < IM_ARRAYSIZE(items); n++) {
+                            const bool is_selected = (selectedChannel == n);
                             if (ImGui::Selectable(items[n], is_selected))
-                                item_selected_idx = n;
+                                selectedChannel = n;
 
                             // Set the initial focus when opening the combo (scrolling + keyboard navigation focus)
                             if (is_selected)
@@ -197,36 +230,48 @@ void NoiseEditor::buildRenderGraph() {
                         }
                         ImGui::EndCombo();
                     }
-                    computePushData.channel = item_selected_idx;
-                    graphicsPushData.channel = item_selected_idx;
-                    valuesChanged = (prevChannel != computePushData.channel) | valuesChanged;
+                    computePushData[selectedChannel].channel = selectedChannel;
+                    graphicsPushData.channel = selectedChannel;
+                    valuesChanged = (prevChannel != computePushData[selectedChannel].channel) | valuesChanged;
 
 
-                    int32_t prevSeed = seed;
-                    ImGui::SliderInt("Seed", &seed, 0, 1000);
-                    valuesChanged = (prevSeed != seed) | valuesChanged ;
+                    if (ImGui::SliderInt("Seed", &seed, 0, 1000)) {
+                        valuesChanged = true;
+                    }
+                    int x = computePushData[selectedChannel].gridSize.X, y = computePushData[selectedChannel].gridSize.Y, z =
+                            computePushData[selectedChannel].gridSize.Z;
+                    if (ImGui::SliderInt("Number of cells X", &x, 1.0f, maxGridSize.X)) {
+                        valuesChanged = true;
+                        computePushData[selectedChannel].gridSize.X = x;
+                    }
+                    if (ImGui::SliderInt("Number of cells Y", &y, 1.0f, maxGridSize.Y)) {
+                        valuesChanged = true;
+                        computePushData[selectedChannel].gridSize.Y = y;
+                    }
+                    if (ImGui::SliderInt("Number of cells Z", &z, 1.0f, maxGridSize.Z)) {
+                        valuesChanged = true;
+                        computePushData[selectedChannel].gridSize.Z = z;
+                    }
 
-                    HmckVec3 prevGridSize = HmckVec3{static_cast<float>(gridSizeX), static_cast<float>(gridSizeY), static_cast<float>(gridSizeZ)};
-                    ImGui::SliderInt("Number of cells X", &gridSizeX, 1.0f, maxGridSize.X);
-                    ImGui::SliderInt("Number of cells Y", &gridSizeY, 1.0f, maxGridSize.Y);
-                    ImGui::SliderInt("Number of cells Z", &gridSizeZ, 1.0f, maxGridSize.Z);
-                    valuesChanged = (prevGridSize != HmckVec3{static_cast<float>(gridSizeX), static_cast<float>(gridSizeY), static_cast<float>(gridSizeZ)}) | valuesChanged ;
+                    if (ImGui::SliderInt("Octaves", &computePushData[selectedChannel].numOctaves, 1, 5)) {
+                        valuesChanged = true;
+                    }
 
-                    int prevNumOctaves = computePushData.numOctaves;
-                    ImGui::SliderInt("Octaves", &computePushData.numOctaves, 1, 5);
-                    valuesChanged = (prevNumOctaves != computePushData.numOctaves) | valuesChanged ;
+                    if (ImGui::SliderFloat("Persistance", &computePushData[selectedChannel].persistence, 0.f, 1.f)) {
+                        valuesChanged = true;
+                    }
 
-                    float prevPersistance = computePushData.persistence;
-                    ImGui::SliderFloat("Persistance", &computePushData.persistence, 0.f, 1.f);
-                    valuesChanged = (prevPersistance != computePushData.persistence) | valuesChanged ;
+                    if (ImGui::SliderFloat("Lacunarity", &computePushData[selectedChannel].lacunarity, 1.f, 5.f)) {
+                        valuesChanged = true;
+                    }
 
-                    float prevLucanarity = computePushData.lacunarity;
-                    ImGui::SliderFloat("Lacunarity", &computePushData.lacunarity, 1.f, 5.f);
-                    valuesChanged = (prevLucanarity != computePushData.lacunarity) | valuesChanged ;
+                    if (ImGui::SliderFloat("Contrast (fall off)", &computePushData[selectedChannel].fallOff, 1.0f, 10.0f)) {
+                        valuesChanged = true;
+                    }
 
-                    float prevFallOff = computePushData.fallOff;
-                    ImGui::SliderFloat("Contrast (fall off)", &computePushData.fallOff, 1.0f, 10.0f);
-                    valuesChanged = (prevFallOff != computePushData.fallOff) | valuesChanged ;
+                    if (ImGui::Button("Export")) {
+                        transferRequested = true;
+                    }
                 }
 
 
@@ -283,6 +328,30 @@ void NoiseEditor::buildPipelines() {
 }
 
 void NoiseEditor::update() {
+    if (transferQueued) {
+        device.waitIdle(); // wait for the transfer
+        Buffer *buffer = rm.getResource<Buffer>(exportBufferHandle);
+        buffer->map();
+        std::vector<std::thread> threads;
+        float *mappedMemory = static_cast<float *>(buffer->getMappedMemory());
+        for (int slice = 0; slice < texDepth; ++slice) {
+            int offset = slice * texWidth * texHeight * 4;
+            threads.emplace_back([slice, this](const void *buffer, std::string filename) {
+                Filesystem::writeImage(filename, buffer, sizeof(float),
+                                       texWidth, texHeight, 4);
+            }, mappedMemory + offset, "export/slice_" + std::to_string(slice) + ".png");
+        }
+
+        for (auto &thread: threads) {
+            thread.join();
+        }
+
+        buffer->unmap();
+
+        transferQueued = false;
+        transferRequested = false;
+    }
+
     if (animate) {
         graphicsPushData.slice += animateStepsize * frametime;
         if (graphicsPushData.slice >= 1.0f) {
@@ -291,9 +360,15 @@ void NoiseEditor::update() {
     }
 
     if (valuesChanged) {
-        auto stagingBuffer = generateWorleyPointsBuffer();
-        rm.getResource<Buffer>(pointsBuffer)->copy(rm.getResource<Buffer>(stagingBuffer)->getBuffer(),
-                                                   sizeof(HmckVec4) * gridSizeX * gridSizeY * gridSizeZ);
+        auto stagingBuffer = generateWorleyPointsBuffer(static_cast<int>(computePushData[selectedChannel].gridSize.X),
+                                                        static_cast<int>(computePushData[selectedChannel].gridSize.Y),
+                                                        static_cast<int>(computePushData[selectedChannel].gridSize.Z));
+        rm.getResource<Buffer>(pointsBuffer)->queuCopyFromBuffer(rm.getResource<Buffer>(stagingBuffer)->getBuffer(),
+                                                                 sizeof(HmckVec4) * static_cast<int>(
+                                                                     computePushData[selectedChannel].gridSize.X) * static_cast<int>(
+                                                                     computePushData[selectedChannel].gridSize.Y) * static_cast<int>(
+                                                                     computePushData[
+                                                                         selectedChannel].gridSize.Z));
 
         valuesChanged = false;
     }

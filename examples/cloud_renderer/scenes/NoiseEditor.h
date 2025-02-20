@@ -1,12 +1,13 @@
 #pragma once
 #include "IScene.h"
+#include <thread>
 
 class NoiseEditor final : public IScene {
 
     float frametime{0.f};
     uint32_t texWidth, texHeight, texDepth;
     float animateStepsize = 0.1f;
-    bool animate = true;
+    bool animate = false;
 
     int32_t seed = 42;
 
@@ -16,15 +17,17 @@ class NoiseEditor final : public IScene {
     // Storage buffer
 
     bool valuesChanged{false};
-
-    int32_t gridSizeX = 10, gridSizeY = 10, gridSizeZ = 10;
+    bool transferRequested{false};
+    bool transferQueued{false};
     const HmckVec3 maxGridSize = {200.f, 200.f, 200.f};
     ResourceHandle pointsBuffer;
+    ResourceHandle exportBufferHandle;
 
     // Compute pipeline
     std::unique_ptr<ComputePipeline> computePipeline;
     std::unique_ptr<GraphicsPipeline> graphicsPipeline;
 
+    int selectedChannel = 0;
 
     struct GraphicsPushData {
         int channel = 0;
@@ -34,16 +37,18 @@ class NoiseEditor final : public IScene {
 
     struct ComputePushData {
         HmckVec4 cellSize;
-        HmckVec4 gridSize;
+        HmckVec4 gridSize{10.f,10.f,10.f, 0.0f};
         int numOctaves = 3;
         float persistence = 0.5f;
         float lacunarity = 1.5f;
         float fallOff = 4.0f;
         int channel = 0;
-    } computePushData;
+    };
+
+    std::unordered_map<int, ComputePushData> computePushData;
 
 
-    ResourceHandle generateWorleyPointsBuffer();
+    ResourceHandle generateWorleyPointsBuffer(int gridSizeX, int gridSizeY, int gridSizeZ);
 
 
 public:

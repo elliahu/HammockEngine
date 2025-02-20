@@ -19,14 +19,18 @@ void main()
 
     if(push.channel == 0){
         outFragColor = vec4(vec3(color.r), 1.0);
+        return;
     }
     if(push.channel == 1){
         outFragColor = vec4(vec3(color.g), 1.0);
+        return;
     }
     if(push.channel == 2){
         outFragColor = vec4(vec3(color.b), 1.0);
+        return;
     }
-    if(push.channel == 2){
+    if(push.channel == 3){
         outFragColor = vec4(vec3(color.a), 1.0);
+        return;
     }
 }

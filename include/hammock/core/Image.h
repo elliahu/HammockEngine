@@ -26,6 +26,9 @@ namespace hammock {
         CommandQueueFamily m_queueFamily;
         VkSharingMode m_sharingMode;
 
+        VkImageTiling m_tiling;
+        VkMemoryPropertyFlags m_memoryFlags;
+
     public:
         Image(Device &device, uint64_t id, const std::string &name, const ImageDesc &desc) : Resource(
             device, id, name) {
@@ -50,6 +53,11 @@ namespace hammock {
 
             m_queueFamily = desc.queueFamily;
             m_sharingMode = desc.sharingMode;
+
+            m_tiling = desc.tiling;
+
+            m_memoryFlags = desc.memoryFlags;
+
 
             // Check for support
             VkFormatProperties formatProperties;
@@ -80,6 +88,7 @@ namespace hammock {
         [[nodiscard]] uint32_t getMipLevel() const { return m_mips; }
         [[nodiscard]] uint32_t getLayerLevel() const { return m_layers; }
         [[nodiscard]] CommandQueueFamily getQueueFamily() const { return m_queueFamily; }
+        [[nodiscard]] VkExtent3D getExtent() const  {return { m_width, m_height, m_depth }; }
 
         [[nodiscard]] VkRenderingAttachmentInfo getRenderingAttachmentInfo() const {
             return {
@@ -212,8 +221,8 @@ namespace hammock {
             imageCreateInfo.mipLevels = m_mips;
             imageCreateInfo.arrayLayers = m_layers;
             imageCreateInfo.samples = VK_SAMPLE_COUNT_1_BIT;
-            imageCreateInfo.tiling = VK_IMAGE_TILING_OPTIMAL;
-            imageCreateInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+            imageCreateInfo.tiling = m_tiling;
+            imageCreateInfo.sharingMode = m_sharingMode;
             imageCreateInfo.extent.width = m_width;
             imageCreateInfo.extent.height = m_height;
             imageCreateInfo.extent.depth = m_depth;
@@ -222,6 +231,7 @@ namespace hammock {
 
             VmaAllocationCreateInfo allocInfo = {};
             allocInfo.usage = VMA_MEMORY_USAGE_AUTO;
+            allocInfo.requiredFlags = m_memoryFlags;
 
             checkResult(vmaCreateImage(device.allocator(), &imageCreateInfo, &allocInfo, &m_image, &m_allocation,
                                        nullptr));

@@ -94,7 +94,7 @@ namespace hammock {
         [[nodiscard]] VkBufferUsageFlags getUsageFlags() const { return m_usageFlags; }
         [[nodiscard]] VkMemoryPropertyFlags getMemoryPropertyFlags() const { return m_memoryPropertyFlags; }
         [[nodiscard]] VkDeviceSize getBufferSize() const { return m_bufferSize; }
-        [[nodiscard]] CommandQueueFamily getQueueFamily() const {return m_queueFamily;}
+        [[nodiscard]] CommandQueueFamily getQueueFamily() const { return m_queueFamily; }
 
         /**
         * Map a memory range of this buffer. If successful, mapped points to the specified buffer range.
@@ -234,8 +234,39 @@ namespace hammock {
             return invalidate(m_alignmentSize, index * m_alignmentSize);
         }
 
-        void copy(VkBuffer src, VkDeviceSize size = VK_WHOLE_SIZE) const {
+        /**
+         * Copies data from source buffer into this buffer
+         * @param src Source buffer
+         * @param size Size of the copy region
+         */
+        void queuCopyFromBuffer(VkBuffer src, VkDeviceSize size = VK_WHOLE_SIZE) const {
             device.copyBuffer(src, m_buffer, size);
+        }
+
+        /**
+         * Copies data from image into this buffer
+         * @param commandBuffer Command buffer
+         * @param src Source image
+         * @param extent Extent of the image
+         * @param mipLevel mip level
+         * @param baseArrayLayer  base array layer
+         * @param layerCount layer count
+         * @param offset offset
+         */
+        void copyFromImage(VkCommandBuffer commandBuffer, VkImage src, VkExtent3D extent, uint32_t mipLevel = 0,
+                           uint32_t baseArrayLayer = 0, uint32_t layerCount = 1, VkOffset3D offset = {0, 0, 0}) {
+            VkBufferImageCopy region = {};
+            region.bufferOffset = 0;
+            region.bufferRowLength = 0;
+            region.bufferImageHeight = 0;
+            region.imageSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+            region.imageSubresource.mipLevel = mipLevel;
+            region.imageSubresource.baseArrayLayer = baseArrayLayer;
+            region.imageSubresource.layerCount = layerCount;
+            region.imageOffset = offset;
+            region.imageExtent = extent;
+
+            vkCmdCopyImageToBuffer(commandBuffer, src, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, m_buffer, 1, &region);
         }
     };
 

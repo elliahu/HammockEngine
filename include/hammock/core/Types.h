@@ -139,6 +139,8 @@ namespace hammock {
         VkClearValue clearValue = {};
         CommandQueueFamily queueFamily = CommandQueueFamily::Ignored;
         VkSharingMode sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+        VkMemoryPropertyFlags memoryFlags = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
+        VkImageTiling tiling = VK_IMAGE_TILING_OPTIMAL;
     };
 
     struct SamplerDesc {
