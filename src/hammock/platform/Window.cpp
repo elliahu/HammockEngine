@@ -3,8 +3,8 @@
 #include <iostream>
 
 hammock::Window::Window(VulkanInstance &instance, const std::string &_windowName, int windowWidth,
-                        int windowHeight) : instance{instance}, width{windowWidth}, height {windowHeight}, windowName{_windowName} {
-    window = Surfer::Window::createWindow(_windowName, instance.getInstance(), windowWidth, windowHeight , 100, 100 );
+                        int windowHeight) : instance{instance}, width{windowWidth}, height{windowHeight}, windowName{_windowName} {
+    window = Surfer::Window::createWindow(_windowName, instance.getInstance(), windowWidth, windowHeight, 100, 100);
 
     window->registerKeyPressCallback([this](Surfer::KeyCode key) {
         keysDown[key] = true;
@@ -21,15 +21,15 @@ hammock::Window::Window(VulkanInstance &instance, const std::string &_windowName
     });
 
     window->registerMouseMotionCallback([this](unsigned int x, unsigned int y) {
-
     });
 
     window->registerResizeCallback([this](unsigned int width, unsigned int height) {
-       framebufferResized = true;
+        framebufferResized = true;
+        this->width = static_cast<int32_t>(width);
+        this->height = static_cast<int32_t>(height);
     });
 
     window->registerMoveCallback([this](int x, int y) {
-
     });
 
     window->registerCloseCallback([this]() {
@@ -45,12 +45,10 @@ hammock::Window::Window(VulkanInstance &instance, const std::string &_windowName
 
 #ifdef __linux__
     window->registerNativeKeyPressCallback([this](KeySym key) {
-
     });
 
     window->registerNativeKeyReleaseCallback([this](KeySym key) {
-
-   });
+    });
 #endif
 #ifdef _WIN32
     window->registerNativeKeyPressCallback([this](WPARAM wParam) {
@@ -63,8 +61,7 @@ hammock::Window::Window(VulkanInstance &instance, const std::string &_windowName
 #endif
 }
 
-hammock::Window::~Window()
-{
+hammock::Window::~Window() {
     Surfer::Window::destroyWindow(window);
 }
 
@@ -76,17 +73,15 @@ bool hammock::Window::isKeyDown(Surfer::KeyCode keyCode) {
 }
 
 HmckVec2 hammock::Window::getMousePosition() const {
-    unsigned int x,y;
-    window->getCursorPosition(x,y);
-    return {static_cast<float>(x),static_cast<float>(y)};
+    unsigned int x, y;
+    window->getCursorPosition(x, y);
+    return {static_cast<float>(x), static_cast<float>(y)};
 }
 
-bool hammock::Window::shouldClose() const
-{
+bool hammock::Window::shouldClose() const {
     return window->shouldClose();
 }
 
-void hammock::Window::pollEvents()
-{
+void hammock::Window::pollEvents() {
     window->pollEvents();
 }

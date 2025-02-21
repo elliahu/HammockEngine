@@ -41,7 +41,7 @@ class NoiseEditor final : public IScene {
         int numOctaves = 3;
         float persistence = 0.5f;
         float lacunarity = 1.5f;
-        float fallOff = 4.0f;
+        float fallOff = 1.0f;
         int channel = 0;
     };
 

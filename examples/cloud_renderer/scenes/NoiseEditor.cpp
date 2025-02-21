@@ -334,6 +334,7 @@ void NoiseEditor::update() {
         buffer->map();
         std::vector<std::thread> threads;
         float *mappedMemory = static_cast<float *>(buffer->getMappedMemory());
+
         for (int slice = 0; slice < texDepth; ++slice) {
             int offset = slice * texWidth * texHeight * 4;
             threads.emplace_back([slice, this](const void *buffer, std::string filename) {
