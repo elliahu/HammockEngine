@@ -353,6 +353,7 @@ void SkyScene::buildRenderGraph() {
                     ImGui::SeparatorText("Clouds");
                     ImGui::SliderFloat("Absorption", &uniformBufferData.rendering.absorptionCoef, 0.0f, 1.0f);
                     ImGui::SliderFloat("Scattering", &uniformBufferData.rendering.scatteringCoef, 0.0f, 1.0f);
+                    ImGui::SliderFloat("Henye Greenstein g", &uniformBufferData.rendering.phase, -.955f, .955f);
 
                     ImGui::PopStyleVar();
                     ImGui::End();

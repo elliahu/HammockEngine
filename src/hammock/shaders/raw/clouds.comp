@@ -42,9 +42,10 @@ layout (binding = 5) uniform sampler2D curlNoiseSampler;
 
 #define PI 3.14159265359
 
-const int MIN_STEPS = 64;
-const int MAX_STEPS = 128;
+const int MIN_STEPS = 32;
+const int MAX_STEPS = 64;
 const int LIGHT_STEPS = 6;
+const int LIGHT_STEP_SIZE = 1;
 
 // Helper function to get ray origin (camera position in this case)
 vec3 getRayOrigin() {
@@ -76,6 +77,13 @@ vec3 getRayDirection() {
     return rayDirection;
 }
 
+vec3 mapWorldToSample(vec3 worldPos, vec3 bbmin, vec3 bbmax) {
+    // Compute the normalized position within the bounding box.
+    // Clamping ensures the result stays within [0, 1] if the worldPos is outside the box.
+    return clamp((worldPos - bbmin) / (bbmax - bbmin), 0.0, 1.0);
+}
+
+
 // Samples base noise at given position
 vec4 sampleBaseNoise(vec3 pos) {
     return texture(baseNoiseSampler, pos);
@@ -87,12 +95,13 @@ vec4 sampleDetailNoise(vec3 pos) {
 }
 
 // Samples curl noise at given position
-vec4 samplerCurlNoise(vec2 uv) {
+vec4 sampleCurlNoise(vec2 uv) {
     return texture(curlNoiseSampler, uv);
 }
 
 float baseDensity(vec3 pos){
-    return sampleBaseNoise(pos).r;
+    vec3 uvw = mapWorldToSample(pos, storageBuffer.bbMin.xyz, storageBuffer.bbMax.xyz);
+    return sampleBaseNoise(uvw).r;
 }
 
 
@@ -111,11 +120,6 @@ int computeRaymarchSteps(float chordLength, float minChord, float maxChord, int 
 }
 
 
-vec3 mapWorldToSample(vec3 worldPos, vec3 bbmin, vec3 bbmax) {
-    // Compute the normalized position within the bounding box.
-    // Clamping ensures the result stays within [0, 1] if the worldPos is outside the box.
-    return clamp((worldPos - bbmin) / (bbmax - bbmin), 0.0, 1.0);
-}
 
 
 float henyeyGreenstein(float cosTheta, float g){
@@ -123,10 +127,35 @@ float henyeyGreenstein(float cosTheta, float g){
 }
 
 
+float lightTransmittance(vec3 pos){
+    vec3 direction = normalize(ubo.sun.direction.xyz);
 
+    float extinctionCoef = ubo.rendergin.absorption + ubo.rendergin.scattering;
+    float transmittance = 1.0;
+
+    for(int i = 0; i < LIGHT_STEPS; i++){
+        vec3 rayPos = pos + direction * (i * LIGHT_STEP_SIZE);
+
+        float density = 0.0;
+        float intersection = rayBoxDst(storageBuffer.bbMin.xyz, storageBuffer.bbMax.xyz, rayPos, direction).y;
+        if(intersection > 0.0){
+            density = 0.5;
+        }
+
+        transmittance *= exp(-density * extinctionCoef * LIGHT_STEP_SIZE);
+
+        if(transmittance < 0.01) break;
+    }
+
+    return transmittance;
+}
 
 
 void main() {
+    // Compute the UV coordinates
+    ivec2 dim = imageSize(storageImage);
+    vec2 uv = vec2(gl_GlobalInvocationID.xy) / dim;
+
     // Final color
     vec4 outColor = vec4(0.0);
 
@@ -161,17 +190,22 @@ void main() {
         for(int i = 0; i < numSteps; i++){
             vec3 rayPos = rayOrigin + rayDirection * (dstToBox + i * stepSize);
 
-            vec3 uvw = mapWorldToSample(rayPos, storageBuffer.bbMin.xyz, storageBuffer.bbMax.xyz);
+            vec3 offset = sampleCurlNoise(uv).xyz * 0.9;
+            rayPos += offset;
 
             float currentDensity = 0.5;
             transmittance *= exp(-currentDensity * extinctionCoef * stepSize);
 
-            vec3 inScattering = ambientLight;
+            float light = lightTransmittance(rayPos);
+
+            vec3 inScattering = ambientLight * light * phase;
             float outScattering = ubo.rendergin.scattering * currentDensity;
 
             vec3 currentLight = inScattering * outScattering;
 
             illumination += transmittance * currentLight * stepSize;
+
+            if(transmittance < 0.01) break;
         }
 
 
