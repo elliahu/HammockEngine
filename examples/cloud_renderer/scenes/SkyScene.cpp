@@ -38,12 +38,12 @@ void SkyScene::init() {
     // Load the base noise
     int w, h, c, d;
     // Read the data from disk
-    ScopedMemory baseNoiseData(Filesystem::readVolume(Filesystem::ls(assetPath("noise/base")), w, h, c, d));
+    ScopedMemory baseNoiseData(Filesystem::readVolume(Filesystem::ls(assetPath("noise/base")), w, h, c, d, Filesystem::ImageFormat::R16G16B16A16_SFLOAT));
     // Create staging buffer
     ResourceHandle baseNoiseStagingBuffer = rm.createResource<Buffer>(
         "base-noise-staging-buffer",
         BufferDesc{
-            .instanceSize = sizeof(float),
+            .instanceSize = sizeof(float16),
             .instanceCount = static_cast<uint32_t>(w * h * d * c),
             .usageFlags = VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
             .allocationFlags = VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT,
@@ -61,7 +61,7 @@ void SkyScene::init() {
             .height = static_cast<uint32_t>(h),
             .channels = static_cast<uint32_t>(c),
             .depth = static_cast<uint32_t>(d),
-            .format = VK_FORMAT_R32G32B32A32_SFLOAT,
+            .format = VK_FORMAT_R16G16B16A16_SFLOAT,
             .usage = VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,
             .imageType = VK_IMAGE_TYPE_3D,
             .imageViewType = VK_IMAGE_VIEW_TYPE_3D,
@@ -84,7 +84,7 @@ void SkyScene::init() {
     ResourceHandle detailNoiseStagingBuffer = rm.createResource<Buffer>(
         "detail-noise-staging-buffer",
         BufferDesc{
-            .instanceSize = sizeof(float),
+            .instanceSize = sizeof(float32),
             .instanceCount = static_cast<uint32_t>(w * h * d * c),
             .usageFlags = VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
             .allocationFlags = VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT,
@@ -118,13 +118,13 @@ void SkyScene::init() {
     rm.releaseResource(detailNoiseStagingBuffer.getUid());
 
     // Load the curl noise
-    ScopedMemory curlNoiseData(Filesystem::readImage(assetPath("noise/curl.png"), w, h, c));
+    ScopedMemory curlNoiseData(Filesystem::readImage(assetPath("noise/curlNoise.png"), w, h, c, Filesystem::ImageFormat::R16G16B16A16_SFLOAT));
 
     // Create host visible staging buffer on device
     ResourceHandle curlNoiseStagingBuffer = rm.createResource<Buffer>(
         "curl-staging-buffer",
         BufferDesc{
-            .instanceSize = sizeof(float),
+            .instanceSize = sizeof(float16),
             .instanceCount = static_cast<uint32_t>(w * h * c),
             .usageFlags = VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
             .allocationFlags = VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT,
@@ -142,7 +142,7 @@ void SkyScene::init() {
             .width = static_cast<uint32_t>(w),
             .height = static_cast<uint32_t>(h),
             .channels = static_cast<uint32_t>(c),
-            .format = VK_FORMAT_R32G32B32A32_SFLOAT,
+            .format = VK_FORMAT_R16G16B16A16_SFLOAT,
             .usage = VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,
             .imageType = VK_IMAGE_TYPE_2D,
             .imageViewType = VK_IMAGE_VIEW_TYPE_2D,
@@ -347,7 +347,7 @@ void SkyScene::buildRenderGraph() {
                     ImGui::DragFloat("Pitch", &pitch, 0.01f);
 
                     ImGui::SeparatorText("Lighting");
-                    ImGui::SliderFloat3("Light direction", &uniformBufferData.sun.direction.Elements[0], -1.f, 1.0f);
+                    ImGui::DragFloat3("Light position", &uniformBufferData.sun.position.Elements[0], 0.1f);
                     ImGui::ColorEdit3("Light color", &uniformBufferData.sun.color.Elements[0]);
 
                     ImGui::SeparatorText("Clouds");
@@ -427,33 +427,68 @@ void SkyScene::buildPipelines() {
 }
 
 void SkyScene::update() {
-    const HmckVec3 up = Projection().upPosY();
+    // Movement and rotation speeds (adjust these as needed)
+    const float movementSpeed = 10.0f;    // Units per frame
+    const float rotationSpeed = 2.0f;   // Radians per frame
 
-    // Compute target based on yaw and pitch
-    // Assuming yaw and pitch are member variables in radians.
+    // Process rotation input using arrow keys.
+    // Rotate left/right (yaw)
+    if (window.isKeyDown(Surfer::KeyCode::ArrowLeft))
+        yaw -= rotationSpeed * frameTime;
+    if (window.isKeyDown(Surfer::KeyCode::ArrowRight))
+        yaw += rotationSpeed * frameTime;
+
+    // Rotate up/down (pitch)
+    if (window.isKeyDown(Surfer::KeyCode::ArrowUp))
+        pitch += rotationSpeed * frameTime;
+    if (window.isKeyDown(Surfer::KeyCode::ArrowDown))
+        pitch -= rotationSpeed * frameTime;
+
+    // Clamp pitch to avoid excessive rotation (e.g., limit to +/- 89 degrees in radians)
+    const float pitchLimit = 1.55334f; // ~89 degrees in radians
+    if (pitch > pitchLimit)
+        pitch = pitchLimit;
+    if (pitch < -pitchLimit)
+        pitch = -pitchLimit;
+
+    // Compute the forward direction vector from yaw and pitch.
     const float cosPitch = std::cos(pitch);
     const float sinPitch = std::sin(pitch);
     const float cosYaw   = std::cos(yaw);
     const float sinYaw   = std::sin(yaw);
-
-    // Create a direction vector from yaw and pitch.
-    // This uses the spherical coordinate conversion:
-    // x = cos(yaw) * cos(pitch)
-    // y = sin(pitch)
-    // z = sin(yaw) * cos(pitch)
     const HmckVec3 direction = HmckVec3{ cosYaw * cosPitch, sinPitch, sinYaw * cosPitch };
 
+    // Get the up vector from the projection (assumed constant)
+    const HmckVec3 up = Projection().upPosY();
 
-    // The target point is the camera position plus the direction.
+    // Compute the right vector (perpendicular to both direction and up)
+    const HmckVec3 right = HmckNorm(HmckCross(direction, up));
+
+    // Process translation input (WASD keys)
+    if (window.isKeyDown(Surfer::KeyCode::KeyW))
+        cameraPosition += direction * movementSpeed * frameTime;
+    if (window.isKeyDown(Surfer::KeyCode::KeyS))
+        cameraPosition -= direction * movementSpeed * frameTime;
+    if (window.isKeyDown(Surfer::KeyCode::KeyA))
+        cameraPosition -= right * movementSpeed * frameTime;
+    if (window.isKeyDown(Surfer::KeyCode::KeyD))
+        cameraPosition += right * movementSpeed * frameTime;
+
+    if (window.isKeyDown(Surfer::KeyCode::Space))
+        cameraPosition += up * movementSpeed * frameTime;
+    if (window.isKeyDown(Surfer::KeyCode::LeftShift))
+        cameraPosition -= up * movementSpeed * frameTime;
+
+    // Compute the target point from the camera position and forward direction.
     const HmckVec3 target = cameraPosition + direction;
 
-
-    // Create inverse view matrix
+    // Create the inverse view matrix based on the updated camera parameters.
     const HmckMat4 view = Projection().view(cameraPosition, target, up);
 
-    uniformBufferData.camera.position = HmckVec4{cameraPosition, 0.0f};
+    uniformBufferData.camera.position = HmckVec4{ cameraPosition, 0.0f };
     uniformBufferData.camera.inverseView = HmckInvGeneral(view);
 }
+
 
 
 void SkyScene::render() {

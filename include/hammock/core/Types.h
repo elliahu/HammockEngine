@@ -155,4 +155,7 @@ namespace hammock {
         uint32_t mips = 1;
         float mipLodBias = 0.0f;
     };
+
+    typedef uint16_t float16;
+    typedef float float32;
 }

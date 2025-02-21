@@ -38,7 +38,7 @@ class NoiseEditor final : public IScene {
     struct ComputePushData {
         HmckVec4 cellSize;
         HmckVec4 gridSize{10.f,10.f,10.f, 0.0f};
-        int numOctaves = 3;
+        int numOctaves = 1;
         float persistence = 0.5f;
         float lacunarity = 1.5f;
         float fallOff = 1.0f;

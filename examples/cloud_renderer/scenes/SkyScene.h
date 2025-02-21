@@ -2,8 +2,8 @@
 
 class SkyScene final : public IScene {
     // Compute work group and local size computation
-    static constexpr uint32_t WORKGROUP_SIZE_X = 16;
-    static constexpr uint32_t WORKGROUP_SIZE_Y = 16;
+    static constexpr uint32_t WORKGROUP_SIZE_X = 32;
+    static constexpr uint32_t WORKGROUP_SIZE_Y = 32;
     static constexpr uint32_t groupsX = (1920 + WORKGROUP_SIZE_X - 1) / WORKGROUP_SIZE_X;
     static constexpr uint32_t groupsY = (1080 + WORKGROUP_SIZE_Y - 1) / WORKGROUP_SIZE_Y;
 
@@ -17,7 +17,7 @@ class SkyScene final : public IScene {
         } camera{};
 
         struct Sun {
-            HmckVec4 direction{0.0f,-1.0f, 0.0f, 0.0f}; // 16 bytes
+            HmckVec4 position{0.0f,20.0f, 0.0f, 0.0f}; // 16 bytes
             HmckVec4 color{1.0f, 1.0f, 1.0f, 1.0f}; // 16 bytes
         } sun{};
 
@@ -31,8 +31,8 @@ class SkyScene final : public IScene {
     // Storage buffer data that remains static during execution
     // Lives in a dedicated GPU memory that is NOT accessible by CPU
     struct StorageBufferData {
-        HmckVec4 bbMin{-10.f, 5.f, -10.f};
-        HmckVec4 bbMax{10.f, 15.f, 10.f};
+        HmckVec4 bbMin{-20.f, 5.f, -20.f};
+        HmckVec4 bbMax{20.f, 15.f, 20.f};
     } storageBufferData;
 
 
@@ -53,6 +53,9 @@ class SkyScene final : public IScene {
         // Curl cloud noise
         ResourceHandle curlNoise;
 
+        // Cloud map
+        ResourceHandle cloudMap;
+
         // Other resources are managed on-the-fly by the rendergraph
     } compute;
 
@@ -65,8 +68,8 @@ class SkyScene final : public IScene {
 
     // This is used to measure frame time
     float frameTime = 0.0f;
-    float yaw{0.f}, pitch{0.22f}; // This describes camera look direction relative to the planet surface normal vector (standing on surface and looking)
-    HmckVec3 cameraPosition{-30.0f, 0.0f, 0.0f};
+    float yaw{0.f}, pitch{0.847f}; // This describes camera look direction relative to the planet surface normal vector (standing on surface and looking)
+    HmckVec3 cameraPosition{-40.0f, -35.0f, 0.0f};
 
     // Benchmarking
     // Constants

@@ -9,10 +9,15 @@
 #include <cmath>
 #include <stb_image.h>
 #include <stb_image_write.h>
+#include <algorithm>
+#include <regex>
 
 #include "hammock/core/CoreUtils.h"
+#include "hammock/core/Types.h"
 
-namespace hammock{
+
+
+namespace hammock {
     namespace Filesystem {
         inline bool fileExists(const std::string &filename) {
             std::ifstream f(filename.c_str());
@@ -52,7 +57,6 @@ namespace hammock{
             try {
                 for (const auto &entry: std::filesystem::directory_iterator(directoryPath)) {
                     if (entry.is_regular_file()) {
-                        // Check if it's a regular file
                         fileList.push_back(entry.path().string());
                     }
                 }
@@ -61,7 +65,18 @@ namespace hammock{
                 throw std::runtime_error("Error: Error accessing directory");
             }
 
-            std::sort(fileList.begin(), fileList.end());
+            // Custom comparator for natural sorting
+            auto naturalSort = [](const std::string &a, const std::string &b) {
+                std::regex numRegex(R"(.*?(\d+))"); // Extracts the first number from the filename
+                std::smatch matchA, matchB;
+
+                int numA = std::regex_search(a, matchA, numRegex) ? std::stoi(matchA[1].str()) : 0;
+                int numB = std::regex_search(b, matchB, numRegex) ? std::stoi(matchB[1].str()) : 0;
+
+                return numA < numB;
+            };
+
+            std::sort(fileList.begin(), fileList.end(), naturalSort);
             return fileList;
         }
 
@@ -128,168 +143,176 @@ namespace hammock{
             R32G32_SFLOAT,
             R32G32B32_SFLOAT,
             R32G32B32A32_SFLOAT,
+            R16_SFLOAT,
+            R16G16_SFLOAT,
+            R16G16B16_SFLOAT,
+            R16G16B16A16_SFLOAT,
             R8_UNORM,
             R8G8_UNORM,
             R8G8B8_UNORM,
             R8G8B8A8_UNORM
         };
 
+        // Image loading function with 16-bit float support
         inline const void *readImage(const std::string &filename, int &width, int &height, int &channels,
                                      const ImageFormat format = ImageFormat::R32G32B32A32_SFLOAT, uint32_t flags = 0) {
-            int desiredChannels = 4; // Default desired channels
-            if (format == ImageFormat::R32_SFLOAT || format == ImageFormat::R8_UNORM)
+            int desiredChannels = 4; // Default channels
+            if (format == ImageFormat::R32_SFLOAT || format == ImageFormat::R16_SFLOAT || format == ImageFormat::R8_UNORM)
                 desiredChannels = 1;
-            else if (format == ImageFormat::R32G32_SFLOAT || format == ImageFormat::R8G8_UNORM)
+            else if (format == ImageFormat::R32G32_SFLOAT || format == ImageFormat::R16G16_SFLOAT || format == ImageFormat::R8G8_UNORM)
                 desiredChannels = 2;
-            else if (format == ImageFormat::R32G32B32_SFLOAT || format == ImageFormat::R8G8B8_UNORM)
+            else if (format == ImageFormat::R32G32B32_SFLOAT || format == ImageFormat::R16G16B16_SFLOAT || format ==
+                     ImageFormat::R8G8B8_UNORM)
                 desiredChannels = 3;
-            else if (format == ImageFormat::R32G32B32A32_SFLOAT || format == ImageFormat::R8G8B8A8_UNORM)
-                desiredChannels = 4;
 
-            stbi_set_flip_vertically_on_load(flags & FLIP_Y); // Handle vertical flipping if requested
+            stbi_set_flip_vertically_on_load(flags & FLIP_Y); // Handle vertical flipping
 
-            // Load HDR data
-            if (format == ImageFormat::R32_SFLOAT || format == ImageFormat::R32G32_SFLOAT ||
-                format == ImageFormat::R32G32B32_SFLOAT || format == ImageFormat::R32G32B32A32_SFLOAT) {
-                int hdrChannels = 4; // HDR always has 4 components
-                const float *data = stbi_loadf(filename.c_str(), &width, &height, &channels, hdrChannels);
-                stbi_set_flip_vertically_on_load(false); // Reset flipping after loading
+            // Load HDR (float) image
+            if (format >= ImageFormat::R32_SFLOAT && format <= ImageFormat::R16G16B16A16_SFLOAT) {
+                const float *data = stbi_loadf(filename.c_str(), &width, &height, &channels, 4);
+                stbi_set_flip_vertically_on_load(false);
 
                 if (!data) {
-                    Logger::log(LOG_LEVEL_ERROR, "Error: Failed to load image!\n");
-                    throw std::runtime_error("Image loading failed.");
+                    throw std::runtime_error("Failed to load HDR image.");
                 }
 
-                size_t pixelCount = static_cast<size_t>(width) * static_cast<size_t>(height);
+                size_t pixelCount = static_cast<size_t>(width) * height;
+                if (format >= ImageFormat::R16_SFLOAT && format <= ImageFormat::R16G16B16A16_SFLOAT) {
+                    // Allocate buffer for 16-bit floats
+                    uint16_t *processedData = new uint16_t[pixelCount * desiredChannels];
 
-                // Allocate memory for the desired component count
-                float *processedData = new float[pixelCount * desiredChannels];
-
-                for (size_t i = 0; i < pixelCount; ++i) {
-                    // Copy the appropriate number of components based on the desired format
-                    if (desiredChannels == 1) {
-                        // R32_SFLOAT
-                        processedData[i] = data[i * 4 + 0]; // Copy R
-                    } else if (desiredChannels == 2) {
-                        // R32G32_SFLOAT
-                        processedData[i * 2 + 0] = data[i * 4 + 0]; // Copy R
-                        processedData[i * 2 + 1] = data[i * 4 + 1]; // Copy G
-                    } else if (desiredChannels == 3) {
-                        // R32G32B32_SFLOAT
-                        processedData[i * 3 + 0] = data[i * 4 + 0]; // Copy R
-                        processedData[i * 3 + 1] = data[i * 4 + 1]; // Copy G
-                        processedData[i * 3 + 2] = data[i * 4 + 2]; // Copy B
-                    } else {
-                        // R32G32B32A32_SFLOAT
-                        processedData[i * 4 + 0] = data[i * 4 + 0]; // Copy R
-                        processedData[i * 4 + 1] = data[i * 4 + 1]; // Copy G
-                        processedData[i * 4 + 2] = data[i * 4 + 2]; // Copy B
-                        processedData[i * 4 + 3] = data[i * 4 + 3]; // Copy A
+                    for (size_t i = 0; i < pixelCount; ++i) {
+                        for (int c = 0; c < desiredChannels; ++c) {
+                            processedData[i * desiredChannels + c] = float32float16(data[i * 4 + c]);
+                        }
                     }
-                }
 
-                stbi_image_free(const_cast<float *>(data)); // Free the original 4-component data
-                channels = desiredChannels; // Update channel count
-                return processedData; // Return processed data
+                    stbi_image_free(const_cast<float *>(data));
+                    channels = desiredChannels;
+                    return processedData; // 16-bit float buffer
+                } else {
+                    // Allocate buffer for 32-bit floats
+                    float *processedData = new float[pixelCount * desiredChannels];
+
+                    for (size_t i = 0; i < pixelCount; ++i) {
+                        for (int c = 0; c < desiredChannels; ++c) {
+                            processedData[i * desiredChannels + c] = data[i * 4 + c];
+                        }
+                    }
+
+                    stbi_image_free(const_cast<float *>(data));
+                    channels = desiredChannels;
+                    return processedData; // 32-bit float buffer
+                }
             }
 
-            // Load SDR data
-            if (format == ImageFormat::R8_UNORM || format == ImageFormat::R8G8_UNORM ||
-                format == ImageFormat::R8G8B8_UNORM || format == ImageFormat::R8G8B8A8_UNORM) {
+            // Load standard 8-bit image
+            if (format >= ImageFormat::R8_UNORM && format <= ImageFormat::R8G8B8A8_UNORM) {
                 const unsigned char *data = stbi_load(filename.c_str(), &width, &height, &channels, 4);
-                // Always load as 4 components
-                stbi_set_flip_vertically_on_load(false); // Reset flipping after loading
+                stbi_set_flip_vertically_on_load(false);
 
                 if (!data) {
-                    Logger::log(LOG_LEVEL_ERROR, "Error: Failed to load image!\n");
-                    throw std::runtime_error("Image loading failed.");
+                    throw std::runtime_error("Failed to load SDR image.");
                 }
 
-                size_t pixelCount = static_cast<size_t>(width) * static_cast<size_t>(height);
+                size_t pixelCount = static_cast<size_t>(width) * height;
                 unsigned char *processedData = new unsigned char[pixelCount * desiredChannels];
 
                 for (size_t i = 0; i < pixelCount; ++i) {
-                    if (desiredChannels == 1) {
-                        // R8_UNORM
-                        processedData[i] = data[i * 4 + 0]; // Copy R
-                    } else if (desiredChannels == 2) {
-                        // R8G8_UNORM
-                        processedData[i * 2 + 0] = data[i * 4 + 0]; // Copy R
-                        processedData[i * 2 + 1] = data[i * 4 + 1]; // Copy G
-                    } else if (desiredChannels == 3) {
-                        // R8G8B8_UNORM
-                        processedData[i * 3 + 0] = data[i * 4 + 0]; // Copy R
-                        processedData[i * 3 + 1] = data[i * 4 + 1]; // Copy G
-                        processedData[i * 3 + 2] = data[i * 4 + 2]; // Copy B
-                    } else {
-                        // R8G8B8A8_UNORM
-                        processedData[i * 4 + 0] = data[i * 4 + 0]; // Copy R
-                        processedData[i * 4 + 1] = data[i * 4 + 1]; // Copy G
-                        processedData[i * 4 + 2] = data[i * 4 + 2]; // Copy B
-                        processedData[i * 4 + 3] = data[i * 4 + 3]; // Copy A
+                    for (int c = 0; c < desiredChannels; ++c) {
+                        processedData[i * desiredChannels + c] = data[i * 4 + c];
                     }
                 }
 
-                stbi_image_free(const_cast<unsigned char *>(data)); // Free original 4-component data
-                channels = desiredChannels; // Update channel count
-                return processedData; // Return processed data
+                stbi_image_free(const_cast<unsigned char *>(data));
+                channels = desiredChannels;
+                return processedData;
             }
 
-            Logger::log(LOG_LEVEL_ERROR, "Error: Reached unreachable code path in readImage\n");
-            throw std::runtime_error("Failed to load image!");
+            throw std::runtime_error("Invalid format in readImage.");
         }
 
 
         // Can also be used to read cube map faces
-        inline const float *readVolume(const std::vector<std::string> &slices, int &width, int &height, int &channels,
+        inline const void *readVolume(const std::vector<std::string> &slices, int &width, int &height, int &channels,
                                        int &depth, const ImageFormat format = ImageFormat::R32G32B32A32_SFLOAT,
                                        uint32_t flags = 0) {
             if (slices.empty()) {
                 Logger::log(LOG_LEVEL_ERROR, "Error: No slice file paths provided\n");
                 throw std::runtime_error("Error: No slice file paths provided.");
             }
-            // TODO make this general to support uint buffer as well as float buffers
-            if (format == ImageFormat::R8_UNORM || format == ImageFormat::R8G8B8_UNORM || format ==
-                ImageFormat::R8G8B8A8_UNORM) {
-                Logger::log(LOG_LEVEL_ERROR, "Error: SDR content not supported\n");
-                throw std::runtime_error("Error: SDR content not supported.");
-            }
 
-            // Read the first slice to determine width, height, and channels
-            const float *firstSlice = static_cast<const float *>(readImage(
-                slices[0], width, height, channels, format, flags));
-            depth = slices.size(); // The number of slices determines the depth
+            if (format == ImageFormat::R32G32B32A32_SFLOAT) {
+                // Read the first slice to determine width, height, and channels
+                const float *firstSlice = static_cast<const float *>(readImage(
+                    slices[0], width, height, channels, format, flags));
+                depth = slices.size(); // The number of slices determines the depth
 
-            // Allocate memory for the 3D texture
-            size_t sliceSize = width * height * channels;
-            float *volumeData = new float[sliceSize * depth];
+                // Allocate memory for the 3D texture
+                size_t sliceSize = width * height * channels;
+                float *volumeData = new float[sliceSize * depth];
 
-            // Copy the first slice into the buffer
-            std::copy(firstSlice, firstSlice + sliceSize, volumeData);
-            stbi_image_free(const_cast<float *>(firstSlice)); // Free the first slice
+                // Copy the first slice into the buffer
+                std::copy(firstSlice, firstSlice + sliceSize, volumeData);
+                stbi_image_free(const_cast<float *>(firstSlice)); // Free the first slice
 
-            // Read and copy the remaining slices
-            for (size_t i = 1; i < slices.size(); ++i) {
-                int currentWidth, currentHeight, currentChannels;
-                const float *sliceData = static_cast<const float *>(readImage(
-                    slices[i], currentWidth, currentHeight, currentChannels, format, flags));
+                // Read and copy the remaining slices
+                for (size_t i = 1; i < slices.size(); ++i) {
+                    int currentWidth, currentHeight, currentChannels;
+                    const float *sliceData = static_cast<const float *>(readImage(
+                        slices[i], currentWidth, currentHeight, currentChannels, format, flags));
 
-                // Validate dimensions match
-                if (currentWidth != width || currentHeight != height || currentChannels != channels) {
-                    delete[] volumeData;
-                    stbi_image_free(const_cast<float *>(sliceData));
-                    Logger::log(LOG_LEVEL_ERROR, "Error: Slice dimensions or channels mismatch in slice %d\n", i);
-                    throw std::runtime_error("Error: Slice dimensions or channels mismatch!");
+                    // Validate dimensions match
+                    if (currentWidth != width || currentHeight != height || currentChannels != channels) {
+                        delete[] volumeData;
+                        stbi_image_free(const_cast<float *>(sliceData));
+                        Logger::log(LOG_LEVEL_ERROR, "Error: Slice dimensions or channels mismatch in slice %d\n", i);
+                        throw std::runtime_error("Error: Slice dimensions or channels mismatch!");
+                    }
+
+                    // Copy the slice into the correct position in the 3D buffer
+                    std::copy(sliceData, sliceData + sliceSize, volumeData + i * sliceSize);
+                    stbi_image_free(const_cast<float *>(sliceData)); // Free the current slice
                 }
 
-                // Copy the slice into the correct position in the 3D buffer
-                std::copy(sliceData, sliceData + sliceSize, volumeData + i * sliceSize);
-                stbi_image_free(const_cast<float *>(sliceData)); // Free the current slice
+                return volumeData;
             }
 
-            return volumeData;
+            if (format == ImageFormat::R16G16B16A16_SFLOAT) {
+                // Read the first slice to determine width, height, and channels
+                const float16 *firstSlice = static_cast<const float16 *>(readImage(
+                    slices[0], width, height, channels, format, flags));
+                depth = slices.size(); // The number of slices determines the depth
+
+                // Allocate memory for the 3D texture
+                size_t sliceSize = width * height * channels;
+                float16 *volumeData = new float16[sliceSize * depth];
+
+                // Copy the first slice into the buffer
+                std::copy(firstSlice, firstSlice + sliceSize, volumeData);
+                delete[] firstSlice;
+
+                // Read and copy the remaining slices
+                for (size_t i = 1; i < slices.size(); ++i) {
+                    int currentWidth, currentHeight, currentChannels;
+                    const float16 *sliceData = static_cast<const float16 *>(readImage(
+                        slices[i], currentWidth, currentHeight, currentChannels, format, flags));
+
+                    // Validate dimensions match
+                    if (currentWidth != width || currentHeight != height || currentChannels != channels) {
+                        delete[] volumeData;
+                        delete[] sliceData;
+                        Logger::log(LOG_LEVEL_ERROR, "Error: Slice dimensions or channels mismatch in slice %d\n", i);
+                        throw std::runtime_error("Error: Slice dimensions or channels mismatch!");
+                    }
+
+                    // Copy the slice into the correct position in the 3D buffer
+                    std::copy(sliceData, sliceData + sliceSize, volumeData + i * sliceSize);
+                    delete[] sliceData;
+                }
+
+                return volumeData;
+            }
         }
-
-
     } // namespace Filesystem
 }

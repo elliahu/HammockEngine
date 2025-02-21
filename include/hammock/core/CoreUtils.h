@@ -381,7 +381,7 @@ namespace hammock {
         return (size + alignment - 1) & ~(alignment - 1);
     }
 
-    inline bool isDepthFormat(VkFormat format){
+    inline bool isDepthFormat(VkFormat format) {
         std::vector<VkFormat> formats =
         {
             VK_FORMAT_D16_UNORM,
@@ -405,7 +405,30 @@ namespace hammock {
         return std::ranges::find(formats, format) != std::end(formats);
     }
 
-    inline bool isDepthStencil(VkFormat format){
+    inline bool isDepthStencil(VkFormat format) {
         return (isDepthFormat(format) || isStencilFormat(format));
     }
+
+    inline uint16_t float32float16(float f) {
+        uint32_t f32 = *(uint32_t *) &f;
+        uint16_t f16 = 0;
+
+        uint32_t sign = (f32 >> 16) & 0x8000; // Extract sign bit
+        uint32_t exponent = ((f32 >> 23) & 0xFF) - 112; // Adjust exponent bias
+        uint32_t mantissa = (f32 & 0x007FFFFF) >> 13; // Truncate mantissa
+
+        if (exponent <= 0) {
+            // Underflow case (denormals or zero)
+            f16 = sign;
+        } else if (exponent >= 31) {
+            // Overflow case (inf or NaN)
+            f16 = sign | 0x7C00 | (mantissa ? 1 : 0);
+        } else {
+            // Normal conversion
+            f16 = sign | (exponent << 10) | mantissa;
+        }
+
+        return f16;
+    }
+
 }
