@@ -158,7 +158,7 @@ float henyeyGreenstein(float cosTheta, float g) {
 }
 
 
-float lightTransmittance(vec3 pos) {
+float lightTransmittance(vec3 pos, float cosTheta) {
     vec3 direction = normalize(ubo.sun.position.xyz - pos);
 
     float extinctionCoef = ubo.clouds.absorption + ubo.clouds.scattering;
@@ -170,10 +170,10 @@ float lightTransmittance(vec3 pos) {
         float density = 0.0;
         float intersection = rayBoxDst(storageBuffer.bbMin.xyz, storageBuffer.bbMax.xyz, rayPos, direction).y;
         if (intersection > 0.0) {
-            density = baseDensity(rayPos);
+            density = baseDensity(rayPos) * LIGHT_STEP_SIZE;
         }
 
-        transmittance *= exp(-density * extinctionCoef * LIGHT_STEP_SIZE);
+        transmittance *= exp(-density * extinctionCoef) * henyeyGreenstein(cosTheta, ubo.clouds.phase);
 
         if (transmittance < 0.01) break;
     }
@@ -219,12 +219,13 @@ void main() {
             vec3 rayPos = rayOrigin + rayDirection * (dstToBox + i * stepSize);
 
 
-            float phase = henyeyGreenstein(dot(rayDirection, normalize(ubo.sun.position.xyz - rayPos)), ubo.clouds.phase);
+            float cosTheta = dot(rayDirection, normalize(ubo.sun.position.xyz - rayPos));
+            float phase = henyeyGreenstein(cosTheta, ubo.clouds.phase);
 
             float currentDensity = baseDensity(rayPos);
             transmittance *= exp(-currentDensity * extinctionCoef * stepSize);
 
-            float light = lightTransmittance(rayPos);
+            float light = lightTransmittance(rayPos, cosTheta);
 
             vec3 inScattering = ambientLight * light * phase;
             float outScattering = ubo.clouds.scattering * currentDensity;

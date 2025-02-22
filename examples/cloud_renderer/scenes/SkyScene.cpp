@@ -49,7 +49,7 @@ void SkyScene::init() {
     int w, h, c, d;
     // Read the data from disk
     ScopedMemory baseNoiseData(readVolume(Filesystem::ls(assetPath("noise/base")), w, h, c, d,
-                                                      Filesystem::ImageFormat::R16G16B16A16_SFLOAT));
+                                          Filesystem::ImageFormat::R16G16B16A16_SFLOAT));
     // Create staging buffer
     ResourceHandle baseNoiseStagingBuffer = rm.createResource<Buffer>(
         "base-noise-staging-buffer",
@@ -91,7 +91,7 @@ void SkyScene::init() {
     // Load the detail noise
     // Read the data from disk
     ScopedMemory detailNoiseData(readVolume(Filesystem::ls(assetPath("noise/detail")), w, h, c, d,
-                                                        Filesystem::ImageFormat::R16G16B16A16_SFLOAT));
+                                            Filesystem::ImageFormat::R16G16B16A16_SFLOAT));
     // Create staging buffer
     ResourceHandle detailNoiseStagingBuffer = rm.createResource<Buffer>(
         "detail-noise-staging-buffer",
@@ -131,7 +131,7 @@ void SkyScene::init() {
 
     // Load the curl noise
     ScopedMemory curlNoiseData(readImage(assetPath("noise/curlNoise.png"), w, h, c,
-                                                     Filesystem::ImageFormat::R8G8B8A8_UNORM));
+                                         Filesystem::ImageFormat::R8G8B8A8_UNORM));
 
     // Create host visible staging buffer on device
     ResourceHandle curlNoiseStagingBuffer = rm.createResource<Buffer>(
@@ -172,7 +172,7 @@ void SkyScene::init() {
 
     // Load the cloud map
     ScopedMemory cloudMapData(readImage(assetPath("noise/weatherMap.png"), w, h, c,
-                                                    Filesystem::ImageFormat::R8G8B8A8_UNORM));
+                                        Filesystem::ImageFormat::R8G8B8A8_UNORM));
 
     // Create host visible staging buffer on device
     ResourceHandle cloudMapStagingBuffer = rm.createResource<Buffer>(
@@ -337,6 +337,9 @@ void SkyScene::buildRenderGraph() {
                 context.bindDescriptorSet(0, 0, composition.pipeline->pipelineLayout,
                                           VK_PIPELINE_BIND_POINT_GRAPHICS);
 
+                vkCmdPushConstants(context.commandBuffer, composition.pipeline->pipelineLayout, VK_SHADER_STAGE_FRAGMENT_BIT, 0,
+                                   sizeof(compositionPushConstants), &compositionPushConstants);
+
                 // Even though there is no vertex buffer, this call is safe as it does not actually read the vertices in the shader
                 // This only triggers fullscreen effect in vert shader that runs fragment shader for each pixel of the screen
                 vkCmdDraw(context.commandBuffer, 3, 1, 0, 0);
@@ -471,7 +474,7 @@ void SkyScene::buildPipelines() {
         // Fragment shader samples storage texture and writes it to swapchain image
         {.byteCode = Filesystem::readFile(compiledShaderPath("texture.frag")),},
         .descriptorSetLayouts = {renderGraph->getDescriptorSetLayouts("composition-pass")},
-        .pushConstantRanges{},
+        .pushConstantRanges{{VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(CompositionPushConstants)}},
         .graphicsState{
             // We disable cull so that the vkCmdDraw command is not skipped
             .cullMode = VK_CULL_MODE_NONE,
@@ -546,9 +549,17 @@ void SkyScene::update() {
 
     // Create the inverse view matrix based on the updated camera parameters.
     const HmckMat4 view = Projection().view(cameraPosition, target, up);
+    const HmckMat4 proj = Projection().perspective(HmckToRad(45.f), 1920.0 / 1080.0, 0.01, 1000, false);
 
     uniformBufferData.camera.position = HmckVec4{cameraPosition, 0.0f};
     uniformBufferData.camera.inverseView = HmckInvGeneral(view);
+
+    compositionPushConstants.lightPos = uniformBufferData.sun.position;
+    compositionPushConstants.lightColor = uniformBufferData.sun.color;
+    compositionPushConstants.bbMin = storageBufferData.bbMin;
+    compositionPushConstants.bbMax = storageBufferData.bbMax;
+    compositionPushConstants.cameraPos = HmckVec4{cameraPosition, 0.0f};
+    compositionPushConstants.viewProj = proj * view;
 }
 
 

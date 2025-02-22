@@ -39,6 +39,15 @@ class SkyScene final : public IScene {
         HmckVec4 bbMax{10.f, 5.f, 10.f};
     } storageBufferData;
 
+    struct CompositionPushConstants {
+        HmckVec4 lightPos;
+        HmckVec4 lightColor;
+        HmckVec4 bbMin;
+        HmckVec4 bbMax;
+        HmckVec4 cameraPos;
+        HmckMat4 viewProj;
+    } compositionPushConstants;
+
 
     // Compute pass resources
     struct {
