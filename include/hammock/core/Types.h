@@ -4,6 +4,13 @@
 #include "hammock/core/CoreUtils.h"
 
 namespace hammock {
+
+    typedef uint16_t float16_t;
+    typedef float float32_t;
+    typedef double float64_t;
+    typedef unsigned char uchar8_t;
+
+
     // Define resource types enum
     enum class ResourceType : uint32_t {
         Invalid = 0,
@@ -156,6 +163,5 @@ namespace hammock {
         float mipLodBias = 0.0f;
     };
 
-    typedef uint16_t float16;
-    typedef float float32;
+
 }

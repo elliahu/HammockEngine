@@ -35,15 +35,26 @@ void SkyScene::init() {
                       rm.getResource<Buffer>(compute.storageBuffer)->getBuffer(), sizeof(StorageBufferData));
     rm.releaseResource(stagingStorageBufferHandle.getUid());
 
+    // Next, we need to load all the noises and images
+    // Image memory is device dedicated (for best performance) - that means it is not accessible by the host directly
+    // For each image, we need to create a "staging buffer" that is lives in the device memory and is accessible by the host
+    // We need to:
+    // 1. Create the staging buffer
+    // 2. Copy the image data into the staging buffer
+    // 3. Create the actual resource
+    // 4. Copy the data from the staging buffer into the resource memory
+    // 5. Release the staging buffer
+
     // Load the base noise
     int w, h, c, d;
     // Read the data from disk
-    ScopedMemory baseNoiseData(Filesystem::readVolume(Filesystem::ls(assetPath("noise/base")), w, h, c, d, Filesystem::ImageFormat::R16G16B16A16_SFLOAT));
+    ScopedMemory baseNoiseData(readVolume(Filesystem::ls(assetPath("noise/base")), w, h, c, d,
+                                                      Filesystem::ImageFormat::R16G16B16A16_SFLOAT));
     // Create staging buffer
     ResourceHandle baseNoiseStagingBuffer = rm.createResource<Buffer>(
         "base-noise-staging-buffer",
         BufferDesc{
-            .instanceSize = sizeof(float16),
+            .instanceSize = sizeof(float16_t),
             .instanceCount = static_cast<uint32_t>(w * h * d * c),
             .usageFlags = VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
             .allocationFlags = VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT,
@@ -79,12 +90,13 @@ void SkyScene::init() {
 
     // Load the detail noise
     // Read the data from disk
-    ScopedMemory detailNoiseData(Filesystem::readVolume(Filesystem::ls(assetPath("noise/detail")), w, h, c, d));
+    ScopedMemory detailNoiseData(readVolume(Filesystem::ls(assetPath("noise/detail")), w, h, c, d,
+                                                        Filesystem::ImageFormat::R16G16B16A16_SFLOAT));
     // Create staging buffer
     ResourceHandle detailNoiseStagingBuffer = rm.createResource<Buffer>(
         "detail-noise-staging-buffer",
         BufferDesc{
-            .instanceSize = sizeof(float32),
+            .instanceSize = sizeof(float16_t),
             .instanceCount = static_cast<uint32_t>(w * h * d * c),
             .usageFlags = VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
             .allocationFlags = VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT,
@@ -103,7 +115,7 @@ void SkyScene::init() {
             .height = static_cast<uint32_t>(h),
             .channels = static_cast<uint32_t>(c),
             .depth = static_cast<uint32_t>(d),
-            .format = VK_FORMAT_R32G32B32A32_SFLOAT,
+            .format = VK_FORMAT_R16G16B16A16_SFLOAT,
             .usage = VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,
             .imageType = VK_IMAGE_TYPE_3D,
             .imageViewType = VK_IMAGE_VIEW_TYPE_3D,
@@ -118,13 +130,14 @@ void SkyScene::init() {
     rm.releaseResource(detailNoiseStagingBuffer.getUid());
 
     // Load the curl noise
-    ScopedMemory curlNoiseData(Filesystem::readImage(assetPath("noise/curlNoise.png"), w, h, c, Filesystem::ImageFormat::R16G16B16A16_SFLOAT));
+    ScopedMemory curlNoiseData(readImage(assetPath("noise/curlNoise.png"), w, h, c,
+                                                     Filesystem::ImageFormat::R8G8B8A8_UNORM));
 
     // Create host visible staging buffer on device
     ResourceHandle curlNoiseStagingBuffer = rm.createResource<Buffer>(
         "curl-staging-buffer",
         BufferDesc{
-            .instanceSize = sizeof(float16),
+            .instanceSize = sizeof(uchar8_t),
             .instanceCount = static_cast<uint32_t>(w * h * c),
             .usageFlags = VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
             .allocationFlags = VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT,
@@ -142,7 +155,7 @@ void SkyScene::init() {
             .width = static_cast<uint32_t>(w),
             .height = static_cast<uint32_t>(h),
             .channels = static_cast<uint32_t>(c),
-            .format = VK_FORMAT_R16G16B16A16_SFLOAT,
+            .format = VK_FORMAT_R8G8B8A8_UNORM,
             .usage = VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,
             .imageType = VK_IMAGE_TYPE_2D,
             .imageViewType = VK_IMAGE_VIEW_TYPE_2D,
@@ -156,6 +169,44 @@ void SkyScene::init() {
 
     // Release the staging buffer
     rm.releaseResource(curlNoiseStagingBuffer.getUid());
+
+    // Load the cloud map
+    ScopedMemory cloudMapData(readImage(assetPath("noise/weatherMap.png"), w, h, c,
+                                                    Filesystem::ImageFormat::R8G8B8A8_UNORM));
+
+    // Create host visible staging buffer on device
+    ResourceHandle cloudMapStagingBuffer = rm.createResource<Buffer>(
+        "cloudmap-staging-buffer",
+        BufferDesc{
+            .instanceSize = sizeof(uchar8_t),
+            .instanceCount = static_cast<uint32_t>(w * h * c),
+            .usageFlags = VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
+            .allocationFlags = VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT,
+        }
+    );
+
+    // Write the data into the staging buffer
+    rm.getResource<Buffer>(cloudMapStagingBuffer)->map();
+    rm.getResource<Buffer>(cloudMapStagingBuffer)->writeToBuffer(cloudMapData.get());
+
+    // Create the image resource
+    compute.cloudMap = rm.createResource<Image>(
+        "cloud-map",
+        ImageDesc{
+            .width = static_cast<uint32_t>(w),
+            .height = static_cast<uint32_t>(h),
+            .channels = static_cast<uint32_t>(c),
+            .format = VK_FORMAT_R8G8B8A8_UNORM,
+            .usage = VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,
+            .imageType = VK_IMAGE_TYPE_2D,
+            .imageViewType = VK_IMAGE_VIEW_TYPE_2D,
+        }
+    );
+
+    // Copy the data from buffer into the image
+    rm.getResource<Image>(compute.cloudMap)->queueImageLayoutTransition(VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
+    rm.getResource<Image>(compute.cloudMap)->queueCopyFromBuffer(rm.getResource<Buffer>(cloudMapStagingBuffer)->getBuffer());
+    // Image will be transitioned into SHADER_READ_ONLY_OPTIMAL by the render graph automatically
 
 
     // Other resource are managed by the render graph
@@ -190,6 +241,9 @@ void SkyScene::buildRenderGraph() {
 
     // Curl noise
     renderGraph->addStaticResource<ResourceNode::Type::SampledImage>("compute-curl-noise", compute.curlNoise);
+
+    // Cloud map
+    renderGraph->addStaticResource<ResourceNode::Type::SampledImage>("compute-cloud-map", compute.cloudMap);
 
     // Storage image that the compute pass outputs to and that is then read in the composition pass
     renderGraph->addResource<ResourceNode::Type::StorageImage, Image, ImageDesc>(
@@ -230,6 +284,10 @@ void SkyScene::buildRenderGraph() {
                 .resourceName = "compute-curl-noise",
                 .requiredLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
             })
+            .read(ResourceAccess{
+                .resourceName = "compute-cloud-map",
+                .requiredLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+            })
             .descriptor(0, {
                             {0, {"compute-storage-image"}, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, VK_SHADER_STAGE_COMPUTE_BIT},
                             {1, {"compute-uniform-buffer"}, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_COMPUTE_BIT},
@@ -237,6 +295,7 @@ void SkyScene::buildRenderGraph() {
                             {3, {"compute-base-noise"}, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_COMPUTE_BIT},
                             {4, {"compute-detail-noise"}, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_COMPUTE_BIT},
                             {5, {"compute-curl-noise"}, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_COMPUTE_BIT},
+                            {6, {"compute-cloud-map"}, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_COMPUTE_BIT},
                         })
             .write(ResourceAccess{
                 .resourceName = "compute-storage-image",
@@ -351,9 +410,11 @@ void SkyScene::buildRenderGraph() {
                     ImGui::ColorEdit3("Light color", &uniformBufferData.sun.color.Elements[0]);
 
                     ImGui::SeparatorText("Clouds");
-                    ImGui::SliderFloat("Absorption", &uniformBufferData.rendering.absorptionCoef, 0.0f, 1.0f);
-                    ImGui::SliderFloat("Scattering", &uniformBufferData.rendering.scatteringCoef, 0.0f, 1.0f);
-                    ImGui::SliderFloat("Henye Greenstein g", &uniformBufferData.rendering.phase, -.955f, .955f);
+                    ImGui::SliderFloat("Absorption", &uniformBufferData.clouds.absorptionCoef, 0.0f, 1.0f);
+                    ImGui::SliderFloat("Scattering", &uniformBufferData.clouds.scatteringCoef, 0.0f, 1.0f);
+                    ImGui::SliderFloat("Henye Greenstein g", &uniformBufferData.clouds.phase, -.955f, .955f);
+                    ImGui::SliderFloat("Density", &uniformBufferData.clouds.density, 0.0f, 1.0f);
+                    ImGui::SliderFloat("Density offset", &uniformBufferData.clouds.densityOffset, -1.0f, 1.0f);
 
                     ImGui::PopStyleVar();
                     ImGui::End();
@@ -361,7 +422,8 @@ void SkyScene::buildRenderGraph() {
 
                 if (showPerf) {
                     ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 0.0f);
-                    ImGui::SetNextWindowPos({static_cast<float>(window.getExtent().width), static_cast<float>(window.getExtent().height)}, 0, {1, 1});
+                    ImGui::SetNextWindowPos({static_cast<float>(window.getExtent().width), static_cast<float>(window.getExtent().height)},
+                                            0, {1, 1});
                     ImGui::Begin("Performance analysis", (bool *) false,
                                  ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoMove |
                                  ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_NoFocusOnAppearing |
@@ -428,8 +490,8 @@ void SkyScene::buildPipelines() {
 
 void SkyScene::update() {
     // Movement and rotation speeds (adjust these as needed)
-    const float movementSpeed = 10.0f;    // Units per frame
-    const float rotationSpeed = 2.0f;   // Radians per frame
+    const float movementSpeed = 10.0f; // Units per frame
+    const float rotationSpeed = 2.0f; // Radians per frame
 
     // Process rotation input using arrow keys.
     // Rotate left/right (yaw)
@@ -454,9 +516,9 @@ void SkyScene::update() {
     // Compute the forward direction vector from yaw and pitch.
     const float cosPitch = std::cos(pitch);
     const float sinPitch = std::sin(pitch);
-    const float cosYaw   = std::cos(yaw);
-    const float sinYaw   = std::sin(yaw);
-    const HmckVec3 direction = HmckVec3{ cosYaw * cosPitch, sinPitch, sinYaw * cosPitch };
+    const float cosYaw = std::cos(yaw);
+    const float sinYaw = std::sin(yaw);
+    const HmckVec3 direction = HmckVec3{cosYaw * cosPitch, sinPitch, sinYaw * cosPitch};
 
     // Get the up vector from the projection (assumed constant)
     const HmckVec3 up = Projection().upPosY();
@@ -485,10 +547,9 @@ void SkyScene::update() {
     // Create the inverse view matrix based on the updated camera parameters.
     const HmckMat4 view = Projection().view(cameraPosition, target, up);
 
-    uniformBufferData.camera.position = HmckVec4{ cameraPosition, 0.0f };
+    uniformBufferData.camera.position = HmckVec4{cameraPosition, 0.0f};
     uniformBufferData.camera.inverseView = HmckInvGeneral(view);
 }
-
 
 
 void SkyScene::render() {

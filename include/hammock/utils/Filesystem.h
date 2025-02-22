@@ -280,13 +280,13 @@ namespace hammock {
 
             if (format == ImageFormat::R16G16B16A16_SFLOAT) {
                 // Read the first slice to determine width, height, and channels
-                const float16 *firstSlice = static_cast<const float16 *>(readImage(
+                const float16_t *firstSlice = static_cast<const float16_t *>(readImage(
                     slices[0], width, height, channels, format, flags));
                 depth = slices.size(); // The number of slices determines the depth
 
                 // Allocate memory for the 3D texture
                 size_t sliceSize = width * height * channels;
-                float16 *volumeData = new float16[sliceSize * depth];
+                float16_t *volumeData = new float16_t[sliceSize * depth];
 
                 // Copy the first slice into the buffer
                 std::copy(firstSlice, firstSlice + sliceSize, volumeData);
@@ -295,7 +295,7 @@ namespace hammock {
                 // Read and copy the remaining slices
                 for (size_t i = 1; i < slices.size(); ++i) {
                     int currentWidth, currentHeight, currentChannels;
-                    const float16 *sliceData = static_cast<const float16 *>(readImage(
+                    const float16_t *sliceData = static_cast<const float16_t *>(readImage(
                         slices[i], currentWidth, currentHeight, currentChannels, format, flags));
 
                     // Validate dimensions match

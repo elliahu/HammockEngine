@@ -16,17 +16,19 @@ struct Sun {
     vec4 color;
 };
 
-struct Rendering {
+struct Clouds {
     float absorption;
     float scattering;
     float phase;
+    float density;
+    float densityOffset;
 };
 
 layout (binding = 1) uniform UBO
 {
     Camera camera;
     Sun sun;
-    Rendering rendergin;
+    Clouds clouds;
 } ubo;
 
 layout (std140, binding = 2) buffer Scene
@@ -38,6 +40,7 @@ layout (std140, binding = 2) buffer Scene
 layout (binding = 3) uniform sampler3D baseNoiseSampler;
 layout (binding = 4) uniform sampler3D detailNoiseSampler;
 layout (binding = 5) uniform sampler2D curlNoiseSampler;
+layout (binding = 6) uniform sampler2D cloudMap;
 
 
 #define PI 3.14159265359
@@ -83,6 +86,12 @@ vec3 mapWorldToSample(vec3 worldPos, vec3 bbmin, vec3 bbmax) {
     return normalized; // This should show smooth gradients if inputs are continuous
 }
 
+// Remaps value from one range to another
+float remap(float value, float inMin, float inMax, float outMin, float outMax) {
+    return outMin + (value - inMin) * (outMax - outMin) / (inMax - inMin);
+}
+
+
 
 // Samples base noise at given position
 vec4 sampleBaseNoise(vec3 pos) {
@@ -99,16 +108,41 @@ vec4 sampleCurlNoise(vec2 uv) {
     return texture(curlNoiseSampler, uv);
 }
 
-float baseDensity(vec3 pos){
+float baseDensity(vec3 pos) {
+    // Remap the sampling position
     vec3 uvw = mapWorldToSample(pos, storageBuffer.bbMin.xyz, storageBuffer.bbMax.xyz);
-    return sampleBaseNoise(uvw).r;
-    //return 0.5;
+
+    // Sample the noise frequencies
+    vec4 lowFreqNoises = sampleBaseNoise(uvw) * ubo.clouds.density * 10;
+
+    // Build the FBM
+    float lowFreqFBM = (lowFreqNoises.g * 0.625) +
+    (lowFreqNoises.b * 0.25) +
+    (lowFreqNoises.a * 0.125);
+
+    // Clamp the FBM
+    lowFreqFBM = clamp(lowFreqFBM, 0.0, 1.0);
+
+    // Build the base shape by eroding low freq noise using the FBM
+    // TODO remap clamped
+    float baseCloud = remap(clamp(lowFreqNoises.r + ubo.clouds.densityOffset, 0.0, 1.0), (lowFreqFBM - 0.9), 1.0, 0.0, 1.0 );
+
+    return baseCloud;
+
+    // Cloud coverage is stored in cloud map in red channel
+    vec4 cloudMap = texture(cloudMap, vec2(uvw.x, uvw.z));
+    float cloudCoverage = cloudMap.r;
+
+    float baseCloudWithCoverage = remap(baseCloud, cloudCoverage, 1.0, 0.0, 1.0);
+
+    // To ensure that the density increases with coverage in an aesthetically pleasing manner
+    // Multiply the result by the cloud coverage attribute so that smaller clouds are lighter
+    // and more aesthetically pleasing
+    baseCloudWithCoverage *= cloudCoverage;
+
+    return baseCloudWithCoverage;
 }
 
-// Remaps value from one range to another
-float remap(float value, float inMin, float inMax, float outMin, float outMax) {
-    return outMin + (value - inMin) * (outMax - outMin) / (inMax - inMin);
-}
 
 // Number of steps based on the intersection length
 int computeRaymarchSteps(float chordLength, float minChord, float maxChord, int minSteps, int maxSteps) {
@@ -119,29 +153,29 @@ int computeRaymarchSteps(float chordLength, float minChord, float maxChord, int 
 }
 
 
-float henyeyGreenstein(float cosTheta, float g){
+float henyeyGreenstein(float cosTheta, float g) {
     return (1.0 / 4.0 * PI) * ((1 - (g * g)) / pow((1 - (g * cosTheta)), 2));
 }
 
 
-float lightTransmittance(vec3 pos){
+float lightTransmittance(vec3 pos) {
     vec3 direction = normalize(ubo.sun.position.xyz - pos);
 
-    float extinctionCoef = ubo.rendergin.absorption + ubo.rendergin.scattering;
+    float extinctionCoef = ubo.clouds.absorption + ubo.clouds.scattering;
     float transmittance = 1.0;
 
-    for(int i = 0; i < LIGHT_STEPS; i++){
+    for (int i = 0; i < LIGHT_STEPS; i++) {
         vec3 rayPos = pos + direction * (i * LIGHT_STEP_SIZE);
 
         float density = 0.0;
         float intersection = rayBoxDst(storageBuffer.bbMin.xyz, storageBuffer.bbMax.xyz, rayPos, direction).y;
-        if(intersection > 0.0){
+        if (intersection > 0.0) {
             density = baseDensity(rayPos);
         }
 
         transmittance *= exp(-density * extinctionCoef * LIGHT_STEP_SIZE);
 
-        if(transmittance < 0.01) break;
+        if (transmittance < 0.01) break;
     }
 
     return transmittance;
@@ -161,7 +195,7 @@ void main() {
     vec3 rayDirection = getRayDirection();
 
     vec3 ambientLight = ubo.sun.color.rgb;
-    float extinctionCoef = ubo.rendergin.absorption + ubo.rendergin.scattering;
+    float extinctionCoef = ubo.clouds.absorption + ubo.clouds.scattering;
 
 
     // Intersect the boudning box of the atmosphere
@@ -170,7 +204,7 @@ void main() {
     float dstInsideBox = bboxIntersection.y; // Intersection length
 
     // If we intersect the clouds bounding box
-    if (dstInsideBox > 0.0){
+    if (dstInsideBox > 0.0) {
         // Compute longest and shortest intersection lengths
         vec2 lengths = computeIntersectionLengths(storageBuffer.bbMin.xyz, storageBuffer.bbMax.xyz);
         // Compute number of steps relative to the lenght of the intersection
@@ -181,11 +215,11 @@ void main() {
         float transmittance = 1.0;
         vec3 illumination = vec3(0.0);
 
-        for(int i = 0; i < numSteps; i++){
+        for (int i = 0; i < numSteps; i++) {
             vec3 rayPos = rayOrigin + rayDirection * (dstToBox + i * stepSize);
 
 
-            float phase = henyeyGreenstein(dot(rayDirection, normalize(ubo.sun.position.xyz - rayPos)), ubo.rendergin.phase);
+            float phase = henyeyGreenstein(dot(rayDirection, normalize(ubo.sun.position.xyz - rayPos)), ubo.clouds.phase);
 
             float currentDensity = baseDensity(rayPos);
             transmittance *= exp(-currentDensity * extinctionCoef * stepSize);
@@ -193,17 +227,17 @@ void main() {
             float light = lightTransmittance(rayPos);
 
             vec3 inScattering = ambientLight * light * phase;
-            float outScattering = ubo.rendergin.scattering * currentDensity;
+            float outScattering = ubo.clouds.scattering * currentDensity;
 
             vec3 currentLight = inScattering * outScattering;
 
             illumination += transmittance * currentLight * stepSize;
 
-            if(transmittance < 0.01) break;
+            if (transmittance < 0.01) break;
         }
 
 
-        outColor = vec4(illumination, transmittance);
+        outColor = vec4(illumination, 1.0 - transmittance);
 
     }
 

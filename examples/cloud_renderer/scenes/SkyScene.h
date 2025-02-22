@@ -13,26 +13,30 @@ class SkyScene final : public IScene {
         // Camera related data are stored here
         struct Camera {
             HmckMat4 inverseView; // 64 bytes
-            HmckVec4 position{0.0f, 0.0f, 0.0f}; // 16 bytes
+            HmckVec4 position; // 16 bytes
         } camera{};
 
+        // Data related to scene lighting
         struct Sun {
-            HmckVec4 position{0.0f,20.0f, 0.0f, 0.0f}; // 16 bytes
+            HmckVec4 position{5.0f,10.0f, 5.0f, 0.0f}; // 16 bytes
             HmckVec4 color{1.0f, 1.0f, 1.0f, 1.0f}; // 16 bytes
         } sun{};
 
-        struct Rendering {
-            float absorptionCoef{0.23f};
+        // Cloud properties
+        struct Clouds {
+            float absorptionCoef{0.04f};
             float scatteringCoef{0.28f};
             float phase{0.3f};
-        } rendering;
+            float density{0.188f};
+            float densityOffset{0.0f};
+        } clouds;
     } uniformBufferData;
 
     // Storage buffer data that remains static during execution
     // Lives in a dedicated GPU memory that is NOT accessible by CPU
     struct StorageBufferData {
-        HmckVec4 bbMin{-20.f, 5.f, -20.f};
-        HmckVec4 bbMax{20.f, 15.f, 20.f};
+        HmckVec4 bbMin{0.f, 0.f, 0.f};
+        HmckVec4 bbMax{10.f, 5.f, 10.f};
     } storageBufferData;
 
 
@@ -68,8 +72,8 @@ class SkyScene final : public IScene {
 
     // This is used to measure frame time
     float frameTime = 0.0f;
-    float yaw{0.f}, pitch{0.847f}; // This describes camera look direction relative to the planet surface normal vector (standing on surface and looking)
-    HmckVec3 cameraPosition{-40.0f, -35.0f, 0.0f};
+    float yaw{0.666f}, pitch{-0.390f}; // This describes camera look direction relative to the planet surface normal vector (standing on surface and looking)
+    HmckVec3 cameraPosition{-9.0f, 10.0f, -7.0f};
 
     // Benchmarking
     // Constants
